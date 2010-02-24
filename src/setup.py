@@ -17,10 +17,13 @@ finally:
     f.close()
 
 def get_tip_revision(path=os.getcwd()):
-    from mercurial.hg import repository
-    from mercurial.ui import ui
-    from mercurial import node
-    from mercurial.error import RepoError
+    try:
+        from mercurial.hg import repository
+        from mercurial.ui import ui
+        from mercurial import node
+        from mercurial.error import RepoError
+    except ImportError:
+        return 0
     try:
         repo = repository(ui(), path)
         tip = repo.changelog.tip()
@@ -61,6 +64,10 @@ class sdist_hg(sdist):
             self.distribution.metadata.version += DEV_SUFFIX
         sdist.run(self)
 
+setup_kwargs = {}
+if sys.version < '2.6':
+    kwargs['scripts'] = 'distutils2/mkpkg.py'
+
 setup (name="Distutils2",
        version=VERSION,
        description="Python Distribution Utilities",
@@ -73,7 +80,8 @@ setup (name="Distutils2",
                  'distutils2.command',
                  'distutils2.tests',
                  'distutils2._backport'],
-       cmdclass={'sdist': sdist_hg, 'install': install_hg}
+       cmdclass={'sdist': sdist_hg, 'install': install_hg},
+       **setup_kwargs
        )
 
 
