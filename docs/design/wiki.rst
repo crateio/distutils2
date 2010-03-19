@@ -282,7 +282,7 @@ files that the FHS and GNU coding standards define::
   mailman/etc/*               = {config}                # 8
   mailman/foo/**/bar/*.cfg    = {config}/baz            # 9
   mailman/foo/**/*.cfg        = {config}/hmm            # 9, 10
-  some-new-semantic.txt       = {funky-crazy-category}  # 11
+  some-new-semantic.sns       = {funky-crazy-category}  # 11
 
 The glob definitions are relative paths that match files from the top
 of the source tree (the location of ``setup.cfg``). Forward slashes
