@@ -73,7 +73,7 @@ human language, programming language, user interface, etc...
 }
 
 troveList = [
-      'Development Status :: 1 - Planning',
+        'Development Status :: 1 - Planning',
         'Development Status :: 2 - Pre-Alpha',
         'Development Status :: 3 - Alpha',
         'Development Status :: 4 - Beta',
@@ -701,7 +701,8 @@ class SetupClass:
         for compareKey in ('author', 'author_email'):
             if self.lookupOption(compareKey) != self.setupData[compareKey]:
                 valuesDifferent = True
-                self.config.set('DEFAULT', compareKey, self.setupData[compareKey])
+                self.config.set('DEFAULT', compareKey,
+                    self.setupData[compareKey])
 
         if not valuesDifferent: return
 
@@ -780,7 +781,7 @@ class SetupClass:
                 helpText['trove_generic']) != 'y': return
 
         self.walkTrove(classifierDict, [troveDict], '')
-    
+
     def walkTrove(self, classifierDict, trovePath, desc):
         trove = trovePath[-1]
 
@@ -835,7 +836,8 @@ class SetupClass:
             try:
                 return
             except IndexError:
-                print 'ERROR: Invalid selection, type a number from the list above.'
+                print("ERROR: Invalid selection, type a number from the list "
+                    "above.")
 
 
     def setTroveDevStatus(self, classifierDict):
@@ -865,7 +867,8 @@ Status''', required = False)
                     classifierDict[key] = 1
                     return
                 except KeyError:
-                    print 'ERROR: Invalid selection, type a single digit number.'
+                    print("ERROR: Invalid selection, type a single digit "
+                        "number.")
 
     def _dotted_packages(self, data):
         packages = sorted(data.keys())
