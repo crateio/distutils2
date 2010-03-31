@@ -74,7 +74,7 @@ class TestPkgUtilFunctions(unittest2.TestCase):
     def test_get_distributions(self):
         """Lookup all distributions found in the ``sys.path``."""
         # This test could potentially pick up other installed distributions
-        fake_dists = [('grammar', '1.0a4'), ('choxie', '2009'),
+        fake_dists = [('grammar', '1.0a4'), ('choxie', '2.0.0.9'),
             ('towel-stuff', '0.1')]
         found_dists = []
 
@@ -92,11 +92,11 @@ class TestPkgUtilFunctions(unittest2.TestCase):
                 self.fail("item received was not a Distribution instance: "
                     "%s" % type(dist))
             if dist.name in dict(fake_dists).keys():
-                found_dists.append((dist.name, dist.metadata.version,))
+                found_dists.append((dist.name, dist.metadata['version'],))
             # otherwise we don't care what other distributions are found
 
         # Finally, test that we found all that we were looking for
-        self.assertListEqual(found_dists, dict(fake_dists).keys())
+        self.assertListEqual(sorted(found_dists), sorted(fake_dists))
 
 
 
