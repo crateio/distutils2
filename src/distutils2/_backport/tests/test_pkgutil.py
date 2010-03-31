@@ -94,7 +94,7 @@ class TestPkgUtilFunctions(unittest2.TestCase):
         self.assertListEqual(sorted(found_dists), sorted(fake_dists))
 
     def test_get_distribution(self):
-        """Lookup a distribution by name."""
+        """Test for looking up a distribution by name."""
         # Test the lookup of the towel-stuff distribution
         name = 'towel-stuff' # Note: This is different from the directory name
 
@@ -108,6 +108,9 @@ class TestPkgUtilFunctions(unittest2.TestCase):
 
         # Verify that an unknown distribution returns None
         self.assertEqual(None, get_distribution('bogus'))
+
+        # Verify partial name matching doesn't work
+        self.assertEqual(None, get_distribution('towel'))
 
 
 def test_suite():

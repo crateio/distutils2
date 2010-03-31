@@ -730,20 +730,12 @@ def get_distribution(name):
     value is expected. If the directory is not found, ``None`` is returned.
 
     :rtype: :class:`Distribution` or None"""
-    name = _normalize_dist_name(name)
-    dist = None
-    for path in sys.path:
-        realpath = os.path.realpath(path)
-        if not os.path.isdir(realpath):
-            continue
-        for dir in os.listdir(realpath):
-            dir_path = os.path.join(realpath, dir)
-            if dir.startswith(name) and os.path.isdir(dir_path):
-                dist = Distribution(dir_path)
-                break
-        if dist is not None:
+    found = None
+    for dist in get_distributions():
+        if dist.name == name:
+            found = dist
             break
-    return dist
+    return found
 
 def get_file_users(path):
     """
