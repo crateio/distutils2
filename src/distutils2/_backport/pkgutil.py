@@ -683,6 +683,7 @@ def distinfo_dirname(name, version):
     :returns: directory name
     :rtype: string"""
     file_extension = '.dist-info'
+    name = name.replace('-', '_')
     return '-'.join([name, version]) + file_extension
 
 def get_distributions():

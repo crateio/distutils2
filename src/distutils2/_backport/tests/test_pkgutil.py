@@ -29,6 +29,16 @@ class TestPkgUtil(unittest2.TestCase):
         dirname = distinfo_dirname(name, version)
         self.assertEqual(dirname, standard_dirname)
 
+        # Test for another except this time with a '-' in the name, which
+        #   needs to be transformed during the name lookup
+        name = 'python-ldap'
+        version = '2.5'
+        standard_dirname = 'python_ldap-2.5.dist-info'
+
+        from distutils2._backport.pkgutil import distinfo_dirname
+        dirname = distinfo_dirname(name, version)
+        self.assertEqual(dirname, standard_dirname)
+
 
 def test_suite():
     return unittest2.makeSuite(TestPkgUtil)
