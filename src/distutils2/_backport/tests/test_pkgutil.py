@@ -41,6 +41,34 @@ class TestPkgUtil(unittest2.TestCase):
             dirname = distinfo_dirname(name, version)
             self.assertEqual(dirname, standard_dirname)
 
+    def test_get_distributions(self):
+        """Lookup all distributions found in the ``sys.path``."""
+        # This test could potentially pick up other installed distributions
+        fake_dists = [('grammar', '1.0a4'), ('choxie', '2009'),
+            ('towel-stuff', '0.1')]
+        found_dists = []
+
+        # Setup the path environment with our fake distributions
+        current_path = os.path.abspath(os.path.dirname(__file__))
+        sys.path[0:0] = [os.path.join(current_path, 'fake_dists')]
+
+        # Import the function in question
+        from distutils2._backport.pkgutil import get_distributions, Distribution
+
+        # Verify the fake dists have been found.
+        dists = [ dist for dist in get_distributions() ]
+        for dist in dists:
+            if not isinstance(dist, Distribution):
+                self.fail("item received was not a Distribution instance: "
+                    "%s" % type(dist))
+            if dist.name in dict(fake_dists).keys():
+                found_dists.append((dist.name, dist.metadata.version,))
+            # otherwise we don't care what other distributions are found
+
+        # Finally, test that we found all that we were looking for
+        self.assertListEqual(found_dists, dict(fake_dists).keys())
+
+
 
 def test_suite():
     return unittest2.makeSuite(TestPkgUtil)

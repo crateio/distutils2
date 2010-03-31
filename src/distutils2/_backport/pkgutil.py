@@ -654,8 +654,10 @@ class Distribution(object):
 
     def get_distinfo_files(self, local=False):
         """
-        Iterates over the RECORD entries and returns paths for each line if the path is pointing to a file located in the ``.dist-info`` directory or one of its subdirectories.
-        
+        Iterates over the RECORD entries and returns paths for each line if the 
+        path is pointing to a file located in the ``.dist-info`` directory or 
+        one of its subdirectories.
+
         :parameter local: If *local* is ``True``, each returned path is
                           transformed into a local absolute path. Otherwise the
                           raw value from RECORD is returned.
@@ -698,7 +700,14 @@ def get_distributions():
     them.
 
     :rtype: iterator of :class:`Distribution` instances"""
-    pass
+    for path in sys.path:
+        realpath = os.path.realpath(path)
+        if not os.path.isdir(realpath):
+            continue
+        for dir in os.listdir(realpath):
+            if dir.endswith('.dist-info'):
+                dist = Distribution(os.path.join(realpath, dir))
+                yield dist
 
 def get_distribution(name):
     """
