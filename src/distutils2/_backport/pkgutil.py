@@ -8,11 +8,14 @@ import sys
 import imp
 import os.path
 from types import ModuleType
+from distutils2.metadata import DistributionMetadata
 
 __all__ = [
     'get_importer', 'iter_importers', 'get_loader', 'find_loader',
     'walk_packages', 'iter_modules',
     'ImpImporter', 'ImpLoader', 'read_code', 'extend_path',
+    'Distribution', 'distinfo_dirname', 'get_distributions',
+    'get_distribution', 'get_file_users', 
 ]
 
 def read_code(stream):
@@ -581,3 +584,135 @@ def get_data(package, resource):
     parts.insert(0, os.path.dirname(mod.__file__))
     resource_name = os.path.join(*parts)
     return loader.get_data(resource_name)
+
+##########################
+# PEP 376 Implementation #
+##########################
+
+class Distribution(object):
+    """Created with the *path* of the ``.dist-info`` directory provided to the
+    constructor. It reads the metadata contained in METADATA when it is
+    instantiated."""
+
+    # Attribute documenting for Sphinx style documentation, see for more info:
+    #   http://sphinx.pocoo.org/ext/autodoc.html#dir-autoattribute
+    name = ''
+    """The name of the distribution."""
+    metadata = None
+    """A :class:`distutils2.metadata.DistributionMetadata` instance loaded with 
+    the distribution's METADATA file."""
+    requested = False
+    """A boolean that indicates whether the REQUESTED metadata file is present
+    (in other words, whether the package was installed by user request)."""
+
+    def __init__(self, path):
+        self.path = path
+
+    def get_installed_files(self, local=False):
+        """
+        Iterates over the RECORD entries and returns a tuple (path, md5, size)
+        for each line. If *local* is ``True``, the returned path is transformed
+        into a local absolute path. Otherwise the raw value from RECORD is
+        returned.
+
+        A local absolute path is an absolute path in which occurrences of
+        ``'/'`` have been replaced by the system separator given by ``os.sep``.
+
+        :parameter local: flag to say if the path should be returned a local
+                          absolute path
+        :type local: boolean
+        :returns: iterator of (path, md5, size)
+        """
+        pass
+
+    def uses(self, path):
+        """
+        Returns ``True`` if path is listed in RECORD. *path* can be a local 
+        absolute path or a relative ``'/'``-separated path.
+
+        :rtype: boolean
+        """
+        pass
+
+    def get_distinfo_file(self, path, binary=False):
+        """
+        Returns a file located under the ``.dist-info`` directory. Returns a
+        ``file`` instance for the file pointed by *path*.
+
+        :parameter path: a ``'/'``-separated path relative to the ``.dist-info``
+                         directory or an absolute path; If *path* is an absolute 
+                         path and doesn't start with the ``.dist-info``
+                         directory path, a :class:`DistutilsError` is raised
+        :type path: string
+        :parameter binary: If *binary* is ``True``, opens the file in read-only
+                           binary mode (rb), otherwise opens it in read-only
+                           mode (r).
+        :rtype: file object
+        """
+        pass
+
+    def get_distinfo_files(self, local=False):
+        """
+        Iterates over the RECORD entries and returns paths for each line if the path is pointing to a file located in the ``.dist-info`` directory or one of its subdirectories.
+        
+        :parameter local: If *local* is ``True``, each returned path is
+                          transformed into a local absolute path. Otherwise the
+                          raw value from RECORD is returned.
+        :type local: boolean
+        :returns: iterator of paths
+        """
+        pass
+
+
+def distinfo_dirname(name, version):
+    """
+    The *name* and *version* parameters are converted into their
+    filename-escaped form, i.e. any ``'-'`` characters are replaced with ``'_'``
+    other than the one in ``'dist-info'`` and the one separating the name from 
+    the version number.
+
+    :parameter name: is converted to a standard distribution name by replacing
+                     any runs of non- alphanumeric characters with a single
+                     ``'-'``.
+    :type name: string
+    :parameter version: is converted to a standard version string. Spaces become
+                        dots, and all other non-alphanumeric characters (except
+                        dots) become dashes, with runs of multiple dashes
+                        condensed to a single dash.
+    :type version: string
+    :returns: directory name
+    :rtype: string"""
+    pass
+
+def get_distributions():
+    """
+    Provides an iterator that looks for ``.dist-info`` directories in
+    ``sys.path`` and returns :class:`Distribution` instances for each one of
+    them.
+
+    :rtype: iterator of :class:`Distribution` instances"""
+    pass
+
+def get_distribution(name):
+    """
+    Scans all elements in ``sys.path`` and looks for all directories ending with
+    ``.dist-info``. Returns a :class:`Distribution` corresponding to the 
+    ``.dist-info`` directory that contains the METADATA that matches *name* for
+    the *name* metadata.
+
+    This function only returns the first result founded, as no more than one
+    value is expected. If the directory is not found, ``None`` is returned.
+
+    :rtype: :class:`Distribution` or None"""
+    pass
+
+def get_file_users(path):
+    """
+    Iterates over all distributions to find out which distributions uses
+    *path*.
+
+    :parameter path: can be a local absolute path or a relative
+                     ``'/'``-separated path.
+    :type path: string
+    :rtype: iterator of :class:`Distribution` instances"""
+    pass
