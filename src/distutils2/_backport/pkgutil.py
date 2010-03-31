@@ -7,6 +7,7 @@ import os
 import sys
 import imp
 import os.path
+from csv import reader as csv_reader
 from types import ModuleType
 from distutils2.metadata import DistributionMetadata
 from distutils2.version import suggest_normalized_version
@@ -627,7 +628,11 @@ class Distribution(object):
         :type local: boolean
         :returns: iterator of (path, md5, size)
         """
-        pass
+        RECORD = os.path.join(self.path, 'RECORD')
+        record_reader = csv_reader(open(RECORD, 'rb'), delimiter=',')
+        for row in record_reader:
+            value = row[:] + [ None for i in xrange(len(row), 3) ]
+            yield value
 
     def uses(self, path):
         """

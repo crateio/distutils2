@@ -66,9 +66,24 @@ class TestPkgUtilDistribution(unittest2.TestCase):
             record_writer.writerow(record_pieces(
                 os.path.join(distinfo_location, file)))
         record_writer.writerow([record_file])
+        del record_writer
+        record_reader = csv.reader(open(record_file, 'rb'))
+        record_data = []
+        for row in record_reader:
+            path, md5, size = row[:] + [ None for i in xrange(len(row), 3) ]
+            record_data.append([path, (md5, size,)])
+        record_data = dict(record_data)
 
-        # Test choxie's installed files
-        
+        # Test the distribution's installed files
+        from distutils2._backport.pkgutil import Distribution
+        dist = Distribution(distinfo_location)
+        for path, md5, size in dist.get_installed_files():
+            self.assertTrue(path in record_data.keys())
+            self.assertEqual(md5, record_data[path][0])
+            self.assertEqual(size, record_data[path][1])
+
+        # Clear the RECORD file
+        open(record_file, 'w').close()
 
 
 class TestPkgUtilFunctions(unittest2.TestCase):
