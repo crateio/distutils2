@@ -26,7 +26,7 @@ class TestPkgUtilDistribution(unittest2.TestCase):
 
         here = os.path.abspath(os.path.dirname(__file__))
         name = 'choxie'
-        version = '2009'
+        version = '2.0.0.9'
         dist_path = os.path.join(here, 'fake_dists',
             distinfo_dirname(name, version))
         dist = Distribution(dist_path)
