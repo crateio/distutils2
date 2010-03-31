@@ -3,11 +3,15 @@
 import unittest2
 import sys
 import os
+import csv
+import hashlib
 
 from test.test_support import run_unittest, TESTFN
 
 import distutils2._backport.pkgutil
 
+# TODO Add a test for getting a distribution that is provided by another
+#   distribution.
 
 class TestPkgUtilDistribution(unittest2.TestCase):
     """Tests the pkgutil.Distribution class"""
@@ -30,6 +34,41 @@ class TestPkgUtilDistribution(unittest2.TestCase):
         self.assertTrue(isinstance(dist.metadata, DistributionMetadata))
         self.assertEqual(dist.metadata['version'], version)
         self.assertTrue(isinstance(dist.requested, type(bool())))
+
+    def test_installed_files(self):
+        """Test the iteration of installed files."""
+        name = 'choxie'
+        version = '2.0.0.9'
+        # We need to setup the RECORD file for this test case
+        fake_dists_path = os.path.join(os.path.dirname(__file__), 'fake_dists')
+        from distutils2._backport.pkgutil import distinfo_dirname
+        record_file = os.path.join(fake_dists_path,
+            distinfo_dirname(name, version), 'RECORD')
+        record_writer = csv.writer(open(record_file, 'w'), delimiter=',',
+            quoting=csv.QUOTE_NONE)
+        distinfo_location = os.path.join(fake_dists_path,
+            distinfo_dirname(name, version))
+        dist_location = distinfo_location.replace('.dist-info', '')
+
+        def get_hexdigest(file):
+            md5_hash = hashlib.md5()
+            md5_hash.update(open(file).read())
+            return md5_hash.hexdigest()
+        def record_pieces(file):
+            digest = get_hexdigest(file)
+            size = os.path.getsize(file)
+            return [file, digest, size]
+
+        for path, dirs, files in os.walk(dist_location):
+            for f in files:
+                record_writer.writerow(record_pieces(os.path.join(path, f)))
+        for file in ['INSTALLER', 'METADATA', 'REQUESTED']:
+            record_writer.writerow(record_pieces(
+                os.path.join(distinfo_location, file)))
+        record_writer.writerow([record_file])
+
+        # Test choxie's installed files
+        
 
 
 class TestPkgUtilFunctions(unittest2.TestCase):
@@ -111,6 +150,10 @@ class TestPkgUtilFunctions(unittest2.TestCase):
 
         # Verify partial name matching doesn't work
         self.assertEqual(None, get_distribution('towel'))
+
+    def test_get_file_users(path):
+        """Test to determine which distributions use a file."""
+        pass
 
 
 def test_suite():
