@@ -12,12 +12,6 @@ import distutils2._backport.pkgutil
 class TestPkgUtilDistribution(unittest2.TestCase):
     """Tests the pkgutil.Distribution class"""
 
-    # def setUp(self):
-    #     super(TestPkgUtil, self).setUp()
-
-    # def tearDown(self):
-    #     super(TestPkgUtil, self).tearDown()
-
     def test_instantiation(self):
         """Test the Distribution class's instantiation provides us with usable
         attributes."""
@@ -41,11 +35,16 @@ class TestPkgUtilDistribution(unittest2.TestCase):
 class TestPkgUtilFunctions(unittest2.TestCase):
     """Tests for the new functionality added in PEP 376."""
 
-    # def setUp(self):
-    #     super(TestPkgUtil, self).setUp()
+    def setUp(self):
+        super(TestPkgUtilFunctions, self).setUp()
+        # Setup the path environment with our fake distributions
+        current_path = os.path.abspath(os.path.dirname(__file__))
+        self.sys_path = sys.path[:]
+        sys.path[0:0] = [os.path.join(current_path, 'fake_dists')]
 
-    # def tearDown(self):
-    #     super(TestPkgUtil, self).tearDown()
+    def tearDown(self):
+        super(TestPkgUtilFunctions, self).tearDown()
+        sys.path[:] = self.sys_path
 
     def test_distinfo_dirname(self):
         """Given a name and a version, we expect the distinfo_dirname function
@@ -78,10 +77,6 @@ class TestPkgUtilFunctions(unittest2.TestCase):
             ('towel-stuff', '0.1')]
         found_dists = []
 
-        # Setup the path environment with our fake distributions
-        current_path = os.path.abspath(os.path.dirname(__file__))
-        sys.path[0:0] = [os.path.join(current_path, 'fake_dists')]
-
         # Import the function in question
         from distutils2._backport.pkgutil import get_distributions, Distribution
 
@@ -98,6 +93,21 @@ class TestPkgUtilFunctions(unittest2.TestCase):
         # Finally, test that we found all that we were looking for
         self.assertListEqual(sorted(found_dists), sorted(fake_dists))
 
+    def test_get_distribution(self):
+        """Lookup a distribution by name."""
+        # Test the lookup of the towel-stuff distribution
+        name = 'towel-stuff' # Note: This is different from the directory name
+
+        # Import the function in question
+        from distutils2._backport.pkgutil import get_distribution, Distribution
+
+        # Lookup the distribution
+        dist = get_distribution(name)
+        self.assertTrue(isinstance(dist, Distribution))
+        self.assertEqual(dist.name, name)
+
+        # Verify that an unknown distribution returns None
+        self.assertEqual(None, get_distribution('bogus'))
 
 
 def test_suite():

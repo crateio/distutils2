@@ -670,6 +670,11 @@ class Distribution(object):
         pass
 
 
+def _normalize_dist_name(name):
+    """Returns a normalized name from the given *name*.
+    :rtype: string"""
+    return name.replace('-', '_')
+
 def distinfo_dirname(name, version):
     """
     The *name* and *version* parameters are converted into their
@@ -689,7 +694,7 @@ def distinfo_dirname(name, version):
     :returns: directory name
     :rtype: string"""
     file_extension = '.dist-info'
-    name = name.replace('-', '_')
+    name = _normalize_dist_name(name)
     normalized_version = suggest_normalized_version(version)
     # Because this is a lookup procedure, something will be returned even if
     #   it is a version that cannot be normalized
@@ -725,7 +730,20 @@ def get_distribution(name):
     value is expected. If the directory is not found, ``None`` is returned.
 
     :rtype: :class:`Distribution` or None"""
-    pass
+    name = _normalize_dist_name(name)
+    dist = None
+    for path in sys.path:
+        realpath = os.path.realpath(path)
+        if not os.path.isdir(realpath):
+            continue
+        for dir in os.listdir(realpath):
+            dir_path = os.path.join(realpath, dir)
+            if dir.startswith(name) and os.path.isdir(dir_path):
+                dist = Distribution(dir_path)
+                break
+        if dist is not None:
+            break
+    return dist
 
 def get_file_users(path):
     """
