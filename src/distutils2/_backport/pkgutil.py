@@ -608,6 +608,9 @@ class Distribution(object):
 
     def __init__(self, path):
         self.path = path
+        metadata_path = os.path.join(path, 'METADATA')
+        self.metadata = DistributionMetadata(path=metadata_path)
+        self.name = self.metadata['name']
 
     def get_installed_files(self, local=False):
         """
