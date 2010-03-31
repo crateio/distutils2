@@ -17,8 +17,17 @@ class TestPkgUtil(unittest2.TestCase):
     # def tearDown(self):
     #     super(TestPkgUtil, self).tearDown()
 
-    def test_something(self):
-        pass
+    def test_distinfo_dirname(self):
+        """Given a name and a version, we expect the distinfo_dirname function
+        to return a standard distribution information directory name."""
+        # Test for a very simple single word name and decimal version number
+        name = 'docutils'
+        version = '0.5'
+        standard_dirname = 'docutils-0.5.dist-info'
+
+        from distutils2._backport.pkgutil import distinfo_dirname
+        dirname = distinfo_dirname(name, version)
+        self.assertEqual(dirname, standard_dirname)
 
 
 def test_suite():
