@@ -9,6 +9,7 @@ import imp
 import os.path
 from types import ModuleType
 from distutils2.metadata import DistributionMetadata
+from distutils2.version import suggest_normalized_version
 
 __all__ = [
     'get_importer', 'iter_importers', 'get_loader', 'find_loader',
@@ -684,7 +685,11 @@ def distinfo_dirname(name, version):
     :rtype: string"""
     file_extension = '.dist-info'
     name = name.replace('-', '_')
-    return '-'.join([name, version]) + file_extension
+    normalized_version = suggest_normalized_version(version)
+    if normalized_version is None:
+        # Unable to achieve normality?
+        normalized_version = version
+    return '-'.join([name, normalized_version]) + file_extension
 
 def get_distributions():
     """

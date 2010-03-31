@@ -20,24 +20,26 @@ class TestPkgUtil(unittest2.TestCase):
     def test_distinfo_dirname(self):
         """Given a name and a version, we expect the distinfo_dirname function
         to return a standard distribution information directory name."""
-        # Test for a very simple single word name and decimal version number
-        name = 'docutils'
-        version = '0.5'
-        standard_dirname = 'docutils-0.5.dist-info'
 
+        items = [ # (name, version, standard_dirname)
+            # Test for a very simple single word name and decimal version number
+            ('docutils', '0.5', 'docutils-0.5.dist-info'),
+            # Test for another except this time with a '-' in the name, which
+            #   needs to be transformed during the name lookup
+            ('python-ldap', '2.5', 'python_ldap-2.5.dist-info'),
+            # Test for both '-' in the name and a funky version number
+            # FIXME The end result, as defined in PEP 376, does not match what
+            #   would be acceptable by PEP 386.
+            ('python-ldap', '2.5 a---5', 'python_ldap-2.5.a_5.dist-info'),
+            ]
+
+        # Import the function in question
         from distutils2._backport.pkgutil import distinfo_dirname
-        dirname = distinfo_dirname(name, version)
-        self.assertEqual(dirname, standard_dirname)
 
-        # Test for another except this time with a '-' in the name, which
-        #   needs to be transformed during the name lookup
-        name = 'python-ldap'
-        version = '2.5'
-        standard_dirname = 'python_ldap-2.5.dist-info'
-
-        from distutils2._backport.pkgutil import distinfo_dirname
-        dirname = distinfo_dirname(name, version)
-        self.assertEqual(dirname, standard_dirname)
+        # Loop through the items to validate the results
+        for name, version, standard_dirname in items:
+            dirname = distinfo_dirname(name, version)
+            self.assertEqual(dirname, standard_dirname)
 
 
 def test_suite():
