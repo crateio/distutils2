@@ -16,6 +16,55 @@ import distutils2._backport.pkgutil
 class TestPkgUtilDistribution(unittest2.TestCase):
     """Tests the pkgutil.Distribution class"""
 
+    def setUp(self):
+        super(TestPkgUtilDistribution, self).setUp()
+
+        self.fake_dists_path = os.path.abspath(
+            os.path.join(os.path.dirname(__file__), 'fake_dists'))
+        self.distinfo_dirs = [ os.path.join(self.fake_dists_path, dir)
+            for dir in os.listdir(self.fake_dists_path)
+            if dir.endswith('.dist-info')
+            ]
+
+        def get_hexdigest(file):
+            md5_hash = hashlib.md5()
+            md5_hash.update(open(file).read())
+            return md5_hash.hexdigest()
+        def record_pieces(file):
+            digest = get_hexdigest(file)
+            size = os.path.getsize(file)
+            return [file, digest, size]
+
+        self.records = {}
+        for distinfo_dir in self.distinfo_dirs:
+            # Setup the RECORD file for this dist
+            record_file = os.path.join(distinfo_dir, 'RECORD')
+            record_writer = csv.writer(open(record_file, 'w'), delimiter=',',
+                quoting=csv.QUOTE_NONE)
+            dist_location = distinfo_dir.replace('.dist-info', '')
+
+            for path, dirs, files in os.walk(dist_location):
+                for f in files:
+                    record_writer.writerow(record_pieces(os.path.join(path, f)))
+            for file in ['INSTALLER', 'METADATA', 'REQUESTED']:
+                record_writer.writerow(record_pieces(
+                    os.path.join(distinfo_dir, file)))
+            record_writer.writerow([record_file])
+            del record_writer # causes the RECORD to close
+            record_reader = csv.reader(open(record_file, 'rb'))
+            record_data = []
+            for row in record_reader:
+                path, md5, size = row[:] + [ None for i in xrange(len(row), 3) ]
+                record_data.append([path, (md5, size,)])
+            self.records[distinfo_dir] = dict(record_data)
+
+    def tearDown(self):
+        self.records = None
+        for distinfo_dir in self.distinfo_dirs:
+            record_file = os.path.join(distinfo_dir, 'RECORD')
+            open(record_file, 'w').close()
+        super(TestPkgUtilDistribution, self).tearDown()
+
     def test_instantiation(self):
         """Test the Distribution class's instantiation provides us with usable
         attributes."""
@@ -37,108 +86,33 @@ class TestPkgUtilDistribution(unittest2.TestCase):
 
     def test_installed_files(self):
         """Test the iteration of installed files."""
-        name = 'choxie'
-        version = '2.0.0.9'
-        # We need to setup the RECORD file for this test case
-        fake_dists_path = os.path.join(os.path.dirname(__file__), 'fake_dists')
-        from distutils2._backport.pkgutil import distinfo_dirname
-        record_file = os.path.join(fake_dists_path,
-            distinfo_dirname(name, version), 'RECORD')
-        record_writer = csv.writer(open(record_file, 'w'), delimiter=',',
-            quoting=csv.QUOTE_NONE)
-        distinfo_location = os.path.join(fake_dists_path,
-            distinfo_dirname(name, version))
-        dist_location = distinfo_location.replace('.dist-info', '')
-
-        def get_hexdigest(file):
-            md5_hash = hashlib.md5()
-            md5_hash.update(open(file).read())
-            return md5_hash.hexdigest()
-        def record_pieces(file):
-            digest = get_hexdigest(file)
-            size = os.path.getsize(file)
-            return [file, digest, size]
-
-        for path, dirs, files in os.walk(dist_location):
-            for f in files:
-                record_writer.writerow(record_pieces(os.path.join(path, f)))
-        for file in ['INSTALLER', 'METADATA', 'REQUESTED']:
-            record_writer.writerow(record_pieces(
-                os.path.join(distinfo_location, file)))
-        record_writer.writerow([record_file])
-        del record_writer
-        record_reader = csv.reader(open(record_file, 'rb'))
-        record_data = []
-        for row in record_reader:
-            path, md5, size = row[:] + [ None for i in xrange(len(row), 3) ]
-            record_data.append([path, (md5, size,)])
-        record_data = dict(record_data)
-
         # Test the distribution's installed files
         from distutils2._backport.pkgutil import Distribution
-        dist = Distribution(distinfo_location)
-        for path, md5, size in dist.get_installed_files():
-            self.assertTrue(path in record_data.keys())
-            self.assertEqual(md5, record_data[path][0])
-            self.assertEqual(size, record_data[path][1])
-
-        # Clear the RECORD file
-        open(record_file, 'w').close()
+        for distinfo_dir in self.distinfo_dirs:
+            dist = Distribution(distinfo_dir)
+            for path, md5, size in dist.get_installed_files():
+                record_data = self.records[dist.path]
+                self.assertTrue(path in record_data.keys())
+                self.assertEqual(md5, record_data[path][0])
+                self.assertEqual(size, record_data[path][1])
 
     def test_uses(self):
         """Test to determine if a distribution uses a specified file."""
-        name = 'grammar'
-        version = '1.0a4'
-        # We need to setup the RECORD file for this test case
-        fake_dists_path = os.path.join(os.path.dirname(__file__), 'fake_dists')
-        from distutils2._backport.pkgutil import distinfo_dirname
-        record_file = os.path.join(fake_dists_path,
-            distinfo_dirname(name, version), 'RECORD')
-        record_writer = csv.writer(open(record_file, 'w'), delimiter=',',
-            quoting=csv.QUOTE_NONE)
-        distinfo_location = os.path.join(fake_dists_path,
-            distinfo_dirname(name, version))
-        dist_location = distinfo_location.replace('.dist-info', '')
-
-        def get_hexdigest(file):
-            md5_hash = hashlib.md5()
-            md5_hash.update(open(file).read())
-            return md5_hash.hexdigest()
-        def record_pieces(file):
-            digest = get_hexdigest(file)
-            size = os.path.getsize(file)
-            return [file, digest, size]
-
-        for path, dirs, files in os.walk(dist_location):
-            for f in files:
-                record_writer.writerow(record_pieces(os.path.join(path, f)))
-        for file in ['INSTALLER', 'METADATA', 'REQUESTED']:
-            record_writer.writerow(record_pieces(
-                os.path.join(distinfo_location, file)))
-        record_writer.writerow([record_file])
-        del record_writer
-        record_reader = csv.reader(open(record_file, 'rb'))
-        record_data = []
-        for row in record_reader:
-            path, md5, size = row[:] + [ None for i in xrange(len(row), 3) ]
-            record_data.append([path, (md5, size,)])
-        record_data = dict(record_data)
-
         # Criteria to test against
-        true_path = [fake_dists_path, 'grammar-1.0a4', 'grammar', 'utils.py']
+        distinfo_name = 'grammar-1.0a4'
+        distinfo_dir = os.path.join(self.fake_dists_path,
+            distinfo_name + '.dist-info')
+        true_path = [self.fake_dists_path, distinfo_name, 'grammar', 'utils.py']
         true_path = os.path.join(*true_path)
-        false_path = [fake_dists_path, 'towel_stuff-0.1', 'towel_stuff',
+        false_path = [self.fake_dists_path, 'towel_stuff-0.1', 'towel_stuff',
             '__init__.py']
         false_path = os.path.join(*false_path)
 
         # Test if the distribution uses the file in question
         from distutils2._backport.pkgutil import Distribution
-        dist = Distribution(distinfo_location)
+        dist = Distribution(distinfo_dir)
         self.assertTrue(dist.uses(true_path))
         self.assertFalse(dist.uses(false_path))
-
-        # Clear the RECORD file
-        open(record_file, 'w').close()
 
 
 class TestPkgUtilFunctions(unittest2.TestCase):
