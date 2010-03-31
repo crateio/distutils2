@@ -691,6 +691,8 @@ def distinfo_dirname(name, version):
     file_extension = '.dist-info'
     name = name.replace('-', '_')
     normalized_version = suggest_normalized_version(version)
+    # Because this is a lookup procedure, something will be returned even if
+    #   it is a version that cannot be normalized
     if normalized_version is None:
         # Unable to achieve normality?
         normalized_version = version
