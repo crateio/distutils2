@@ -85,6 +85,61 @@ class TestPkgUtilDistribution(unittest2.TestCase):
         # Clear the RECORD file
         open(record_file, 'w').close()
 
+    def test_uses(self):
+        """Test to determine if a distribution uses a specified file."""
+        name = 'grammar'
+        version = '1.0a4'
+        # We need to setup the RECORD file for this test case
+        fake_dists_path = os.path.join(os.path.dirname(__file__), 'fake_dists')
+        from distutils2._backport.pkgutil import distinfo_dirname
+        record_file = os.path.join(fake_dists_path,
+            distinfo_dirname(name, version), 'RECORD')
+        record_writer = csv.writer(open(record_file, 'w'), delimiter=',',
+            quoting=csv.QUOTE_NONE)
+        distinfo_location = os.path.join(fake_dists_path,
+            distinfo_dirname(name, version))
+        dist_location = distinfo_location.replace('.dist-info', '')
+
+        def get_hexdigest(file):
+            md5_hash = hashlib.md5()
+            md5_hash.update(open(file).read())
+            return md5_hash.hexdigest()
+        def record_pieces(file):
+            digest = get_hexdigest(file)
+            size = os.path.getsize(file)
+            return [file, digest, size]
+
+        for path, dirs, files in os.walk(dist_location):
+            for f in files:
+                record_writer.writerow(record_pieces(os.path.join(path, f)))
+        for file in ['INSTALLER', 'METADATA', 'REQUESTED']:
+            record_writer.writerow(record_pieces(
+                os.path.join(distinfo_location, file)))
+        record_writer.writerow([record_file])
+        del record_writer
+        record_reader = csv.reader(open(record_file, 'rb'))
+        record_data = []
+        for row in record_reader:
+            path, md5, size = row[:] + [ None for i in xrange(len(row), 3) ]
+            record_data.append([path, (md5, size,)])
+        record_data = dict(record_data)
+
+        # Criteria to test against
+        true_path = [fake_dists_path, 'grammar-1.0a4', 'grammar', 'utils.py']
+        true_path = os.path.join(*true_path)
+        false_path = [fake_dists_path, 'towel_stuff-0.1', 'towel_stuff',
+            '__init__.py']
+        false_path = os.path.join(*false_path)
+
+        # Test if the distribution uses the file in question
+        from distutils2._backport.pkgutil import Distribution
+        dist = Distribution(distinfo_location)
+        self.assertTrue(dist.uses(true_path))
+        self.assertFalse(dist.uses(false_path))
+
+        # Clear the RECORD file
+        open(record_file, 'w').close()
+
 
 class TestPkgUtilFunctions(unittest2.TestCase):
     """Tests for the new functionality added in PEP 376."""

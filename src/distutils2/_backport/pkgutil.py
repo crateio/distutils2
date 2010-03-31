@@ -631,8 +631,10 @@ class Distribution(object):
         RECORD = os.path.join(self.path, 'RECORD')
         record_reader = csv_reader(open(RECORD, 'rb'), delimiter=',')
         for row in record_reader:
-            value = row[:] + [ None for i in xrange(len(row), 3) ]
-            yield value
+            path, md5, size = row[:] + [ None for i in xrange(len(row), 3) ]
+            if local:
+                path = path.replace('/', os.sep)
+            yield path, md5, size
 
     def uses(self, path):
         """
@@ -641,7 +643,10 @@ class Distribution(object):
 
         :rtype: boolean
         """
-        pass
+        for p, md5, size in self.get_installed_files(local=True):
+            if path == p:
+                return True
+        return False
 
     def get_distinfo_file(self, path, binary=False):
         """
