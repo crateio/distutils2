@@ -173,9 +173,7 @@ class TestPkgUtilFunctions(unittest2.TestCase):
             #   needs to be transformed during the name lookup
             ('python-ldap', '2.5', 'python_ldap-2.5.dist-info'),
             # Test for both '-' in the name and a funky version number
-            # FIXME The end result, as defined in PEP 376, does not match what
-            #   would be acceptable by PEP 386.
-            ('python-ldap', '2.5 a---5', 'python_ldap-2.5.a_5.dist-info'),
+            ('python-ldap', '2.5 a---5', 'python_ldap-2.5 a---5.dist-info'),
             ]
 
         # Import the function in question
