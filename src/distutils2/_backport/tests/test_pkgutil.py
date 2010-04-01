@@ -31,9 +31,10 @@ class TestPkgUtilDistribution(unittest2.TestCase):
             md5_hash.update(open(file).read())
             return md5_hash.hexdigest()
         def record_pieces(file):
+            path = os.path.relpath(file, sys.prefix)
             digest = get_hexdigest(file)
             size = os.path.getsize(file)
-            return [file, digest, size]
+            return [path, digest, size]
 
         self.records = {}
         for distinfo_dir in self.distinfo_dirs:
@@ -103,10 +104,10 @@ class TestPkgUtilDistribution(unittest2.TestCase):
         distinfo_dir = os.path.join(self.fake_dists_path,
             distinfo_name + '.dist-info')
         true_path = [self.fake_dists_path, distinfo_name, 'grammar', 'utils.py']
-        true_path = os.path.join(*true_path)
+        true_path = os.path.relpath(os.path.join(*true_path), sys.prefix)
         false_path = [self.fake_dists_path, 'towel_stuff-0.1', 'towel_stuff',
             '__init__.py']
-        false_path = os.path.join(*false_path)
+        false_path = os.path.relpath(os.path.join(*false_path), sys.prefix)
 
         # Test if the distribution uses the file in question
         from distutils2._backport.pkgutil import Distribution
