@@ -9,6 +9,7 @@ import imp
 import os.path
 from csv import reader as csv_reader
 from types import ModuleType
+from distutils2.errors import DistutilsError
 from distutils2.metadata import DistributionMetadata
 from distutils2.version import suggest_normalized_version
 
@@ -591,6 +592,8 @@ def get_data(package, resource):
 # PEP 376 Implementation #
 ##########################
 
+DIST_FILES = ('INSTALLER', 'METADATA', 'RECORD', 'REQUESTED',)
+
 class Distribution(object):
     """Created with the *path* of the ``.dist-info`` directory provided to the
     constructor. It reads the metadata contained in METADATA when it is
@@ -663,7 +666,27 @@ class Distribution(object):
                            mode (r).
         :rtype: file object
         """
-        pass
+        open_flags = 'r'
+        if binary:
+            open_flags += 'b'
+
+        # Check if it is an absolute path
+        if path.find(os.sep) >= 0:
+            # it's an absolute path?
+            distinfo_dirname, path = path.split(os.sep)[-2:]
+            if distinfo_dirname != self.path.split(os.sep)[-1]:
+                raise DistutilsError("Requested dist-info file does not "
+                    "belong to the %s distribution. '%s' was requested." \
+                    % (self.name, os.sep.join([distinfo_dirname, path])))
+
+        # The file must be relative
+        if path not in DIST_FILES:
+            raise DistutilsError("Requested an invalid dist-info file: "
+                "%s" % path)
+
+        # Convert the relative path back to absolute
+        path = os.path.join(self.path, path)
+        return open(path, open_flags)
 
     def get_distinfo_files(self, local=False):
         """

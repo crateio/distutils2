@@ -114,6 +114,38 @@ class TestPkgUtilDistribution(unittest2.TestCase):
         self.assertTrue(dist.uses(true_path))
         self.assertFalse(dist.uses(false_path))
 
+    def test_get_distinfo_file(self):
+        """Test the retrieval of dist-info file objects."""
+        from distutils2._backport.pkgutil import Distribution
+        distinfo_name = 'choxie-2.0.0.9'
+        other_distinfo_name = 'grammar-1.0a4'
+        distinfo_dir = os.path.join(self.fake_dists_path,
+            distinfo_name + '.dist-info')
+        dist = Distribution(distinfo_dir)
+        # Test for known good file matches
+        distinfo_files = [
+            # Relative paths
+            'INSTALLER', 'METADATA',
+            # Absolute paths
+            os.path.join(distinfo_dir, 'RECORD'),
+            os.path.join(distinfo_dir, 'REQUESTED'),
+            ]
+
+        for distfile in distinfo_files:
+            value = dist.get_distinfo_file(distfile)
+            self.assertTrue(isinstance(value, file))
+            # Is it the correct file?
+            self.assertEqual(value.name, os.path.join(distinfo_dir, distfile))
+
+        from distutils2.errors import DistutilsError
+        # Test an absolute path that is part of another distributions dist-info
+        other_distinfo_file = os.path.join(self.fake_dists_path,
+            other_distinfo_name + '.dist-info', 'REQUESTED')
+        self.assertRaises(DistutilsError, dist.get_distinfo_file,
+            other_distinfo_file)
+        # Test for a file that does not exist and should not exist
+        self.assertRaises(DistutilsError, dist.get_distinfo_file, 'ENTRYPOINTS')
+
 
 class TestPkgUtilFunctions(unittest2.TestCase):
     """Tests for the new functionality added in PEP 376."""
