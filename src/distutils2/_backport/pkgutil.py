@@ -786,4 +786,6 @@ def get_file_users(path):
                      ``'/'``-separated path.
     :type path: string
     :rtype: iterator of :class:`Distribution` instances"""
-    pass
+    for dist in get_distributions():
+        if dist.uses(path):
+            yield dist

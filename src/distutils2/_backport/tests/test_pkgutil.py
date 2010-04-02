@@ -13,6 +13,8 @@ import distutils2._backport.pkgutil
 # TODO Add a test for getting a distribution that is provided by another
 #   distribution.
 
+# TODO Add a test for absolute pathed RECORD items (e.g. /etc/myapp/config.ini)
+
 class TestPkgUtilDistribution(unittest2.TestCase):
     """Tests the pkgutil.Distribution class"""
 
@@ -174,7 +176,8 @@ class TestPkgUtilFunctions(unittest2.TestCase):
         # Setup the path environment with our fake distributions
         current_path = os.path.abspath(os.path.dirname(__file__))
         self.sys_path = sys.path[:]
-        sys.path[0:0] = [os.path.join(current_path, 'fake_dists')]
+        self.fake_dists_path = os.path.join(current_path, 'fake_dists')
+        sys.path[0:0] = [self.fake_dists_path]
 
     def tearDown(self):
         super(TestPkgUtilFunctions, self).tearDown()
@@ -244,9 +247,15 @@ class TestPkgUtilFunctions(unittest2.TestCase):
         # Verify partial name matching doesn't work
         self.assertEqual(None, get_distribution('towel'))
 
-    def test_get_file_users(path):
-        """Test to determine which distributions use a file."""
-        pass
+    def test_get_file_users(self):
+        """Test the iteration of distributions that use a file."""
+        from distutils2._backport.pkgutil import get_file_users, Distribution
+        name = 'towel_stuff-0.1'
+        path = os.path.join(self.fake_dists_path, name,
+            'towel_stuff', '__init__.py')
+        for dist in get_file_users(path):
+            self.assertTrue(isinstance(dist, Distribution))
+            self.assertEqual(dist.name, name)
 
 
 def test_suite():
