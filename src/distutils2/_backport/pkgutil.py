@@ -616,6 +616,16 @@ class Distribution(object):
         self.metadata = DistributionMetadata(path=metadata_path)
         self.name = self.metadata['name']
 
+    def _get_records(self, local=False):
+        RECORD = os.path.join(self.path, 'RECORD')
+        record_reader = csv_reader(open(RECORD, 'rb'), delimiter=',')
+        for row in record_reader:
+            path, md5, size = row[:] + [ None for i in xrange(len(row), 3) ]
+            if local:
+                path = path.replace('/', os.sep)
+                path = os.path.join(sys.prefix, path)
+            yield path, md5, size
+
     def get_installed_files(self, local=False):
         """
         Iterates over the RECORD entries and returns a tuple (path, md5, size)
@@ -631,13 +641,8 @@ class Distribution(object):
         :type local: boolean
         :returns: iterator of (path, md5, size)
         """
-        RECORD = os.path.join(self.path, 'RECORD')
-        record_reader = csv_reader(open(RECORD, 'rb'), delimiter=',')
-        for row in record_reader:
-            path, md5, size = row[:] + [ None for i in xrange(len(row), 3) ]
-            if local:
-                path = path.replace('/', os.sep)
-            yield path, md5, size
+        return self._get_records(local)
+
 
     def uses(self, path):
         """
@@ -646,8 +651,9 @@ class Distribution(object):
 
         :rtype: boolean
         """
-        for p, md5, size in self.get_installed_files(local=True):
-            if path == p:
+        for p, md5, size in self._get_records():
+            local_absolute = os.path.join(sys.prefix, p)
+            if path == p or path == local_absolute:
                 return True
         return False
 
@@ -700,7 +706,8 @@ class Distribution(object):
         :type local: boolean
         :returns: iterator of paths
         """
-        pass
+        for path, md5, size in self._get_records(local):
+            yield path
 
 
 def _normalize_dist_name(name):

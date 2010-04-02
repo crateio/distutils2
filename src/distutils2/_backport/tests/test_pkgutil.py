@@ -50,8 +50,8 @@ class TestPkgUtilDistribution(unittest2.TestCase):
             for file in ['INSTALLER', 'METADATA', 'REQUESTED']:
                 record_writer.writerow(record_pieces(
                     os.path.join(distinfo_dir, file)))
-            record_writer.writerow([record_file])
-            del record_writer # causes the RECORD to close
+            record_writer.writerow([os.path.relpath(record_file, sys.prefix)])
+            del record_writer # causes the RECORD file to close
             record_reader = csv.reader(open(record_file, 'rb'))
             record_data = []
             for row in record_reader:
@@ -146,6 +146,24 @@ class TestPkgUtilDistribution(unittest2.TestCase):
             other_distinfo_file)
         # Test for a file that does not exist and should not exist
         self.assertRaises(DistutilsError, dist.get_distinfo_file, 'ENTRYPOINTS')
+
+    def test_get_distinfo_files(self):
+        """Test for the iteration of RECORD path entries."""
+        from distutils2._backport.pkgutil import Distribution
+        distinfo_name = 'towel_stuff-0.1'
+        distinfo_dir = os.path.join(self.fake_dists_path,
+            distinfo_name + '.dist-info')
+        dist = Distribution(distinfo_dir)
+        # Test for the iteration of the raw path
+        distinfo_record_paths = self.records[distinfo_dir].keys()
+        found = [ path for path in dist.get_distinfo_files() ]
+        self.assertEqual(sorted(found), sorted(distinfo_record_paths))
+        # Test for the iteration of local absolute paths
+        distinfo_record_paths = [ os.path.join(sys.prefix, path)
+            for path in self.records[distinfo_dir].keys()
+            ]
+        found = [ path for path in dist.get_distinfo_files(local=True) ]
+        self.assertEqual(sorted(found), sorted(distinfo_record_paths))
 
 
 class TestPkgUtilFunctions(unittest2.TestCase):
