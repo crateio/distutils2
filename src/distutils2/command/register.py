@@ -248,7 +248,7 @@ Your selection [default 1]: ''', log.INFO)
             data['requires_external'] = meta['Requires-External']
             data['provides_dist'] = meta['Provides-Dist']
             data['obsoletes_dist'] = meta['Obsoletes-Dist']
-            data['project_url'] = meta['Project-Url']
+            data['project_url'] = meta['Project-URL']
 
         elif meta.version == '1.1':
             data['provides'] = meta['Provides']
