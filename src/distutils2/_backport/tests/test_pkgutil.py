@@ -4,7 +4,10 @@ import unittest2
 import sys
 import os
 import csv
-import hashlib
+try:
+    from hashlib import md5
+except ImportError:
+    from md5 import md5
 
 from test.test_support import run_unittest, TESTFN
 
@@ -29,7 +32,7 @@ class TestPkgUtilDistribution(unittest2.TestCase):
             ]
 
         def get_hexdigest(file):
-            md5_hash = hashlib.md5()
+            md5_hash = md5()
             md5_hash.update(open(file).read())
             return md5_hash.hexdigest()
         def record_pieces(file):
@@ -57,8 +60,8 @@ class TestPkgUtilDistribution(unittest2.TestCase):
             record_reader = csv.reader(open(record_file, 'rb'))
             record_data = []
             for row in record_reader:
-                path, md5, size = row[:] + [ None for i in xrange(len(row), 3) ]
-                record_data.append([path, (md5, size,)])
+                path, md5_, size = row[:] + [ None for i in xrange(len(row), 3) ]
+                record_data.append([path, (md5_, size,)])
             self.records[distinfo_dir] = dict(record_data)
 
     def tearDown(self):
@@ -93,10 +96,10 @@ class TestPkgUtilDistribution(unittest2.TestCase):
         from distutils2._backport.pkgutil import Distribution
         for distinfo_dir in self.distinfo_dirs:
             dist = Distribution(distinfo_dir)
-            for path, md5, size in dist.get_installed_files():
+            for path, md5_, size in dist.get_installed_files():
                 record_data = self.records[dist.path]
                 self.assertTrue(path in record_data.keys())
-                self.assertEqual(md5, record_data[path][0])
+                self.assertEqual(md5_, record_data[path][0])
                 self.assertEqual(size, record_data[path][1])
 
     def test_uses(self):
