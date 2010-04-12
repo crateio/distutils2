@@ -198,7 +198,7 @@ class DistributionMetadataTestCase(unittest2.TestCase):
         metadata['Requires-dist'] = ['Foo (a)']
         missing, warnings = metadata.check()
         self.assertEquals(missing, ['Name', 'Home-page'])
-        self.assertEquals(len(warnings), 3)
+        self.assertEquals(len(warnings), 2)
 
 
 def test_suite():

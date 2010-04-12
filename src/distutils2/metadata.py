@@ -392,21 +392,24 @@ class DistributionMetadata(object):
         if self['Metadata-Version'] != '1.2':
             return missing, warnings
 
-        for field in _345_FIELDS:
-            value = self[field]
-            if value is None:
-                continue
 
-            if field in _PREDICATE_FIELDS:
-                for v in value:
-                    if not is_valid_predicate(v.split(';')[0]):
-                        warnings.append('"%s" is not a valid predicate' % v)
-            elif field in _VERSIONS_FIELDS:
-                if not is_valid_versions(value):
-                    warnings.append('"%s" is not a valid predicate' % value)
-            elif field in _VERSION_FIELDS:
-                if not is_valid_version(value):
-                    warnings.append('"%s" is not a valid version' % value)
+        def is_valid_predicates(value):
+            for v in value:
+                if not is_valid_predicate(v.split(';')[0]):
+                    return False
+            return True
+
+        for fields, controller in ((_PREDICATE_FIELDS, is_valid_predicates),
+                                  (_VERSIONS_FIELDS, is_valid_versions),
+                                  (_VERSION_FIELDS, is_valid_version)):
+            for field in fields:
+                value = self[field]
+                if value == 'UNKNOWN':
+                    continue
+
+                if not controller(value):
+                    warnings.append('Wrong value for "%s": %s' \
+                            % (field, value))
 
         return missing, warnings
 
