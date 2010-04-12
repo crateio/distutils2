@@ -224,37 +224,8 @@ Your selection [default 1]: ''', log.INFO)
     def build_post_data(self, action):
         # figure the data to send - the metadata plus some additional
         # information used by the package server
-        meta = self.distribution.metadata
-        data = {
-            ':action': action,
-            'metadata_version' : meta.version,
-            'name': meta['Name'],
-            'version': meta['Version'],
-            'summary': meta['Summary'],
-            'home_page': meta['Home-page'],
-            'author': meta['Author'],
-            'author_email': meta['Author-email'],
-            'license': meta['License'],
-            'description': meta['Description'],
-            'keywords': meta['Keywords'],
-            'platform': meta['Platform'],
-            'classifier': meta['Classifier'],
-            'download_url': meta['Download-URL'],
-        }
-
-        if meta.version == '1.2':
-            data['requires_dist'] = meta['Requires-Dist']
-            data['requires_python'] = meta['Requires-Python']
-            data['requires_external'] = meta['Requires-External']
-            data['provides_dist'] = meta['Provides-Dist']
-            data['obsoletes_dist'] = meta['Obsoletes-Dist']
-            data['project_url'] = meta['Project-URL']
-
-        elif meta.version == '1.1':
-            data['provides'] = meta['Provides']
-            data['requires'] = meta['Requires']
-            data['obsoletes'] = meta['Obsoletes']
-
+        data = self._metadata_to_pypy_dict()
+        data[':action'] = action
         return data
 
     def post_to_server(self, data, auth=None):

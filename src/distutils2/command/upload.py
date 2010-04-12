@@ -85,40 +85,16 @@ class upload(PyPIRCCommand):
         content = open(filename,'rb').read()
         meta = self.distribution.metadata
 
-        data = {
-            # action
-            ':action': 'file_upload',
-            'protcol_version': '1',
+        data = self._metadata_to_pypy_dict()
 
-            # identify release
-            'name': meta['Name'],
-            'version': meta['Version'],
+        # extra upload infos
+        data[':action'] = 'file_upload'
+        data['protcol_version'] = '1'
+        data['content'] = os.path.basename(filename), content
+        data['filetype'] = command
+        data['pyversion'] = pyversion
+        data['md5_digest'] = md5(content).hexdigest()
 
-            # file content
-            'content': (os.path.basename(filename),content),
-            'filetype': command,
-            'pyversion': pyversion,
-            'md5_digest': md5(content).hexdigest(),
-
-            # additional meta-data
-            # XXX Implement 1.1
-            'metadata_version' : '1.0',
-            'name': meta['Name'],
-            'version': meta['Version'],
-            'summary': meta['Summary'],
-            'home_page': meta['Home-page'],
-            'author': meta['Author'],
-            'author_email': meta['Author-email'],
-            'license': meta['License'],
-            'description': meta['Description'],
-            'keywords': meta['Keywords'],
-            'platform': meta['Platform'],
-            'classifiers': meta['Classifier'],
-            'download_url': meta['Download-URL'],
-            #'provides': meta['Provides'],
-            #'requires': meta['Requires'],
-            #'obsoletes': meta['Obsoletes'],
-            }
         comment = ''
         if command == 'bdist_rpm':
             dist, version, id = platform.dist()
