@@ -228,6 +228,7 @@ Your selection [default 1]: ''', log.INFO)
         data[':action'] = action
         return data
 
+    # XXX to be refactored with upload.upload_file
     def post_to_server(self, data, auth=None):
         ''' Post a query to the server, and return a string response.
         '''
