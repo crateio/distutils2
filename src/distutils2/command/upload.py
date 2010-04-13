@@ -127,12 +127,12 @@ class upload(PyPIRCCommand):
             content_dispo = 'Content-Disposition: form-data; name="%s"' % key
 
             if key in file_fields:
-                filename, content = values
-                filename = ';filename="%s"' % filename
+                filename_, content = values
+                filename_ = ';filename="%s"' % filename_
                 body.write(sep_boundary)
                 body.write("\n")
                 body.write(content_dispo)
-                body.write(filename)
+                body.write(filename_)
                 body.write("\n\n")
                 body.write(content)
             else:
