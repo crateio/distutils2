@@ -25,14 +25,14 @@ class check(Command):
         self.restructuredtext = 0
         self.metadata = 1
         self.strict = 0
-        self._warnings = 0
+        self._warnings = []
 
     def finalize_options(self):
         pass
 
     def warn(self, msg):
         """Counts the number of warnings that occurs."""
-        self._warnings += 1
+        self._warnings.append(msg)
         return Command.warn(self, msg)
 
     def run(self):
@@ -48,8 +48,9 @@ class check(Command):
 
         # let's raise an error in strict mode, if we have at least
         # one warning
-        if self.strict and self._warnings > 0:
-            raise DistutilsSetupError('Please correct your package.')
+        if self.strict and len(self._warnings) > 0:
+            msg = '\n'.join(self._warnings)
+            raise DistutilsSetupError(msg)
 
     def check_metadata(self):
         """Ensures that all required elements of meta-data are supplied.

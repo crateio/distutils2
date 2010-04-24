@@ -27,7 +27,7 @@ class CheckTestCase(support.LoggingSilencer,
         # by default, check is checking the metadata
         # should have some warnings
         cmd = self._run()
-        self.assert_(cmd._warnings > 0)
+        self.assert_(len(cmd._warnings) > 0)
 
         # now let's add the required fields
         # and run it again, to make sure we don't get
@@ -37,7 +37,7 @@ class CheckTestCase(support.LoggingSilencer,
                     'name': 'xxx', 'version': 'xxx'
                     }
         cmd = self._run(metadata)
-        self.assertEquals(cmd._warnings, 0)
+        self.assertEquals(len(cmd._warnings), 0)
 
         # now with the strict mode, we should
         # get an error if there are missing metadata
@@ -45,34 +45,35 @@ class CheckTestCase(support.LoggingSilencer,
 
         # and of course, no error when all metadata are present
         cmd = self._run(metadata, strict=1)
-        self.assertEquals(cmd._warnings, 0)
+        self.assertEquals(len(cmd._warnings), 0)
 
     def test_check_restructuredtext(self):
         if not _HAS_DOCUTILS: # won't test without docutils
             return
         # let's see if it detects broken rest in long_description
         broken_rest = 'title\n===\n\ntest'
-        pkg_info, dist = self.create_dist(long_description=broken_rest)
+        pkg_info, dist = self.create_dist(description=broken_rest)
         cmd = check(dist)
         cmd.check_restructuredtext()
-        self.assertEquals(cmd._warnings, 1)
+        self.assertEquals(len(cmd._warnings), 1)
 
         # let's see if we have an error with strict=1
-        metadata = {'url': 'xxx', 'author': 'xxx',
+        metadata = {'home_page': 'xxx', 'author': 'xxx',
                     'author_email': 'xxx',
                     'name': 'xxx', 'version': 'xxx',
-                    'long_description': broken_rest}
+                    'description': broken_rest}
+
         self.assertRaises(DistutilsSetupError, self._run, metadata,
                           **{'strict': 1, 'restructuredtext': 1})
 
         # and non-broken rest
-        metadata['long_description'] = 'title\n=====\n\ntest'
+        metadata['description'] = 'title\n=====\n\ntest'
         cmd = self._run(metadata, strict=1, restructuredtext=1)
-        self.assertEquals(cmd._warnings, 0)
+        self.assertEquals(len(cmd._warnings), 0)
 
     def test_check_all(self):
 
-        metadata = {'url': 'xxx', 'author': 'xxx'}
+        metadata = {'home_page': 'xxx', 'author': 'xxx'}
         self.assertRaises(DistutilsSetupError, self._run,
                           {}, **{'strict': 1,
                                  'restructuredtext': 1})

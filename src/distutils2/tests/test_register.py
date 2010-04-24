@@ -7,6 +7,12 @@ import getpass
 import urllib2
 import warnings
 
+try:
+    import docutils
+    DOCUTILS_SUPPORT = True
+except ImportError:
+    DOCUTILS_SUPPORT = False
+
 from distutils2.command import register as register_module
 from distutils2.command.register import register
 from distutils2.core import Distribution
@@ -186,6 +192,7 @@ class RegisterTestCase(PyPIRCCommandTestCase):
         self.assertEquals(headers['Content-length'], '290')
         self.assertTrue('tarek' in req.data)
 
+    @unittest2.skipUnless(DOCUTILS_SUPPORT, 'needs docutils')
     def test_strict(self):
         # testing the script option
         # when on, the register command stops if
@@ -198,26 +205,20 @@ class RegisterTestCase(PyPIRCCommandTestCase):
         cmd.strict = 1
         self.assertRaises(DistutilsSetupError, cmd.run)
 
-        # we don't test the reSt feature if docutils
-        # is not installed
-        try:
-            import docutils
-        except ImportError:
-            return
-
         # metadata are OK but long_description is broken
-        metadata = {'url': 'xxx', 'author': 'xxx',
+        metadata = {'home_page': 'xxx', 'author': 'xxx',
                     'author_email': u'éxéxé',
                     'name': 'xxx', 'version': 'xxx',
-                    'long_description': 'title\n==\n\ntext'}
+                    'description': 'title\n==\n\ntext'}
 
         cmd = self._get_cmd(metadata)
         cmd.ensure_finalized()
         cmd.strict = 1
+
         self.assertRaises(DistutilsSetupError, cmd.run)
 
         # now something that works
-        metadata['long_description'] = 'title\n=====\n\ntext'
+        metadata['description'] = 'title\n=====\n\ntext'
         cmd = self._get_cmd(metadata)
         cmd.ensure_finalized()
         cmd.strict = 1
