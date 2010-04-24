@@ -65,7 +65,7 @@ class sdist_hg(sdist):
 
 setup_kwargs = {}
 if sys.version < '2.6':
-    setup_kwargs['scripts'] = 'distutils2/mkpkg.py'
+    setup_kwargs['scripts'] = ['distutils2/mkpkg.py']
 
 setup (name="Distutils2",
        version=VERSION,
