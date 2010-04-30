@@ -8,11 +8,10 @@ __revision__ = "$Id: util.py 77761 2010-01-26 22:46:15Z tarek.ziade $"
 
 import sys, os, string, re
 
-from distutils2.errors import DistutilsPlatformError
+from distutils2.errors import (DistutilsPlatformError, DistutilsFileError,
+                               DistutilsByteCompileError)
 from distutils2.spawn import spawn, find_executable
 from distutils2 import log
-from distutils2.errors import DistutilsByteCompileError
-
 from distutils2._backport import sysconfig as _sysconfig
 
 _PLATFORM = None

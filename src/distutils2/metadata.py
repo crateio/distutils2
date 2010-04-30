@@ -77,8 +77,8 @@ _345_FIELDS = ('Metadata-Version',  'Name', 'Version', 'Platform',
                'Requires-Python', 'Requires-External')
 
 _345_MARKERS = ('Provides-Dist', 'Requires-Dist', 'Requires-Python',
-        'Obsoletes-Dist', 'Requires-External', 'Maintainer',
-        'Maintainer-email')
+                'Obsoletes-Dist', 'Requires-External', 'Maintainer',
+                'Maintainer-email', 'Project-URL')
 
 _ALL_FIELDS = []
 
@@ -153,6 +153,7 @@ _LISTFIELDS = ('Platform', 'Classifier', 'Obsoletes',
         'Requires', 'Provides', 'Obsoletes-Dist',
         'Provides-Dist', 'Requires-Dist', 'Requires-External',
         'Project-URL')
+_LISTTUPLEFIELDS = ('Project-URL',)
 
 _ELEMENTSFIELD = ('Keywords',)
 
@@ -355,7 +356,11 @@ class DistributionMetadata(object):
                 valid, val = self._platform(val)
                 if not valid:
                     continue
-                res.append(self._encode_field(val))
+                if name not in _LISTTUPLEFIELDS:
+                    res.append(self._encode_field(val))
+                else:
+                    # That's for Project-URL
+                    res.append((self._encode_field(val[0]), val[1]))
             return res
 
         elif name in _ELEMENTSFIELD:
@@ -382,6 +387,30 @@ class DistributionMetadata(object):
             warnings = self._check_rst_data(self['Description'])
         else:
             warnings = []
+
+        # checking metadata 1.2 (XXX needs to check 1.1, 1.0)
+        if self['Metadata-Version'] != '1.2':
+            return missing, warnings
+
+
+        def is_valid_predicates(value):
+            for v in value:
+                if not is_valid_predicate(v.split(';')[0]):
+                    return False
+            return True
+
+        for fields, controller in ((_PREDICATE_FIELDS, is_valid_predicates),
+                                  (_VERSIONS_FIELDS, is_valid_versions),
+                                  (_VERSION_FIELDS, is_valid_version)):
+            for field in fields:
+                value = self[field]
+                if value == 'UNKNOWN':
+                    continue
+
+                if not controller(value):
+                    warnings.append('Wrong value for "%s": %s' \
+                            % (field, value))
+
         return missing, warnings
 
     def keys(self):

@@ -7,7 +7,7 @@ import platform
 from urllib2 import urlopen, Request, HTTPError
 from base64 import standard_b64encode
 import urlparse
-import cStringIO as StringIO
+import StringIO as StringIO
 try:
     from hashlib import md5
 except ImportError:
@@ -62,6 +62,7 @@ class upload(PyPIRCCommand):
         for command, pyversion, filename in self.distribution.dist_files:
             self.upload_file(command, pyversion, filename)
 
+    # XXX to be refactored with register.post_to_server
     def upload_file(self, command, pyversion, filename):
         # Makes sure the repository URL is compliant
         schema, netloc, url, params, query, fragments = \
@@ -83,42 +84,17 @@ class upload(PyPIRCCommand):
         # Fill in the data - send all the meta-data in case we need to
         # register a new release
         content = open(filename,'rb').read()
-        meta = self.distribution.metadata
 
-        data = {
-            # action
-            ':action': 'file_upload',
-            'protcol_version': '1',
+        data = self._metadata_to_pypy_dict()
 
-            # identify release
-            'name': meta['Name'],
-            'version': meta['Version'],
+        # extra upload infos
+        data[':action'] = 'file_upload'
+        data['protcol_version'] = '1'
+        data['content'] = [os.path.basename(filename), content]
+        data['filetype'] = command
+        data['pyversion'] = pyversion
+        data['md5_digest'] = md5(content).hexdigest()
 
-            # file content
-            'content': (os.path.basename(filename),content),
-            'filetype': command,
-            'pyversion': pyversion,
-            'md5_digest': md5(content).hexdigest(),
-
-            # additional meta-data
-            # XXX Implement 1.1
-            'metadata_version' : '1.0',
-            'name': meta['Name'],
-            'version': meta['Version'],
-            'summary': meta['Summary'],
-            'home_page': meta['Home-page'],
-            'author': meta['Author'],
-            'author_email': meta['Author-email'],
-            'license': meta['License'],
-            'description': meta['Description'],
-            'keywords': meta['Keywords'],
-            'platform': meta['Platform'],
-            'classifiers': meta['Classifier'],
-            'download_url': meta['Download-URL'],
-            #'provides': meta['Provides'],
-            #'requires': meta['Requires'],
-            #'obsoletes': meta['Obsoletes'],
-            }
         comment = ''
         if command == 'bdist_rpm':
             dist, version, id = platform.dist()
@@ -129,8 +105,8 @@ class upload(PyPIRCCommand):
         data['comment'] = comment
 
         if self.sign:
-            data['gpg_signature'] = (os.path.basename(filename) + ".asc",
-                                     open(filename+".asc").read())
+            data['gpg_signature'] = [(os.path.basename(filename) + ".asc",
+                                      open(filename+".asc").read())]
 
         # set up the authentication
         auth = "Basic " + standard_b64encode(self.username + ":" +
@@ -141,29 +117,41 @@ class upload(PyPIRCCommand):
         sep_boundary = '\n--' + boundary
         end_boundary = sep_boundary + '--'
         body = StringIO.StringIO()
-        for key, value in data.items():
-            # handle multiple entries for the same name
-            if not isinstance(value, list):
-                value = [value]
-            for value in value:
-                if isinstance(value, tuple):
-                    fn = ';filename="%s"' % value[0]
-                    value = value[1]
-                else:
-                    fn = ""
+        file_fields = ('content', 'gpg_signature')
 
+        for key, values in data.items():
+            # handle multiple entries for the same name
+            if not isinstance(values, (tuple, list)):
+                values = [values]
+
+            content_dispo = 'Content-Disposition: form-data; name="%s"' % key
+
+            if key in file_fields:
+                filename_, content = values
+                filename_ = ';filename="%s"' % filename_
                 body.write(sep_boundary)
-                body.write('\nContent-Disposition: form-data; name="%s"'%key)
-                body.write(fn)
+                body.write("\n")
+                body.write(content_dispo)
+                body.write(filename_)
                 body.write("\n\n")
-                body.write(value)
-                if value and value[-1] == '\r':
-                    body.write('\n')  # write an extra newline (lurve Macs)
+                body.write(content)
+            else:
+                for value in values:
+                    body.write(sep_boundary)
+                    body.write("\n")
+                    body.write(content_dispo)
+                    body.write("\n\n")
+                    body.write(value)
+                    if value and value[-1] == '\r':
+                        # write an extra newline (lurve Macs)
+                        body.write('\n')
+
         body.write(end_boundary)
         body.write("\n")
         body = body.getvalue()
 
-        self.announce("Submitting %s to %s" % (filename, self.repository), log.INFO)
+        self.announce("Submitting %s to %s" % (filename, self.repository),
+                      log.INFO)
 
         # build the Request
         headers = {'Content-type':

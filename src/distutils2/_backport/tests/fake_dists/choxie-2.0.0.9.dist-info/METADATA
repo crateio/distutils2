@@ -1,0 +1,6 @@
+Metadata-Version: 1.2
+Name: choxie
+Version: 2.0.0.9
+Summary: Chocolate with a kick!
+Requires-Dist: towel-stuff (0.1)
+Provides-Dist: truffles (1.0)

@@ -107,6 +107,40 @@ class PyPIRCCommand(Command):
 
         return {}
 
+    def _metadata_to_pypy_dict(self):
+        meta = self.distribution.metadata
+        data = {
+            'metadata_version' : meta.version,
+            'name': meta['Name'],
+            'version': meta['Version'],
+            'summary': meta['Summary'],
+            'home_page': meta['Home-page'],
+            'author': meta['Author'],
+            'author_email': meta['Author-email'],
+            'license': meta['License'],
+            'description': meta['Description'],
+            'keywords': meta['Keywords'],
+            'platform': meta['Platform'],
+            'classifier': meta['Classifier'],
+            'download_url': meta['Download-URL'],
+        }
+
+        if meta.version == '1.2':
+            data['requires_dist'] = meta['Requires-Dist']
+            data['requires_python'] = meta['Requires-Python']
+            data['requires_external'] = meta['Requires-External']
+            data['provides_dist'] = meta['Provides-Dist']
+            data['obsoletes_dist'] = meta['Obsoletes-Dist']
+            data['project_url'] = [','.join(url) for url in
+                                   meta['Project-URL']]
+
+        elif meta.version == '1.1':
+            data['provides'] = meta['Provides']
+            data['requires'] = meta['Requires']
+            data['obsoletes'] = meta['Obsoletes']
+
+        return data
+
     def initialize_options(self):
         """Initialize options."""
         self.repository = None

@@ -332,6 +332,7 @@ Links
 
 What happens?
 ~~~~~~~~~~~~~
+
 As an example, ``mailman/database/schemas/blah.schema``:
 
 1. The file ``mailman/database/schemas/blah.schema`` in the source
@@ -397,14 +398,25 @@ Open issues
   be nice to not need an equivalent of ``setup.py develop``. Can we just walk up
   the folder hierarchy from the module until we find a setup.cfg? A setup.cfg is
   necessary if you use distutils2, is it not?
+
+  -> information founded in setup.cfg will be put in the *FILES* file upon
+  installation in the egg-info directory. 
+  IOW in the unbuit-egg case, we would need to create that dir, then use 
+  pkgutil APIs.
+
 * If sysconfig.cfg lands in Python 2.7, what happens when we run distutils2 in
   2.4?
+
+  -> A backport of sysconfig.cfg is provided within the distutils2 distribution.
+  
 * Our new glob-based [resources] section is much more compact (and consistent
   with other systems, like bash) than the explicit MANIFEST.in directives, but
   they don't offer some of the old features. Is it okay to lose exclude,
   global-exclude, and recursive-exclude? What do graft and prune do, and do we
   cover their behavior? I think we could probably use a [resource:exclude]
   section with additional exclude globs in it.
+
+  -> let's list the use cases we don't cover, and see
 
 API
 ===

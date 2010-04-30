@@ -6,7 +6,10 @@ from copy import copy
 from StringIO import StringIO
 import subprocess
 
-from distutils2.errors import DistutilsPlatformError, DistutilsByteCompileError
+from distutils2.errors import (DistutilsPlatformError,
+                               DistutilsByteCompileError,
+                               DistutilsFileError)
+
 from distutils2.util import (convert_path, change_root,
                             check_environ, split_quoted, strtobool,
                             rfc822_escape, get_compiler_versions,
@@ -249,6 +252,10 @@ class UtilTestCase(support.EnvironGuard, unittest2.TestCase):
             self.assertRaises(DistutilsByteCompileError, byte_compile, [])
         finally:
             sys.dont_write_bytecode = old_dont_write_bytecode
+
+    def test_newer(self):
+        self.assertRaises(DistutilsFileError, util.newer, 'xxx', 'xxx')
+
 
 def test_suite():
     return unittest2.makeSuite(UtilTestCase)
