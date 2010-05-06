@@ -7,6 +7,7 @@ one of the other *util.py modules.
 __revision__ = "$Id: util.py 77761 2010-01-26 22:46:15Z tarek.ziade $"
 
 import sys, os, string, re
+from fnmatch import fnmatchcase
 
 from distutils2.errors import (DistutilsPlatformError, DistutilsFileError,
                                DistutilsByteCompileError)
@@ -542,4 +543,52 @@ def write_file(filename, contents):
     for line in contents:
         f.write(line + "\n")
     f.close()
+
+def _is_package(path):
+    """Returns True if path is a package (a dir with an __init__ file."""
+    if not os.path.isdir(path):
+        return False
+    return os.path.isfile(os.path.join(path, '__init__.py'))
+
+def _package_name(root_path, path):
+    """Returns a dotted package name, given a subpath."""
+    if not path.startswith(root_path):
+        raise ValueError('"%s" is not a subpath of "%s"' % (path, root_path))
+    return path[len(root_path) + 1:].replace(os.sep, '.')
+
+def find_packages(paths=('.',), exclude=()):
+    """Return a list all Python packages found recursively within
+    directories 'paths'
+
+    'paths' should be supplied as a sequence of "cross-platform"
+    (i.e. URL-style) path; it will be converted to the appropriate local
+    path syntax.
+
+    'exclude' is a sequence of package names to exclude; '*' can be used as
+    a wildcard in the names, such that 'foo.*' will exclude all subpackages
+    of 'foo' (but not 'foo' itself).
+    """
+    packages = []
+    for path in paths:
+        path = convert_path(path)
+        for root, dirs, files in os.walk(path):
+            for dir_ in dirs:
+                fullpath = os.path.join(root, dir_)
+                # we work only with Python packages
+                if not _is_package(fullpath):
+                    continue
+
+                # see if it's excluded
+                excluded = False
+                package_name = _package_name(path, fullpath)
+                for pattern in exclude:
+                    if fnmatchcase(package_name, pattern):
+                        excluded = True
+                        break
+                if excluded:
+                    continue
+
+                # adding it to the list
+                packages.append(package_name)
+    return packages
 
