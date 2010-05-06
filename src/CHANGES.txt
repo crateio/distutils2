@@ -2,8 +2,13 @@
 CHANGES
 =======
 
-1.0a1
------
+1.0a2 - ?
+--------
+
+-
+
+1.0a1 - 2010-05-06
+------------------
 
 - Initial import from the stdlib [tarek]
 - Added support for PEP 376 in distutils2.version [tarek]
