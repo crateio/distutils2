@@ -293,6 +293,8 @@ class DistributionMetadata(object):
             if field in _LISTFIELDS:
                 # we can have multiple lines
                 values = msg.get_all(field)
+                if field in _LISTTUPLEFIELDS and values is not None:
+                    values = [tuple(value.split(',')) for value in values]
                 self.set(field, values)
             else:
                 # single line
@@ -322,6 +324,9 @@ class DistributionMetadata(object):
                 if field == 'Description':
                     values = values.replace('\n', '\n       |')
                 values = [values]
+
+            if field in _LISTTUPLEFIELDS:
+                values = [','.join(value) for value in values]
 
             for value in values:
                 self._write_field(fileobject, field, value)
