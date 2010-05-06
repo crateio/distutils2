@@ -103,20 +103,44 @@ def _best_version(fields):
             if marker in keys:
                 return True
         return False
+
     keys = fields.keys()
-    is_1_1 = _has_marker(keys, _314_MARKERS)
-    is_1_2 = _has_marker(keys, _345_MARKERS)
+    possible_versions = ['1.0', '1.1', '1.2']
+
+
+    # first let's try to see if a field is not part of one of the version
+    for key in keys:
+        if key not in _241_FIELDS and '1.0' in possible_versions:
+            possible_versions.remove('1.0')
+        if key not in _314_FIELDS and '1.1' in possible_versions:
+            possible_versions.remove('1.1')
+        if key not in _345_FIELDS and '1.2' in possible_versions:
+            possible_versions.remove('1.2')
+
+    # possible_version contains qualified versions
+    if len(possible_versions) == 1:
+        return possible_versions[0]   # found !
+    elif len(possible_versions) == 0:
+        raise MetadataConflictError('Unknown metadata set')
+
+    # let's see if one unique marker is found
+    is_1_1 = '1.1' in possible_versions and _has_marker(keys, _314_MARKERS)
+    is_1_2 = '1.2' in possible_versions and _has_marker(keys, _345_MARKERS)
     if is_1_1 and is_1_2:
-        raise MetadataConflictError('You used both 1.1 and 1.2 fields')
+        raise MetadataConflictError('You used incompatible 1.1 and 1.2 fields')
 
     # we have the choice, either 1.0, or 1.2
     #   - 1.0 has a broken Summary field but work with all tools
     #   - 1.1 is to avoid
     #   - 1.2 fixes Summary but is not spreaded yet
     if not is_1_1 and not is_1_2:
-        return PKG_INFO_PREFERRED_VERSION
+        # we couldn't find any specific marker
+        if PKG_INFO_PREFERRED_VERSION in possible_versions:
+            return PKG_INFO_PREFERRED_VERSION
     if is_1_1:
         return '1.1'
+
+    # default marker when 1.0 is disqualified
     return '1.2'
 
 _ATTR2FIELD = {'metadata_version': 'Metadata-Version',

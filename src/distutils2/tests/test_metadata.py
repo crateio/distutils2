@@ -4,7 +4,8 @@ import os
 import sys
 from StringIO import StringIO
 
-from distutils2.metadata import DistributionMetadata, _interpret
+from distutils2.metadata import (DistributionMetadata, _interpret,
+                                 PKG_INFO_PREFERRED_VERSION)
 
 class DistributionMetadataTestCase(unittest2.TestCase):
 
@@ -200,6 +201,12 @@ class DistributionMetadataTestCase(unittest2.TestCase):
         self.assertEquals(missing, ['Name', 'Home-page'])
         self.assertEquals(len(warnings), 2)
 
+    def test_best_choice(self):
+        metadata = DistributionMetadata()
+        metadata['Version'] = '1.0'
+        self.assertEquals(metadata.version, PKG_INFO_PREFERRED_VERSION)
+        metadata['Classifier'] = ['ok']
+        self.assertEquals(metadata.version, '1.2')
 
 def test_suite():
     return unittest2.makeSuite(DistributionMetadataTestCase)
