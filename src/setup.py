@@ -95,7 +95,7 @@ setup (name="Distutils2",
        project_url=[('Mailing-list',
                     'http://mail.python.org/mailman/listinfo/distutils-sig/'),
                     ('Documentation',
-                     'http://bitbucket.org/tarek/distutils2/wiki/Home'),
+                     'http://packages.python.org/distutils2'),
                     ('Repository', 'http://hg.python.org/distutils2'),
                     ('Bug tracker', 'http://bugs.python.org')],
        **setup_kwargs
