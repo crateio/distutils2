@@ -550,9 +550,19 @@ def _is_package(path):
         return False
     return os.path.isfile(os.path.join(path, '__init__.py'))
 
+def _under(path, root):
+    path = path.split(os.sep)
+    root = root.split(os.sep)
+    if len(root) > len(path):
+        return False
+    for pos, part in enumerate(root):
+        if path[pos] != part:
+            return False
+    return True
+
 def _package_name(root_path, path):
     """Returns a dotted package name, given a subpath."""
-    if not path.startswith(root_path):
+    if not _under(path, root_path):
         raise ValueError('"%s" is not a subpath of "%s"' % (path, root_path))
     return path[len(root_path) + 1:].replace(os.sep, '.')
 
@@ -569,15 +579,24 @@ def find_packages(paths=('.',), exclude=()):
     of 'foo' (but not 'foo' itself).
     """
     packages = []
+    discarded = []
+    def _discarded(path):
+        for discard in discarded:
+            if _under(path, discard):
+                return True
+        return False
+
     for path in paths:
         path = convert_path(path)
         for root, dirs, files in os.walk(path):
             for dir_ in dirs:
                 fullpath = os.path.join(root, dir_)
+                if _discarded(fullpath):
+                    continue
                 # we work only with Python packages
                 if not _is_package(fullpath):
+                    discarded.append(fullpath)
                     continue
-
                 # see if it's excluded
                 excluded = False
                 package_name = _package_name(path, fullpath)

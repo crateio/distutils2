@@ -270,7 +270,9 @@ class UtilTestCase(support.EnvironGuard,
         #       __init__
         #       pkg6
         #           __init__
-        #     pkg4
+        #     pkg4    <--- not a pkg
+        #       pkg8
+        #          __init__
         #   pkg5
         #     __init__
         #
@@ -285,6 +287,8 @@ class UtilTestCase(support.EnvironGuard,
         os.mkdir(os.path.join(pkg1, 'pkg3', 'pkg6'))
         self.write_file(os.path.join(pkg1, 'pkg3', 'pkg6', '__init__.py'))
         os.mkdir(os.path.join(pkg1, 'pkg4'))
+        os.mkdir(os.path.join(pkg1, 'pkg4', 'pkg8'))
+        self.write_file(os.path.join(pkg1, 'pkg4', 'pkg8', '__init__.py'))
         pkg5 = os.path.join(root, 'pkg5')
         os.mkdir(pkg5)
         self.write_file(os.path.join(pkg5, '__init__.py'))
