@@ -8,6 +8,7 @@ from distutils2.core import setup
 from distutils2.command.sdist import sdist
 from distutils2.command.install import install
 from distutils2 import __version__ as VERSION
+from distutils2.util import find_packages
 
 f = open('README.txt')
 try:
@@ -67,18 +68,28 @@ setup_kwargs = {}
 if sys.version < '2.6':
     setup_kwargs['scripts'] = ['distutils2/mkpkg.py']
 
+_CLASSIFIERS = """\
+Development Status :: 3 - Alpha
+Intended Audience :: Developers
+License :: OSI Approved :: Python Software Foundation License
+Operating System :: OS Independent
+Programming Language :: Python
+Topic :: Software Development :: Libraries :: Python Modules
+Topic :: System :: Archiving :: Packaging
+Topic :: System :: Systems Administration
+Topic :: Utilities"""
+
 setup (name="Distutils2",
        version=VERSION,
-       description="Python Distribution Utilities",
+       summary="Python Distribution Utilities",
+       keywords=['packaging', 'distutils'],
        author="Tarek Ziade",
        author_email="tarek@ziade.org",
-       url="http://www.python.org/sigs/distutils-sig",
+       home_page="http://www.python.org/sigs/distutils-sig",
        license="PSF",
-       long_description=README,
-       packages=['distutils2',
-                 'distutils2.command',
-                 'distutils2.tests',
-                 'distutils2._backport'],
+       description=README,
+       classifier=_CLASSIFIERS.split('\n'),
+       packages=find_packages(),
        cmdclass={'sdist': sdist_hg, 'install': install_hg},
        package_data={'distutils2._backport': ['sysconfig.cfg']},
        **setup_kwargs
