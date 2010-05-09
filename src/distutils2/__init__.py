@@ -10,7 +10,7 @@ used from a setup script as
 __all__ = ['__version__', 'setup']
 
 __revision__ = "$Id: __init__.py 78020 2010-02-06 16:37:32Z benjamin.peterson $"
-__version__ = "1.0a1"
+__version__ = "1.0a2"
 
 from distutils2.core import setup
 

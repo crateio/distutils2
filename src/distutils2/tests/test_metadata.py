@@ -4,7 +4,8 @@ import os
 import sys
 from StringIO import StringIO
 
-from distutils2.metadata import DistributionMetadata, _interpret
+from distutils2.metadata import (DistributionMetadata, _interpret,
+                                 PKG_INFO_PREFERRED_VERSION)
 
 class DistributionMetadataTestCase(unittest2.TestCase):
 
@@ -199,6 +200,31 @@ class DistributionMetadataTestCase(unittest2.TestCase):
         missing, warnings = metadata.check()
         self.assertEquals(missing, ['Name', 'Home-page'])
         self.assertEquals(len(warnings), 2)
+
+    def test_best_choice(self):
+        metadata = DistributionMetadata()
+        metadata['Version'] = '1.0'
+        self.assertEquals(metadata.version, PKG_INFO_PREFERRED_VERSION)
+        metadata['Classifier'] = ['ok']
+        self.assertEquals(metadata.version, '1.2')
+
+    def test_project_urls(self):
+        # project-url is a bit specific, make sure we write it
+        # properly in PKG-INFO
+        metadata = DistributionMetadata()
+        metadata['Version'] = '1.0'
+        metadata['Project-Url'] = [('one', 'http://ok')]
+        self.assertEquals(metadata['Project-Url'], [('one', 'http://ok')])
+        file_ = StringIO()
+        metadata.write_file(file_)
+        file_.seek(0)
+        res = file_.read().split('\n')
+        self.assertIn('Project-URL: one,http://ok', res)
+
+        file_.seek(0)
+        metadata = DistributionMetadata()
+        metadata.read_file(file_)
+        self.assertEquals(metadata['Project-Url'], [('one', 'http://ok')])
 
 
 def test_suite():
