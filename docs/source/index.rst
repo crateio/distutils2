@@ -12,6 +12,7 @@ Contents:
    :maxdepth: 2
 
    metadata
+   new_commands
 
 Indices and tables
 ==================
