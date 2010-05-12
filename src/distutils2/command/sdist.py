@@ -10,6 +10,8 @@ import sys
 from glob import glob
 from warnings import warn
 from shutil import rmtree
+import re
+
 try:
     from shutil import get_archive_formats
 except ImportError:
@@ -17,7 +19,6 @@ except ImportError:
 
 from distutils2.core import Command
 from distutils2 import util
-from distutils2.text_file import TextFile
 from distutils2.errors import (DistutilsPlatformError, DistutilsOptionError,
                               DistutilsTemplateError)
 from distutils2.filelist import FileList
@@ -35,6 +36,10 @@ def show_formats():
     formats.sort()
     FancyGetopt(formats).print_help(
         "List of available source distribution formats:")
+
+# a \ followed by some spaces + EOL
+_COLLAPSE_PATTERN = re.compile('\\\w\n', re.M)
+_COMMENTED_LINE = re.compile('^#.*\n$|^\w*\n$', re.M)
 
 class sdist(Command):
 
@@ -337,19 +342,21 @@ class sdist(Command):
         'self.filelist', which updates itself accordingly.
         """
         log.info("reading manifest template '%s'", self.template)
-        template = TextFile(self.template,
-                            strip_comments=1,
-                            skip_blanks=1,
-                            join_lines=1,
-                            lstrip_ws=1,
-                            rstrip_ws=1,
-                            collapse_join=1)
 
-        while 1:
-            line = template.readline()
-            if line is None:            # end of file
-                break
+        f = open(self.template)
+        try:
+            content = f.read()
+            # first, let's unwrap collapsed lines
+            content = _COLLAPSE_PATTERN.replace(content, '')
+            # next, let's remove commented lines and empty lines
+            content = _COMMENTED_LINE.replace(content, '')
 
+            # now we have our cleaned up lines
+            lines = [line.strip() for line in content.split('\n')]
+        finally:
+            f.close()
+
+        for line in lines:
             try:
                 self.filelist.process_template_line(line)
             except DistutilsTemplateError, msg:
