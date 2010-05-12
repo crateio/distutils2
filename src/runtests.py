@@ -16,7 +16,7 @@ def test_main():
         verbose = 1
 
     run_unittest([distutils2.tests.test_suite(), btest_suite()],
-                 verbose=verbose)
+                 verbose_=verbose)
     reap_children()
 
 if __name__ == "__main__":
