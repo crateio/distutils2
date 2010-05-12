@@ -15,8 +15,8 @@ import fnmatch
 import logging
 
 from distutils2.util import write_file, convert_path
-from distutils2.exceptions import (DistutilsTemplateError,
-                                   DistutilsInternalError)
+from distutils2.errors import (DistutilsTemplateError,
+                               DistutilsInternalError)
 
 __all__ = ['Manifest']
 
