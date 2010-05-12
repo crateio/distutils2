@@ -21,7 +21,7 @@ from distutils2.core import Command
 from distutils2 import util
 from distutils2.errors import (DistutilsPlatformError, DistutilsOptionError,
                               DistutilsTemplateError)
-from distutils2.filelist import FileList
+from distutils2.manifest import Manifest
 from distutils2 import log
 from distutils2.util import convert_path, newer
 
@@ -162,7 +162,7 @@ class sdist(Command):
     def run(self):
         # 'filelist' contains the list of files that will make up the
         # manifest
-        self.filelist = FileList()
+        self.filelist = Manifest()
 
         # Run sub commands
         for cmd_name in self.get_sub_commands():
@@ -224,6 +224,7 @@ class sdist(Command):
         #      do nothing (unless --force or --manifest-only)
         #   4) no manifest, no template: generate w/ warning ("defaults only")
 
+
         manifest_outofdate = (template_exists and
                               (template_newer or setup_newer))
         force_regen = self.force_manifest or self.manifest_only
@@ -245,13 +246,11 @@ class sdist(Command):
             if self.prune:
                 self.prune_file_list()
 
-            self.filelist.sort()
-            self.filelist.remove_duplicates()
-            self.write_manifest()
+            self.filelist.write(self.manifest)
 
         # Don't regenerate the manifest, just read it in.
         else:
-            self.read_manifest()
+            self.filelist.read(self.manifest)
 
     def add_defaults(self):
         """Add all the default files to self.filelist:
@@ -335,34 +334,6 @@ class sdist(Command):
             build_scripts = self.get_finalized_command('build_scripts')
             self.filelist.extend(build_scripts.get_source_files())
 
-    def read_template(self):
-        """Read and parse manifest template file named by self.template.
-
-        (usually "MANIFEST.in") The parsing and processing is done by
-        'self.filelist', which updates itself accordingly.
-        """
-        log.info("reading manifest template '%s'", self.template)
-
-        f = open(self.template)
-        try:
-            content = f.read()
-            # first, let's unwrap collapsed lines
-            content = _COLLAPSE_PATTERN.replace(content, '')
-            # next, let's remove commented lines and empty lines
-            content = _COMMENTED_LINE.replace(content, '')
-
-            # now we have our cleaned up lines
-            lines = [line.strip() for line in content.split('\n')]
-        finally:
-            f.close()
-
-        for line in lines:
-            try:
-                self.filelist.process_template_line(line)
-            except DistutilsTemplateError, msg:
-                self.warn("%s, line %d: %s" % (template.filename,
-                                               template.current_line,
-                                               msg))
 
     def prune_file_list(self):
         """Prune off branches that might slip into the file list as created
@@ -390,30 +361,6 @@ class sdist(Command):
         vcs_ptrn = r'(^|%s)(%s)(%s).*' % (seps, '|'.join(vcs_dirs), seps)
         self.filelist.exclude_pattern(vcs_ptrn, is_regex=1)
 
-    def write_manifest(self):
-        """Write the file list in 'self.filelist' (presumably as filled in
-        by 'add_defaults()' and 'read_template()') to the manifest file
-        named by 'self.manifest'.
-        """
-        self.execute(util.write_file,
-                     (self.manifest, self.filelist.files),
-                     "writing manifest file '%s'" % self.manifest)
-
-    def read_manifest(self):
-        """Read the manifest file (named by 'self.manifest') and use it to
-        fill in 'self.filelist', the list of files to include in the source
-        distribution.
-        """
-        log.info("reading manifest file '%s'", self.manifest)
-        manifest = open(self.manifest)
-        while 1:
-            line = manifest.readline()
-            if line == '':              # end of file
-                break
-            if line[-1] == '\n':
-                line = line[0:-1]
-            self.filelist.append(line)
-        manifest.close()
 
     def make_release_tree(self, base_dir, files):
         """Create the directory tree that will become the source

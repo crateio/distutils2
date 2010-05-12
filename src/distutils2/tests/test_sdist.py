@@ -257,6 +257,9 @@ class SDistTestCase(PyPIRCCommandTestCase):
         cmd.metadata_check = 0
         cmd.run()
         warnings = self.get_logs(WARN)
+        # removing manifest generated warnings
+        warnings = [warn for warn in warnings if
+                    not warn.endswith('-- skipping')]
         self.assertEquals(len(warnings), 0)
 
 

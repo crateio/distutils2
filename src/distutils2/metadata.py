@@ -13,7 +13,6 @@ from email import message_from_file
 from tokenize import tokenize, NAME, OP, STRING, ENDMARKER
 
 from distutils2.log import warn
-from distutils2.util import rfc822_escape
 from distutils2.version import (is_valid_predicate, is_valid_version,
                                 is_valid_versions)
 from distutils2.errors import (MetadataConflictError,
@@ -25,7 +24,6 @@ try:
     from docutils.parsers.rst import Parser
     from docutils import frontend
     from docutils import nodes
-    from StringIO import StringIO
 
     class SilentReporter(Reporter):
 
