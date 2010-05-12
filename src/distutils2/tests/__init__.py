@@ -20,8 +20,6 @@ from test.test_support import TESTFN    # use TESTFN from stdlib/test_support.
 
 here = os.path.dirname(__file__)
 
-verbose = 1
-
 
 def test_suite():
     suite = unittest2.TestSuite()
@@ -48,10 +46,10 @@ class BasicTestRunner:
         return result
 
 
-def _run_suite(suite):
+def _run_suite(suite, verbose=1):
     """Run tests from a unittest2.TestSuite-derived class."""
     if verbose:
-        runner = unittest2.TextTestRunner(sys.stdout, verbosity=2)
+        runner = unittest2.TextTestRunner(sys.stdout, verbose=2)
     else:
         runner = BasicTestRunner()
 
@@ -66,7 +64,7 @@ def _run_suite(suite):
         raise TestFailed(err)
 
 
-def run_unittest(*classes):
+def run_unittest(classes, verbose=1):
     """Run tests from unittest2.TestCase-derived classes.
 
     Extracted from stdlib test.test_support and modified to support unittest2.
@@ -83,7 +81,7 @@ def run_unittest(*classes):
             suite.addTest(cls)
         else:
             suite.addTest(unittest2.makeSuite(cls))
-    _run_suite(suite)
+    _run_suite(suite, verbose)
 
 
 def reap_children():
