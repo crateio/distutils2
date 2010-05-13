@@ -17,7 +17,6 @@ class PyPIServer(threading.Thread):
     def stop(self):
         self.httpd.shutdown()
         self.join()
-        time.sleep(0.2)
 
     def pypi_app(self, environ, start_response):
         status = '200 OK' # HTTP Status
