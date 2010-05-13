@@ -27,6 +27,9 @@ class UploadTestCase(PyPIRCCommandTestCase):
         self.pypi = PyPIServer()
         self.pypi.start()
 
+    def tearDown(self):
+        self.pypi.stop()
+
     def test_finalize_options(self):
         # new format
         self.write_file(self.rc, PYPIRC)

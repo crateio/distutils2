@@ -23,7 +23,10 @@ class PyPIServer(threading.Thread):
         status = '200 OK' # HTTP Status
         headers = [('Content-type', 'text/plain')] # HTTP Headers
         start_response(status, headers)
-        request_data = environ.pop('wsgi.input').read(int(environ['CONTENT_LENGTH']))
+        if environ.get("CONTENT_LENGTH"):
+            request_data = environ.pop('wsgi.input').read(int(environ['CONTENT_LENGTH']))
+        else:
+            request_data = environ.pop('wsgi.input').read()
         self.request_queue.put((environ, request_data))
         return ["hello"]
 
