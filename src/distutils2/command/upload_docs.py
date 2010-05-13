@@ -1,10 +1,11 @@
-import os.path, tempfile, zipfile
+import base64, httplib, os.path, tempfile, urlparse, zipfile
+from cStringIO import StringIO
+from distutils2 import log
 from distutils2.core import Command
 
-def zip_dir_into(directory, destination):
-    """Compresses recursively contents of directory into a zipfile located
-    under given destination.
-    """
+def zip_dir(directory):
+    """Compresses recursively contents of directory into a StringIO object"""
+    destination = StringIO()
     zip_file = zipfile.ZipFile(destination, "w")
     for root, dirs, files in os.walk(directory):
         for name in files:
@@ -13,14 +14,14 @@ def zip_dir_into(directory, destination):
             dest = os.path.join(relative, name)
             zip_file.write(full, dest)
     zip_file.close()
+    return destination
 
 # grabbed from
 #    http://code.activestate.com/recipes/146306-http-client-to-post-using-multipartform-data/
 def encode_multipart(fields, files, boundary=None):
     """
     fields is a sequence of (name, value) elements for regular form fields.
-    files is a sequence of (name, filename, content_type, value)
-                            elements for data to be uploaded as files
+    files is a sequence of (name, filename, value) elements for data to be uploaded as files
     Return (content_type, body) ready for httplib.HTTP instance
     """
     if boundary is None:
@@ -33,11 +34,10 @@ def encode_multipart(fields, files, boundary=None):
             'Content-Disposition: form-data; name="%s"' % key,
             '',
             value])
-    for (key, filename, content_type, value) in files:
+    for (key, filename, value) in files:
         l.extend([
             '--' + boundary,
             'Content-Disposition: form-data; name="%s"; filename="%s"' % (key, filename),
-            'Content-Type: %s' % content_type,
             '',
             value])
     l.append('--' + boundary + '--')
@@ -61,4 +61,34 @@ class upload_docs(Command):
             self.upload_dir = os.path.join(build.build_base, "docs")
 
     def run(self):
-        pass
+        tmp_dir = tempfile.mkdtemp()
+        name = self.distribution.metadata['Name']
+        zip_file = zip_dir(self.upload_dir)
+
+        fields = {':action': 'doc_upload', 'name': name}.items()
+        files = [('content', name, zip_file.getvalue())]
+        content_type, body = encode_multipart(fields, files)
+
+        credentials = self.username + ':' + self.password
+        auth = "Basic " + base64.encodestring(credentials).strip()
+
+        self.announce("Submitting documentation to %s" % (self.repository),
+                      log.INFO)
+
+        schema, netloc, url, params, query, fragments = \
+            urlparse.urlparse(self.repository)
+        conn = httplib.HTTPConnection(netloc)
+
+        try:
+            conn.connect()
+            conn.putrequest("POST", url)
+            conn.putheader('Content-type', content_type)
+            conn.putheader('Content-length', str(len(body)))
+            conn.putheader('Authorization', auth)
+            conn.endheaders()
+            conn.send(body)
+        except socket.error, e:
+            self.announce(str(e), log.ERROR)
+            return
+
+        r = conn.getresponse()
