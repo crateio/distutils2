@@ -19,16 +19,17 @@ index-servers =
 username:me
 """
 
-class UploadTestCase(PyPIRCCommandTestCase):
+class PyPIServerTestCase(unittest2.TestCase):
 
     def setUp(self):
-        super(UploadTestCase, self).setUp()
-        assert not hasattr(self, "pypi")
+        super(PyPIServerTestCase, self).setUp()
         self.pypi = PyPIServer()
         self.pypi.start()
 
     def tearDown(self):
         self.pypi.stop()
+
+class UploadTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
 
     def test_finalize_options(self):
         # new format
@@ -39,7 +40,7 @@ class UploadTestCase(PyPIRCCommandTestCase):
         for attr, waited in (('username', 'me'), ('password', 'secret'),
                              ('realm', 'pypi'),
                              ('repository', 'http://pypi.python.org/pypi')):
-            self.assertEquals(getattr(cmd, attr), waited)
+            self.assertEqual(getattr(cmd, attr), waited)
 
     def test_saved_password(self):
         # file with no password
@@ -49,14 +50,14 @@ class UploadTestCase(PyPIRCCommandTestCase):
         dist = Distribution()
         cmd = upload(dist)
         cmd.ensure_finalized()
-        self.assertEquals(cmd.password, None)
+        self.assertEqual(cmd.password, None)
 
         # make sure we get it as well, if another command
         # initialized it at the dist level
         dist.password = 'xxx'
         cmd = upload(dist)
         cmd.finalize_options()
-        self.assertEquals(cmd.password, 'xxx')
+        self.assertEqual(cmd.password, 'xxx')
 
     def test_upload(self):
         path = os.path.join(self.tmp_dir, 'xxx')
@@ -77,7 +78,7 @@ class UploadTestCase(PyPIRCCommandTestCase):
         self.assertIn('xxx', request_data)
         self.assert_(environ['CONTENT_LENGTH'] > 2000)
         self.assertTrue(environ['CONTENT_TYPE'].startswith('multipart/form-data'))
-        self.assertEquals(environ['REQUEST_METHOD'], 'POST')
+        self.assertEqual(environ['REQUEST_METHOD'], 'POST')
         self.assertNotIn('\n', environ['HTTP_AUTHORIZATION'])
 
 def test_suite():
