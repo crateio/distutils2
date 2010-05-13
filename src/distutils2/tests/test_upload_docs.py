@@ -2,7 +2,8 @@
 # -*- encoding: utf8 -*-
 import os, os.path, tempfile, unittest2, zipfile
 
-from distutils2.command.upload_docs import upload_docs, zip_dir_into
+from distutils2.command.upload_docs import (upload_docs, zip_dir_into,
+                                    encode_multipart)
 from distutils2.core import Distribution
 
 from distutils2.tests import support
@@ -10,6 +11,29 @@ from distutils2.tests.pypi_server import PyPIServer
 from distutils2.tests.test_upload import PyPIServerTestCase
 from distutils2.tests.test_config import PYPIRC, PyPIRCCommandTestCase
 
+
+EXPECTED_MULTIPART_OUTPUT = "\r\n".join([
+'---x',
+'Content-Disposition: form-data; name="a"',
+'',
+'b',
+'---x',
+'Content-Disposition: form-data; name="c"',
+'',
+'d',
+'---x',
+'Content-Disposition: form-data; name="e"; filename="f"',
+'Content-Type: g',
+'',
+'h',
+'---x',
+'Content-Disposition: form-data; name="i"; filename="j"',
+'Content-Type: k',
+'',
+'l',
+'---x--',
+'',
+])
 
 class UploadDocsTestCase(PyPIServerTestCase,
                          support.TempdirManager,
@@ -38,8 +62,11 @@ class UploadDocsTestCase(PyPIServerTestCase,
         zip_f = zipfile.ZipFile(destination)
         self.assertEqual(zip_f.namelist(), ['some_dir/some_file'])
 
-    def test_zip_dir(self):
-        pass
+    def test_encode_multipart(self):
+        fields = [("a", "b"), ("c", "d")]
+        files = [("e", "f", "g", "h"), ("i", "j", "k", "l")]
+        self.assertEqual(encode_multipart(fields, files, "-x")[0], "multipart/form-data; boundary=-x")
+        self.assertEqual(encode_multipart(fields, files, "-x")[1], EXPECTED_MULTIPART_OUTPUT)
 
     def test_upload(self):
         pass
