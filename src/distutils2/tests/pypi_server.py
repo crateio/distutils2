@@ -1,13 +1,5 @@
-import threading
-import copy
-import Queue
-try:
-    from urllib.request import urlopen
-except ImportError:
-    from urllib2 import urlopen
-
-import time
-from wsgiref.simple_server import make_server, demo_app
+import Queue, threading, time
+from wsgiref.simple_server import make_server
 
 class PyPIServer(threading.Thread):
     """Thread that wraps a wsgi app"""

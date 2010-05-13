@@ -1,16 +1,12 @@
 """Tests for distutils.command.upload."""
 # -*- encoding: utf8 -*-
-import sys
-import os
-import unittest2
+import os, unittest2
 
-from distutils2.command import upload as upload_mod
 from distutils2.command.upload import upload
 from distutils2.core import Distribution
 
-from distutils2.tests import support
-from distutils2.tests.test_config import PYPIRC, PyPIRCCommandTestCase
 from distutils2.tests.pypi_server import PyPIServer
+from distutils2.tests.test_config import PYPIRC, PyPIRCCommandTestCase
 
 
 PYPIRC_NOPASSWORD = """\
