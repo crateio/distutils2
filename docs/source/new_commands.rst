@@ -51,7 +51,8 @@ defaults in the ``setup.cfg`` of your Python project, e.g.:
 The ``upload_docs`` command has the following options:
 
 ``--upload-dir``
-    The directory to be uploaded to the repository.
+    The directory to be uploaded to the repository. The default value is
+    ``docs`` in project root.
 
 ``--show-response``
     Display the full response text from server; this is useful for debugging
