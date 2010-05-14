@@ -5,7 +5,7 @@ into PEP 345-style options.
 """
 
 # Local imports
-from lib2to3 import pytree
+from lib2to3.pytree import Leaf, Node
 from lib2to3.pgen2 import token
 from lib2to3 import fixer_base
 from lib2to3.fixer_util import Assign, Name, Newline, Number, Subscript, syms
@@ -20,6 +20,7 @@ _OLD_NAMES = {'url': 'home_page',
               'long_description': 'description',
               'description': 'summary',
               'install_requires': 'requires_dist'}
+_SEQUENCE_NAMES = ['requires_dist']
 
 
 class FixSetupOptions(fixer_base.BaseFix):
@@ -30,14 +31,35 @@ class FixSetupOptions(fixer_base.BaseFix):
             power< name='setup' trailer< '(' [any] ')' > any* >
               """
 
+    def _get_list(self, *nodes):
+        """A List node, filled"""
+        lbrace = Leaf(token.LBRACE, u"[")
+        lbrace.prefix = u" "
+        if len(nodes) > 0:
+            nodes[0].prefix = u""
+        return Node(self.syms.trailer,
+                    [lbrace]+
+                    [node.clone() for node in nodes] +
+                    [Leaf(token.RBRACE, u"]")])
+
     def _fix_name(self, argument, remove_list):
         name = argument.children[0]
-        sibling = name.get_next_sibling()
+        next = name.get_next_sibling
+        sibling = next()
         if sibling is None or sibling.type != token.EQUAL:
             return False
 
         if name.value in _OLD_NAMES:
             name.value = _OLD_NAMES[name.value]
+            if name.value in _SEQUENCE_NAMES:
+                right_operand = next().get_next_sibling()
+                # replacing string -> list[string]
+                if right_operand.type == token.STRING:
+                    # we want this to be a list now
+                    new_node = self._get_list(right_operand)
+                    right_operand.replace(new_node)
+
+
             return True
 
         return False
