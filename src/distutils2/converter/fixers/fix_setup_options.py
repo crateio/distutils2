@@ -21,11 +21,6 @@ _OLD_NAMES = {'url': 'home_page',
               'description': 'summary',
               'install_requires': 'requires_dist'}
 
-# XXX see what we want to do for these..
-_INCOMPATIBLE_OPTIONS = ['entry_points',
-                         'include_package_data',
-                         'zip_safe',
-                         'namespace_packages']
 
 class FixSetupOptions(fixer_base.BaseFix):
 
@@ -43,14 +38,9 @@ class FixSetupOptions(fixer_base.BaseFix):
 
         if name.value in _OLD_NAMES:
             name.value = _OLD_NAMES[name.value]
-        elif name.value in _INCOMPATIBLE_OPTIONS:
-            # removing the args, and the comma
-            # behind
-            next_token = name.parent.get_next_sibling()
-            if next_token.type == 12:
-                remove_list.append(next_token)
-            remove_list.append(name.parent)
-        return True
+            return True
+
+        return False
 
     def transform(self, node, results):
         arglist = node.children[1].children[1]

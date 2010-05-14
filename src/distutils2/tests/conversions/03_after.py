@@ -79,7 +79,11 @@ setup(
     data_files = [('.', ['README.txt'])],
     packages = ['zc', 'zc.buildout'],
     package_dir = {'': 'src'},
+    namespace_packages = ['zc'],
     requires_dist = 'setuptools',
+    include_package_data = True,
+    entry_points = entry_points,
+    zip_safe=False,
     classifiers = [
        'Intended Audience :: Developers',
        'License :: OSI Approved :: Zope Public License',
