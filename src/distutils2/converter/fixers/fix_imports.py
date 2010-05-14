@@ -27,3 +27,17 @@ class FixImports(BaseFix):
             imp.changed()
             return node
 
+        if imp.value == 'setuptools':
+            # catching "from setuptools import setup"
+            pattern = []
+            next = imp.get_next_sibling()
+            while next is not None:
+                pattern.append(next.value)
+                next = next.get_next_sibling()
+            if pattern == ['import', 'setup']:
+                imp.value = 'distutils2.core'
+                imp.changed()
+
+            return node
+
+
