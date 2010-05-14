@@ -1,0 +1,89 @@
+##############################################################################
+#
+# Copyright (c) 2006-2009 Zope Corporation and Contributors.
+# All Rights Reserved.
+#
+# This software is subject to the provisions of the Zope Public License,
+# Version 2.1 (ZPL).  A copy of the ZPL should accompany this distribution.
+# THIS SOFTWARE IS PROVIDED "AS IS" AND ANY AND ALL EXPRESS OR IMPLIED
+# WARRANTIES ARE DISCLAIMED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+# WARRANTIES OF TITLE, MERCHANTABILITY, AGAINST INFRINGEMENT, AND FITNESS
+# FOR A PARTICULAR PURPOSE.
+#
+##############################################################################
+name = "zc.buildout"
+version = "1.5.0dev"
+
+import os
+from distutils2.core import setup
+
+def read(*rnames):
+    return open(os.path.join(os.path.dirname(__file__), *rnames)).read()
+
+long_description=(
+        read('README.txt')
+        + '\n' +
+        'Detailed Documentation\n'
+        '**********************\n'
+        + '\n' +
+        read('src', 'zc', 'buildout', 'buildout.txt')
+        + '\n' +
+        read('src', 'zc', 'buildout', 'unzip.txt')
+        + '\n' +
+        read('src', 'zc', 'buildout', 'repeatable.txt')
+        + '\n' +
+        read('src', 'zc', 'buildout', 'download.txt')
+        + '\n' +
+        read('src', 'zc', 'buildout', 'downloadcache.txt')
+        + '\n' +
+        read('src', 'zc', 'buildout', 'extends-cache.txt')
+        + '\n' +
+        read('src', 'zc', 'buildout', 'setup.txt')
+        + '\n' +
+        read('src', 'zc', 'buildout', 'update.txt')
+        + '\n' +
+        read('src', 'zc', 'buildout', 'debugging.txt')
+        + '\n' +
+        read('src', 'zc', 'buildout', 'testing.txt')
+        + '\n' +
+        read('src', 'zc', 'buildout', 'easy_install.txt')
+        + '\n' +
+        read('src', 'zc', 'buildout', 'distribute.txt')
+        + '\n' +
+        read('CHANGES.txt')
+        + '\n' +
+        'Download\n'
+        '**********************\n'
+        )
+
+entry_points = """
+[console_scripts]
+buildout = %(name)s.buildout:main
+
+[zc.buildout]
+debug = %(name)s.testrecipes:Debug
+
+""" % dict(name=name)
+
+setup(
+    name = name,
+    version = version,
+    author = "Jim Fulton",
+    author_email = "jim@zope.com",
+    summary = "System for managing development buildouts",
+    description=long_description,
+    license = "ZPL 2.1",
+    keywords = "development build",
+    home_page='http://buildout.org',
+
+    data_files = [('.', ['README.txt'])],
+    packages = ['zc', 'zc.buildout'],
+    package_dir = {'': 'src'},
+    requires_dist = 'setuptools',
+    classifiers = [
+       'Intended Audience :: Developers',
+       'License :: OSI Approved :: Zope Public License',
+       'Topic :: Software Development :: Build Tools',
+       'Topic :: Software Development :: Libraries :: Python Modules',
+       ],
+    )
