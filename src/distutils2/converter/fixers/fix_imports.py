@@ -3,7 +3,8 @@
 Fixer for import statements in setup.py
 """
 from lib2to3.fixer_base import BaseFix
-from lib2to3.fixer_util import FromImport, syms, token
+from lib2to3.fixer_util import syms
+
 
 class FixImports(BaseFix):
     """Makes sure all import in setup.py are translated"""
@@ -39,5 +40,3 @@ class FixImports(BaseFix):
                 imp.changed()
 
             return node
-
-
