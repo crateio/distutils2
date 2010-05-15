@@ -21,9 +21,8 @@ from distutils2.errors import (DistutilsTemplateError,
 __all__ = ['Manifest']
 
 # a \ followed by some spaces + EOL
-_COLLAPSE_PATTERN = re.compile('\\\w\n', re.M)
-_COMMENTED_LINE = re.compile('^#.*\n$|^\w*\n$', re.M)
-
+_COLLAPSE_PATTERN = re.compile('\\\w*\n', re.M)
+_COMMENTED_LINE = re.compile('#.*?(?=\n)|^\w*\n|\n(?=$)', re.M|re.S)
 
 class Manifest(object):
     """A list of files built by on exploring the filesystem and filtered by
@@ -70,9 +69,10 @@ class Manifest(object):
         try:
             content = f.read()
             # first, let's unwrap collapsed lines
-            content = _COLLAPSE_PATTERN.replace(content, '')
+            content = _COLLAPSE_PATTERN.sub('', content)
+
             # next, let's remove commented lines and empty lines
-            content = _COMMENTED_LINE.replace(content, '')
+            content = _COMMENTED_LINE.sub('', content)
 
             # now we have our cleaned up lines
             lines = [line.strip() for line in content.split('\n')]
@@ -83,7 +83,7 @@ class Manifest(object):
             try:
                 self._process_template_line(line)
             except DistutilsTemplateError, msg:
-                self.warn("%s, %s" % (path, msg))
+                logging.warning("%s, %s" % (path, msg))
 
     def write(self, path):
         """Write the file list in 'self.filelist' (presumably as filled in
@@ -176,51 +176,50 @@ class Manifest(object):
         if action == 'include':
             for pattern in patterns:
                 if not self._include_pattern(pattern, anchor=1):
-                    logging.warning("warning: no files found matching '%s'",
+                    logging.warning("warning: no files found matching '%s'" %
                              pattern)
 
         elif action == 'exclude':
             for pattern in patterns:
                 if not self.exclude_pattern(pattern, anchor=1):
                     logging.warning(("warning: no previously-included files "
-                              "found matching '%s'"), pattern)
+                              "found matching '%s'") % pattern)
 
         elif action == 'global-include':
             for pattern in patterns:
                 if not self._include_pattern(pattern, anchor=0):
                     logging.warning(("warning: no files found matching '%s' " +
-                              "anywhere in distribution"), pattern)
+                              "anywhere in distribution") % pattern)
 
         elif action == 'global-exclude':
             for pattern in patterns:
                 if not self.exclude_pattern(pattern, anchor=0):
                     logging.warning(("warning: no previously-included files "
-                              "matching '%s' found anywhere in distribution"),
+                              "matching '%s' found anywhere in distribution") %
                              pattern)
 
         elif action == 'recursive-include':
             for pattern in patterns:
                 if not self._include_pattern(pattern, prefix=dir):
                     logging.warning(("warning: no files found matching '%s' "
-                                "under directory '%s'"),
-                             pattern, dir)
+                                "under directory '%s'" % (pattern, dir)))
 
         elif action == 'recursive-exclude':
             for pattern in patterns:
                 if not self.exclude_pattern(pattern, prefix=dir):
                     logging.warning(("warning: no previously-included files "
-                              "matching '%s' found under directory '%s'"),
-                             pattern, dir)
+                              "matching '%s' found under directory '%s'") %
+                             (pattern, dir))
 
         elif action == 'graft':
             if not self._include_pattern(None, prefix=dir_pattern):
-                logging.warning("warning: no directories found matching '%s'",
+                logging.warning("warning: no directories found matching '%s'" %
                          dir_pattern)
 
         elif action == 'prune':
             if not self.exclude_pattern(None, prefix=dir_pattern):
                 logging.warning(("no previously-included directories found " +
-                          "matching '%s'"), dir_pattern)
+                          "matching '%s'") % dir_pattern)
         else:
             raise DistutilsInternalError(
                   "this cannot happen: invalid action '%s'" % action)
