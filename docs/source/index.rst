@@ -13,6 +13,7 @@ Contents:
 
    metadata
    new_commands
+   test_framework
 
 Indices and tables
 ==================

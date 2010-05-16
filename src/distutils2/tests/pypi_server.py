@@ -21,9 +21,9 @@ class PyPIServer(threading.Thread):
         self.address = self.httpd.server_address
         self.request_queue = Queue.Queue()
         self._requests = []
-        self._default_response_status = "200 OK"
-        self._default_response_headers = [('Content-type', 'text/plain')]
-        self._default_response_data = ["hello"]
+        self.default_response_status = "200 OK"
+        self.default_response_headers = [('Content-type', 'text/plain')]
+        self.default_response_data = ["hello"]
 
     def run(self):
         self.httpd.serve_forever()
@@ -45,9 +45,9 @@ class PyPIServer(threading.Thread):
         return data
 
     def get_next_response(self):
-        return (self._default_response_status,
-                self._default_response_headers,
-                self._default_response_data)
+        return (self.default_response_status,
+                self.default_response_headers,
+                self.default_response_data)
 
     @property
     def requests(self):
