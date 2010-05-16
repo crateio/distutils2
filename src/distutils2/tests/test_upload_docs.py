@@ -8,8 +8,7 @@ from distutils2.command.upload_docs import (upload_docs, zip_dir,
 from distutils2.core import Distribution
 
 from distutils2.tests import support
-from distutils2.tests.pypi_server import PyPIServer
-from distutils2.tests.test_upload import PyPIServerTestCase
+from distutils2.tests.pypi_server import PyPIServer, PyPIServerTestCase
 from distutils2.tests.test_config import PYPIRC, PyPIRCCommandTestCase
 
 
@@ -106,6 +105,9 @@ class UploadDocsTestCase(PyPIServerTestCase,
         pass
 
     def test_honours_dry_run(self):
+        pass
+
+    def test_reads_pypirc_data(self):
         pass
 
 def test_suite():

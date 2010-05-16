@@ -5,7 +5,7 @@ import os, unittest2
 from distutils2.command.upload import upload
 from distutils2.core import Distribution
 
-from distutils2.tests.pypi_server import PyPIServer
+from distutils2.tests.pypi_server import PyPIServer, PyPIServerTestCase
 from distutils2.tests.test_config import PYPIRC, PyPIRCCommandTestCase
 
 
@@ -18,16 +18,6 @@ index-servers =
 [server1]
 username:me
 """
-
-class PyPIServerTestCase(unittest2.TestCase):
-
-    def setUp(self):
-        super(PyPIServerTestCase, self).setUp()
-        self.pypi = PyPIServer()
-        self.pypi.start()
-
-    def tearDown(self):
-        self.pypi.stop()
 
 class UploadTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
 
