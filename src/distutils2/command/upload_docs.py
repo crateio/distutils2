@@ -1,7 +1,8 @@
-import base64, httplib, os.path, tempfile, urlparse, zipfile
+import base64, httplib, os.path, socket, tempfile, urlparse, zipfile
 from cStringIO import StringIO
 from distutils2 import log
-from distutils2.core import Command
+from distutils2.core import PyPIRCCommand
+from distutils2.errors import DistutilsFileError
 
 def zip_dir(directory):
     """Compresses recursively contents of directory into a StringIO object"""
@@ -46,7 +47,7 @@ def encode_multipart(fields, files, boundary=None):
     content_type = 'multipart/form-data; boundary=%s' % boundary
     return content_type, body
 
-class upload_docs(Command):
+class upload_docs(PyPIRCCommand):
 
     user_options = [
         ('upload-dir=', None, 'directory to upload'),
@@ -56,13 +57,28 @@ class upload_docs(Command):
         self.upload_dir = None
 
     def finalize_options(self):
+        PyPIRCCommand.finalize_options(self)
         if self.upload_dir == None:
             build = self.get_finalized_command('build')
             self.upload_dir = os.path.join(build.build_base, "docs")
+        config = self._read_pypirc()
+        if config != {}:
+            self.username = config['username']
+            self.password = config['password']
+            self.repository = config['repository']
+            self.realm = config['realm']
+
+    def verify_upload_dir(self, upload_dir):
+        index_location = os.path.join(upload_dir, "index.html")
+        if not os.path.exists(index_location):
+            mesg = "No 'index.html found in docs directory (%s)"
+            raise DistutilsFileError(mesg % upload_dir)
+
 
     def run(self):
         tmp_dir = tempfile.mkdtemp()
         name = self.distribution.metadata['Name']
+        self.verify_upload_dir(self.upload_dir)
         zip_file = zip_dir(self.upload_dir)
 
         fields = {':action': 'doc_upload', 'name': name}.items()
@@ -77,7 +93,12 @@ class upload_docs(Command):
 
         schema, netloc, url, params, query, fragments = \
             urlparse.urlparse(self.repository)
-        conn = httplib.HTTPConnection(netloc)
+        if schema == "http":
+            conn = httplib.HTTPConnection(netloc)
+        elif schema == "https":
+            conn = httplib.HTTPSConnection(netloc)
+        else:
+            raise AssertionError("unsupported schema "+schema)
 
         try:
             conn.connect()
@@ -92,3 +113,16 @@ class upload_docs(Command):
             return
 
         r = conn.getresponse()
+
+        if r.status == 200:
+            self.announce('Server response (%s): %s' % (r.status, r.reason),
+                          log.INFO)
+        elif r.status == 301:
+            location = r.getheader('Location')
+            if location is None:
+                location = 'http://packages.python.org/%s/' % meta.get_name()
+            self.announce('Upload successful. Visit %s' % location,
+                          log.INFO)
+        else:
+            self.announce('Upload failed (%s): %s' % (r.status, r.reason),
+                          log.ERROR)
