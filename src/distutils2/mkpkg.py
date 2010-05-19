@@ -72,6 +72,8 @@ human language, programming language, user interface, etc...
 ''',
 }
 
+# XXX this list should be asked at PyPI (it changes)
+# then cached, rather than hardcoded
 troveList = [
         'Development Status :: 1 - Planning',
         'Development Status :: 2 - Pre-Alpha',
