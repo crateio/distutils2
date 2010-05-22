@@ -31,8 +31,7 @@ class BuildTestCase(support.TempdirManager,
         # XXX an explicit list in bdist is
         # not the best way to  bdist_* commands
         # we should add a registry
-        formats = ['rpm', 'zip', 'gztar', 'bztar', 'ztar',
-                   'tar', 'wininst', 'msi']
+        formats = ['zip', 'gztar', 'bztar', 'ztar', 'tar', 'wininst', 'msi']
         formats.sort()
         founded = cmd.format_command.keys()
         founded.sort()
