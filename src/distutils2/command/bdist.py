@@ -127,8 +127,6 @@ class bdist(Command):
         for i in range(len(self.formats)):
             cmd_name = commands[i]
             sub_cmd = self.reinitialize_command(cmd_name)
-            if cmd_name not in self.no_format_option:
-                sub_cmd.format = self.formats[i]
 
             # passing the owner and group names for tar archiving
             if cmd_name == 'bdist_dumb':
