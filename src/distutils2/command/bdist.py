@@ -55,9 +55,6 @@ class bdist(Command):
          "lists available distribution formats", show_formats),
         ]
 
-    # The following commands do not take a format option from bdist
-    no_format_option = ('bdist_rpm',)
-
     # This won't do in reality: will need to distinguish RPM-ish Linux,
     # Debian-ish Linux, Solaris, FreeBSD, ..., Windows, Mac OS.
     default_format = {'posix': 'gztar',
@@ -69,8 +66,7 @@ class bdist(Command):
                        'wininst', 'zip', 'msi']
 
     # And the real information.
-    format_command = {'rpm':   ('bdist_rpm',  "RPM distribution"),
-                      'gztar': ('bdist_dumb', "gzip'ed tar file"),
+    format_command = {'gztar': ('bdist_dumb', "gzip'ed tar file"),
                       'bztar': ('bdist_dumb', "bzip2'ed tar file"),
                       'ztar':  ('bdist_dumb', "compressed tar file"),
                       'tar':   ('bdist_dumb', "tar file"),
