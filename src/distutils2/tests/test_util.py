@@ -294,7 +294,7 @@ class UtilTestCase(support.EnvironGuard,
         self.write_file(os.path.join(pkg5, '__init__.py'))
 
         res = find_packages([root], ['pkg1.pkg2'])
-        self.assertEquals(res, ['pkg1', 'pkg5', 'pkg1.pkg3', 'pkg1.pkg3.pkg6'])
+        self.assertEquals(set(res), set(['pkg1', 'pkg5', 'pkg1.pkg3', 'pkg1.pkg3.pkg6']))
 
 
 def test_suite():
