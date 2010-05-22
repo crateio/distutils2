@@ -41,15 +41,14 @@ class FixSetupOptions(BaseFix):
 
     def _fix_name(self, argument, remove_list):
         name = argument.children[0]
-        next = name.get_next_sibling
-        sibling = next()
+        sibling = name.next_sibling
         if sibling is None or sibling.type != token.EQUAL:
             return False
 
         if name.value in _OLD_NAMES:
             name.value = _OLD_NAMES[name.value]
             if name.value in _SEQUENCE_NAMES:
-                right_operand = next().get_next_sibling()
+                right_operand = sibling.next_sibling
                 # replacing string -> list[string]
                 if right_operand.type == token.STRING:
                     # we want this to be a list now
