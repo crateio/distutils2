@@ -36,4 +36,4 @@ def test_suite():
     return unittest2.makeSuite(ConverterTestCase)
 
 if __name__ == '__main__':
-    run_unittest(test_suite())
+    unittest2.main(defaultTest="test_suite")
