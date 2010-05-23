@@ -43,7 +43,7 @@ class FixSetupOptions(BaseFix):
         name = argument.children[0]
 
         if not hasattr(name, "next_sibling"):
-            name.next_sibling = name.get_next_sibling
+            name.next_sibling = name.get_next_sibling()
 
         sibling = name.next_sibling
         if sibling is None or sibling.type != token.EQUAL:
