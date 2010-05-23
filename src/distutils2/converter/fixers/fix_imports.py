@@ -20,6 +20,9 @@ class FixImports(BaseFix):
         if node.type != syms.import_from:
             return
 
+        if not hasattr(imp, "next_sibling"):
+            imp.next_sibling = imp.get_next_sibling
+
         while not hasattr(imp, 'value'):
             imp = imp.children[0]
 
