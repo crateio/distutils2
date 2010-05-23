@@ -4,7 +4,7 @@ import doctest
 import os
 
 from distutils2.version import NormalizedVersion as V
-from distutils2.version import IrrationalVersionError
+from distutils2.version import IrrationalVersionError, HugeMajorVersionNumError
 from distutils2.version import suggest_normalized_version as suggest
 from distutils2.version import VersionPredicate
 
@@ -69,6 +69,9 @@ class VersionTestCase(unittest.TestCase):
         >>> V('1.0') < V('1.0.post456.dev623')
         True
 
+        >>> V('1.0.1') <= V('1.0')
+        False
+
         >>> V('1.0.post456.dev623') < V('1.0.post456')  < V('1.0.post1234')
         True
 
@@ -97,6 +100,7 @@ class VersionTestCase(unittest.TestCase):
     def test_suggest_normalized_version(self):
 
         self.assertEquals(suggest('1.0'), '1.0')
+        self.assertEquals(suggest('v1.0'), '1.0')
         self.assertEquals(suggest('1.0-alpha1'), '1.0a1')
         self.assertEquals(suggest('1.0c2'), '1.0c2')
         self.assertEquals(suggest('walla walla washington'), None)
@@ -125,6 +129,15 @@ class VersionTestCase(unittest.TestCase):
         # they us "p1" "p2" for post releases
         self.assertEquals(suggest('1.4p1'), '1.4.post1')
 
+    def test_error_on_major_version(self):
+        self.assertRaises(HugeMajorVersionNumError, V, '2001.1')
+
+    def test_cannot_compare(self):
+        self.assertRaises(TypeError, V('1.1').__lt__, '1.1.1')
+
+    def test_version_repr(self):
+        self.assertEquals("NormalizedVersion('1.1')", repr(V('1.1')))
+
     def test_predicate(self):
         # VersionPredicate knows how to parse stuff like:
         #
@@ -145,7 +158,6 @@ class VersionTestCase(unittest.TestCase):
         assert VersionPredicate('Ho (<3.0)').match('2.6')
         assert VersionPredicate('Ho (<3.0,!=2.5)').match('2.6.0')
         assert not VersionPredicate('Ho (<3.0,!=2.6)').match('2.6.0')
-
 
         # XXX need to silent the micro version in this case
         #assert not VersionPredicate('Ho (<3.0,!=2.6)').match('2.6.3')
