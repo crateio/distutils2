@@ -21,7 +21,7 @@ class FixImports(BaseFix):
             return
 
         if not hasattr(imp, "next_sibling"):
-            imp.next_sibling = imp.get_next_sibling
+            imp.next_sibling = imp.get_next_sibling()
 
         while not hasattr(imp, 'value'):
             imp = imp.children[0]
@@ -37,6 +37,8 @@ class FixImports(BaseFix):
             next = imp.next_sibling
             while next is not None:
                 pattern.append(next.value)
+                if not hasattr(next, "next_sibling"):
+                    next.next_sibling = next.get_next_sibling()
                 next = next.next_sibling
             if pattern == ['import', 'setup']:
                 imp.value = 'distutils2.core'

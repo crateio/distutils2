@@ -52,6 +52,8 @@ class FixSetupOptions(BaseFix):
         if name.value in _OLD_NAMES:
             name.value = _OLD_NAMES[name.value]
             if name.value in _SEQUENCE_NAMES:
+                if not hasattr(sibling, "next_sibling"):
+                    sibling.next_sibling = sibling.get_next_sibling()
                 right_operand = sibling.next_sibling
                 # replacing string -> list[string]
                 if right_operand.type == token.STRING:
