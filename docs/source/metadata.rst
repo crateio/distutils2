@@ -71,8 +71,8 @@ Writing metadata can be done using the ``write`` API::
     >>> metadata.write('/to/my/PKG-INFO')
 
 The class will pick the best version for the metadata, depending on the values
-provided. If all the values provided exists in all versions, teh class will
-used :attr:`metadata.PKG_INFO_PREFERRED_VERSION`. It is set by default to 1.0.
+provided. If all the values provided exists in all versions, the class will
+use :attr:`metadata.PKG_INFO_PREFERRED_VERSION`. It is set by default to 1.0.
 
 
 Conflict checking and best version
