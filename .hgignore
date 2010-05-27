@@ -2,4 +2,5 @@
 .*\.pyo$
 ^docs/build
 .*\.swp$
+src/build/*
 
