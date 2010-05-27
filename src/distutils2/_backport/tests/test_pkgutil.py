@@ -9,6 +9,8 @@ try:
 except ImportError:
     from md5 import md5
 
+sys.path.append('/home/josip/dev/distutils2/src')
+
 from test.test_support import run_unittest, TESTFN
 
 import distutils2._backport.pkgutil
@@ -260,6 +262,65 @@ class TestPkgUtilFunctions(unittest2.TestCase):
             self.assertTrue(isinstance(dist, Distribution))
             self.assertEqual(dist.name, name)
 
+    def test_provides(self):
+        """ Test for looking up distributions by what they provide """
+        from distutils2._backport.pkgutil import provides_distribution
+        from distutils2.errors import DistutilsError
+
+        l = [dist.name for dist in provides_distribution('truffles')]
+        self.assertListEqual(l, ['choxie', 'towel-stuff'])
+
+        l = [dist.name for dist in provides_distribution('truffles', '1.0')]
+        self.assertListEqual(l, ['choxie'])
+
+        l = [dist.name for dist in provides_distribution('truffles', '1.1.2')]
+        self.assertListEqual(l, ['towel-stuff'])
+
+        l = [dist.name for dist in provides_distribution('truffles', '1.1')]
+        self.assertListEqual(l, ['towel-stuff'])
+
+        l = [dist.name for dist in provides_distribution('truffles', '!=1.1,<=2.0')]
+        self.assertListEqual(l, ['choxie'])
+
+        l = [dist.name for dist in provides_distribution('truffles', '>1.0')]
+        self.assertListEqual(l, ['towel-stuff'])
+
+        l = [dist.name for dist in provides_distribution('truffles', '>=1.0')]
+        self.assertListEqual(l, ['choxie', 'towel-stuff'])
+
+    def test_obsoletes(self):
+        """ Test looking for distributions based on what they obsolete """
+        from distutils2._backport.pkgutil import obsoletes_distribution
+        from distutils2.errors import DistutilsError
+
+        l = [dist.name for dist in obsoletes_distribution('truffles', '1.0')]
+        self.assertListEqual(l, [])
+
+        l = [dist.name for dist in obsoletes_distribution('truffles', '0.8')]
+        self.assertListEqual(l, ['choxie'])
+
+        l = [dist.name for dist in obsoletes_distribution('truffles', '0.9.6')]
+        self.assertListEqual(l, ['choxie', 'towel-stuff'])
+
+        l = [dist.name for dist in obsoletes_distribution('truffles', '0.5.2.3')]
+        self.assertListEqual(l, ['choxie', 'towel-stuff'])
+
+        l = [dist.name for dist in obsoletes_distribution('truffles', '0.2')]
+        self.assertListEqual(l, ['towel-stuff'])
+
+
+def test_suite():
+    suite = unittest2.TestSuite()
+    testcase_loader = unittest2.loader.defaultTestLoader.loadTestsFromTestCase
+    suite.addTest(testcase_loader(TestPkgUtilFunctions))
+    suite.addTest(testcase_loader(TestPkgUtilDistribution))
+    return suite
+
+def test_main():
+    run_unittest(test_suite())
+
+if __name__ == "__main__":
+    test_main()
 
 def test_suite():
     suite = unittest2.TestSuite()

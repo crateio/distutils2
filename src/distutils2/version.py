@@ -330,10 +330,11 @@ class VersionPredicate(object):
 
     _operators = {"<": lambda x, y: x < y,
                   ">": lambda x, y: x > y,
-                  "<=": lambda x, y: x <= y,
-                  ">=": lambda x, y: x >= y,
-                  "==": lambda x, y: x == y,
-                  "!=": lambda x, y: x != y}
+                  "<=": lambda x, y: str(x).startswith(str(y)) or x < y,
+                  ">=": lambda x, y: str(x).startswith(str(y)) or x > y,
+                  "==": lambda x, y: str(x).startswith(str(y)),
+                  "!=": lambda x, y: not str(x).startswith(str(y)),
+                  }
 
     def __init__(self, predicate):
         predicate = predicate.strip()

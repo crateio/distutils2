@@ -790,7 +790,7 @@ def obsoletes_distribution(name,  version=None):
         obsoleted = dist.metadata['Obsoletes-Dist'] + dist.metadata['Obsoletes']
         for obs in obsoleted:
             o_components = obs.split(' ', 1)
-            if len(o_components) == 1:
+            if len(o_components) == 1 or version is None:
                 if name == o_components[0]:
                     yield dist
                     break
@@ -826,7 +826,7 @@ def provides_distribution(name,  version=None):
     if not version is None:
         try:
             predicate = VersionPredicate(name + ' (' + version + ')')
-        except ValueErorr:
+        except ValueError:
             raise DistutilsError('Invalid name or version')
 
     for dist in get_distributions():
@@ -835,7 +835,7 @@ def provides_distribution(name,  version=None):
         for p in provided:
             p_components = p.split(' ', 1)
             if len(p_components) == 1 or predicate is None:
-                if name == p:
+                if name == p_components[0]:
                     yield dist
                     break
             else:
