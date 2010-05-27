@@ -11,14 +11,14 @@ from csv import reader as csv_reader
 from types import ModuleType
 from distutils2.errors import DistutilsError
 from distutils2.metadata import DistributionMetadata
-from distutils2.version import suggest_normalized_version
+from distutils2.version import suggest_normalized_version, VersionPredicate
 
 __all__ = [
     'get_importer', 'iter_importers', 'get_loader', 'find_loader',
     'walk_packages', 'iter_modules',
     'ImpImporter', 'ImpLoader', 'read_code', 'extend_path',
     'Distribution', 'distinfo_dirname', 'get_distributions',
-    'get_distribution', 'get_file_users', 
+    'get_distribution', 'get_file_users',
 ]
 
 def read_code(stream):
@@ -696,8 +696,8 @@ class Distribution(object):
 
     def get_distinfo_files(self, local=False):
         """
-        Iterates over the RECORD entries and returns paths for each line if the 
-        path is pointing to a file located in the ``.dist-info`` directory or 
+        Iterates over the RECORD entries and returns paths for each line if the
+        path is pointing to a file located in the ``.dist-info`` directory or
         one of its subdirectories.
 
         :parameter local: If *local* is ``True``, each returned path is
@@ -762,7 +762,7 @@ def get_distributions():
 def get_distribution(name):
     """
     Scans all elements in ``sys.path`` and looks for all directories ending with
-    ``.dist-info``. Returns a :class:`Distribution` corresponding to the 
+    ``.dist-info``. Returns a :class:`Distribution` corresponding to the
     ``.dist-info`` directory that contains the METADATA that matches *name* for
     the *name* metadata.
 
@@ -777,6 +777,77 @@ def get_distribution(name):
             break
     return found
 
+def obsoletes_distribution(name,  version=None):
+    """
+    Iterates over all distributions to find which distributions obsolete *name*.
+    If a *version* is provided, it will be used to filter the results.
+
+    :type name: string
+    :type version: string
+    :parameter name:
+    """
+    for dist in get_distributions():
+        obsoleted = dist.metadata['Obsoletes-Dist'] + dist.metadata['Obsoletes']
+        for obs in obsoleted:
+            o_components = obs.split(' ', 1)
+            if len(o_components) == 1:
+                if name == o_components[0]:
+                    yield dist
+                    break
+            else:
+                try:
+                    predicate = VersionPredicate(obs)
+                except ValueError:
+                    raise DistutilsError(('Distribution %s has ill formed' +
+                                          ' obsoletes field') % (dist.name,))
+                if name == o_components[0] and predicate.match(version):
+                    yield dist
+                    break
+
+def provides_distribution(name,  version=None):
+    """
+    Iterates over all distributions to find which distributions provide *name*.
+    If a *version* is provided, it will be used to filter the results. Scans
+    all elements in ``sys.path``  and looks for all directories ending with
+    ``.dist-info``. Returns a :class:`Distribution`  corresponding to the
+    ``.dist-info`` directory that contains a ``METADATA`` that matches *name*
+    for the name metadata.
+
+    This function only returns the first result founded, since no more than
+    one values are expected. If the directory is not found, returns ``None``.
+
+    :parameter version: a version specifier that indicates the version
+                        required, conforming to the format in ``PEP-345``
+
+    :type name: string
+    :type version: string
+    """
+    predicate = None
+    if not version is None:
+        try:
+            predicate = VersionPredicate(name + ' (' + version + ')')
+        except ValueErorr:
+            raise DistutilsError('Invalid name or version')
+
+    for dist in get_distributions():
+        provided = dist.metadata['Provides-Dist'] + dist.metadata['Provides']
+
+        for p in provided:
+            p_components = p.split(' ', 1)
+            if len(p_components) == 1 or predicate is None:
+                if name == p:
+                    yield dist
+                    break
+            else:
+                p_name, p_ver = p_components
+                if len(p_ver) < 2 or p_ver[0] != '(' or p_ver[-1] != ')':
+                    raise DistutilsError(('Distribution %s has invalid ' +
+                                          'provides field') % (dist.name,))
+                p_ver = p_ver[1:-1] # trim off the parenthesis
+                if p_name == name and predicate.match(p_ver):
+                    yield dist
+                    break
+
 def get_file_users(path):
     """
     Iterates over all distributions to find out which distributions uses
@@ -789,3 +860,4 @@ def get_file_users(path):
     for dist in get_distributions():
         if dist.uses(path):
             yield dist
+
