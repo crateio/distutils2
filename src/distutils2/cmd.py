@@ -57,8 +57,7 @@ class Command:
     def __init__(self, dist):
         """Create and initialize a new Command object.  Most importantly,
         invokes the 'initialize_options()' method, which is the real
-        initializer and depends on the actual command being
-        instantiated.
+        initializer and depends on the actual command being instantiated.
         """
         # late import because of mutual dependence between these classes
         from distutils2.dist import Distribution
