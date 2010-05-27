@@ -145,6 +145,11 @@ class VersionTestCase(unittest.TestCase):
         assert VersionPredicate('Ho (<3.0)').match('2.6')
         assert VersionPredicate('Ho (<3.0,!=2.5)').match('2.6.0')
         assert not VersionPredicate('Ho (<3.0,!=2.6)').match('2.6.0')
+        assert VersionPredicate('Ho (2.5)').match('2.5.4')
+        assert not VersionPredicate('Ho (!=2.5)').match('2.5.2')
+        assert VersionPredicate('Hey (<=2.5)').match('2.5.9')
+        assert not VersionPredicate('Hey (<=2.5)').match('2.6.0')
+        assert VersionPredicate('Hey (>=2.5)').match('2.5.1')
 
 
         # XXX need to silent the micro version in this case
