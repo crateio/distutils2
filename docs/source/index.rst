@@ -12,6 +12,8 @@ Contents:
    :maxdepth: 2
 
    metadata
+   new_commands
+   test_framework
 
 Indices and tables
 ==================
