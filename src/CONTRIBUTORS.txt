@@ -1,0 +1,24 @@
+============
+Contributors
+============
+
+Distutils2 is a project that was started and that is maintained by
+Tarek Ziadé, and many people are contributing to the project.
+
+If you did, please add your name below in alphabetical order !
+
+Thanks to:
+
+- Pior Bastida
+- Titus Brown
+- Nicolas Cadou
+- Yannick Gringas
+- Carl Meyer
+- Michael Mulich
+- George Peris
+- Sean Reifschneider
+- Erik Rose
+- Brian Rosner
+- Alexandre Vassalotti
+- Martin von Löwis
+
