@@ -9,8 +9,6 @@ try:
 except ImportError:
     from md5 import md5
 
-sys.path.append('/home/josip/dev/distutils2/src')
-
 from test.test_support import run_unittest, TESTFN
 
 import distutils2._backport.pkgutil
