@@ -17,8 +17,9 @@ __all__ = [
     'get_importer', 'iter_importers', 'get_loader', 'find_loader',
     'walk_packages', 'iter_modules',
     'ImpImporter', 'ImpLoader', 'read_code', 'extend_path',
-    'Distribution', 'distinfo_dirname', 'get_distributions',
-    'get_distribution', 'get_file_users',
+    'Distribution', 'EggInfoDistribution', 'distinfo_dirname',
+    'get_distributions', 'get_distribution', 'get_file_users',
+    'provides_distribution', 'obsoletes_distribution',
 ]
 
 def read_code(stream):
@@ -604,7 +605,7 @@ class Distribution(object):
     name = ''
     """The name of the distribution."""
     metadata = None
-    """A :class:`distutils2.metadata.DistributionMetadata` instance loaded with 
+    """A :class:`distutils2.metadata.DistributionMetadata` instance loaded with
     the distribution's METADATA file."""
     requested = False
     """A boolean that indicates whether the REQUESTED metadata file is present
@@ -646,7 +647,7 @@ class Distribution(object):
 
     def uses(self, path):
         """
-        Returns ``True`` if path is listed in RECORD. *path* can be a local 
+        Returns ``True`` if path is listed in RECORD. *path* can be a local
         absolute path or a relative ``'/'``-separated path.
 
         :rtype: boolean
@@ -709,6 +710,29 @@ class Distribution(object):
         for path, md5, size in self._get_records(local):
             yield path
 
+class EggInfoDistribution:
+    """Created with the *path* of the ``.egg-info`` directory or file provided
+    to the constructor. It reads the metadata contained in the file itself, or
+    if the given path happens to be a directory, the metadata is read from the
+    file PKG-INFO under that directory."""
+
+    name = ''
+    """The name of the distribution."""
+    metadata = None
+    """A :class:`distutils2.metadata.DistributionMetadata` instance loaded with
+    the distribution's METADATA file."""
+
+    def __init__(self, path):
+        if os.path.isdir(path):
+            path = os.path.join(path, 'PKG-INFO')
+        self.metadata = DistributionMetadata(path=path)
+        self.name = self.metadata['name']
+
+    def get_installed_files(self, local=False):
+        return []
+
+    def uses(self, path):
+        return False
 
 def _normalize_dist_name(name):
     """Returns a normalized name from the given *name*.
@@ -719,7 +743,7 @@ def distinfo_dirname(name, version):
     """
     The *name* and *version* parameters are converted into their
     filename-escaped form, i.e. any ``'-'`` characters are replaced with ``'_'``
-    other than the one in ``'dist-info'`` and the one separating the name from 
+    other than the one in ``'dist-info'`` and the one separating the name from
     the version number.
 
     :parameter name: is converted to a standard distribution name by replacing
@@ -743,13 +767,15 @@ def distinfo_dirname(name, version):
         normalized_version = version
     return '-'.join([name, normalized_version]) + file_extension
 
-def get_distributions():
+def get_distributions(use_egg_info = False):
     """
     Provides an iterator that looks for ``.dist-info`` directories in
     ``sys.path`` and returns :class:`Distribution` instances for each one of
-    them.
+    them. If the parameters *use_egg_info* is ``True``, then the ``.egg-info``
+    files and directores are iterated as well.
 
-    :rtype: iterator of :class:`Distribution` instances"""
+    :rtype: iterator of :class:`Distribution` and :class:`EggInfoDistribution`
+            instances"""
     for path in sys.path:
         realpath = os.path.realpath(path)
         if not os.path.isdir(realpath):
@@ -758,35 +784,50 @@ def get_distributions():
             if dir.endswith('.dist-info'):
                 dist = Distribution(os.path.join(realpath, dir))
                 yield dist
+            elif use_egg_info and dir.endswith('.egg-info'):
+                dist = EggInfoDistribution(os.path.join(realpath, dir))
+                yield dist
 
-def get_distribution(name):
+def get_distribution(name, use_egg_info = False):
     """
     Scans all elements in ``sys.path`` and looks for all directories ending with
     ``.dist-info``. Returns a :class:`Distribution` corresponding to the
     ``.dist-info`` directory that contains the METADATA that matches *name* for
-    the *name* metadata.
+    the *name* metadata field.
+    If no distribution exists with the given *name* and the parameter
+    *use_egg_info* is set to ``True``, then all files and directories ending
+    with ``.egg-info`` are scanned. A :class:`EggInfoDistribution` instance is
+    returned if one is found that has metadata that matches *name* for the
+    *name* metadata field.
 
     This function only returns the first result founded, as no more than one
     value is expected. If the directory is not found, ``None`` is returned.
 
-    :rtype: :class:`Distribution` or None"""
+    :rtype: :class:`Distribution` or :class:`EggInfoDistribution: or None"""
     found = None
     for dist in get_distributions():
         if dist.name == name:
             found = dist
             break
+    if use_egg_info:
+        for dist in get_distributions(True):
+            if dist.name == name:
+                found = dist
+                break
     return found
 
-def obsoletes_distribution(name,  version=None):
+def obsoletes_distribution(name,  version=None, use_egg_info = False):
     """
     Iterates over all distributions to find which distributions obsolete *name*.
     If a *version* is provided, it will be used to filter the results.
+    If the argument *use_egg_info* is set to ``True``, then ``.egg-info``
+    distributions will be considered as well.
 
     :type name: string
     :type version: string
     :parameter name:
     """
-    for dist in get_distributions():
+    for dist in get_distributions(use_egg_info):
         obsoleted = dist.metadata['Obsoletes-Dist'] + dist.metadata['Obsoletes']
         for obs in obsoleted:
             o_components = obs.split(' ', 1)
@@ -804,14 +845,16 @@ def obsoletes_distribution(name,  version=None):
                     yield dist
                     break
 
-def provides_distribution(name,  version=None):
+def provides_distribution(name,  version=None, use_egg_info = False):
     """
     Iterates over all distributions to find which distributions provide *name*.
     If a *version* is provided, it will be used to filter the results. Scans
     all elements in ``sys.path``  and looks for all directories ending with
     ``.dist-info``. Returns a :class:`Distribution`  corresponding to the
     ``.dist-info`` directory that contains a ``METADATA`` that matches *name*
-    for the name metadata.
+    for the name metadata. If the argument *use_egg_info* is set to ``True``,
+    then all files and directories ending with ``.egg-info`` are considered
+    as well and returns an :class:`EggInfoDistribution` instance.
 
     This function only returns the first result founded, since no more than
     one values are expected. If the directory is not found, returns ``None``.
@@ -829,7 +872,7 @@ def provides_distribution(name,  version=None):
         except ValueError:
             raise DistutilsError('Invalid name or version')
 
-    for dist in get_distributions():
+    for dist in get_distributions(use_egg_info):
         provided = dist.metadata['Provides-Dist'] + dist.metadata['Provides']
 
         for p in provided:

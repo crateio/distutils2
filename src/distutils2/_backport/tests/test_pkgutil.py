@@ -216,7 +216,9 @@ class TestPkgUtilFunctions(unittest2.TestCase):
         found_dists = []
 
         # Import the function in question
-        from distutils2._backport.pkgutil import get_distributions, Distribution
+        from distutils2._backport.pkgutil import get_distributions, \
+                                                 Distribution, \
+                                                 EggInfoDistribution
 
         # Verify the fake dists have been found.
         dists = [ dist for dist in get_distributions() ]
@@ -231,13 +233,31 @@ class TestPkgUtilFunctions(unittest2.TestCase):
         # Finally, test that we found all that we were looking for
         self.assertListEqual(sorted(found_dists), sorted(fake_dists))
 
+        # Now, test if the egg-info distributions are found correctly as well
+        fake_dists += [('bacon', '0.1'), ('cheese', '2.0.2')]
+        found_dists = []
+
+        dists = [ dist for dist in get_distributions(use_egg_info=True) ]
+        for dist in dists:
+            if not (isinstance(dist, Distribution) or \
+                    isinstance(dist, EggInfoDistribution)):
+                self.fail("item received was not a Distribution or "
+                          "EggInfoDistribution instance: %s" % type(dist))
+            if dist.name in dict(fake_dists).keys():
+                found_dists.append((dist.name, dist.metadata['version']))
+
+        self.assertListEqual(sorted(fake_dists), sorted(found_dists))
+
+
     def test_get_distribution(self):
         """Test for looking up a distribution by name."""
         # Test the lookup of the towel-stuff distribution
         name = 'towel-stuff' # Note: This is different from the directory name
 
         # Import the function in question
-        from distutils2._backport.pkgutil import get_distribution, Distribution
+        from distutils2._backport.pkgutil import get_distribution, \
+                                                 Distribution, \
+                                                 EggInfoDistribution
 
         # Lookup the distribution
         dist = get_distribution(name)
@@ -249,6 +269,21 @@ class TestPkgUtilFunctions(unittest2.TestCase):
 
         # Verify partial name matching doesn't work
         self.assertEqual(None, get_distribution('towel'))
+
+        # Verify that it does not find egg-info distributions, when not
+        # instructed to
+        self.assertEqual(None, get_distribution('bacon'))
+        self.assertEqual(None, get_distribution('cheese'))
+
+        # Now check that it works well in both situations, when egg-info
+        # is a file and directory respectively.
+        dist = get_distribution('cheese', use_egg_info=True)
+        self.assertTrue(isinstance(dist, EggInfoDistribution))
+        self.assertEqual(dist.name, 'cheese')
+
+        dist = get_distribution('bacon', use_egg_info=True)
+        self.assertTrue(isinstance(dist, EggInfoDistribution))
+        self.assertEqual(dist.name, 'bacon')
 
     def test_get_file_users(self):
         """Test the iteration of distributions that use a file."""
@@ -265,46 +300,74 @@ class TestPkgUtilFunctions(unittest2.TestCase):
         from distutils2._backport.pkgutil import provides_distribution
         from distutils2.errors import DistutilsError
 
+        checkLists = lambda x,y: self.assertListEqual(sorted(x), sorted(y))
+
         l = [dist.name for dist in provides_distribution('truffles')]
-        self.assertListEqual(l, ['choxie', 'towel-stuff'])
+        checkLists(l, ['choxie', 'towel-stuff'])
 
         l = [dist.name for dist in provides_distribution('truffles', '1.0')]
-        self.assertListEqual(l, ['choxie'])
+        checkLists(l, ['choxie'])
+
+        l = [dist.name for dist in provides_distribution('truffles', '1.0',
+                                                         use_egg_info=True)]
+        checkLists(l, ['choxie', 'cheese'])
 
         l = [dist.name for dist in provides_distribution('truffles', '1.1.2')]
-        self.assertListEqual(l, ['towel-stuff'])
+        checkLists(l, ['towel-stuff'])
 
         l = [dist.name for dist in provides_distribution('truffles', '1.1')]
-        self.assertListEqual(l, ['towel-stuff'])
+        checkLists(l, ['towel-stuff'])
 
         l = [dist.name for dist in provides_distribution('truffles', '!=1.1,<=2.0')]
-        self.assertListEqual(l, ['choxie'])
+        checkLists(l, ['choxie'])
+
+        l = [dist.name for dist in provides_distribution('truffles', '!=1.1,<=2.0',
+                                                          use_egg_info=True)]
+        checkLists(l, ['choxie', 'bacon', 'cheese'])
 
         l = [dist.name for dist in provides_distribution('truffles', '>1.0')]
-        self.assertListEqual(l, ['towel-stuff'])
+        checkLists(l, ['towel-stuff'])
+
+        l = [dist.name for dist in provides_distribution('truffles', '>1.5')]
+        checkLists(l, [])
+
+        l = [dist.name for dist in provides_distribution('truffles', '>1.5',
+                                                         use_egg_info=True)]
+        checkLists(l, ['bacon'])
 
         l = [dist.name for dist in provides_distribution('truffles', '>=1.0')]
-        self.assertListEqual(l, ['choxie', 'towel-stuff'])
+        checkLists(l, ['choxie', 'towel-stuff'])
 
     def test_obsoletes(self):
         """ Test looking for distributions based on what they obsolete """
         from distutils2._backport.pkgutil import obsoletes_distribution
         from distutils2.errors import DistutilsError
 
+        checkLists = lambda x,y: self.assertListEqual(sorted(x), sorted(y))
+
         l = [dist.name for dist in obsoletes_distribution('truffles', '1.0')]
-        self.assertListEqual(l, [])
+        checkLists(l, [])
+
+        l = [dist.name for dist in obsoletes_distribution('truffles', '1.0',
+                                                          use_egg_info=True)]
+        checkLists(l, ['cheese', 'bacon'])
+
 
         l = [dist.name for dist in obsoletes_distribution('truffles', '0.8')]
-        self.assertListEqual(l, ['choxie'])
+        checkLists(l, ['choxie'])
+
+        l = [dist.name for dist in obsoletes_distribution('truffles', '0.8',
+                                                          use_egg_info=True)]
+        checkLists(l, ['choxie', 'cheese'])
 
         l = [dist.name for dist in obsoletes_distribution('truffles', '0.9.6')]
-        self.assertListEqual(l, ['choxie', 'towel-stuff'])
+        checkLists(l, ['choxie', 'towel-stuff'])
 
         l = [dist.name for dist in obsoletes_distribution('truffles', '0.5.2.3')]
-        self.assertListEqual(l, ['choxie', 'towel-stuff'])
+        checkLists(l, ['choxie', 'towel-stuff'])
 
         l = [dist.name for dist in obsoletes_distribution('truffles', '0.2')]
-        self.assertListEqual(l, ['towel-stuff'])
+        checkLists(l, ['towel-stuff'])
 
 
 def test_suite():
