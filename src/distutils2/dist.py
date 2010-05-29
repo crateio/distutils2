@@ -248,7 +248,7 @@ Common commands: (see '--help-commands' for more)
                 elif hasattr(self, key):
                     setattr(self, key, val)
                 else:
-                    msg = "Metadata option not defined in version 1.2 (PEP-345): %s" % repr(key)
+                    msg = "Unknown distribution option: %s" % repr(key)
                     if warnings is not None:
                         warnings.warn(msg)
                     else:
