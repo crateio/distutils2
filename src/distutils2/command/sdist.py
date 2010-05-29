@@ -121,6 +121,7 @@ class sdist(Command):
         self.metadata_check = 1
         self.owner = None
         self.group = None
+        self.filelist = None
 
     def _check_archive_formats(self, formats):
         supported_formats = [name for name, desc in get_archive_formats()]
@@ -152,10 +153,14 @@ class sdist(Command):
         if self.dist_dir is None:
             self.dist_dir = "dist"
 
+        if self.filelist is None:
+            self.filelist = Manifest()
+
+
     def run(self):
         # 'filelist' contains the list of files that will make up the
         # manifest
-        self.filelist = Manifest()
+        self.filelist.clear()
 
         # Run sub commands
         for cmd_name in self.get_sub_commands():
@@ -200,7 +205,7 @@ class sdist(Command):
         if self.use_defaults:
             self.add_defaults()
         if template_exists:
-            self.read_template()
+            self.filelist.read_template(self.template)
         if self.prune:
             self.prune_file_list()
 
