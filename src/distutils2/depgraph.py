@@ -1,0 +1,109 @@
+"""
+A dependency graph generator. The graph is represented as an instance of
+:class:`Graph`, and DOT output is possible as well.
+"""
+
+from distutils2._backport import pkgutil
+from distutils2.errors import DistutilsError
+from distutils2.version import VersionPredicate
+
+class Graph:
+    nodes = []
+    adjacency_list = {}
+
+    def __init__(self):
+        self.nodes = []
+        self.adjacency_list = {}
+
+    def add_node(self, x):
+        self.nodes.append(x)
+        self.adjacency_list[x] = list()
+
+    def add_edge(self, x, y, label=None):
+        self.adjacency_list[x].append((y, label))
+
+    def to_dot(self, f, skip_disconnected = True):
+        """ Writes a DOT output for the graph to the provided *file* """
+
+        def dot_escape(x):
+            return x
+
+        if not isinstance(f, file):
+            raise TypeError('the argument has to be of type file')
+
+        disconnected = []
+
+        f.write("digraph dependencies {\n")
+        for dist, adjs in self.adjacency_list.iteritems():
+            if len(adjs) == 0 and not skip_disconnected:
+                disconnected.append(dist)
+            for (other, label) in adjs:
+                if not label is None:
+                    f.write('"%s" -> "%s" [label="%s"]\n' % (dist.name,
+                                                             other.name, label))
+                else:
+                    f.write('"%s" -> "%s"\n' % (dist.name, other.name))
+        if not skip_disconnected and len(disconnected) > 0:
+            f.write('subgraph disconnected {\n')
+            f.write('label = "Disconnected"\n')
+            f.write('bgcolor = red\n')
+
+            for dist in disconnected:
+                f.write('"%s"' % dist.name)
+                f.write('\n')
+            f.write('}\n')
+        f.write('}\n')
+
+def generate_graph(dists):
+    graph = Graph()
+    provided = {} # maps names to lists of (version, dist) tuples
+
+    dists = list(dists) # maybe use generator_tools to copy generators in future
+
+    # first, build the graph and find out the provides
+    for dist in dists:
+        graph.add_node(dist)
+        provides = dist.metadata['Provides-Dist'] + dist.metadata['Provides']
+
+        for p in provides:
+            comps = p.split(" ", 1)
+            name = comps[0]
+            version = None
+            if len(comps) == 2:
+                version = comps[1]
+                if len(version) < 3 or version[0] != '(' or version[-1] != ')':
+                    raise DistutilsError('Distribution %s has ill formed' \
+                                         'provides field: %s' % (dist.name, p))
+                version = version[1:-1] # trim off parenthesis
+            if not name in provided:
+                provided[name] = []
+            provided[name].append((version, dist))
+
+    print provided.keys()
+    # now make the edges
+    for dist in dists:
+        requires = dist.metadata['Requires-Dist'] + dist.metadata['Requires']
+        for req in requires:
+            predicate = VersionPredicate(req)
+            comps = req.split(" ", 1)
+            name = comps[0]
+            label = None # the label for the possible edge
+            if len(comps) == 2:
+                label = comps[1]
+
+            if not name in provided:
+                print('Requirement %s for distribution %s is missing' % \
+                      (req, dist.name))
+            else:
+                for (version, provider) in provided[name]:
+                    if predicate.match(version):
+                        graph.add_edge(dist, provider, label)
+
+    return graph
+
+if __name__ == '__main__':
+    dists = pkgutil.get_distributions(use_egg_info=True)
+    graph = generate_graph(dists)
+    f = open('output.dot', 'w')
+    graph.to_dot(f, False)
+
