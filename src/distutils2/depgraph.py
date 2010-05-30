@@ -10,7 +10,7 @@ from distutils2.version import VersionPredicate
 __all__ = ['DependencyGraph', 'generate_graph']
 
 
-class DependencyGraph:
+class DependencyGraph(object):
     """
     Represents a dependency graph between distributions.
 
@@ -21,9 +21,6 @@ class DependencyGraph:
     they are stored in ``missing``. It maps distributions to a list of
     requirements that were not provided by any other distributions.
     """
-
-    adjacency_list = {}
-    missing = {} # maps distributions to a list of unfulfilled requirements
 
     def __init__(self):
         self.adjacency_list = {}
@@ -63,7 +60,7 @@ class DependencyGraph:
         """
         self.missing[distribution].append(requirement)
 
-    def to_dot(self, f, skip_disconnected = True):
+    def to_dot(self, f, skip_disconnected=True):
         """
         Writes a DOT output for the graph to the provided *file*.
         If *skip_disconnected* is set to ``True``, then all distributions
@@ -83,8 +80,8 @@ class DependencyGraph:
                 disconnected.append(dist)
             for (other, label) in adjs:
                 if not label is None:
-                    f.write('"%s" -> "%s" [label="%s"]\n' % (dist.name,
-                                                             other.name, label))
+                    f.write('"%s" -> "%s" [label="%s"]\n' %
+                                                (dist.name, other.name, label))
                 else:
                     f.write('"%s" -> "%s"\n' % (dist.name, other.name))
         if not skip_disconnected and len(disconnected) > 0:
@@ -98,6 +95,7 @@ class DependencyGraph:
             f.write('}\n')
         f.write('}\n')
 
+
 def generate_graph(dists):
     """
     Generates a dependency graph from the given distributions.
@@ -110,7 +108,7 @@ def generate_graph(dists):
     graph = DependencyGraph()
     provided = {} # maps names to lists of (version, dist) tuples
 
-    dists = list(dists) # maybe use generator_tools to copy generators in future
+    dists = list(dists) # maybe use generator_tools in future
 
     missing = [] # a list of (instance, requirement) tuples
 
@@ -150,10 +148,11 @@ def generate_graph(dists):
 
     return graph
 
+
 def dependent_dists(dists, dist):
     """
-    Recursively generate a list of distributions from *dists* that are dependent
-    on *dist*.
+    Recursively generate a list of distributions from *dists* that are
+    dependent on *dist*.
 
     :param dists: a list of distributions
     :param dist: a distribution, member of *dists* for which we are interested
@@ -183,4 +182,3 @@ if __name__ == '__main__':
                                                        ", ".join(reqs)))
     f = open('output.dot', 'w')
     graph.to_dot(f, True)
-
