@@ -12,6 +12,7 @@ Thanks to:
 - Pior Bastida
 - Titus Brown
 - Nicolas Cadou
+- Josip Djolonga
 - Yannick Gringas
 - Carl Meyer
 - Michael Mulich
