@@ -27,7 +27,7 @@ class CheckTestCase(support.LoggingSilencer,
         # by default, check is checking the metadata
         # should have some warnings
         cmd = self._run()
-        self.assert_(len(cmd._warnings) > 0)
+        self.assertTrue(len(cmd._warnings) > 0)
 
         # now let's add the required fields
         # and run it again, to make sure we don't get

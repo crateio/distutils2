@@ -64,7 +64,7 @@ class DistributionMetadataTestCase(unittest2.TestCase):
         res = res.read()
         f = open(PKG_INFO)
         wanted = f.read()
-        self.assert_('Keywords: keyring,password,crypt' in res)
+        self.assertTrue('Keywords: keyring,password,crypt' in res)
         f.close()
 
     def test_metadata_markers(self):

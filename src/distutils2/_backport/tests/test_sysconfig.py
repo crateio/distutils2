@@ -97,7 +97,7 @@ class TestSysConfig(unittest2.TestCase):
         substitution key (which would be weird).
 
         """
-        self.failUnlessEqual(_subst_vars('{py{version}}', {'version': '31'}), '{py31}')
+        self.assertEqual(_subst_vars('{py{version}}', {'version': '31'}), '{py31}')
 
     def test_get_paths(self):
         scheme = get_paths()
