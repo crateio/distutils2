@@ -11,8 +11,21 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   metadata
-   devresources
+   :numbered:
+
+   introduction.rst
+   setupscript.rst
+   configfile.rst
+   sourcedist.rst
+   builtdist.rst
+   packageindex.rst
+   uploading.rst
+   examples.rst
+   extending.rst
+   commandref.rst
+   metadata.rst
+   devresources.rst
+   apiref.rst
 
 Indices and tables
 ==================
