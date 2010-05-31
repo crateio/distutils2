@@ -94,3 +94,61 @@ path information, only the name of the file itself.  In dry-run mode, pairs
 should still be added to represent what would have been created.
 
 
+Creating a new Distutils command
+================================
+
+This section outlines the steps to create a new Distutils command.
+
+A new command lives in a module in the :mod:`distutils.command` package. There
+is a sample template in that directory called  :file:`command_template`. Copy
+this file to a new module with the same name as the new command you're
+implementing. This module should implement a class with the same name as the
+module (and the command). So, for instance, to create the command
+``peel_banana`` (so that users can run ``setup.py peel_banana``), you'd copy
+:file:`command_template`  to :file:`distutils/command/peel_banana.py`, then edit
+it so that it's implementing the class :class:`peel_banana`, a subclass of
+:class:`distutils.cmd.Command`.
+
+Subclasses of :class:`Command` must define the following methods.
+
+
+.. method:: Command.initialize_options()
+
+   Set default values for all the options that this command supports.  Note that
+   these defaults may be overridden by other commands, by the setup script, by
+   config files, or by the command-line.  Thus, this is not the place to code
+   dependencies between options; generally, :meth:`initialize_options`
+   implementations are just a bunch of ``self.foo = None`` assignments.
+
+
+.. method:: Command.finalize_options()
+
+   Set final values for all the options that this command supports. This is
+   always called as late as possible, ie.  after any option assignments from the
+   command-line or from other commands have been done.  Thus, this is the place
+   to to code option dependencies: if *foo* depends on *bar*, then it is safe to
+   set *foo* from *bar* as long as *foo* still has the same value it was
+   assigned in :meth:`initialize_options`.
+
+
+.. method:: Command.run()
+
+   A command's raison d'etre: carry out the action it exists to perform, controlled
+   by the options initialized in :meth:`initialize_options`, customized by other
+   commands, the setup script, the command-line, and config files, and finalized in
+   :meth:`finalize_options`.  All terminal output and filesystem interaction should
+   be done by :meth:`run`.
+
+*sub_commands* formalizes the notion of a "family" of commands, eg. ``install``
+as the parent with sub-commands ``install_lib``, ``install_headers``, etc.  The
+parent of a family of commands defines *sub_commands* as a class attribute; it's
+a list of 2-tuples ``(command_name, predicate)``, with *command_name* a string
+and *predicate* an unbound method, a string or None. *predicate* is a method of
+the parent command that determines whether the corresponding command is
+applicable in the current situation.  (Eg. we ``install_headers`` is only
+applicable if we have any C header files to install.)  If *predicate* is None,
+that command is always applicable.
+
+*sub_commands* is usually defined at the \*end\* of a class, because predicates
+can be unbound methods, so they must already have been defined.  The canonical
+example is the :command:`install` command.
