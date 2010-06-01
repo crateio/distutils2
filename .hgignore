@@ -3,4 +3,5 @@
 ^docs/build
 .*\.swp$
 src/build/*
+.*\.pida-metadata
 
