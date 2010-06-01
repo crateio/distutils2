@@ -28,7 +28,6 @@ def encode_multipart(fields, files, boundary=None):
     """
     if boundary is None:
         boundary = '--------------GHSKFJDLGDS7543FJKLFHRE75642756743254'
-    CRLF = '\r\n'
     l = []
     for (key, value) in fields:
         l.extend([
@@ -44,7 +43,7 @@ def encode_multipart(fields, files, boundary=None):
             value])
     l.append('--' + boundary + '--')
     l.append('')
-    body = CRLF.join(l)
+    body =  '\r\n'.join(l)
     content_type = 'multipart/form-data; boundary=%s' % boundary
     return content_type, body
 
