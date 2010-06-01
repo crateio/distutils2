@@ -2,7 +2,7 @@ import Queue, threading, time, unittest2
 from wsgiref.simple_server import make_server
 import os.path
 
-PYPI_HTML_BASE_PATH = os.path.dirname(os.path.abspath(__file__)) + "/pypiserver"
+PYPI_DEFAULT_STATIC_PATH =  os.path.dirname(os.path.abspath(__file__)) + "/pypiserver"
 
 class PyPIServerTestCase(unittest2.TestCase):
 
@@ -17,7 +17,15 @@ class PyPIServerTestCase(unittest2.TestCase):
 
 class PyPIServer(threading.Thread):
     """Thread that wraps a wsgi app"""
-    def __init__(self):
+    
+    def __init__(self, static_uri_paths=["pypi"],
+            static_filesystem_path=PYPI_DEFAULT_STATIC_PATH):
+        """Initialize the server.
+
+        static_uri_paths and static_base_path are parameters used to provides
+        respectively the http_paths to serve statically, and where to find the
+        matching files on the filesystem.
+        """
         threading.Thread.__init__(self)
         self.httpd = make_server('', 0, self.pypi_app)
         self.httpd.RequestHandlerClass.log_request = lambda *_: None
@@ -27,6 +35,8 @@ class PyPIServer(threading.Thread):
         self.default_response_status = "200 OK"
         self.default_response_headers = [('Content-type', 'text/plain')]
         self.default_response_data = ["hello"]
+        self._static_uri_paths = static_uri_paths
+        self._static_filesystem_path = static_filesystem_path
 
     def run(self):
         self.httpd.serve_forever()
@@ -36,10 +46,17 @@ class PyPIServer(threading.Thread):
         self.join()
 
     def pypi_app(self, environ, start_response):
+        """Serve the content.
+
+        Also record the requests to be accessed later. If trying to access an
+        url matching `_static_paths`, serve static content, otherwise serve 
+        what is provided by the `get_next_response` method.
+        """
         # record the request. Read the input only on PUT or POST requests
         if environ["REQUEST_METHOD"] in ("PUT", "POST"):
             if environ.get("CONTENT_LENGTH"):
-                request_data = environ.pop('wsgi.input').read(int(environ['CONTENT_LENGTH']))
+                request_data = environ.pop('wsgi.input').read(
+                    int(environ['CONTENT_LENGTH']))
             else:
                 request_data = environ.pop('wsgi.input').read()
         elif environ["REQUEST_METHOD"] in ("GET", "DELETE"):
@@ -47,11 +64,12 @@ class PyPIServer(threading.Thread):
             
         self.request_queue.put((environ, request_data))
         
+        # serve the content from local disc if we request an URL beginning 
+        # by a pattern defined in `_static_paths`
         relative_path = environ["PATH_INFO"].replace(self.full_address, '')
-        
-        # serve the content from local disc if we request /simple
-        if relative_path.startswith("/simple/"):
-            file_to_serve = relative_path.replace("/simple", PYPI_HTML_BASE_PATH)
+        url_parts = relative_path.split("/")
+        if len(url_parts) > 1 and url_parts[1] in self._static_uri_paths:
+            file_to_serve = self._static_filesystem_path + relative_path
             try:
                 file = open(file_to_serve)
                 data = file.read()
@@ -61,7 +79,7 @@ class PyPIServer(threading.Thread):
                 data = "Not Found"
             return data
 
-        # otherwise serve the content from default_response* parameters
+        # otherwise serve the content from get_next_response
         else:
             # send back a response
             status, headers, data = self.get_next_response()

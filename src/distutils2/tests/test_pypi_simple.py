@@ -1,7 +1,6 @@
-"""Tests for pypi.simple module.
+"""Tests for the pypi.simple module.
 
 """
-# More would be better!
 import sys
 import os
 import shutil 

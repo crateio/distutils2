@@ -1,6 +1,7 @@
 """Tests for distutils.command.bdist."""
 import unittest2, urllib, urllib2
 from distutils2.tests.pypi_server import PyPIServer
+import os.path
 
 class PyPIServerTest(unittest2.TestCase):
 
@@ -22,9 +23,20 @@ class PyPIServerTest(unittest2.TestCase):
         server.stop()
 
     def test_serve_static_content(self):
-        """We expect that when accessing the test PyPI server, files can 
-        be served statically."""
-        server = PyPIServer()
+        """PYPI Mocked server can serve static content from disk.
+        """
+
+        def uses_local_files_for(server, url_path):
+            """Test that files are served statically (eg. the output from the
+            server is the same than the one made by a simple file read.
+            """
+            url = server.full_address + url_path 
+            request = urllib2.Request(url)
+            response = urllib2.urlopen(request)
+            file = open(server._static_filesystem_path + url_path)
+            return response.read() == file.read()
+
+        server = PyPIServer(static_uri_paths=["simple", "external"])
         server.start()
         
         # the file does not exists on the disc, so it might not be served
@@ -36,10 +48,10 @@ class PyPIServerTest(unittest2.TestCase):
             self.assertEqual(e.getcode(), 404)
 
         # now try serving a content that do exists
-        url = server.full_address + "/simple/index.html"
-        request = urllib2.Request(url)
-        f = urllib2.urlopen(request)
-        self.assertEqual(f.read(), "Yeah\n")
+        self.assertTrue(uses_local_files_for(server, "/simple/index.html"))
+
+        # and another one in another root path
+        self.assertTrue(uses_local_files_for(server, "/external/index.html"))
 
 def test_suite():
     return unittest2.makeSuite(PyPIServerTest)
