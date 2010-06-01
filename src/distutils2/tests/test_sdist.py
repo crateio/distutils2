@@ -343,6 +343,19 @@ class SDistTestCase(PyPIRCCommandTestCase):
         finally:
             archive.close()
 
+    def test_get_file_list(self):
+        dist, cmd = self.get_cmd()
+        cmd.finalize_options()
+        cmd.template = os.path.join(self.tmp_dir, 'MANIFEST.in')
+        f = open(cmd.template, 'w')
+        try:
+            f.write('include MANIFEST.in\n')
+        finally:
+            f.close()
+
+        cmd.get_file_list()
+        self.assertIn('MANIFEST.in', cmd.filelist.files)
+
 def test_suite():
     return unittest2.makeSuite(SDistTestCase)
 

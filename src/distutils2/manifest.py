@@ -54,6 +54,12 @@ class Manifest(object):
         for sort_tuple in sortable_files:
             self.files.append(os.path.join(*sort_tuple))
 
+    def clear(self):
+        """Clear all collected files."""
+        self.files = []
+        if self.allfiles is not None:
+            self.allfiles = []
+
     def remove_duplicates(self):
         # Assumes list has been sorted!
         for i in range(len(self.files) - 1, 0, -1):
