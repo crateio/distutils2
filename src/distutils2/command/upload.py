@@ -96,11 +96,7 @@ class upload(PyPIRCCommand):
         data['md5_digest'] = md5(content).hexdigest()
 
         comment = ''
-        if command == 'bdist_rpm':
-            dist, version, id = platform.dist()
-            if dist:
-                comment = 'built for %s %s' % (dist, version)
-        elif command == 'bdist_dumb':
+        if command == 'bdist_dumb':
             comment = 'built for %s' % platform.platform(terse=1)
         data['comment'] = comment
 

@@ -257,6 +257,9 @@ class SDistTestCase(PyPIRCCommandTestCase):
         cmd.metadata_check = 0
         cmd.run()
         warnings = self.get_logs(WARN)
+        # removing manifest generated warnings
+        warnings = [warn for warn in warnings if
+                    not warn.endswith('-- skipping')]
         self.assertEquals(len(warnings), 0)
 
 
@@ -339,6 +342,19 @@ class SDistTestCase(PyPIRCCommandTestCase):
                 self.assertEquals(member.uid, os.getuid())
         finally:
             archive.close()
+
+    def test_get_file_list(self):
+        dist, cmd = self.get_cmd()
+        cmd.finalize_options()
+        cmd.template = os.path.join(self.tmp_dir, 'MANIFEST.in')
+        f = open(cmd.template, 'w')
+        try:
+            f.write('include MANIFEST.in\n')
+        finally:
+            f.close()
+
+        cmd.get_file_list()
+        self.assertIn('MANIFEST.in', cmd.filelist.files)
 
 def test_suite():
     return unittest2.makeSuite(SDistTestCase)

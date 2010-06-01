@@ -1,0 +1,10 @@
+Notes for developers
+====================
+
+- Distutils2 runs from 2.4 to 3.2 (3.x not implemented yet), so
+  make sure you don't use a syntax that doesn't work under
+  a specific Python version.
+
+- Always run tests.sh before you push a change. This implies
+  that you have all Python versions installed.
+

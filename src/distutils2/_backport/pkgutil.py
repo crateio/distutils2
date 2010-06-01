@@ -11,15 +11,17 @@ from csv import reader as csv_reader
 from types import ModuleType
 from distutils2.errors import DistutilsError
 from distutils2.metadata import DistributionMetadata
-from distutils2.version import suggest_normalized_version
+from distutils2.version import suggest_normalized_version, VersionPredicate
 
 __all__ = [
     'get_importer', 'iter_importers', 'get_loader', 'find_loader',
     'walk_packages', 'iter_modules',
     'ImpImporter', 'ImpLoader', 'read_code', 'extend_path',
-    'Distribution', 'distinfo_dirname', 'get_distributions',
-    'get_distribution', 'get_file_users', 
+    'Distribution', 'EggInfoDistribution', 'distinfo_dirname',
+    'get_distributions', 'get_distribution', 'get_file_users',
+    'provides_distribution', 'obsoletes_distribution',
 ]
+
 
 def read_code(stream):
     # This helper is needed in order for the PEP 302 emulation to
@@ -37,6 +39,7 @@ def read_code(stream):
 def simplegeneric(func):
     """Make a trivial single-dispatch generic function"""
     registry = {}
+
     def wrapper(*args, **kw):
         ob = args[0]
         try:
@@ -47,6 +50,7 @@ def simplegeneric(func):
             mro = cls.__mro__
         except AttributeError:
             try:
+
                 class cls(cls, object):
                     pass
                 mro = cls.__mro__[1:]
@@ -128,7 +132,7 @@ def walk_packages(path=None, prefix='', onerror=None):
                 # don't traverse path items we've seen before
                 path = [p for p in path if not seen(p)]
 
-                for item in walk_packages(path, name+'.', onerror):
+                for item in walk_packages(path, name + '.', onerror):
                     yield item
 
 
@@ -206,7 +210,7 @@ class ImpImporter:
 
         for fn in filenames:
             modname = inspect.getmodulename(fn)
-            if modname=='__init__' or modname in yielded:
+            if modname == '__init__' or modname in yielded:
                 continue
 
             path = os.path.join(self.path, fn)
@@ -216,7 +220,7 @@ class ImpImporter:
                 modname = fn
                 for fn in os.listdir(path):
                     subname = inspect.getmodulename(fn)
-                    if subname=='__init__':
+                    if subname == '__init__':
                         ispkg = True
                         break
                 else:
@@ -255,7 +259,7 @@ class ImpLoader:
     def _reopen(self):
         if self.file and self.file.closed:
             mod_type = self.etc[2]
-            if mod_type==imp.PY_SOURCE:
+            if mod_type == imp.PY_SOURCE:
                 self.file = open(self.filename, 'rU')
             elif mod_type in (imp.PY_COMPILED, imp.C_EXTENSION):
                 self.file = open(self.filename, 'rb')
@@ -270,22 +274,22 @@ class ImpLoader:
 
     def is_package(self, fullname):
         fullname = self._fix_name(fullname)
-        return self.etc[2]==imp.PKG_DIRECTORY
+        return self.etc[2] == imp.PKG_DIRECTORY
 
     def get_code(self, fullname=None):
         fullname = self._fix_name(fullname)
         if self.code is None:
             mod_type = self.etc[2]
-            if mod_type==imp.PY_SOURCE:
+            if mod_type == imp.PY_SOURCE:
                 source = self.get_source(fullname)
                 self.code = compile(source, self.filename, 'exec')
-            elif mod_type==imp.PY_COMPILED:
+            elif mod_type == imp.PY_COMPILED:
                 self._reopen()
                 try:
                     self.code = read_code(self.file)
                 finally:
                     self.file.close()
-            elif mod_type==imp.PKG_DIRECTORY:
+            elif mod_type == imp.PKG_DIRECTORY:
                 self.code = self._get_delegate().get_code()
         return self.code
 
@@ -293,21 +297,20 @@ class ImpLoader:
         fullname = self._fix_name(fullname)
         if self.source is None:
             mod_type = self.etc[2]
-            if mod_type==imp.PY_SOURCE:
+            if mod_type == imp.PY_SOURCE:
                 self._reopen()
                 try:
                     self.source = self.file.read()
                 finally:
                     self.file.close()
-            elif mod_type==imp.PY_COMPILED:
+            elif mod_type == imp.PY_COMPILED:
                 if os.path.exists(self.filename[:-1]):
                     f = open(self.filename[:-1], 'rU')
                     self.source = f.read()
                     f.close()
-            elif mod_type==imp.PKG_DIRECTORY:
+            elif mod_type == imp.PKG_DIRECTORY:
                 self.source = self._get_delegate().get_source()
         return self.source
-
 
     def _get_delegate(self):
         return ImpImporter(self.filename).find_module('__init__')
@@ -315,7 +318,7 @@ class ImpLoader:
     def get_filename(self, fullname=None):
         fullname = self._fix_name(fullname)
         mod_type = self.etc[2]
-        if self.etc[2]==imp.PKG_DIRECTORY:
+        if self.etc[2] == imp.PKG_DIRECTORY:
             return self._get_delegate().get_filename()
         elif self.etc[2] in (imp.PY_SOURCE, imp.PY_COMPILED, imp.C_EXTENSION):
             return self.filename
@@ -339,16 +342,16 @@ try:
 
             fn = fn[plen:].split(os.sep)
 
-            if len(fn)==2 and fn[1].startswith('__init__.py'):
+            if len(fn) == 2 and fn[1].startswith('__init__.py'):
                 if fn[0] not in yielded:
                     yielded[fn[0]] = 1
                     yield fn[0], True
 
-            if len(fn)!=1:
+            if len(fn) != 1:
                 continue
 
             modname = inspect.getmodulename(fn[0])
-            if modname=='__init__':
+            if modname == '__init__':
                 continue
 
             if modname and '.' not in modname and modname not in yielded:
@@ -436,6 +439,7 @@ def iter_importers(fullname=""):
     if '.' not in fullname:
         yield ImpImporter()
 
+
 def get_loader(module_or_name):
     """Get a PEP 302 "loader" object for module_or_name
 
@@ -460,6 +464,7 @@ def get_loader(module_or_name):
     else:
         fullname = module_or_name
     return find_loader(fullname)
+
 
 def find_loader(fullname):
     """Find a PEP 302 "loader" object for fullname
@@ -551,6 +556,7 @@ def extend_path(path, name):
 
     return path
 
+
 def get_data(package, resource):
     """Get a resource from a package.
 
@@ -594,6 +600,7 @@ def get_data(package, resource):
 
 DIST_FILES = ('INSTALLER', 'METADATA', 'RECORD', 'REQUESTED',)
 
+
 class Distribution(object):
     """Created with the *path* of the ``.dist-info`` directory provided to the
     constructor. It reads the metadata contained in METADATA when it is
@@ -604,7 +611,7 @@ class Distribution(object):
     name = ''
     """The name of the distribution."""
     metadata = None
-    """A :class:`distutils2.metadata.DistributionMetadata` instance loaded with 
+    """A :class:`distutils2.metadata.DistributionMetadata` instance loaded with
     the distribution's METADATA file."""
     requested = False
     """A boolean that indicates whether the REQUESTED metadata file is present
@@ -620,7 +627,7 @@ class Distribution(object):
         RECORD = os.path.join(self.path, 'RECORD')
         record_reader = csv_reader(open(RECORD, 'rb'), delimiter=',')
         for row in record_reader:
-            path, md5, size = row[:] + [ None for i in xrange(len(row), 3) ]
+            path, md5, size = row[:] + [None for i in xrange(len(row), 3)]
             if local:
                 path = path.replace('/', os.sep)
                 path = os.path.join(sys.prefix, path)
@@ -635,7 +642,6 @@ class Distribution(object):
 
         A local absolute path is an absolute path in which occurrences of
         ``'/'`` have been replaced by the system separator given by ``os.sep``.
-
         :parameter local: flag to say if the path should be returned a local
                           absolute path
         :type local: boolean
@@ -643,10 +649,9 @@ class Distribution(object):
         """
         return self._get_records(local)
 
-
     def uses(self, path):
         """
-        Returns ``True`` if path is listed in RECORD. *path* can be a local 
+        Returns ``True`` if path is listed in RECORD. *path* can be a local
         absolute path or a relative ``'/'``-separated path.
 
         :rtype: boolean
@@ -663,8 +668,8 @@ class Distribution(object):
         ``file`` instance for the file pointed by *path*.
 
         :parameter path: a ``'/'``-separated path relative to the ``.dist-info``
-                         directory or an absolute path; If *path* is an absolute 
-                         path and doesn't start with the ``.dist-info``
+                         directory or an absolute path; If *path* is an
+                         absolute path and doesn't start with the ``.dist-info``
                          directory path, a :class:`DistutilsError` is raised
         :type path: string
         :parameter binary: If *binary* is ``True``, opens the file in read-only
@@ -696,8 +701,8 @@ class Distribution(object):
 
     def get_distinfo_files(self, local=False):
         """
-        Iterates over the RECORD entries and returns paths for each line if the 
-        path is pointing to a file located in the ``.dist-info`` directory or 
+        Iterates over the RECORD entries and returns paths for each line if the
+        path is pointing to a file located in the ``.dist-info`` directory or
         one of its subdirectories.
 
         :parameter local: If *local* is ``True``, each returned path is
@@ -710,16 +715,42 @@ class Distribution(object):
             yield path
 
 
+class EggInfoDistribution(object):
+    """Created with the *path* of the ``.egg-info`` directory or file provided
+    to the constructor. It reads the metadata contained in the file itself, or
+    if the given path happens to be a directory, the metadata is read from the
+    file PKG-INFO under that directory."""
+
+    name = ''
+    """The name of the distribution."""
+    metadata = None
+    """A :class:`distutils2.metadata.DistributionMetadata` instance loaded with
+    the distribution's METADATA file."""
+
+    def __init__(self, path):
+        if os.path.isdir(path):
+            path = os.path.join(path, 'PKG-INFO')
+        self.metadata = DistributionMetadata(path=path)
+        self.name = self.metadata['name']
+
+    def get_installed_files(self, local=False):
+        return []
+
+    def uses(self, path):
+        return False
+
+
 def _normalize_dist_name(name):
     """Returns a normalized name from the given *name*.
     :rtype: string"""
     return name.replace('-', '_')
 
+
 def distinfo_dirname(name, version):
     """
     The *name* and *version* parameters are converted into their
     filename-escaped form, i.e. any ``'-'`` characters are replaced with ``'_'``
-    other than the one in ``'dist-info'`` and the one separating the name from 
+    other than the one in ``'dist-info'`` and the one separating the name from
     the version number.
 
     :parameter name: is converted to a standard distribution name by replacing
@@ -743,13 +774,16 @@ def distinfo_dirname(name, version):
         normalized_version = version
     return '-'.join([name, normalized_version]) + file_extension
 
-def get_distributions():
+
+def get_distributions(use_egg_info=False):
     """
     Provides an iterator that looks for ``.dist-info`` directories in
     ``sys.path`` and returns :class:`Distribution` instances for each one of
-    them.
+    them. If the parameters *use_egg_info* is ``True``, then the ``.egg-info``
+    files and directores are iterated as well.
 
-    :rtype: iterator of :class:`Distribution` instances"""
+    :rtype: iterator of :class:`Distribution` and :class:`EggInfoDistribution`
+            instances"""
     for path in sys.path:
         realpath = os.path.realpath(path)
         if not os.path.isdir(realpath):
@@ -758,24 +792,116 @@ def get_distributions():
             if dir.endswith('.dist-info'):
                 dist = Distribution(os.path.join(realpath, dir))
                 yield dist
+            elif use_egg_info and dir.endswith('.egg-info'):
+                dist = EggInfoDistribution(os.path.join(realpath, dir))
+                yield dist
 
-def get_distribution(name):
+
+def get_distribution(name, use_egg_info=False):
     """
     Scans all elements in ``sys.path`` and looks for all directories ending with
-    ``.dist-info``. Returns a :class:`Distribution` corresponding to the 
+    ``.dist-info``. Returns a :class:`Distribution` corresponding to the
     ``.dist-info`` directory that contains the METADATA that matches *name* for
-    the *name* metadata.
+    the *name* metadata field.
+    If no distribution exists with the given *name* and the parameter
+    *use_egg_info* is set to ``True``, then all files and directories ending
+    with ``.egg-info`` are scanned. A :class:`EggInfoDistribution` instance is
+    returned if one is found that has metadata that matches *name* for the
+    *name* metadata field.
 
     This function only returns the first result founded, as no more than one
     value is expected. If the directory is not found, ``None`` is returned.
 
-    :rtype: :class:`Distribution` or None"""
+    :rtype: :class:`Distribution` or :class:`EggInfoDistribution: or None"""
     found = None
     for dist in get_distributions():
         if dist.name == name:
             found = dist
             break
+    if use_egg_info:
+        for dist in get_distributions(True):
+            if dist.name == name:
+                found = dist
+                break
     return found
+
+
+def obsoletes_distribution(name, version=None, use_egg_info=False):
+    """
+    Iterates over all distributions to find which distributions obsolete *name*.
+    If a *version* is provided, it will be used to filter the results.
+    If the argument *use_egg_info* is set to ``True``, then ``.egg-info``
+    distributions will be considered as well.
+
+    :type name: string
+    :type version: string
+    :parameter name:
+    """
+    for dist in get_distributions(use_egg_info):
+        obsoleted = dist.metadata['Obsoletes-Dist'] + dist.metadata['Obsoletes']
+        for obs in obsoleted:
+            o_components = obs.split(' ', 1)
+            if len(o_components) == 1 or version is None:
+                if name == o_components[0]:
+                    yield dist
+                    break
+            else:
+                try:
+                    predicate = VersionPredicate(obs)
+                except ValueError:
+                    raise DistutilsError(('Distribution %s has ill formed' +
+                                          ' obsoletes field') % (dist.name,))
+                if name == o_components[0] and predicate.match(version):
+                    yield dist
+                    break
+
+
+def provides_distribution(name, version=None, use_egg_info=False):
+    """
+    Iterates over all distributions to find which distributions provide *name*.
+    If a *version* is provided, it will be used to filter the results. Scans
+    all elements in ``sys.path``  and looks for all directories ending with
+    ``.dist-info``. Returns a :class:`Distribution`  corresponding to the
+    ``.dist-info`` directory that contains a ``METADATA`` that matches *name*
+    for the name metadata. If the argument *use_egg_info* is set to ``True``,
+    then all files and directories ending with ``.egg-info`` are considered
+    as well and returns an :class:`EggInfoDistribution` instance.
+
+    This function only returns the first result founded, since no more than
+    one values are expected. If the directory is not found, returns ``None``.
+
+    :parameter version: a version specifier that indicates the version
+                        required, conforming to the format in ``PEP-345``
+
+    :type name: string
+    :type version: string
+    """
+    predicate = None
+    if not version is None:
+        try:
+            predicate = VersionPredicate(name + ' (' + version + ')')
+        except ValueError:
+            raise DistutilsError('Invalid name or version')
+
+    for dist in get_distributions(use_egg_info):
+        provided = dist.metadata['Provides-Dist'] + dist.metadata['Provides']
+
+        for p in provided:
+            p_components = p.split(' ', 1)
+            if len(p_components) == 1 or predicate is None:
+                if name == p_components[0]:
+                    yield dist
+                    break
+            else:
+                p_name, p_ver = p_components
+                if len(p_ver) < 2 or p_ver[0] != '(' or p_ver[-1] != ')':
+                    raise DistutilsError(('Distribution %s has invalid ' +
+                                          'provides field') % (dist.name,))
+                p_ver = p_ver[1:-1] # trim off the parenthesis
+                if p_name == name and predicate.match(p_ver):
+                    yield dist
+                    break
+
 
 def get_file_users(path):
     """

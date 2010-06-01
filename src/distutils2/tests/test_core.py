@@ -60,6 +60,19 @@ class CoreTestCase(support.EnvironGuard, unittest2.TestCase):
         distutils2.core.run_setup(
             self.write_setup(setup_using___file__))
 
+    def test_run_setup_stop_after(self):
+        f = self.write_setup(setup_using___file__)
+        for s in ['init', 'config', 'commandline', 'run']:
+            distutils2.core.run_setup(f, stop_after=s)
+        self.assertRaises(ValueError, distutils2.core.run_setup, 
+                          f, stop_after='bob')
+
+    def test_run_setup_args(self):
+        f = self.write_setup(setup_using___file__)
+        d = distutils2.core.run_setup(f, script_args=["--help"], 
+                                        stop_after="init")
+        self.assertEqual(['--help'], d.script_args)
+
     def test_run_setup_uses_current_dir(self):
         # This tests that the setup script is run with the current directory
         # as its own current directory; this was temporarily broken by a

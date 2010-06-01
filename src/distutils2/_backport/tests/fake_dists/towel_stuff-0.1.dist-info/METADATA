@@ -1,3 +1,5 @@
 Metadata-Version: 1.2
 Name: towel-stuff
 Version: 0.1
+Provides-Dist: truffles (1.1.2)
+Obsoletes-Dist: truffles (!=0.8,<1.0)
