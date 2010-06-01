@@ -50,10 +50,8 @@ def encode_multipart(fields, files, boundary=None):
 class upload_docs(PyPIRCCommand):
 
     user_options = [
-        #('repository=', 'r',
-         #"url of repository [default: %s]" % upload.DEFAULT_REPOSITORY),
-        #('show-response', None,
-         #'display full response text from server'),
+        ('repository=', 'r', "url of repository [default: %s]" % upload.DEFAULT_REPOSITORY),
+        ('show-response', None, 'display full response text from server'),
         ('upload-dir=', None, 'directory to upload'),
         ]
 
@@ -132,3 +130,6 @@ class upload_docs(PyPIRCCommand):
         else:
             self.announce('Upload failed (%s): %s' % (r.status, r.reason),
                           log.ERROR)
+
+        if self.show_response:
+            print "\n".join(['-'*75, r.read(), '-'*75])

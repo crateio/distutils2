@@ -1,6 +1,6 @@
 """Tests for distutils.command.upload_docs."""
 # -*- encoding: utf8 -*-
-import httplib, os, os.path, shutil, tempfile, unittest2, zipfile
+import httplib, os, os.path, shutil, sys, tempfile, unittest2, zipfile
 from cStringIO import StringIO
 
 from distutils2.command import upload_docs as upload_docs_mod
@@ -173,6 +173,22 @@ class UploadDocsTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
         self.cmd.upload_dir = self.prepare_sample_dir()
         shutil.rmtree(os.path.join(self.cmd.upload_dir))
         self.assertRaises(DistutilsOptionError, self.cmd.ensure_finalized)
+
+    def test_show_response(self):
+        orig_stdout = sys.stdout
+        write_args = []
+        class MockStdIn(object):
+            def write(self, arg):
+                write_args.append(arg)
+        sys.stdout = MockStdIn()
+        try:
+            self.prepare_command()
+            self.cmd.show_response = True
+            self.cmd.run()
+        finally:
+            sys.stdout = orig_stdout
+        self.assertTrue(write_args[0], "should report the response")
+        self.assertIn("\n".join(self.pypi.default_response_data), write_args[0])
 
 def test_suite():
     return unittest2.makeSuite(UploadDocsTestCase)
