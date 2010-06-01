@@ -23,14 +23,17 @@ accomplished by using the `static_uri_paths` parameter, as below::
 
     server = PyPIServer(static_uri_paths=["first_path", "second_path"])
 
-You need to create the content that will be served under the `/test/pypiserver`
-path. If you want to serve content from another place, you also can specify
-another filesystem path::
+You need to create the content that will be served under the 
+`/tests/pypiserver/default` path. If you want to serve content from another 
+place, you also can specify another filesystem path (wich need to be under
+`tests/pypiserver/`. This will replace the default behavior of the server, and
+it will not serve content from the `default` dir ::
 
     server = PyPIServer(static_filesystem_paths=["path/to/your/dir"])
 
-Or add some paths to the existing ones, the server will alwas try to load paths
-in reverse order (e.g here, try "another/super/path" then the default one) ::
+If you just need to add some paths to the existing ones, you can do as shown, 
+keeping in mind that the server will alwas try to load paths in reverse order 
+(e.g here, try "another/super/path" then the default one) ::
 
     server = PyPIServer()
     server.static_filesystem_paths.append("another/super/path")
