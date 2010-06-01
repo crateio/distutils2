@@ -1,6 +1,6 @@
 """Tests for distutils.command.bdist."""
 import unittest2, urllib, urllib2
-from distutils2.tests.pypi_server import PyPIServer
+from distutils2.tests.pypi_server import PyPIServer, PYPI_DEFAULT_STATIC_PATH
 import os.path
 
 class PyPIServerTest(unittest2.TestCase):
@@ -33,7 +33,7 @@ class PyPIServerTest(unittest2.TestCase):
             url = server.full_address + url_path 
             request = urllib2.Request(url)
             response = urllib2.urlopen(request)
-            file = open(server._static_filesystem_path + url_path)
+            file = open(PYPI_DEFAULT_STATIC_PATH + url_path)
             return response.read() == file.read()
 
         server = PyPIServer(static_uri_paths=["simple", "external"])

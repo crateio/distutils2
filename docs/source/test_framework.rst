@@ -14,9 +14,20 @@ data is available under ``requests`` attribute. The default
 HTTP response can be overriden with the ``default_response_status``,
 ``default_response_headers`` and ``default_response_data`` attributes.
 
-When accessing the server with urls beginning with `/simple/`, the server also
-record your requests, but will look for files under the /tests/pypi_server/
-path.
+By default, when accessing the server with urls beginning with `/simple/`, 
+the server also record your requests, but will look for files under 
+the `/tests/pypiserver/simple/` path.
+
+You can tell the sever to serve static files for other paths. This could be 
+accomplished by using the `static_uri_paths` parameter, as below::
+
+    server = PyPIServer(static_uri_paths=["first_path", "second_path"])
+
+You need to create the content that will be served under the `/test/pypiserver`
+path. If you want to serve content from another place, you also can specify
+another filesystem path::
+
+    server = PyPIServer(static_filesystem_paths=["path/to/your/dir"])
 
 ``PyPIServerTestCase``
 ======================

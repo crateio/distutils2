@@ -19,7 +19,7 @@ class PyPIServer(threading.Thread):
     """Thread that wraps a wsgi app"""
     
     def __init__(self, static_uri_paths=["pypi"],
-            static_filesystem_path=PYPI_DEFAULT_STATIC_PATH):
+            static_filesystem_paths=[PYPI_DEFAULT_STATIC_PATH]):
         """Initialize the server.
 
         static_uri_paths and static_base_path are parameters used to provides
@@ -36,7 +36,7 @@ class PyPIServer(threading.Thread):
         self.default_response_headers = [('Content-type', 'text/plain')]
         self.default_response_data = ["hello"]
         self._static_uri_paths = static_uri_paths
-        self._static_filesystem_path = static_filesystem_path
+        self._static_filesystem_paths = static_filesystem_paths
 
     def run(self):
         self.httpd.serve_forever()
@@ -49,7 +49,7 @@ class PyPIServer(threading.Thread):
         """Serve the content.
 
         Also record the requests to be accessed later. If trying to access an
-        url matching `_static_paths`, serve static content, otherwise serve 
+        url matching a static uri, serve static content, otherwise serve 
         what is provided by the `get_next_response` method.
         """
         # record the request. Read the input only on PUT or POST requests
@@ -69,12 +69,16 @@ class PyPIServer(threading.Thread):
         relative_path = environ["PATH_INFO"].replace(self.full_address, '')
         url_parts = relative_path.split("/")
         if len(url_parts) > 1 and url_parts[1] in self._static_uri_paths:
-            file_to_serve = self._static_filesystem_path + relative_path
-            try:
-                file = open(file_to_serve)
-                data = file.read()
-                start_response("200 OK", [('Content-type', 'text/plain')])
-            except IOError:
+            data = None
+            for fs_path in self._static_filesystem_paths:
+                try:
+                    file = open(fs_path + relative_path)
+                    data = file.read()
+                    start_response("200 OK", [('Content-type', 'text/plain')])
+                except IOError:
+                    pass
+            
+            if data is None:
                 start_response("404 NOT FOUND", [('Content-type', 'text/plain')])
                 data = "Not Found"
             return data
