@@ -1,15 +1,43 @@
-"""PyPI and direct package downloading"""
-import sys, os.path, re, urlparse, urllib2, shutil, random, socket, cStringIO
+"""distutils2.pypi.package_index
+
+Implement a simple way to use the PyPI API's, by using known URIs from 
+PyPI. Works with the API defined on 
+http://peak.telecommunity.com/DevCenter/EasyInstall#package-index-api , 
+and available at http://pypi.python.org/simple/ .
+
+"""
+# XXX Make a explaination document on how this API is made.
+
+import sys
+import os.path
+import re
+import urlparse
+import urllib2
+import shutil
+import socket
+import cStringIO
 import httplib
-from pkg_resources import *
-from distutils import log
-from distutils.errors import DistutilsError
+import logging
+
+from distutils2.errors import DistutilsError
+from distutils2 import __version__ as __distutils2_version__
+
 try:
     from hashlib import md5
 except ImportError:
     from md5 import md5
 from fnmatch import translate
 
+# -- Constants ----------------------------------------------------------------
+
+__all__ = ['PackageIndex', 
+           'distros_for_url', 
+           'parse_bdist_wininst',
+           'interpret_distro_name',
+]
+
+_SOCKET_TIMEOUT = 15
+SOURCE_DIST = 1
 EGG_FRAGMENT = re.compile(r'^egg=([-A-Za-z0-9_.]+)$')
 HREF = re.compile("""href\\s*=\\s*['"]?([^'"> ]+)""", re.I)
 # this is here to fix emacs' cruddy broken syntax highlighting
@@ -20,15 +48,19 @@ PYPI_MD5 = re.compile(
 URL_SCHEME = re.compile('([-+.a-z0-9]{2,}):',re.I).match
 EXTENSIONS = ".tar.gz .tar.bz2 .tar .zip .tgz".split()
 
-__all__ = [
-    'PackageIndex', 'distros_for_url', 'parse_bdist_wininst',
-    'interpret_distro_name',
-]
+# -- Dependencies from distribute ---------------------------------------------
 
-_SOCKET_TIMEOUT = 15
+# XXX Remove these dependencies, refactor the package_index codebase to not 
+# depends anymore on distribute classes and internal workings.
+from pkg_resources import *
+
+# -- Base functions -----------------------------------------------------------
 
 def parse_bdist_wininst(name):
-    """Return (base,pyversion) or (None,None) for possible .exe name"""
+    """Parse a bdist_win package name, and return it's package base name 
+    and version number if prossible.
+
+    Return a tuple of (base,pyversion) for possible .exe names"""
 
     lower = name.lower()
     base, py_ver = None, None
@@ -43,21 +75,24 @@ def parse_bdist_wininst(name):
     return base,py_ver
 
 def egg_info_for_url(url):
+    """
+    """
     scheme, server, path, parameters, query, fragment = urlparse.urlparse(url)
     base = urllib2.unquote(path.split('/')[-1])
-    if '#' in base: base, fragment = base.split('#',1)
+    if '#' in base:
+        base, fragment = base.split('#',1)
     return base,fragment
 
 def distros_for_url(url, metadata=None):
     """Yield egg or source distribution objects that might be found at a URL"""
     base, fragment = egg_info_for_url(url)
-    for dist in distros_for_location(url, base, metadata): yield dist
+    for dist in distros_for_location(url, base, metadata): 
+        yield dist
     if fragment:
         match = EGG_FRAGMENT.match(fragment)
         if match:
-            for dist in interpret_distro_name(
-                url, match.group(1), metadata, precedence = CHECKOUT_DIST
-            ):
+            for dist in interpret_distro_name(url, match.group(1), metadata, 
+                precedence = CHECKOUT_DIST):
                 yield dist
 
 def distros_for_location(location, basename, metadata=None):
@@ -71,12 +106,10 @@ def distros_for_location(location, basename, metadata=None):
     if basename.endswith('.exe'):
         win_base, py_ver = parse_bdist_wininst(basename)
         if win_base is not None:
-            return interpret_distro_name(
-                location, win_base, metadata, py_ver, BINARY_DIST, "win32"
-            )
+            return interpret_distro_name(location, win_base, metadata, py_ver, 
+                BINARY_DIST, "win32")
 
     # Try source distro extensions (.zip, .tgz, etc.)
-    #
     for ext in EXTENSIONS:
         if basename.endswith(ext):
             basename = basename[:-len(ext)]
@@ -84,15 +117,14 @@ def distros_for_location(location, basename, metadata=None):
     return []  # no extension matched
 
 def distros_for_filename(filename, metadata=None):
-    """Yield possible egg or source distribution objects based on a filename"""
-    return distros_for_location(
-        normalize_path(filename), os.path.basename(filename), metadata
-    )
-
+    """Yield possible egg or source distribution objects based on a 
+    filename.
+    """
+    return distros_for_location(normalize_path(filename), 
+        os.path.basename(filename), metadata)
 
 def interpret_distro_name(location, basename, metadata,
-    py_version=None, precedence=SOURCE_DIST, platform=None
-):
+    py_version=None, precedence=SOURCE_DIST, platform=None):
     """Generate alternative interpretations of a source distro name
 
     Note: if `location` is a filesystem filename, you should call
@@ -121,11 +153,9 @@ def interpret_distro_name(location, basename, metadata,
         yield Distribution(
             location, metadata, '-'.join(parts[:p]), '-'.join(parts[p:]),
             py_version=py_version, precedence = precedence,
-            platform = platform
-        )
+            platform = platform)
 
 REL = re.compile("""<([^>]*\srel\s*=\s*['"]?([^'">]+)[^>]*)>""", re.I)
-# this line is here to fix emacs' cruddy broken syntax highlighting
 
 def find_external_links(url, page):
     """Find rel="homepage" and rel="download" links in `page`, yielding URLs"""
@@ -144,17 +174,16 @@ def find_external_links(url, page):
             if match:
                 yield urlparse.urljoin(url, htmldecode(match.group(1)))
 
-user_agent = "Python-urllib/%s distribute/%s" % (
-    sys.version[:3], require('distribute')[0].version
+user_agent = "Python-urllib/%s distutils2/%s" % (
+    sys.version[:3], __distutils2_version__
 )
-
 
 class PackageIndex(Environment):
     """A distribution index that scans web pages for download URLs"""
 
     def __init__(self, index_url="http://pypi.python.org/simple", hosts=('*',),
-        *args, **kw
-    ):
+        *args, **kw):
+        self._init_logging()
         Environment.__init__(self,*args,**kw)
         self.index_url = index_url + "/"[:not index_url.endswith('/')]
         self.scanned_urls = {}
@@ -163,7 +192,9 @@ class PackageIndex(Environment):
         self.allows = re.compile('|'.join(map(translate,hosts))).match
         self.to_scan = []
 
-
+    def _init_logging(self):
+        import sys
+#        logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
     def process_url(self, url, retrieve=False):
         """Evaluate a URL as a possible download, and maybe retrieve it"""
@@ -207,6 +238,8 @@ class PackageIndex(Environment):
             link = urlparse.urljoin(base, htmldecode(match.group(1)))
             self.process_url(link)
         if url.startswith(self.index_url) and getattr(f,'code',None)!=404:
+            from ipdb import set_trace
+            set_trace()
             page = self.process_index(url, page)
 
     def process_filename(self, fn, nested=False):
@@ -234,6 +267,7 @@ class PackageIndex(Environment):
             raise DistutilsError(msg % url)
         else:
             self.warn(msg, url)
+        return False
 
     def scan_egg_links(self, search_path):
         for item in search_path:
@@ -292,8 +326,6 @@ class PackageIndex(Environment):
         else:
             return ""   # no sense double-scanning non-package pages
 
-
-
     def need_version_info(self, url):
         self.scan_all(
             "Page at %s links to .py file(s) without version info; an index "
@@ -331,10 +363,6 @@ class PackageIndex(Environment):
             self.debug("%s does not match %s", requirement, dist)
         return super(PackageIndex, self).obtain(requirement,installer)
 
-
-
-
-
     def check_md5(self, cs, info, filename, tfp):
         if re.match('md5=[0-9a-f]{32}$', info):
             self.debug("Validating md5 checksum for %s", filename)
@@ -343,8 +371,7 @@ class PackageIndex(Environment):
                 os.unlink(filename)
                 raise DistutilsError(
                     "MD5 validation failed for "+os.path.basename(filename)+
-                    "; possible download problem?"
-                )
+                    "; possible download problem?")
 
     def add_find_links(self, urls):
         """Add `urls` to the list that will be prescanned for searches"""
@@ -416,7 +443,6 @@ class PackageIndex(Environment):
                     )
         return getattr(self.fetch_distribution(spec, tmpdir),'location',None)
 
-
     def fetch_distribution(self,
         requirement, tmpdir, force_scan=False, source=False, develop_ok=False
     ):
@@ -436,7 +462,7 @@ class PackageIndex(Environment):
         set, development and system eggs (i.e., those using the ``.egg-info``
         format) will be ignored.
         """
-
+        
         # process a Requirement
         self.info("Searching for %s", requirement)
         skipped = {}
@@ -491,14 +517,7 @@ class PackageIndex(Environment):
         if dist is not None:
             return dist.location
         return None
-
-
-
-
-
-
-
-
+    
     def gen_setup(self, filename, fragment, tmpdir):
         match = EGG_FRAGMENT.match(fragment)
         dists = match and [d for d in
@@ -536,7 +555,7 @@ class PackageIndex(Environment):
             )
         else:
             raise DistutilsError(
-                "Can't process plain .py files without an '#egg=name-version'"
+                "Can't process plain .py without an '#egg=name-version'"
                 " suffix to enable automatic setup script generation."
             )
 
@@ -580,7 +599,6 @@ class PackageIndex(Environment):
     def reporthook(self, url, filename, blocknum, blksize, size):
         pass    # no-op
 
-
     def open_url(self, url, warning=None):
         if url.startswith('file:'):
             return local_open(url)
@@ -616,7 +634,6 @@ class PackageIndex(Environment):
 
     def _download_url(self, scheme, url, tmpdir):
         # Determine download filename
-        #
         name = filter(None,urlparse.urlparse(url)[2].split('/'))
         if name:
             name = name[-1]
@@ -631,7 +648,6 @@ class PackageIndex(Environment):
         filename = os.path.join(tmpdir,name)
 
         # Download the file
-        #
         if scheme=='svn' or scheme.startswith('svn+'):
             return self._download_svn(url, filename)
         elif scheme=='file':
@@ -640,11 +656,8 @@ class PackageIndex(Environment):
             self.url_ok(url, True)   # raises error if not allowed
             return self._attempt_download(url, filename)
 
-
-
     def scan_url(self, url):
         self.process_url(url, True)
-
 
     def _attempt_download(self, url, filename):
         headers = self._download_to(url, filename)
@@ -675,13 +688,13 @@ class PackageIndex(Environment):
         return filename
 
     def debug(self, msg, *args):
-        log.debug(msg, *args)
+        logging.debug(msg, *args)
 
     def info(self, msg, *args):
-        log.info(msg, *args)
+        logging.info(msg, *args)
 
     def warn(self, msg, *args):
-        log.warn(msg, *args)
+        logging.warn(msg, *args)
 
 # This pattern matches a character entity reference (a decimal numeric
 # references, a hexadecimal numeric reference, or a named reference).
@@ -690,7 +703,8 @@ entity_sub = re.compile(r'&(#(\d+|x[\da-fA-F]+)|[\w.:-]+);?').sub
 def uchr(c):
     if not isinstance(c, int):
         return c
-    if c>255: return unichr(c)
+    if c>255: 
+        return unichr(c)
     return chr(c)
 
 def decode_entity(match):
@@ -708,20 +722,6 @@ def htmldecode(text):
     """Decode HTML entities in the given text."""
     return entity_sub(decode_entity, text)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def socket_timeout(timeout=15):
     def _socket_timeout(func):
         def _socket_timeout(*args, **kwargs):
@@ -733,7 +733,6 @@ def socket_timeout(timeout=15):
                 socket.setdefaulttimeout(old_timeout)
         return _socket_timeout
     return _socket_timeout
-
 
 def open_with_auth(url):
     """Open a urllib2 request, handling HTTP authentication"""
@@ -765,18 +764,9 @@ def open_with_auth(url):
 
     return fp
 
+
 # adding a timeout to avoid freezing package_index
 open_with_auth = socket_timeout(_SOCKET_TIMEOUT)(open_with_auth)
-
-
-
-
-
-
-
-
-
-
 
 def fix_sf_url(url):
     return url      # backward compatibility
@@ -807,17 +797,3 @@ def local_open(url):
 
     return urllib2.HTTPError(url, status, message,
             {'content-type':'text/html'}, cStringIO.StringIO(body))
-
-
-
-
-
-
-
-
-
-
-
-
-
-# this line is a kludge to keep the trailing blank lines for pje's editor
