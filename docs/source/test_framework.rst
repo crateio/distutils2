@@ -38,6 +38,16 @@ keeping in mind that the server will alwas try to load paths in reverse order
     server = PyPIServer()
     server.static_filesystem_paths.append("another/super/path")
 
+As a result of what, in your tests, while you need to use the PyPIServer, in
+order to isolates the test cases, the best practice is to place the common files
+in the `default` folder, and to create a directory for each specific test case::
+
+    server = PyPIServer(static_uri_paths=["simple", "external"],
+        static_filesystem_paths = ["default", "test_pypi_server"])
+
+    # or just
+    server = PyPiServer(["simple", "external"], ["default", "test_pypi_server"])
+
 ``PyPIServerTestCase``
 ======================
 

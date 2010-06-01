@@ -11,10 +11,7 @@ import urllib2
 from distutils2.tests.pypi_server import PyPIServer
 from distutils2.pypi import simple
 
-class NoneTestCase(unittest2.TestCase):
-    pass
-
-class PackageIndexTestCase(unittest2.TestCase):
+class PyPISimpleTestCase(unittest2.TestCase):
 
     def test_bad_urls(self):
         index = simple.PackageIndex()
@@ -96,9 +93,9 @@ class PackageIndexTestCase(unittest2.TestCase):
         -> Distribute should use the link from pypi, not the external one.
         """
         # start an index server
-        server = PyPIServer()
+        server = PyPIServer(["simple", "external"],["test_link_priority"])
         server.start()
-        index_url = server.full_address + 'test_links_priority/simple/'
+        index_url = server.full_address + '/simple/'
 
         # scan a test index
         pi = simple.PackageIndex(index_url)
@@ -114,7 +111,7 @@ class PackageIndexTestCase(unittest2.TestCase):
         self.assert_('correct_md5' in pi['foobar'][0].location)
 
 def test_suite():
-    return unittest2.makeSuite(NoneTestCase)
+    return unittest2.makeSuite(PyPISimpleTestCase)
 
 if __name__ == '__main__':
     unittest2.main(defaultTest="test_suite")

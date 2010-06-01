@@ -77,15 +77,17 @@ class PyPIServer(threading.Thread):
             fs_paths.reverse()
             for fs_path in fs_paths:
                 try:
+                    if relative_path.endswith("/"):
+                        relative_path += "index.html"
                     print fs_path + relative_path
                     file = open(fs_path + relative_path)
                     data = file.read()
-                    start_response("200 OK", [('Content-type', 'text/plain')])
+                    start_response("200 OK", [('Content-type', 'text/html')])
                 except IOError:
                     pass
             
             if data is None:
-                start_response("404 NOT FOUND", [('Content-type', 'text/plain')])
+                start_response("404 NOT FOUND", [('Content-type', 'text/html')])
                 data = "Not Found"
             return data
 

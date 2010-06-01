@@ -238,8 +238,6 @@ class PackageIndex(Environment):
             link = urlparse.urljoin(base, htmldecode(match.group(1)))
             self.process_url(link)
         if url.startswith(self.index_url) and getattr(f,'code',None)!=404:
-            from ipdb import set_trace
-            set_trace()
             page = self.process_index(url, page)
 
     def process_filename(self, fn, nested=False):
