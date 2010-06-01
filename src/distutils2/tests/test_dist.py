@@ -8,7 +8,7 @@ import warnings
 import textwrap
 
 from distutils2.dist import Distribution, fix_help_options, DistributionMetadata
-from distutils2.cmd import Command
+from distutils2.command.cmd import Command
 import distutils2.dist
 from distutils2.tests import TESTFN, captured_stdout
 from distutils2.tests import support
