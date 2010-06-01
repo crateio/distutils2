@@ -63,3 +63,26 @@ the test class. Use it as one of the base classes in your test case::
 
           environ, request_data = self.pypi.requests[-1]
           self.assertEqual(request_data, EXPECTED_REQUEST_DATA)
+
+The ``use_pypi_server`` decorator
+=================================
+
+You also can use a decorator for your tests, if you do not need the same server
+instance along all you test case. So, you can specify, for each test method,
+some initialisation parameters for the server.
+
+For this, you need to add a `server` parameter to your method, like this::
+
+    class SampleTestCase(TestCase):
+        @use_pypi_server()
+        def test_somthing(self, server):
+            # your tests goes here
+
+The decorator will instanciate the server for you, and run and stop it just
+before and after your method call. You also can pass the server initializer,
+just like this::
+
+    class SampleTestCase(TestCase):
+        @use_pypi_server("test_case_name")
+        def test_something(self, server):
+            # something

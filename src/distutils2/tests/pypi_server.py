@@ -1,8 +1,32 @@
-import Queue, threading, time, unittest2
+"""Mocked PyPI Server implementation, to use in tests.
+
+This module also provides a simple test case to extend if you need to use
+the PyPIServer all along your test case. Be sure to read the documentation 
+before any use.
+"""
+
+import Queue
+import threading
+import time
+import unittest2
+import urllib2
 from wsgiref.simple_server import make_server
 import os.path
 
-PYPI_DEFAULT_STATIC_PATH =  os.path.dirname(os.path.abspath(__file__)) + "/pypiserver"
+PYPI_DEFAULT_STATIC_PATH = os.path.dirname(os.path.abspath(__file__)) + "/pypiserver"
+
+def use_pypi_server(*server_args, **server_kwargs):
+    """Decorator to make use of the PyPIServer for test methods, 
+    just when needed, and not for the entire duration of the testcase.
+    """
+    def wrapper(func):
+        def wrapped(*args, **kwargs):
+            server = PyPIServer(*server_args, **server_kwargs)
+            server.start()
+            func(server=server, *args, **kwargs)
+            server.stop()
+        return wrapped
+    return wrapper 
 
 class PyPIServerTestCase(unittest2.TestCase):
 
@@ -15,10 +39,15 @@ class PyPIServerTestCase(unittest2.TestCase):
         super(PyPIServerTestCase, self).tearDown()
         self.pypi.stop()
 
+
 class PyPIServer(threading.Thread):
-    """Thread that wraps a wsgi app"""
-    
-    def __init__(self, test_static_path=None, 
+    """PyPI Mocked server.
+    Provides a mocked version of the PyPI API's, to ease tests.
+
+    Support serving static content and serving previously given text.
+    """
+
+    def __init__(self, test_static_path=None,
             static_filesystem_paths=["default"], static_uri_paths=["simple"]):
         """Initialize the server.
 
@@ -27,6 +56,7 @@ class PyPIServer(threading.Thread):
         matching files on the filesystem.
         """
         threading.Thread.__init__(self)
+        self._run = True
         self.httpd = make_server('', 0, self.pypi_app)
         self.httpd.RequestHandlerClass.log_request = lambda *_: None
         self.address = self.httpd.server_address
@@ -38,21 +68,25 @@ class PyPIServer(threading.Thread):
         self.static_uri_paths = static_uri_paths
         if test_static_path is not None:
             static_filesystem_paths.append(test_static_path)
-        self.static_filesystem_paths = [PYPI_DEFAULT_STATIC_PATH + "/" + path 
+        self.static_filesystem_paths = [PYPI_DEFAULT_STATIC_PATH + "/" + path
             for path in static_filesystem_paths]
 
     def run(self):
-        self.httpd.serve_forever()
+        # loop because we can't stop it otherwise, for python < 2.6
+        while True:
+            self.httpd.handle_request()
+            if not self._run:
+                break
 
     def stop(self):
-        self.httpd.shutdown()
-        self.join()
+        """self shutdown is not supported for python < 2.6"""
+        self._run = False
 
     def pypi_app(self, environ, start_response):
         """Serve the content.
 
         Also record the requests to be accessed later. If trying to access an
-        url matching a static uri, serve static content, otherwise serve 
+        url matching a static uri, serve static content, otherwise serve
         what is provided by the `get_next_response` method.
         """
         # record the request. Read the input only on PUT or POST requests
@@ -64,10 +98,10 @@ class PyPIServer(threading.Thread):
                 request_data = environ.pop('wsgi.input').read()
         elif environ["REQUEST_METHOD"] in ("GET", "DELETE"):
             request_data = ''
-            
+
         self.request_queue.put((environ, request_data))
-        
-        # serve the content from local disc if we request an URL beginning 
+
+        # serve the content from local disc if we request an URL beginning
         # by a pattern defined in `static_paths`
         relative_path = environ["PATH_INFO"].replace(self.full_address, '')
         url_parts = relative_path.split("/")
@@ -87,9 +121,10 @@ class PyPIServer(threading.Thread):
                     start_response("200 OK", [('Content-type', 'text/html')])
                 except IOError:
                     pass
-            
+
             if data is None:
-                start_response("404 NOT FOUND", [('Content-type', 'text/html')])
+                start_response("404 NOT FOUND",
+                    [('Content-type', 'text/html')])
                 data = "Not Found"
             return data
 
@@ -107,6 +142,9 @@ class PyPIServer(threading.Thread):
 
     @property
     def requests(self):
+        """Use this property to get all requests that have been made
+        to the server
+        """
         while True:
             try:
                 self._requests.append(self.request_queue.get_nowait())

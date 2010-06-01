@@ -3,13 +3,14 @@
 """
 import sys
 import os
-import shutil 
-import tempfile 
+import shutil
+import tempfile
 import unittest2
 import urllib2
 
-from distutils2.tests.pypi_server import PyPIServer
+from distutils2.tests.pypi_server import use_pypi_server
 from distutils2.pypi import simple
+
 
 class PyPISimpleTestCase(unittest2.TestCase):
 
@@ -19,24 +20,23 @@ class PyPISimpleTestCase(unittest2.TestCase):
         try:
             v = index.open_url(url)
         except Exception, v:
-            self.assert_(url in str(v))
+            self.assertTrue(url in str(v))
         else:
-            self.assert_(isinstance(v,urllib2.HTTPError))
+            self.assertTrue(isinstance(v, urllib2.HTTPError))
 
         # issue 16
         # easy_install inquant.contentmirror.plone breaks because of a typo
         # in its home URL
         index = simple.PackageIndex(
-            hosts=('www.example.com',)
-        )
+            hosts=('www.example.com',))
 
         url = 'url:%20https://svn.plone.org/svn/collective/inquant.contentmirror.plone/trunk'
         try:
             v = index.open_url(url)
         except Exception, v:
-            self.assert_(url in str(v))
+            self.assertTrue(url in str(v))
         else:
-            self.assert_(isinstance(v, urllib2.HTTPError))
+            self.assertTrue(isinstance(v, urllib2.HTTPError))
 
         def _urlopen(*args):
             import httplib
@@ -49,7 +49,7 @@ class PyPISimpleTestCase(unittest2.TestCase):
             try:
                 v = index.open_url(url)
             except Exception, v:
-                self.assert_('line' in str(v))
+                self.assertTrue('line' in str(v))
             else:
                 raise AssertionError('Should have raise here!')
         finally:
@@ -60,7 +60,7 @@ class PyPISimpleTestCase(unittest2.TestCase):
         try:
             index.open_url(url)
         except Exception, v:
-            self.assert_('nonnumeric port' in str(v))
+            self.assertTrue('nonnumeric port' in str(v))
 
         # issue #160
         if sys.version_info[0] == 2 and sys.version_info[1] == 7:
@@ -72,15 +72,41 @@ class PyPISimpleTestCase(unittest2.TestCase):
 
     def test_url_ok(self):
         index = simple.PackageIndex(
-            hosts=('www.example.com',)
-        )
+            hosts=('www.example.com',))
         url = 'file:///tmp/test_simple'
-        self.assert_(index.url_ok(url, True))
+        self.assertTrue(index.url_ok(url, True))
+    
+    @use_pypi_server("test_found_links")
+    def test_found_links(self, server):
+        """Browse the index, asking for a specified distribution version
+        """
+        # The PyPI index contains links for version 1.0, 1.1, 2.0 and 2.0.1
+        # We query only for the version 1.1, so all distributions must me
+        # filled in the package_index (as the url has been scanned), but
+        # obtain must only return the one we want.
+        pi = simple.PackageIndex(server.full_address + "/simple/")
+        last_distribution = pi.obtain(simple.Requirement.parse("foobar"))
 
-    def test_found_links(self):
-        server = PyPIServer("test_found_links")
+        # we have scanned the index page
+        self.assertTrue(pi.package_pages.has_key('foobar'))
+        self.assertIn(server.full_address + "/simple/foobar/",
+            pi.package_pages['foobar'])
+        
+        # we have found 4 distributions in this page
+        self.assertEqual(len(pi["foobar"]), 4)
 
-    def test_links_priority(self):
+        # and returned the most recent one
+        self.assertEqual(last_distribution.version, '2.0.1')
+
+    def test_process_external_pages(self):
+        """If the index provides links external to the pypi index, 
+        they need to be processed, in order to discover new distributions.
+        """
+        pass
+    
+    @use_pypi_server(static_filesystem_paths=["test_link_priority"],
+        static_uri_paths=["simple", "external"])
+    def test_links_priority(self, server):
         """
         Download links from the pypi simple index should be used before
         external download links.
@@ -96,8 +122,6 @@ class PyPISimpleTestCase(unittest2.TestCase):
         -> Distribute should use the link from pypi, not the external one.
         """
         # start an index server
-        server = PyPIServer(None, ["test_link_priority"], ["simple", "external"])
-        server.start()
         index_url = server.full_address + '/simple/'
 
         # scan a test index
@@ -107,11 +131,12 @@ class PyPISimpleTestCase(unittest2.TestCase):
         server.stop()
 
         # the distribution has been found
-        self.assert_('foobar' in pi)
+        self.assertTrue('foobar' in pi)
         # we have only one link, because links are compared without md5
-        self.assert_(len(pi['foobar'])==1)
+        self.assertEqual(len(pi['foobar']), 1)
         # the link should be from the index
-        self.assert_('correct_md5' in pi['foobar'][0].location)
+        self.assertTrue('correct_md5' in pi['foobar'][0].location)
+
 
 def test_suite():
     return unittest2.makeSuite(PyPISimpleTestCase)
