@@ -37,7 +37,8 @@ class PyPIServerTest(unittest2.TestCase):
                url_path)
             return response.read() == file.read()
 
-        server = PyPIServer(["simple", "external"],["test_pypi_server"])
+        server = PyPIServer(static_uri_paths=["simple", "external"],
+            static_filesystem_paths = ["test_pypi_server"])
         server.start()
         
         # the file does not exists on the disc, so it might not be served

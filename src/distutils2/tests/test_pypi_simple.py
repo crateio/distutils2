@@ -77,6 +77,9 @@ class PyPISimpleTestCase(unittest2.TestCase):
         url = 'file:///tmp/test_simple'
         self.assert_(index.url_ok(url, True))
 
+    def test_found_links(self):
+        server = PyPIServer("test_found_links")
+
     def test_links_priority(self):
         """
         Download links from the pypi simple index should be used before
@@ -93,7 +96,7 @@ class PyPISimpleTestCase(unittest2.TestCase):
         -> Distribute should use the link from pypi, not the external one.
         """
         # start an index server
-        server = PyPIServer(["simple", "external"],["test_link_priority"])
+        server = PyPIServer(None, ["test_link_priority"], ["simple", "external"])
         server.start()
         index_url = server.full_address + '/simple/'
 
