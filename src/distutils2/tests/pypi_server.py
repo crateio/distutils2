@@ -35,8 +35,8 @@ class PyPIServer(threading.Thread):
         self.default_response_status = "200 OK"
         self.default_response_headers = [('Content-type', 'text/plain')]
         self.default_response_data = ["hello"]
-        self._static_uri_paths = static_uri_paths
-        self._static_filesystem_paths = static_filesystem_paths
+        self.static_uri_paths = static_uri_paths
+        self.static_filesystem_paths = static_filesystem_paths
 
     def run(self):
         self.httpd.serve_forever()
@@ -65,12 +65,16 @@ class PyPIServer(threading.Thread):
         self.request_queue.put((environ, request_data))
         
         # serve the content from local disc if we request an URL beginning 
-        # by a pattern defined in `_static_paths`
+        # by a pattern defined in `static_paths`
         relative_path = environ["PATH_INFO"].replace(self.full_address, '')
         url_parts = relative_path.split("/")
-        if len(url_parts) > 1 and url_parts[1] in self._static_uri_paths:
+        if len(url_parts) > 1 and url_parts[1] in self.static_uri_paths:
             data = None
-            for fs_path in self._static_filesystem_paths:
+            # always take the last first.
+            fs_paths = []
+            fs_paths.extend(self.static_filesystem_paths)
+            fs_paths.reverse()
+            for fs_path in fs_paths:
                 try:
                     file = open(fs_path + relative_path)
                     data = file.read()

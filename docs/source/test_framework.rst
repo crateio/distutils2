@@ -29,6 +29,12 @@ another filesystem path::
 
     server = PyPIServer(static_filesystem_paths=["path/to/your/dir"])
 
+Or add some paths to the existing ones, the server will alwas try to load paths
+in reverse order (e.g here, try "another/super/path" then the default one) ::
+
+    server = PyPIServer()
+    server.static_filesystem_paths.append("another/super/path")
+
 ``PyPIServerTestCase``
 ======================
 
