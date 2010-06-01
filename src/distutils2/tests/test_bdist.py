@@ -1,5 +1,4 @@
 """Tests for distutils.command.bdist."""
-import unittest2
 import sys
 import os
 import tempfile
@@ -10,12 +9,13 @@ from distutils2.tests import run_unittest
 from distutils2.core import Distribution
 from distutils2.command.bdist import bdist
 from distutils2.tests import support
+from distutils2.tests.support import unittest
 from distutils2.spawn import find_executable
 from distutils2 import spawn
 from distutils2.errors import DistutilsExecError
 
 class BuildTestCase(support.TempdirManager,
-                    unittest2.TestCase):
+                    unittest.TestCase):
 
     def test_formats(self):
 
@@ -38,7 +38,7 @@ class BuildTestCase(support.TempdirManager,
         self.assertEquals(founded, formats)
 
 def test_suite():
-    return unittest2.makeSuite(BuildTestCase)
+    return unittest.makeSuite(BuildTestCase)
 
 if __name__ == '__main__':
     run_unittest(test_suite())

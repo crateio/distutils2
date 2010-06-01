@@ -1,5 +1,12 @@
-"""Support code for distutils test cases."""
+"""Support code for distutils2 test cases.
+
+Always import unittest from this module, it will be the right version
+(standard library unittest for 2.7 and higher, third-party unittest2
+release for older versions).
+"""
+
 import os
+import sys
 import shutil
 import tempfile
 from copy import deepcopy
@@ -8,6 +15,13 @@ import warnings
 from distutils2 import log
 from distutils2.log import DEBUG, INFO, WARN, ERROR, FATAL
 from distutils2.core import Distribution
+
+if sys.version_info >= (2, 7):
+    # improved unittest package from 2.7's standard library
+    import unittest
+else:
+    # external release of same package for older versions
+    import unittest2 as unittest
 
 class LoggingSilencer(object):
 

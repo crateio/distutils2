@@ -1,14 +1,14 @@
 """Tests for distutils.command.bdist_wininst."""
-import unittest2
 
 from distutils2.tests import run_unittest
 
 from distutils2.command.bdist_wininst import bdist_wininst
 from distutils2.tests import support
+from distutils2.tests.support import unittest
 
 class BuildWinInstTestCase(support.TempdirManager,
                            support.LoggingSilencer,
-                           unittest2.TestCase):
+                           unittest.TestCase):
 
     def test_get_exe_bytes(self):
 
@@ -26,7 +26,7 @@ class BuildWinInstTestCase(support.TempdirManager,
         self.assertTrue(len(exe_file) > 10)
 
 def test_suite():
-    return unittest2.makeSuite(BuildWinInstTestCase)
+    return unittest.makeSuite(BuildWinInstTestCase)
 
 if __name__ == '__main__':
     run_unittest(test_suite())

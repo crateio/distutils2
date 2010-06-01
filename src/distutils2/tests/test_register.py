@@ -2,7 +2,6 @@
 # -*- encoding: utf8 -*-
 import sys
 import os
-import unittest2
 import getpass
 import urllib2
 import warnings
@@ -19,6 +18,7 @@ from distutils2.core import Distribution
 from distutils2.errors import DistutilsSetupError
 
 from distutils2.tests import support
+from distutils2.tests.support import unittest
 from distutils2.tests.test_config import PYPIRC, PyPIRCCommandTestCase
 
 PYPIRC_NOPASSWORD = """\
@@ -192,7 +192,7 @@ class RegisterTestCase(PyPIRCCommandTestCase):
         self.assertEquals(headers['Content-length'], '290')
         self.assertTrue('tarek' in req.data)
 
-    @unittest2.skipUnless(DOCUTILS_SUPPORT, 'needs docutils')
+    @unittest.skipUnless(DOCUTILS_SUPPORT, 'needs docutils')
     def test_strict(self):
         # testing the script option
         # when on, the register command stops if
@@ -250,7 +250,7 @@ class RegisterTestCase(PyPIRCCommandTestCase):
         self.assertEquals(data['requires_dist'], ['lxml'])
 
 def test_suite():
-    return unittest2.makeSuite(RegisterTestCase)
+    return unittest.makeSuite(RegisterTestCase)
 
 if __name__ == "__main__":
-    unittest2.main(defaultTest="test_suite")
+    unittest.main(defaultTest="test_suite")

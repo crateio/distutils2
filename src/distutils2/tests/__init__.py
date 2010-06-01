@@ -1,20 +1,25 @@
-"""Test suite for distutils.
+"""Test suite for distutils2.
 
 This test suite consists of a collection of test modules in the
-distutils.tests package.  Each test module has a name starting with
+distutils2.tests package.  Each test module has a name starting with
 'test' and contains a function test_suite().  The function is expected
-to return an initialized unittest2.TestSuite instance.
+to return an initialized unittest.TestSuite instance.
 
-Tests for the command classes in the distutils.command package are
-included in distutils.tests as well, instead of using a separate
-distutils.command.tests package, since command identification is done
+Tests for the command classes in the distutils2.command package are
+included in distutils2.tests as well, instead of using a separate
+distutils2.command.tests package, since command identification is done
 by import rather than matching pre-defined names.
 
+Utility code is included in distutils2.tests.support.  Always import
+unittest from that module, it will be the right version (standard
+library unittest for 2.7 and higher, third-party unittest2 release for
+older versions).
 """
+
 import os
 import sys
 import warnings
-import unittest2
+from distutils2.tests.support import unittest
 
 from test.test_support import TESTFN    # use TESTFN from stdlib/test_support.
 
@@ -23,7 +28,7 @@ here = os.path.dirname(__file__)
 verbose = 1
 
 def test_suite():
-    suite = unittest2.TestSuite()
+    suite = unittest.TestSuite()
     for fn in os.listdir(here):
         if fn.startswith("test") and fn.endswith(".py"):
             modname = "distutils2.tests." + fn[:-3]
@@ -42,17 +47,17 @@ class TestFailed(Error):
 
 class BasicTestRunner:
     def run(self, test):
-        result = unittest2.TestResult()
+        result = unittest.TestResult()
         test(result)
         return result
 
 
 def _run_suite(suite, verbose_=1):
-    """Run tests from a unittest2.TestSuite-derived class."""
+    """Run tests from a unittest.TestSuite-derived class."""
     global verbose
     verbose = verbose_
     if verbose_:
-        runner = unittest2.TextTestRunner(sys.stdout, verbosity=2)
+        runner = unittest.TextTestRunner(sys.stdout, verbosity=2)
     else:
         runner = BasicTestRunner()
 
@@ -68,22 +73,22 @@ def _run_suite(suite, verbose_=1):
 
 
 def run_unittest(classes, verbose_=1):
-    """Run tests from unittest2.TestCase-derived classes.
+    """Run tests from unittest.TestCase-derived classes.
 
-    Extracted from stdlib test.test_support and modified to support unittest2.
+    Extracted from stdlib test.test_support and modified to support unittest.
     """
-    valid_types = (unittest2.TestSuite, unittest2.TestCase)
-    suite = unittest2.TestSuite()
+    valid_types = (unittest.TestSuite, unittest.TestCase)
+    suite = unittest.TestSuite()
     for cls in classes:
         if isinstance(cls, str):
             if cls in sys.modules:
-                suite.addTest(unittest2.findTestCases(sys.modules[cls]))
+                suite.addTest(unittest.findTestCases(sys.modules[cls]))
             else:
                 raise ValueError("str arguments must be keys in sys.modules")
         elif isinstance(cls, valid_types):
             suite.addTest(cls)
         else:
-            suite.addTest(unittest2.makeSuite(cls))
+            suite.addTest(unittest.makeSuite(cls))
     _run_suite(suite, verbose_)
 
 
@@ -128,4 +133,4 @@ def unload(name):
 
 
 if __name__ == "__main__":
-    unittest2.main(defaultTest="test_suite")
+    unittest.main(defaultTest="test_suite")

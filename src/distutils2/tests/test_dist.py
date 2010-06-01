@@ -4,7 +4,6 @@
 import os
 import StringIO
 import sys
-import unittest2
 import warnings
 import textwrap
 
@@ -13,6 +12,7 @@ from distutils2.cmd import Command
 import distutils2.dist
 from distutils2.tests import TESTFN, captured_stdout
 from distutils2.tests import support
+from distutils2.tests.support import unittest
 
 class test_dist(Command):
     """Sample distutils2 extension command."""
@@ -40,7 +40,7 @@ class TestDistribution(Distribution):
 class DistributionTestCase(support.TempdirManager,
                            support.LoggingSilencer,
                            support.EnvironGuard,
-                           unittest2.TestCase):
+                           unittest.TestCase):
 
     def setUp(self):
         super(DistributionTestCase, self).setUp()
@@ -242,7 +242,7 @@ class DistributionTestCase(support.TempdirManager,
 
 
 class MetadataTestCase(support.TempdirManager, support.EnvironGuard,
-                       unittest2.TestCase):
+                       unittest.TestCase):
 
     def setUp(self):
         super(MetadataTestCase, self).setUp()
@@ -422,10 +422,10 @@ class MetadataTestCase(support.TempdirManager, support.EnvironGuard,
         self.assertEquals(metadata['requires-dist'], ['foo'])
 
 def test_suite():
-    suite = unittest2.TestSuite()
-    suite.addTest(unittest2.makeSuite(DistributionTestCase))
-    suite.addTest(unittest2.makeSuite(MetadataTestCase))
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(DistributionTestCase))
+    suite.addTest(unittest.makeSuite(MetadataTestCase))
     return suite
 
 if __name__ == "__main__":
-    unittest2.main(defaultTest="test_suite")
+    unittest.main(defaultTest="test_suite")

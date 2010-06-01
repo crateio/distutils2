@@ -1,12 +1,12 @@
 """Tests for distutils.command.install_data."""
 import sys
 import os
-import unittest2
 
 from distutils2.command.install_lib import install_lib
 from distutils2.extension import Extension
 from distutils2.tests import support
 from distutils2.errors import DistutilsOptionError
+from distutils2.tests.support import unittest
 
 try:
     no_bytecode = sys.dont_write_bytecode
@@ -18,7 +18,7 @@ except AttributeError:
 class InstallLibTestCase(support.TempdirManager,
                          support.LoggingSilencer,
                          support.EnvironGuard,
-                         unittest2.TestCase):
+                         unittest.TestCase):
 
     def test_finalize_options(self):
         pkg_dir, dist = self.create_dist()
@@ -38,7 +38,7 @@ class InstallLibTestCase(support.TempdirManager,
         cmd.finalize_options()
         self.assertEquals(cmd.optimize, 2)
 
-    @unittest2.skipIf(no_bytecode, 'byte-compile not supported')
+    @unittest.skipIf(no_bytecode, 'byte-compile not supported')
     def test_byte_compile(self):
         pkg_dir, dist = self.create_dist()
         cmd = install_lib(dist)
@@ -84,7 +84,7 @@ class InstallLibTestCase(support.TempdirManager,
         # get_input should return 2 elements
         self.assertEquals(len(cmd.get_inputs()), 2)
 
-    @unittest2.skipUnless(bytecode_support, 'sys.dont_write_bytecode not supported')
+    @unittest.skipUnless(bytecode_support, 'sys.dont_write_bytecode not supported')
     def test_dont_write_bytecode(self):
         # makes sure byte_compile is not used
         pkg_dir, dist = self.create_dist()
@@ -102,7 +102,7 @@ class InstallLibTestCase(support.TempdirManager,
         self.assertTrue('byte-compiling is disabled' in self.logs[0][1])
 
 def test_suite():
-    return unittest2.makeSuite(InstallLibTestCase)
+    return unittest.makeSuite(InstallLibTestCase)
 
 if __name__ == "__main__":
-    unittest2.main(defaultTest="test_suite")
+    unittest.main(defaultTest="test_suite")

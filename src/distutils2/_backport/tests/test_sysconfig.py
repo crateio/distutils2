@@ -4,7 +4,6 @@ Tests assume the initial paths in sys.path once the interpreter has begun
 executing have not been removed.
 
 """
-import unittest2
 import sys
 import os
 import shutil
@@ -19,8 +18,9 @@ from distutils2._backport.sysconfig import (get_paths, get_platform,
                        get_path, get_path_names,
                        _get_default_scheme, _subst_vars, _expand_vars,
                        get_scheme_names, _CONFIG_FILE)
+from distutils2.tests.support import unittest
 
-class TestSysConfig(unittest2.TestCase):
+class TestSysConfig(unittest.TestCase):
 
     def setUp(self):
         """Make a copy of sys.path"""
@@ -262,7 +262,7 @@ class TestSysConfig(unittest2.TestCase):
         _expand_globals(config)
 
 def test_suite():
-    return unittest2.makeSuite(TestSysConfig)
+    return unittest.makeSuite(TestSysConfig)
 
 def test_main():
     run_unittest(test_suite())

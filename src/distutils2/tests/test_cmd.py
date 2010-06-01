@@ -1,17 +1,17 @@
 """Tests for distutils.cmd."""
-import unittest2
 import os
 from distutils2.tests import captured_stdout, run_unittest
 
 from distutils2.cmd import Command
 from distutils2.dist import Distribution
 from distutils2.errors import DistutilsOptionError
+from distutils2.tests.support import unittest
 
 class MyCmd(Command):
     def initialize_options(self):
         pass
 
-class CommandTestCase(unittest2.TestCase):
+class CommandTestCase(unittest.TestCase):
 
     def setUp(self):
         dist = Distribution()
@@ -104,7 +104,7 @@ class CommandTestCase(unittest2.TestCase):
         self.assertRaises(DistutilsOptionError, cmd.ensure_dirname, 'option2')
 
 def test_suite():
-    return unittest2.makeSuite(CommandTestCase)
+    return unittest.makeSuite(CommandTestCase)
 
 if __name__ == '__main__':
     run_unittest(test_suite())
