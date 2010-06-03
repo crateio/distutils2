@@ -21,9 +21,11 @@ class PyPIServerTest(unittest2.TestCase):
         request = urllib2.Request(server.full_address, data, headers)
         urllib2.urlopen(request)
         self.assertEqual(len(server.requests), 1)
-        environ, request_data = server.requests[-1]
+        handler, request_data = server.requests[-1]
         self.assertIn("Rock Around The Bunker", request_data)
-        self.assertEqual(environ["HTTP_X_TEST_HEADER"], "Mister Iceberg")
+        self.assertTrue(handler.headers.dict.has_key("x-test-header"))
+        self.assertEqual(handler.headers.dict["x-test-header"], 
+            "Mister Iceberg")
         server.stop()
 
     def test_serve_static_content(self):
