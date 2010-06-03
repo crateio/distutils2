@@ -1,6 +1,6 @@
 """Tests for distutils.command.upload_docs."""
 # -*- encoding: utf8 -*-
-import httplib, os, os.path, tempfile, unittest2, zipfile
+import httplib, os, os.path, shutil, sys, tempfile, unittest2, zipfile
 from cStringIO import StringIO
 
 from distutils2.command import upload_docs as upload_docs_mod
@@ -8,7 +8,7 @@ from distutils2.command.upload_docs import (upload_docs, zip_dir,
                                     encode_multipart)
 from distutils2.core import Distribution
 
-from distutils2.errors import DistutilsFileError
+from distutils2.errors import DistutilsFileError, DistutilsOptionError
 
 from distutils2.tests import support
 from distutils2.tests.pypi_server import PyPIServer, PyPIServerTestCase
@@ -54,15 +54,23 @@ class UploadDocsTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
         self.dist.metadata['Name'] = "distr-name"
         self.cmd = upload_docs(self.dist)
 
-    def test_generates_uploaddir_if_not_given(self):
-        self.assertEqual(self.cmd.upload_dir, None)
-        self.cmd.ensure_finalized()
-        self.assertEqual(self.cmd.upload_dir, os.path.join("build", "docs"))
+    def test_default_uploaddir(self):
+        sandbox = tempfile.mkdtemp()
+        previous = os.getcwd()
+        os.chdir(sandbox)
+        try:
+            os.mkdir("build")
+            self.prepare_sample_dir("build")
+            self.cmd.ensure_finalized()
+            self.assertEqual(self.cmd.upload_dir, os.path.join("build", "docs"))
+        finally:
+            os.chdir(previous)
 
-    def prepare_sample_dir(self):
-        sample_dir = tempfile.mkdtemp()
-        os.mkdir(os.path.join(sample_dir, "some_dir"))
-        self.write_file(os.path.join(sample_dir, "some_dir", "index.html"), "Ce mortel ennui")
+    def prepare_sample_dir(self, sample_dir=None):
+        if sample_dir is None:
+            sample_dir = tempfile.mkdtemp()
+        os.mkdir(os.path.join(sample_dir, "docs"))
+        self.write_file(os.path.join(sample_dir, "docs", "index.html"), "Ce mortel ennui")
         self.write_file(os.path.join(sample_dir, "index.html"), "Oh la la")
         return sample_dir
 
@@ -71,7 +79,7 @@ class UploadDocsTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
         compressed = zip_dir(source_dir)
 
         zip_f = zipfile.ZipFile(compressed)
-        self.assertEqual(zip_f.namelist(), ['index.html', 'some_dir/index.html'])
+        self.assertEqual(zip_f.namelist(), ['index.html', 'docs/index.html'])
 
     def test_encode_multipart(self):
         fields = [("a", "b"), ("c", "d")]
@@ -81,9 +89,9 @@ class UploadDocsTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
         self.assertEqual(body, EXPECTED_MULTIPART_OUTPUT)
 
     def prepare_command(self):
+        self.cmd.upload_dir = self.prepare_sample_dir()
         self.cmd.ensure_finalized()
         self.cmd.repository = self.pypi.full_address
-        self.cmd.upload_dir = self.prepare_sample_dir()
         self.cmd.username = "username"
         self.cmd.password = "password"
 
@@ -109,7 +117,7 @@ class UploadDocsTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
         # check their contents
         self.assertIn("doc_upload", action)
         self.assertIn("distr-name", name)
-        self.assertIn("some_dir/index.html", content)
+        self.assertIn("docs/index.html", content)
         self.assertIn("Ce mortel ennui", content)
 
     def test_https_connection(self):
@@ -151,14 +159,36 @@ class UploadDocsTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
     def test_reads_pypirc_data(self):
         self.write_file(self.rc, PYPIRC % self.pypi.full_address)
         self.cmd.repository = self.pypi.full_address
+        self.cmd.upload_dir = self.prepare_sample_dir()
         self.cmd.ensure_finalized()
         self.assertEqual(self.cmd.username, "real_slim_shady")
         self.assertEqual(self.cmd.password, "long_island")
 
     def test_checks_index_html_presence(self):
-        self.prepare_command()
+        self.cmd.upload_dir = self.prepare_sample_dir()
         os.remove(os.path.join(self.cmd.upload_dir, "index.html"))
-        self.assertRaises(DistutilsFileError, self.cmd.run)
+        self.assertRaises(DistutilsFileError, self.cmd.ensure_finalized)
+
+    def test_checks_upload_dir(self):
+        self.cmd.upload_dir = self.prepare_sample_dir()
+        shutil.rmtree(os.path.join(self.cmd.upload_dir))
+        self.assertRaises(DistutilsOptionError, self.cmd.ensure_finalized)
+
+    def test_show_response(self):
+        orig_stdout = sys.stdout
+        write_args = []
+        class MockStdIn(object):
+            def write(self, arg):
+                write_args.append(arg)
+        sys.stdout = MockStdIn()
+        try:
+            self.prepare_command()
+            self.cmd.show_response = True
+            self.cmd.run()
+        finally:
+            sys.stdout = orig_stdout
+        self.assertTrue(write_args[0], "should report the response")
+        self.assertIn("\n".join(self.pypi.default_response_data), write_args[0])
 
 def test_suite():
     return unittest2.makeSuite(UploadDocsTestCase)
