@@ -98,11 +98,36 @@ class PyPISimpleTestCase(unittest2.TestCase):
         # and returned the most recent one
         self.assertEqual(last_distribution.version, '2.0.1')
 
-    def test_process_external_pages(self):
+    @use_pypi_server("with_external_pages")
+    def test_process_external_pages(self, server):
         """If the index provides links external to the pypi index, 
         they need to be processed, in order to discover new distributions.
         """
-        pass
+
+    @use_pypi_server()
+    def test_scan_all(self, server):
+        """Test that we can process the whole index and discover all related
+        links.
+
+        """
+        # FIXME remove?
+
+    @use_pypi_server("with_external_pages")
+    def test_disable_external_pages(self, server):
+        """Test that when we tell the simple client to not retreive external
+        urls, it does well.""" 
+    
+    @use_pypi_server()
+    def test_process_index(self, server):
+        """Test that we can process a simple given string and find related links
+        to distributions.
+        """
+    
+    @use_pypi_server()
+    def test_process_url(self, server):
+        """Test that we can process an alternative url (not pypi related) to
+        find links in it.
+        """
     
     @use_pypi_server(static_filesystem_paths=["test_link_priority"],
         static_uri_paths=["simple", "external"])
