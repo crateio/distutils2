@@ -189,6 +189,31 @@ class Command:
         """
         log.log(level, msg)
 
+    # -- External interface --------------------------------------------
+    # (called by outsiders)
+
+    def get_source_files(self):
+        """Return the list of files that are used as inputs to this command,
+        i.e. the files used to generate the output files.  The result is used
+        by the `sdist` command in determining the set of default files.
+
+        Command classes should implement this method if they operate on files
+        from the source tree.
+        """
+        return []
+
+    def get_outputs(self):
+        """Return the list of files that would be produced if this command
+        were actually run.  Not affected by the "dry-run" flag or whether
+        any other commands have been run.
+
+        Command classes should implement this method if they produce any
+        output files that get consumed by another command.  e.g., `build_ext`
+        returns the list of built extension modules, but not any temporary
+        files used in the compilation process.
+        """
+        return []
+
     # -- Option validation methods -------------------------------------
     # (these are very handy in writing the 'finalize_options()' method)
     #
