@@ -8,7 +8,7 @@ import sys
 import os
 import shutil
 from copy import copy, deepcopy
-from ConfigParser import ConfigParser
+from ConfigParser import RawConfigParser
 
 from test.test_support import run_unittest, TESTFN
 
@@ -245,7 +245,7 @@ class TestSysConfig(unittest.TestCase):
 
     def test_expand_globals(self):
 
-        config = ConfigParser()
+        config = RawConfigParser()
         config.add_section('globals')
         config.set('globals', 'foo', 'ok')
         config.add_section('posix')

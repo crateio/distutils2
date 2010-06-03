@@ -4,7 +4,7 @@ Provides the PyPIRCCommand class, the base class for the command classes
 that uses .pypirc in the distutils.command package.
 """
 import os
-from ConfigParser import ConfigParser
+from ConfigParser import RawConfigParser
 
 from distutils2.command.cmd import Command
 
@@ -59,7 +59,7 @@ class PyPIRCCommand(Command):
         if os.path.exists(rc):
             self.announce('Using PyPI login from %s' % rc)
             repository = self.repository or self.DEFAULT_REPOSITORY
-            config = ConfigParser()
+            config = RawConfigParser()
             config.read(rc)
             sections = config.sections()
             if 'distutils' in sections:

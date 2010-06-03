@@ -13,6 +13,8 @@ try:
 except ImportError:
     warnings = None
 
+from ConfigParser import RawConfigParser
+
 from distutils2.errors import (DistutilsOptionError, DistutilsArgError,
                               DistutilsModuleError, DistutilsClassError)
 from distutils2.fancy_getopt import FancyGetopt, translate_longopt
@@ -362,14 +364,12 @@ Common commands: (see '--help-commands' for more)
         return files
 
     def parse_config_files(self, filenames=None):
-        from ConfigParser import ConfigParser
-
         if filenames is None:
             filenames = self.find_config_files()
 
         log.debug("Distribution.parse_config_files():")
 
-        parser = ConfigParser()
+        parser = RawConfigParser()
         for filename in filenames:
             log.debug("  reading %s" % filename)
             parser.read(filename)
@@ -383,7 +383,7 @@ Common commands: (see '--help-commands' for more)
                         opt = opt.replace('-', '_')
                         opt_dict[opt] = (filename, val)
 
-            # Make the ConfigParser forget everything (so we retain
+            # Make the RawConfigParser forget everything (so we retain
             # the original filenames that options come from)
             parser.__init__()
 
