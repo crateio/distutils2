@@ -67,6 +67,8 @@ class PyPIServer(threading.Thread):
         self.default_response_status = 200
         self.default_response_headers = [('Content-type', 'text/plain')]
         self.default_response_data = "hello"
+        
+        # initialize static paths / filesystems
         self.static_uri_paths = static_uri_paths
         if test_static_path is not None:
             static_filesystem_paths.append(test_static_path)

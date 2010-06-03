@@ -100,11 +100,11 @@ class UploadDocsTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
         self.cmd.run()
 
         self.assertEqual(len(self.pypi.requests), 1)
-        environ, request_data = self.pypi.requests[-1]
-
+        handler, request_data = self.pypi.requests[-1]
         self.assertIn("content", request_data)
-        self.assertIn("Basic", environ['HTTP_AUTHORIZATION'])
-        self.assertTrue(environ['CONTENT_TYPE'].startswith('multipart/form-data;'))
+        self.assertIn("Basic", handler.headers.dict['authorization'])
+        self.assertTrue(handler.headers.dict['content-type']
+            .startswith('multipart/form-data;'))
 
         action, name, content =\
             request_data.split("----------------GHSKFJDLGDS7543FJKLFHRE75642756743254")[1:4]
@@ -188,7 +188,7 @@ class UploadDocsTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
         finally:
             sys.stdout = orig_stdout
         self.assertTrue(write_args[0], "should report the response")
-        self.assertIn("\n".join(self.pypi.default_response_data), write_args[0])
+        self.assertIn(self.pypi.default_response_data + "\n", write_args[0])
 
 def test_suite():
     return unittest2.makeSuite(UploadDocsTestCase)

@@ -63,13 +63,14 @@ class UploadTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
         cmd.run()
 
         # what did we send ?
-        environ, request_data = self.pypi.requests[-1]
+        handler, request_data = self.pypi.requests[-1]
+        headers = handler.headers.dict
         self.assertIn('dédé', request_data)
         self.assertIn('xxx', request_data)
-        self.assert_(environ['CONTENT_LENGTH'] > 2000)
-        self.assertTrue(environ['CONTENT_TYPE'].startswith('multipart/form-data'))
-        self.assertEqual(environ['REQUEST_METHOD'], 'POST')
-        self.assertNotIn('\n', environ['HTTP_AUTHORIZATION'])
+        self.assert_(headers['content-length'] > 2000)
+        self.assertTrue(headers['content-type'].startswith('multipart/form-data'))
+        self.assertEqual(handler.command, 'POST')
+        self.assertNotIn('\n', headers['authorization'])
 
 def test_suite():
     return unittest2.makeSuite(UploadTestCase)
