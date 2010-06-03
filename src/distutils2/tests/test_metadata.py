@@ -15,15 +15,15 @@ class DistributionMetadataTestCase(unittest.TestCase):
         version = sys.version.split()[0]
         os_name = os.name
 
-        assert _interpret("sys.platform == '%s'" % platform)
-        assert _interpret("sys.platform == '%s' or python_version == '2.4'" \
-                % platform)
-        assert _interpret("sys.platform == '%s' and "
-                          "python_full_version == '%s'"\
-                % (platform, version))
-        assert _interpret("'%s' == sys.platform" % platform)
+        self.assertTrue(_interpret("sys.platform == '%s'" % platform))
+        self.assertTrue(_interpret(
+            "sys.platform == '%s' or python_version == '2.4'" % platform))
+        self.assertTrue(_interpret(
+            "sys.platform == '%s' and python_full_version == '%s'" %
+            (platform, version)))
+        self.assertTrue(_interpret("'%s' == sys.platform" % platform))
 
-        assert _interpret('os.name == "%s"' % os_name)
+        self.assertTrue(_interpret('os.name == "%s"' % os_name))
 
         # stuff that need to raise a syntax error
         ops = ('os.name == os.name', 'os.name == 2', "'2' == '2'",
@@ -35,24 +35,25 @@ class DistributionMetadataTestCase(unittest.TestCase):
         OP = 'os.name == "%s"' % os_name
         AND = ' and '
         OR = ' or '
-        assert _interpret(OP+AND+OP)
-        assert _interpret(OP+AND+OP+AND+OP)
-        assert _interpret(OP+OR+OP)
-        assert _interpret(OP+OR+OP+OR+OP)
+        self.assertTrue(_interpret(OP + AND + OP))
+        self.assertTrue(_interpret(OP + AND + OP + AND + OP))
+        self.assertTrue(_interpret(OP + OR + OP))
+        self.assertTrue(_interpret(OP + OR + OP + OR + OP))
 
         # other operators
-        assert _interpret("os.name != 'buuuu'")
-        assert _interpret("python_version > '1.0'")
-        assert _interpret("python_version < '5.0'")
-        assert _interpret("python_version <= '5.0'")
-        assert _interpret("python_version >= '1.0'")
-        assert _interpret("'%s' in os.name" % os_name)
-        assert _interpret("'buuuu' not in os.name")
-        assert _interpret("'buuuu' not in os.name and '%s' in os.name" \
-                            % os_name)
+        self.assertTrue(_interpret("os.name != 'buuuu'"))
+        self.assertTrue(_interpret("python_version > '1.0'"))
+        self.assertTrue(_interpret("python_version < '5.0'"))
+        self.assertTrue(_interpret("python_version <= '5.0'"))
+        self.assertTrue(_interpret("python_version >= '1.0'"))
+        self.assertTrue(_interpret("'%s' in os.name" % os_name))
+        self.assertTrue(_interpret("'buuuu' not in os.name"))
+        self.assertTrue(_interpret(
+            "'buuuu' not in os.name and '%s' in os.name" % os_name))
 
         # execution context
-        assert _interpret('python_version == "0.1"', {'python_version': '0.1'})
+        self.assertTrue(_interpret('python_version == "0.1"',
+                                   {'python_version': '0.1'}))
 
     def test_metadata_read_write(self):
 
