@@ -62,7 +62,7 @@ class bdist(Command):
                       'os2': 'zip'}
 
     # Establish the preferred order (for the --help-formats option).
-    format_commands = ['rpm', 'gztar', 'bztar', 'ztar', 'tar',
+    format_commands = ['gztar', 'bztar', 'ztar', 'tar',
                        'wininst', 'zip', 'msi']
 
     # And the real information.
@@ -96,7 +96,7 @@ class bdist(Command):
 
         # 'bdist_base' -- parent of per-built-distribution-format
         # temporary directories (eg. we'll probably have
-        # "build/bdist.<plat>/dumb", "build/bdist.<plat>/rpm", etc.)
+        # "build/bdist.<plat>/dumb", etc.)
         if self.bdist_base is None:
             build_base = self.get_finalized_command('build').build_base
             self.bdist_base = os.path.join(build_base,
