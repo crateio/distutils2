@@ -60,6 +60,7 @@ class PyPIServerTest(unittest2.TestCase):
 
         # and another one in another root path
         self.assertTrue(uses_local_files_for(server, "/external/index.html"))
+        server.stop()
 
 
 def test_suite():

@@ -12,8 +12,8 @@ import unittest2
 import urllib2
 from BaseHTTPServer import HTTPServer
 from SimpleHTTPServer import SimpleHTTPRequestHandler
-from wsgiref.simple_server import make_server
 import os.path
+import select
 
 PYPI_DEFAULT_STATIC_PATH = os.path.dirname(os.path.abspath(__file__)) + "/pypiserver"
 
@@ -61,7 +61,7 @@ class PyPIServer(threading.Thread):
         self.httpd = HTTPServer(('', 0), PyPIRequestHandler) 
         self.httpd.RequestHandlerClass.log_request = lambda *_: None
         self.httpd.RequestHandlerClass.pypi_server = self
-        self.address = self.httpd.server_address
+        self.address = (self.httpd.server_name, self.httpd.server_port)
         self.request_queue = Queue.Queue()
         self._requests = []
         self.default_response_status = 200
@@ -77,10 +77,10 @@ class PyPIServer(threading.Thread):
 
     def run(self):
         # loop because we can't stop it otherwise, for python < 2.6
-        while True:
-            self.httpd.handle_request()
-            if not self._run:
-                break
+        while self._run:
+            r, w, e = select.select([self.httpd], [], [], 0.5)
+            if r:
+                self.httpd.handle_request()
 
     def stop(self):
         """self shutdown is not supported for python < 2.6"""
