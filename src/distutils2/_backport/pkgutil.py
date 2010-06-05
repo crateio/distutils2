@@ -12,6 +12,13 @@ from types import ModuleType
 from distutils2.errors import DistutilsError
 from distutils2.metadata import DistributionMetadata
 from distutils2.version import suggest_normalized_version, VersionPredicate
+import zipimport
+try:
+    import cStringIO as StringIO
+except ImportError:
+    import StringIO
+import re
+import warnings
 
 __all__ = [
     'get_importer', 'iter_importers', 'get_loader', 'find_loader',
@@ -726,12 +733,96 @@ class EggInfoDistribution(object):
     metadata = None
     """A :class:`distutils2.metadata.DistributionMetadata` instance loaded with
     the distribution's METADATA file."""
+    _REQUIREMENT = re.compile( \
+        r'(?P<name>[-A-Za-z0-9_.]+)\s*' \
+        r'(?P<first>(?:<|<=|!=|==|>=|>)[-A-Za-z0-9_.]+)?\s*' \
+        r'(?P<rest>(?:\s*,\s*(?:<|<=|!=|==|>=|>)[-A-Za-z0-9_.]+)*)\s*' \
+        r'(?P<extras>\[.*\])?')
 
     def __init__(self, path):
-        if os.path.isdir(path):
-            path = os.path.join(path, 'PKG-INFO')
-        self.metadata = DistributionMetadata(path=path)
-        self.name = self.metadata['name']
+
+        # reused from Distribute's pkg_resources
+        def yield_lines(strs):
+            """Yield non-empty/non-comment lines of a ``basestring`` or sequence"""
+            if isinstance(strs, basestring):
+                for s in strs.splitlines():
+                    s = s.strip()
+                    if s and not s.startswith('#'): # skip blank lines/comments
+                        yield s
+                    else:
+                        for ss in strs:
+                            for s in yield_lines(ss):
+                                yield s
+
+        requires = None
+        if path.endswith('.egg'):
+            if os.path.isdir(path):
+                path = os.path.join(path, 'EGG-INFO', 'PKG-INFO')
+                self.metadata = DistributionMetadata(path=path)
+                try:
+                    req_path = os.path.join(path, 'EGG_INFO', 'requires.txt')
+                    requires = open(req_path, 'r').read()
+                except IOError:
+                    requires = None
+            else:
+                zipf = zipimport.zipimporter(path)
+                fileobj = StringIO.StringIO(zipf.get_data('EGG-INFO/PKG-INFO'))
+                self.metadata = DistributionMetadata(fileobj=fileobj)
+                try:
+                    requires = zipf.get_data('EGG-INFO/requires.txt')
+                except IOError:
+                    requires = None
+        elif path.endswith('.egg-info'):
+            if os.path.isdir(path):
+                path = os.path.join(path, 'PKG-INFO')
+                try:
+                    req_f = open(os.path.join(path, 'requires.txt'), 'r')
+                    requires = req_f.read()
+                except IOError:
+                    requires = None
+            self.metadata = DistributionMetadata(path=path)
+            self.name = self.metadata['name']
+        else:
+            raise ValueError('The path must end with .egg-info or .egg')
+
+        provides = "%s (%s)" % (self.metadata['name'],
+                                self.metadata['version'])
+        if self.metadata['Metadata-Version'] == '1.2':
+            self.metadata['Provides-Dist'] += (provides,)
+        else:
+            self.metadata['Provides'] += (provides,)
+        reqs = []
+        if requires is not None:
+            for line in yield_lines(requires):
+                if line[0] == '[':
+                    warnings.warn('distutils2 does not support extensions in requires.txt')
+                    break
+                else:
+                    match = _REQUIREMENT.match(line.strip())
+                    if not match:
+                        raise ValueError('Distribution %s has ill formed '
+                                         'requires.txt file (%s)' %
+                                         (self.name, line))
+                    else:
+                        if match.group('extra'):
+                            s = 'Distribution %s uses extra requirements which'\
+                                ' are not supported in distutils' % (self.name)
+                            warnings.warn(s)
+                        name = match.group('name')
+                        version = None
+                        if match.group('first'):
+                            version = match.group('first')
+                            if match.group('rest'):
+                                version += match.group('rest')
+                            version = version.replace(' ', '') # trim spaces
+                        if version is None:
+                            reqs.append(name)
+                        else:
+                            reqs.append('%s (%s)' % (name, version))
+            if self.metadata['Metadata-Version'] == '1.2':
+                self.metadata['Requires-Dist'] += reqs
+            else:
+                self.metadata['Requires'] += reqs
 
     def get_installed_files(self, local=False):
         return []
@@ -792,7 +883,8 @@ def get_distributions(use_egg_info=False):
             if dir.endswith('.dist-info'):
                 dist = Distribution(os.path.join(realpath, dir))
                 yield dist
-            elif use_egg_info and dir.endswith('.egg-info'):
+            elif use_egg_info and (dir.endswith('.egg-info') or
+                                   dir.endswith('.egg')):
                 dist = EggInfoDistribution(os.path.join(realpath, dir))
                 yield dist
 
@@ -887,7 +979,7 @@ def provides_distribution(name, version=None, use_egg_info=False):
         provided = dist.metadata['Provides-Dist'] + dist.metadata['Provides']
 
         for p in provided:
-            p_components = p.split(' ', 1)
+            p_components = p.rsplit(' ', 1)
             if len(p_components) == 1 or predicate is None:
                 if name == p_components[0]:
                     yield dist
@@ -896,7 +988,7 @@ def provides_distribution(name, version=None, use_egg_info=False):
                 p_name, p_ver = p_components
                 if len(p_ver) < 2 or p_ver[0] != '(' or p_ver[-1] != ')':
                     raise DistutilsError(('Distribution %s has invalid ' +
-                                          'provides field') % (dist.name,))
+                                          'provides field: %s') % (dist.name,p))
                 p_ver = p_ver[1:-1] # trim off the parenthesis
                 if p_name == name and predicate.match(p_ver):
                     yield dist

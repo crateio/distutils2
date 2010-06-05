@@ -60,40 +60,41 @@ class DependencyGraph(object):
         """
         self.missing[distribution].append(requirement)
 
-    def to_dot(self, f, skip_disconnected=True):
-        """
-        Writes a DOT output for the graph to the provided *file*.
-        If *skip_disconnected* is set to ``True``, then all distributions
-        that are not dependent on any other distributions are skipped.
 
-        :type f: ``file``
-        ;type skip_disconnected: ``bool``
-        """
-        if not isinstance(f, file):
-            raise TypeError('the argument has to be of type file')
+def graph_to_dot(graph, f, skip_disconnected=True):
+    """
+    Writes a DOT output for the graph to the provided *file*.
+    If *skip_disconnected* is set to ``True``, then all distributions
+    that are not dependent on any other distributions are skipped.
 
-        disconnected = []
+    :type f: ``file``
+    ;type skip_disconnected: ``bool``
+    """
+    if not isinstance(f, file):
+        raise TypeError('the argument has to be of type file')
 
-        f.write("digraph dependencies {\n")
-        for dist, adjs in self.adjacency_list.iteritems():
-            if len(adjs) == 0 and not skip_disconnected:
-                disconnected.append(dist)
-            for (other, label) in adjs:
-                if not label is None:
-                    f.write('"%s" -> "%s" [label="%s"]\n' %
-                                                (dist.name, other.name, label))
-                else:
-                    f.write('"%s" -> "%s"\n' % (dist.name, other.name))
-        if not skip_disconnected and len(disconnected) > 0:
-            f.write('subgraph disconnected {\n')
-            f.write('label = "Disconnected"\n')
-            f.write('bgcolor = red\n')
+    disconnected = []
 
-            for dist in disconnected:
-                f.write('"%s"' % dist.name)
-                f.write('\n')
-            f.write('}\n')
+    f.write("digraph dependencies {\n")
+    for dist, adjs in graph.adjacency_list.iteritems():
+        if len(adjs) == 0 and not skip_disconnected:
+            disconnected.append(dist)
+        for (other, label) in adjs:
+            if not label is None:
+                f.write('"%s" -> "%s" [label="%s"]\n' %
+                                            (dist.name, other.name, label))
+            else:
+                f.write('"%s" -> "%s"\n' % (dist.name, other.name))
+    if not skip_disconnected and len(disconnected) > 0:
+        f.write('subgraph disconnected {\n')
+        f.write('label = "Disconnected"\n')
+        f.write('bgcolor = red\n')
+
+        for dist in disconnected:
+            f.write('"%s"' % dist.name)
+            f.write('\n')
         f.write('}\n')
+    f.write('}\n')
 
 
 def generate_graph(dists):
