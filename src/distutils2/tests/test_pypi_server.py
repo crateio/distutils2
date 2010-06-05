@@ -1,13 +1,13 @@
 """Tests for distutils.command.bdist."""
-import unittest2
 import urllib
 import urllib2
 import os.path
 
 from distutils2.tests.pypi_server import PyPIServer, PYPI_DEFAULT_STATIC_PATH
+from distutils2.tests.support import unittest
 
 
-class PyPIServerTest(unittest2.TestCase):
+class PyPIServerTest(unittest.TestCase):
 
     def test_records_requests(self):
         """We expect that PyPIServer can log our requests"""
@@ -64,7 +64,7 @@ class PyPIServerTest(unittest2.TestCase):
 
 
 def test_suite():
-    return unittest2.makeSuite(PyPIServerTest)
+    return unittest.makeSuite(PyPIServerTest)
 
 if __name__ == '__main__':
-    unittest2.main(defaultTest="test_suite")
+    unittest.main(defaultTest="test_suite")

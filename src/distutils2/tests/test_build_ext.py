@@ -6,6 +6,7 @@ from StringIO import StringIO
 import warnings
 
 import distutils2.tests
+from distutils2.tests.support import unittest
 from distutils2.core import Extension, Distribution
 from distutils2.command.build_ext import build_ext
 from distutils2.tests import support
@@ -17,7 +18,6 @@ try:
 except ImportError:
     from distutils2._backport import sysconfig
 
-import unittest2
 
 # http://bugs.python.org/issue4373
 # Don't load the xx module more than once.
@@ -29,7 +29,7 @@ def _get_source_filename():
 
 class BuildExtTestCase(support.TempdirManager,
                        support.LoggingSilencer,
-                       unittest2.TestCase):
+                       unittest.TestCase):
     def setUp(self):
         # Create a simple test environment
         # Note that we're making changes to sys.path
@@ -46,7 +46,7 @@ class BuildExtTestCase(support.TempdirManager,
             build_ext.USER_BASE = site.USER_BASE
 
     # XXX only works with 2.6 > -- dunno why yet
-    @unittest2.skipUnless(sys.version_info >= (2, 6,), 'works for >= 2.6')
+    @unittest.skipUnless(sys.version_info >= (2, 6,), 'works for >= 2.6')
     def test_build_ext(self):
         global ALREADY_TESTED
         xx_c = os.path.join(self.tmp_dir, 'xxmodule.c')
@@ -412,8 +412,8 @@ def test_suite():
         if distutils2.tests.verbose:
             print ('test_build_ext: Cannot find source code (test'
                    ' must run in python build dir)')
-        return unittest2.TestSuite()
-    else: return unittest2.makeSuite(BuildExtTestCase)
+        return unittest.TestSuite()
+    else: return unittest.makeSuite(BuildExtTestCase)
 
 if __name__ == '__main__':
     distsutils2.tests.run_unittest(test_suite())

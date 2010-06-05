@@ -8,12 +8,13 @@ before any use.
 import Queue
 import threading
 import time
-import unittest2
 import urllib2
 from BaseHTTPServer import HTTPServer
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 import os.path
 import select
+
+from distutils2.tests.support import unittest
 
 PYPI_DEFAULT_STATIC_PATH = os.path.dirname(os.path.abspath(__file__)) + "/pypiserver"
 
@@ -30,7 +31,7 @@ def use_pypi_server(*server_args, **server_kwargs):
         return wrapped
     return wrapper 
 
-class PyPIServerTestCase(unittest2.TestCase):
+class PyPIServerTestCase(unittest.TestCase):
 
     def setUp(self):
         super(PyPIServerTestCase, self).setUp()

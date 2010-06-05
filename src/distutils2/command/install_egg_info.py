@@ -4,7 +4,7 @@ Implements the Distutils 'install_egg_info' command, for installing
 a package's PKG-INFO metadata."""
 
 
-from distutils2.cmd import Command
+from distutils2.command.cmd import Command
 from distutils2 import log
 from distutils2._backport.shutil import rmtree
 import os, sys, re

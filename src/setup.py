@@ -17,19 +17,17 @@ finally:
     f.close()
 
 def get_tip_revision(path=os.getcwd()):
+    from subprocess import Popen, PIPE
     try:
-        from mercurial.hg import repository
-        from mercurial.ui import ui
-        from mercurial import node
-        from mercurial.error import RepoError
-    except ImportError:
+        cmd = Popen(['hg', 'tip', '--template', '{rev}', '-R', path],
+                    stdout=PIPE, stderr=PIPE)
+    except OSError:
         return 0
-    try:
-        repo = repository(ui(), path)
-        tip = repo.changelog.tip()
-        return repo.changelog.rev(tip)
-    except RepoError:
+    rev = cmd.stdout.read()
+    if rev == '':
+        # there has been an error in the command
         return 0
+    return int(rev)
 
 DEV_SUFFIX = '.dev%d' % get_tip_revision('..')
 

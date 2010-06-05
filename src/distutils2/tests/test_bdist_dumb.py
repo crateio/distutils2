@@ -1,6 +1,5 @@
 """Tests for distutils.command.bdist_dumb."""
 
-import unittest2
 import sys
 import os
 
@@ -12,6 +11,7 @@ except ImportError:
     zlib = None
 
 from distutils2.tests import run_unittest
+from distutils2.tests.support import unittest
 
 from distutils2.core import Distribution
 from distutils2.command.bdist_dumb import bdist_dumb
@@ -29,7 +29,7 @@ setup(name='foo', version='0.1', py_modules=['foo'],
 class BuildDumbTestCase(support.TempdirManager,
                         support.LoggingSilencer,
                         support.EnvironGuard,
-                        unittest2.TestCase):
+                        unittest.TestCase):
 
     def setUp(self):
         super(BuildDumbTestCase, self).setUp()
@@ -42,7 +42,7 @@ class BuildDumbTestCase(support.TempdirManager,
         sys.argv[:] = self.old_sys_argv[1]
         super(BuildDumbTestCase, self).tearDown()
 
-    @unittest2.skipUnless(zlib, "requires zlib")
+    @unittest.skipUnless(zlib, "requires zlib")
     def test_simple_built(self):
 
         # let's create a simple package
@@ -99,7 +99,7 @@ class BuildDumbTestCase(support.TempdirManager,
         self.assertEquals(cmd.format, default)
 
 def test_suite():
-    return unittest2.makeSuite(BuildDumbTestCase)
+    return unittest.makeSuite(BuildDumbTestCase)
 
 if __name__ == '__main__':
     run_unittest(test_suite())

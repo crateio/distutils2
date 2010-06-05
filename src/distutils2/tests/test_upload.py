@@ -1,11 +1,13 @@
 """Tests for distutils.command.upload."""
 # -*- encoding: utf8 -*-
-import os, unittest2
+import os, sys
 
 from distutils2.command.upload import upload
 from distutils2.core import Distribution
 
 from distutils2.tests.pypi_server import PyPIServer, PyPIServerTestCase
+from distutils2.tests import support
+from distutils2.tests.support import unittest
 from distutils2.tests.test_config import PYPIRC, PyPIRCCommandTestCase
 
 
@@ -67,13 +69,13 @@ class UploadTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
         headers = handler.headers.dict
         self.assertIn('dédé', request_data)
         self.assertIn('xxx', request_data)
-        self.assert_(headers['content-length'] > 2000)
+        self.assertTrue(headers['content-length'] < 2000)
         self.assertTrue(headers['content-type'].startswith('multipart/form-data'))
         self.assertEqual(handler.command, 'POST')
         self.assertNotIn('\n', headers['authorization'])
 
 def test_suite():
-    return unittest2.makeSuite(UploadTestCase)
+    return unittest.makeSuite(uploadTestCase)
 
 if __name__ == "__main__":
-    unittest2.main(defaultTest="test_suite")
+    unittest.main(defaultTest="test_suite")

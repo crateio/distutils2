@@ -1,6 +1,6 @@
 """Tests for distutils.command.upload_docs."""
 # -*- encoding: utf8 -*-
-import httplib, os, os.path, shutil, sys, tempfile, unittest2, zipfile
+import httplib, os, os.path, shutil, sys, tempfile, zipfile
 from cStringIO import StringIO
 
 from distutils2.command import upload_docs as upload_docs_mod
@@ -13,6 +13,7 @@ from distutils2.errors import DistutilsFileError, DistutilsOptionError
 from distutils2.tests import support
 from distutils2.tests.pypi_server import PyPIServer, PyPIServerTestCase
 from distutils2.tests.test_config import PyPIRCCommandTestCase
+from distutils2.tests.support import unittest
 
 
 EXPECTED_MULTIPART_OUTPUT = "\r\n".join([
@@ -191,7 +192,7 @@ class UploadDocsTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
         self.assertIn(self.pypi.default_response_data + "\n", write_args[0])
 
 def test_suite():
-    return unittest2.makeSuite(UploadDocsTestCase)
+    return unittest.makeSuite(UploadDocsTestCase)
 
 if __name__ == "__main__":
-    unittest2.main(defaultTest="test_suite")
+    unittest.main(defaultTest="test_suite")

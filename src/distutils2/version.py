@@ -197,6 +197,9 @@ class NormalizedVersion(object):
     def __ge__(self, other):
         return self.__eq__(other) or self.__gt__(other)
 
+    # See http://docs.python.org/reference/datamodel#object.__hash__
+    __hash__ = object.__hash__
+
 def suggest_normalized_version(s):
     """Suggest a normalized version close to the given version string.
 

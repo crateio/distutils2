@@ -493,7 +493,7 @@ Common commands: (see '--help-commands' for more)
         None if the user asked for help on this command.
         """
         # late import because of mutual dependence between these modules
-        from distutils2.cmd import Command
+        from distutils2.command.cmd import Command
 
         # Pull the current command from the head of the command line
         command = args[0]
@@ -607,7 +607,7 @@ Common commands: (see '--help-commands' for more)
         """
         # late import because of mutual dependence between these modules
         from distutils2.core import gen_usage
-        from distutils2.cmd import Command
+        from distutils2.command.cmd import Command
 
         if global_options:
             if display_options:
@@ -904,7 +904,7 @@ Common commands: (see '--help-commands' for more)
 
         Returns the reinitialized command object.
         """
-        from distutils2.cmd import Command
+        from distutils2.command.cmd import Command
         if not isinstance(command, Command):
             command_name = command
             command = self.get_command_obj(command_name)

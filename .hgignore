@@ -1,7 +1,5 @@
 .*\.pyc$
 .*\.pyo$
+^src/build
 ^docs/build
 .*\.swp$
-src/build/*
-.*\.pida-metadata
-
