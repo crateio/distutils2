@@ -69,13 +69,14 @@ class UploadTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
         headers = handler.headers.dict
         self.assertIn('dédé', request_data)
         self.assertIn('xxx', request_data)
-        self.assertTrue(headers['content-length'] < 2000)
+        self.assertEqual(int(headers['content-length']), len(request_data))
+        self.assertTrue(int(headers['content-length']) < 2000)
         self.assertTrue(headers['content-type'].startswith('multipart/form-data'))
         self.assertEqual(handler.command, 'POST')
         self.assertNotIn('\n', headers['authorization'])
 
 def test_suite():
-    return unittest.makeSuite(uploadTestCase)
+    return unittest.makeSuite(UploadTestCase)
 
 if __name__ == "__main__":
     unittest.main(defaultTest="test_suite")
