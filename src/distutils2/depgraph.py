@@ -175,13 +175,11 @@ def dependent_dists(dists, dist):
     return dep
 
 if __name__ == '__main__':
-    import sys
-    sys.path.append('/home/josip/dev/distutils2/src/distutils2/_backport/tests/fake_dists')
     dists = list(pkgutil.get_distributions(use_egg_info=True))
     graph = generate_graph(dists)
     for dist, reqs in graph.missing.iteritems():
         if len(reqs) > 0:
             print("Missing dependencies for %s: %s" % (dist.name,
                                                        ", ".join(reqs)))
-    f = open('/home/josip/Desktop/output.dot', 'w')
+    f = open('output.dot', 'w')
     graph_to_dot(graph, f, True)
