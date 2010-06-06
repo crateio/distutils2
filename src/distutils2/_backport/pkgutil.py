@@ -749,18 +749,18 @@ class EggInfoDistribution(object):
                     s = s.strip()
                     if s and not s.startswith('#'): # skip blank lines/comments
                         yield s
-                    else:
-                        for ss in strs:
-                            for s in yield_lines(ss):
-                                yield s
+            else:
+                for ss in strs:
+                    for s in yield_lines(ss):
+                        yield s
 
         requires = None
         if path.endswith('.egg'):
             if os.path.isdir(path):
-                path = os.path.join(path, 'EGG-INFO', 'PKG-INFO')
-                self.metadata = DistributionMetadata(path=path)
+                meta_path = os.path.join(path, 'EGG-INFO', 'PKG-INFO')
+                self.metadata = DistributionMetadata(path=meta_path)
                 try:
-                    req_path = os.path.join(path, 'EGG_INFO', 'requires.txt')
+                    req_path = os.path.join(path, 'EGG-INFO', 'requires.txt')
                     requires = open(req_path, 'r').read()
                 except IOError:
                     requires = None
@@ -772,6 +772,7 @@ class EggInfoDistribution(object):
                     requires = zipf.get_data('EGG-INFO/requires.txt')
                 except IOError:
                     requires = None
+            self.name = self.metadata['name']
         elif path.endswith('.egg-info'):
             if os.path.isdir(path):
                 path = os.path.join(path, 'PKG-INFO')
@@ -798,13 +799,13 @@ class EggInfoDistribution(object):
                     warnings.warn('distutils2 does not support extensions in requires.txt')
                     break
                 else:
-                    match = _REQUIREMENT.match(line.strip())
+                    match = self._REQUIREMENT.match(line.strip())
                     if not match:
                         raise ValueError('Distribution %s has ill formed '
                                          'requires.txt file (%s)' %
                                          (self.name, line))
                     else:
-                        if match.group('extra'):
+                        if match.group('extras'):
                             s = 'Distribution %s uses extra requirements which'\
                                 ' are not supported in distutils' % (self.name)
                             warnings.warn(s)

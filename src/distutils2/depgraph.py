@@ -119,7 +119,7 @@ def generate_graph(dists):
         provides = dist.metadata['Provides-Dist'] + dist.metadata['Provides']
 
         for p in provides:
-            comps = p.split(" ", 1)
+            comps = p.strip().rsplit(" ", 1)
             name = comps[0]
             version = None
             if len(comps) == 2:
@@ -137,7 +137,7 @@ def generate_graph(dists):
         requires = dist.metadata['Requires-Dist'] + dist.metadata['Requires']
         for req in requires:
             predicate = VersionPredicate(req)
-            comps = req.split(" ", 1)
+            comps = req.strip().rsplit(" ", 1)
             name = comps[0]
 
             if not name in provided:
@@ -175,11 +175,13 @@ def dependent_dists(dists, dist):
     return dep
 
 if __name__ == '__main__':
+    import sys
+    sys.path.append('/home/josip/dev/distutils2/src/distutils2/_backport/tests/fake_dists')
     dists = list(pkgutil.get_distributions(use_egg_info=True))
     graph = generate_graph(dists)
     for dist, reqs in graph.missing.iteritems():
         if len(reqs) > 0:
             print("Missing dependencies for %s: %s" % (dist.name,
                                                        ", ".join(reqs)))
-    f = open('output.dot', 'w')
-    graph.to_dot(f, True)
+    f = open('/home/josip/Desktop/output.dot', 'w')
+    graph_to_dot(graph, f, True)
