@@ -885,7 +885,7 @@ Common commands: (see '--help-commands' for more)
             except ValueError, msg:
                 raise DistutilsOptionError, msg
 
-    def reinitialize_command(self, command, reinit_subcommands=0):
+    def get_reinitialized_command(self, command, reinit_subcommands=0):
         """Reinitializes a command to the state it was in when first
         returned by 'get_command_obj()': ie., initialized but not yet
         finalized.  This provides the opportunity to sneak option
@@ -920,7 +920,7 @@ Common commands: (see '--help-commands' for more)
 
         if reinit_subcommands:
             for sub in command.get_sub_commands():
-                self.reinitialize_command(sub, reinit_subcommands)
+                self.get_reinitialized_command(sub, reinit_subcommands)
 
         return command
 

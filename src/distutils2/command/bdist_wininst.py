@@ -126,13 +126,13 @@ class bdist_wininst (Command):
         if not self.skip_build:
             self.run_command('build')
 
-        install = self.reinitialize_command('install', reinit_subcommands=1)
+        install = self.get_reinitialized_command('install', reinit_subcommands=1)
         install.root = self.bdist_dir
         install.skip_build = self.skip_build
         install.warn_dir = 0
         install.plat_name = self.plat_name
 
-        install_lib = self.reinitialize_command('install_lib')
+        install_lib = self.get_reinitialized_command('install_lib')
         # we do not want to include pyc or pyo files
         install_lib.compile = 0
         install_lib.optimize = 0

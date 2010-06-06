@@ -308,10 +308,8 @@ class Command:
         cmd_obj.ensure_finalized()
         return cmd_obj
 
-    # XXX rename to 'get_reinitialized_command()'? (should do the
-    # same in dist.py, if so)
-    def reinitialize_command(self, command, reinit_subcommands=0):
-        return self.distribution.reinitialize_command(
+    def get_reinitialized_command(self, command, reinit_subcommands=0):
+        return self.distribution.get_reinitialized_command(
             command, reinit_subcommands)
 
     def run_command(self, command):
