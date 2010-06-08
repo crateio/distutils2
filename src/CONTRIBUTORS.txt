@@ -16,6 +16,7 @@ Thanks to:
 - Josip Djolonga
 - Yannick Gringas
 - Carl Meyer
+- Alexis Metaireau
 - Michael Mulich
 - George Peris
 - Sean Reifschneider
