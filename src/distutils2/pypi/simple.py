@@ -18,6 +18,7 @@ import socket
 import cStringIO
 import httplib
 import logging
+import tempfile
 
 from distutils2.errors import DistutilsError
 from distutils2 import __version__ as __distutils2_version__
@@ -178,11 +179,11 @@ user_agent = "Python-urllib/%s distutils2/%s" % (
     sys.version[:3], __distutils2_version__
 )
 
-class PackageIndex(Environment):
+class SimpleIndex(Environment):
     """A distribution index that scans web pages for download URLs"""
 
     def __init__(self, index_url="http://pypi.python.org/simple", hosts=('*',),
-        *args, **kw):
+        follow_externals=True, *args, **kw):
         self._init_logging()
         Environment.__init__(self,*args,**kw)
         self.index_url = index_url + "/"[:not index_url.endswith('/')]
@@ -191,6 +192,7 @@ class PackageIndex(Environment):
         self.package_pages = {}
         self.allows = re.compile('|'.join(map(translate,hosts))).match
         self.to_scan = []
+        self.follow_externals = follow_externals
 
     def _init_logging(self):
         import sys
@@ -198,6 +200,7 @@ class PackageIndex(Environment):
 
     def process_url(self, url, retrieve=False):
         """Evaluate a URL as a possible download, and maybe retrieve it"""
+
         if url in self.scanned_urls and not retrieve:
             return
         self.scanned_urls[url] = True
@@ -234,9 +237,12 @@ class PackageIndex(Environment):
             charset = f.headers.get_param('charset') or 'latin-1'
             page = page.decode(charset, "ignore")
         f.close()
-        for match in HREF.finditer(page):
-            link = urlparse.urljoin(base, htmldecode(match.group(1)))
-            self.process_url(link)
+
+        if url.startswith(self.index_url):
+            if self.follow_externals:
+                for match in HREF.finditer(page):
+                    link = urlparse.urljoin(base, htmldecode(match.group(1)))
+                    self.process_url(link)
         if url.startswith(self.index_url) and getattr(f,'code',None)!=404:
             page = self.process_index(url, page)
 
@@ -283,7 +289,9 @@ class PackageIndex(Environment):
                 self.add(dist)
 
     def process_index(self,url,page):
-        """Process the contents of a PyPI page"""
+        """Process the content of PyPI page. For each link, if it's a PyPI one,
+        browse it's page, and satinize the output.
+        """
         def scan(link):
             # Process a URL to see if it's for a package page
             if link.startswith(self.index_url):
@@ -359,7 +367,7 @@ class PackageIndex(Environment):
             if dist in requirement:
                 return dist
             self.debug("%s does not match %s", requirement, dist)
-        return super(PackageIndex, self).obtain(requirement,installer)
+        return super(SimpleIndex, self).obtain(requirement,installer)
 
     def check_md5(self, cs, info, filename, tfp):
         if re.match('md5=[0-9a-f]{32}$', info):
@@ -401,7 +409,7 @@ class PackageIndex(Environment):
         meth(msg, requirement.unsafe_name)
         self.scan_all()
 
-    def download(self, spec, tmpdir):
+    def download(self, spec, tmpdir=None):
         """Locate and/or download `spec` to `tmpdir`, returning a local path
 
         `spec` may be a ``Requirement`` object, or a string containing a URL,
@@ -419,6 +427,8 @@ class PackageIndex(Environment):
         of `tmpdir`, and the local filename is returned.  Various errors may be
         raised if a problem occurs during downloading.
         """
+        if tmpdir is None:
+            tmpdir=tempfile.mkdtemp()
         if not isinstance(spec,Requirement):
             scheme = URL_SCHEME(spec)
             if scheme:

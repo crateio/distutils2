@@ -11,11 +11,20 @@ import urllib2
 from distutils2.tests.pypi_server import use_pypi_server
 from distutils2.pypi import simple
 
+from distutils2.errors import DistutilsError
 
 class PyPISimpleTestCase(unittest2.TestCase):
 
+    def _get_simple_package_index(self, server, base_url="/simple/", *args,
+            **kwargs):
+        """Build and return a SimpleSimpleIndex instance, with the test server
+        urls
+        """
+        return simple.SimpleIndex(server.full_address + base_url, *args,
+            **kwargs)
+
     def test_bad_urls(self):
-        index = simple.PackageIndex()
+        index = simple.SimpleIndex()
         url = 'http://127.0.0.1:0/nonesuch/test_simple'
         try:
             v = index.open_url(url)
@@ -27,7 +36,7 @@ class PyPISimpleTestCase(unittest2.TestCase):
         # issue 16
         # easy_install inquant.contentmirror.plone breaks because of a typo
         # in its home URL
-        index = simple.PackageIndex(
+        index = simple.SimpleIndex(
             hosts=('www.example.com',))
 
         url = 'url:%20https://svn.plone.org/svn/collective/inquant.contentmirror.plone/trunk'
@@ -71,7 +80,7 @@ class PyPISimpleTestCase(unittest2.TestCase):
             index.process_index(url, page)
 
     def test_url_ok(self):
-        index = simple.PackageIndex(
+        index = simple.SimpleIndex(
             hosts=('www.example.com',))
         url = 'file:///tmp/test_simple'
         self.assertTrue(index.url_ok(url, True))
@@ -84,7 +93,7 @@ class PyPISimpleTestCase(unittest2.TestCase):
         # We query only for the version 1.1, so all distributions must me
         # filled in the package_index (as the url has been scanned), but
         # obtain must only return the one we want.
-        pi = simple.PackageIndex(server.full_address + "/simple/")
+        pi = self._get_simple_package_index(server)
         last_distribution = pi.obtain(simple.Requirement.parse("foobar"))
 
         # we have scanned the index page
@@ -98,38 +107,79 @@ class PyPISimpleTestCase(unittest2.TestCase):
         # and returned the most recent one
         self.assertEqual(last_distribution.version, '2.0.1')
 
-    @use_pypi_server("with_external_pages")
+    @use_pypi_server("with_externals")
     def test_process_external_pages(self, server):
-        """If the index provides links external to the pypi index, 
-        they need to be processed, in order to discover new distributions.
+        """Include external pages in obtain process
         """
+        # Try to request the package index, wich contains links to "externals"
+        # resources. They have to  be scanned too.
+        pi = self._get_simple_package_index(server, follow_externals=True)
+        pi.obtain(simple.Requirement.parse("foobar"))
+        self.assertIn(server.full_address + "/external/external.html",
+            pi.scanned_urls.keys())
 
-    @use_pypi_server()
-    def test_scan_all(self, server):
-        """Test that we can process the whole index and discover all related
-        links.
-
-        """
-        # FIXME remove?
-
-    @use_pypi_server("with_external_pages")
+    @use_pypi_server("with_real_externals")
     def test_disable_external_pages(self, server):
-        """Test that when we tell the simple client to not retreive external
-        urls, it does well.""" 
-    
-    @use_pypi_server()
-    def test_process_index(self, server):
-        """Test that we can process a simple given string and find related links
-        to distributions.
+        """Exclude external pages if disabled 
         """
-    
-    @use_pypi_server()
-    def test_process_url(self, server):
-        """Test that we can process an alternative url (not pypi related) to
-        find links in it.
+        # Test that telling the simple pyPI client to not retreive external
+        # works
+        pi = self._get_simple_package_index(server, follow_externals=False)
+        pi.obtain(simple.Requirement.parse("foobar"))
+        self.assertNotIn(server.full_address + "/external/external.html",
+            pi.scanned_urls.keys())
+
+    @use_pypi_server("downloads_with_md5")
+    def test_download_package(self, server):
+        """Download packages from pypi requests.
         """
-    
-    @use_pypi_server(static_filesystem_paths=["test_link_priority"],
+        paths = []
+        # If we request a download specific version of a distribution, 
+        # the system must download it, check the md5 and unpack it in a 
+        # temporary location, that must be returned by the lib.
+        pi = self._get_simple_package_index(server)
+
+        # assert we can download a specific version
+        temp_location_1 = pi.download(
+            simple.Requirement.parse("foobar == 0.1"))
+        self.assertIn("foobar-0.1.tar.gz", temp_location_1)
+        paths.append(temp_location_1)
+        
+        # assert we take the latest
+        temp_location_2 = pi.download(simple.Requirement.parse("foobar"))
+        self.assertIn("foobar-0.1.tar.gz", temp_location_2)
+        paths.append(temp_location_2)
+
+        # we also can specify a temp location
+        specific_temp_location = tempfile.mkdtemp()
+        returned_temp_location = pi.download(
+            simple.Requirement.parse("foobar"), 
+            tmpdir=specific_temp_location)
+        self.assertIn(specific_temp_location, returned_temp_location)
+        paths.append(returned_temp_location)
+
+        # raise an error if we couldnt manage to get the file with a the good
+        # md5 hash
+        self.assertRaises(DistutilsError, pi.download,
+            simple.Requirement.parse("badmd5"))
+        # XXX: is this making sense ? do file on pypi can have a wrong md5 
+        # hash ?
+        # If the pypi package index contain a file with the wrong md5, try to
+        # use the external locations to retreive it.
+        # in the test, the "wrongmd5" project contain a bad version of the
+        # archive, but a external site contains the good one. We want to use the
+        # external one to retreive the file with the good md5.
+        # if we really can't manage to get the right md5, raise an exception
+        
+        for path in paths:
+            shutil.rmtree(os.path.dirname(path))
+
+    @use_pypi_server("with_egg_files")
+    def test_scan_egg_files(self, server):
+        """Assert that egg files are indexed as well"""
+        pass
+
+    @use_pypi_server(static_filesystem_paths=["with_externals"],
         static_uri_paths=["simple", "external"])
     def test_links_priority(self, server):
         """
@@ -150,7 +200,7 @@ class PyPISimpleTestCase(unittest2.TestCase):
         index_url = server.full_address + '/simple/'
 
         # scan a test index
-        pi = simple.PackageIndex(index_url)
+        pi = simple.SimpleIndex(index_url)
         requirement = simple.Requirement.parse('foobar')
         pi.find_packages(requirement)
         server.stop()

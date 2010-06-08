@@ -158,7 +158,11 @@ class PyPIRequestHandler(SimpleHTTPRequestHandler):
                         relative_path += "index.html"
                     file = open(fs_path + relative_path)
                     data = file.read()
-                    self.make_response(data)
+                    if relative_path.endswith('.tar.gz'):
+                        headers=[('Content-type', 'application/x-gtar')]
+                    else:
+                        headers=[('Content-type', 'text/html')]
+                    self.make_response(data, headers=headers)
                 except IOError:
                     pass
 
