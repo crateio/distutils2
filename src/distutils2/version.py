@@ -3,6 +3,10 @@ import re
 
 from distutils2.errors import IrrationalVersionError, HugeMajorVersionNumError
 
+__all__ = ['NormalizedVersion', 'suggest_normalized_version',
+           'VersionPredicate', 'is_valid_version', 'is_valid_versions',
+           'is_valid_predicate']
+
 # A marker used in the second and third parts of the `parts` tuple, for
 # versions that don't have those segments, to sort properly. An example
 # of versions in sort order ('highest' last):
@@ -18,9 +22,9 @@ from distutils2.errors import IrrationalVersionError, HugeMajorVersionNumError
 #                                                              |
 #   'dev' < 'f' ----------------------------------------------/
 # Other letters would do, but 'f' for 'final' is kind of nice.
-FINAL_MARKER = ('f',)
+_FINAL_MARKER = ('f',)
 
-VERSION_RE = re.compile(r'''
+_VERSION_RE = re.compile(r'''
     ^
     (?P<version>\d+\.\d+)          # minimum 'N.N'
     (?P<extraversion>(?:\.\d+)*)   # any number of extra '.N' segments
@@ -70,13 +74,13 @@ class NormalizedVersion(object):
         self._parse(s, error_on_huge_major_num)
 
     @classmethod
-    def from_parts(cls, version, prerelease=FINAL_MARKER,
-                   devpost=FINAL_MARKER):
+    def from_parts(cls, version, prerelease=_FINAL_MARKER,
+                   devpost=_FINAL_MARKER):
         return cls(cls.parts_to_str((version, prerelease, devpost)))
 
     def _parse(self, s, error_on_huge_major_num=True):
         """Parses a string version into parts."""
-        match = VERSION_RE.search(s)
+        match = _VERSION_RE.search(s)
         if not match:
             raise IrrationalVersionError(s)
 
@@ -98,7 +102,7 @@ class NormalizedVersion(object):
                                          pad_zeros_length=1)
             parts.append(tuple(block))
         else:
-            parts.append(FINAL_MARKER)
+            parts.append(_FINAL_MARKER)
 
         # postdev
         if groups.get('postdev'):
@@ -106,14 +110,14 @@ class NormalizedVersion(object):
             dev = groups.get('dev')
             postdev = []
             if post is not None:
-                postdev.extend([FINAL_MARKER[0], 'post', int(post)])
+                postdev.extend([_FINAL_MARKER[0], 'post', int(post)])
                 if dev is None:
-                    postdev.append(FINAL_MARKER[0])
+                    postdev.append(_FINAL_MARKER[0])
             if dev is not None:
                 postdev.extend(['dev', int(dev)])
             parts.append(tuple(postdev))
         else:
-            parts.append(FINAL_MARKER)
+            parts.append(_FINAL_MARKER)
         self.parts = tuple(parts)
         if error_on_huge_major_num and self.parts[0][0] > 1980:
             raise HugeMajorVersionNumError("huge major version number, %r, "
@@ -154,10 +158,10 @@ class NormalizedVersion(object):
         # XXX This doesn't check for invalid tuples
         main, prerel, postdev = parts
         s = '.'.join(str(v) for v in main)
-        if prerel is not FINAL_MARKER:
+        if prerel is not _FINAL_MARKER:
             s += prerel[0]
             s += '.'.join(str(v) for v in prerel[1:])
-        if postdev and postdev is not FINAL_MARKER:
+        if postdev and postdev is not _FINAL_MARKER:
             if postdev[0] == 'f':
                 postdev = postdev[1:]
             i = 0
@@ -364,7 +368,7 @@ class VersionPredicate(object):
                 return False
         return True
 
-class Versions(VersionPredicate):
+class _Versions(VersionPredicate):
     def __init__(self, predicate):
         predicate = predicate.strip()
         match = _PLAIN_VERSIONS.match(predicate)
@@ -375,7 +379,7 @@ class Versions(VersionPredicate):
         self.predicates = [_split_predicate(pred.strip())
                            for pred in predicates.split(',')]
 
-class Version(VersionPredicate):
+class _Version(VersionPredicate):
     def __init__(self, predicate):
         predicate = predicate.strip()
         match = _PLAIN_VERSIONS.match(predicate)
@@ -394,7 +398,7 @@ def is_valid_predicate(predicate):
 
 def is_valid_versions(predicate):
     try:
-        Versions(predicate)
+        _Versions(predicate)
     except (ValueError, IrrationalVersionError):
         return False
     else:
@@ -402,7 +406,7 @@ def is_valid_versions(predicate):
 
 def is_valid_version(predicate):
     try:
-        Version(predicate)
+        _Version(predicate)
     except (ValueError, IrrationalVersionError):
         return False
     else:
