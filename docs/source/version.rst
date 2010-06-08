@@ -29,8 +29,7 @@ You can compare NormalizedVersion objects, like this::
     >>> NormalizedVersion("1.2b1") < NormalizedVersion("1.2")
     True
 
-NormalizedVersion is used internally by `Version`, `Versions` and
-`VersionPredicate` to do their stuff.
+NormalizedVersion is used internally by `VersionPredicate` to do his stuff.
 
 `distutils2.version.suggest_normalized_version`
 -----------------------------------------------
@@ -63,23 +62,3 @@ predicate::
 `is_valid_predicate`
 --------------------
 
-
-`distutils2.version.Versions`
-=============================
-
-`is_valid_versions`
---------------------
-
-
-`distutils2.version.Version`
-============================
-
-You can use the `Version` class to use version predicates without specifying a
-project name. It works like `Versions`, but only for one version. See an
-exemple::
-
-    >>> Version("1.1")
-    <distutils2.version.Version object at 0x...>
-
-`is_valid_version`
---------------------
