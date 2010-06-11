@@ -13,6 +13,7 @@ Contents:
 
    metadata
    pkgutil
+   depgraph
 
 Indices and tables
 ==================

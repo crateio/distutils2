@@ -7,7 +7,7 @@ from distutils2._backport import pkgutil
 from distutils2.errors import DistutilsError
 from distutils2.version import VersionPredicate
 
-__all__ = ['DependencyGraph', 'generate_graph']
+__all__ = ['DependencyGraph', 'generate_graph', 'dependent_dists']
 
 
 class DependencyGraph(object):
