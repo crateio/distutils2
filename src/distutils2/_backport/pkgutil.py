@@ -649,12 +649,12 @@ class Distribution(object):
 
         A local absolute path is an absolute path in which occurrences of
         ``'/'`` have been replaced by the system separator given by ``os.sep``.
+
         :parameter local: flag to say if the path should be returned a local
                           absolute path
 
         :type local: boolean
         :returns: iterator of (path, md5, size)
-
         """
         return self._get_records(local)
 
@@ -907,7 +907,7 @@ def get_distribution(name, use_egg_info=False):
     This function only returns the first result founded, as no more than one
     value is expected. If the directory is not found, ``None`` is returned.
 
-    :rtype: :class:`Distribution` or :class:`EggInfoDistribution: or None"""
+    :rtype: :class:`Distribution` or :class:`EggInfoDistribution` or None"""
     found = None
     for dist in get_distributions():
         if dist.name == name:
