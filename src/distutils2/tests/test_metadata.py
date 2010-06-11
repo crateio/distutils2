@@ -73,13 +73,13 @@ class DistributionMetadataTestCase(unittest.TestCase):
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
         content = open(PKG_INFO).read()
         content = content % sys.platform
-        metadata = DistributionMetadata(platform_dependant=True)
+        metadata = DistributionMetadata(platform_dependent=True)
         metadata.read_file(StringIO(content))
         self.assertEquals(metadata['Requires-Dist'], ['bar'])
 
         # test with context
         context = {'sys.platform': 'okook'}
-        metadata = DistributionMetadata(platform_dependant=True,
+        metadata = DistributionMetadata(platform_dependent=True,
                                         execution_context=context)
         metadata.read_file(StringIO(content))
         self.assertEquals(metadata['Requires-Dist'], ['foo'])

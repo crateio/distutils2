@@ -32,14 +32,14 @@ the metadata file, and provides a dict-like interface to the values::
     ["pywin32; sys.platform == 'win32'", "Sphinx"]
 
 The fields that supports environment markers can be automatically ignored if
-the object is instantiated using the ``platform_dependant`` option.
+the object is instantiated using the ``platform_dependent`` option.
 :class:`DistributionMetadata` will interpret in the case the markers and will
 automatically remove the fields that are not compliant with the running
 environment. Here's an example under Mac OS X. The win32 dependency
 we saw earlier is ignored::
 
     >>> from distutils2.metadata import DistributionMetadata
-    >>> metadata = DistributionMetadata('PKG-INFO', platform_dependant=True)
+    >>> metadata = DistributionMetadata('PKG-INFO', platform_dependent=True)
     >>> metadata['Requires-Dist']
     ['bar']
 
@@ -53,7 +53,7 @@ Here's an example, simulating a win32 environment::
 
     >>> from distutils2.metadata import DistributionMetadata
     >>> context = {'sys.platform': 'win32'}
-    >>> metadata = DistributionMetadata('PKG-INFO', platform_dependant=True,
+    >>> metadata = DistributionMetadata('PKG-INFO', platform_dependent=True,
     ...                                 execution_context=context)
     ...
     >>> metadata['Requires-Dist'] = ["pywin32; sys.platform == 'win32'",

@@ -184,12 +184,12 @@ _UNICODEFIELDS = ('Author', 'Maintainer', 'Summary', 'Description')
 class DistributionMetadata(object):
     """Distribution meta-data class (1.0 or 1.2).
     """
-    def __init__(self, path=None, platform_dependant=False,
+    def __init__(self, path=None, platform_dependent=False,
                  execution_context=None):
         self._fields = {}
         self.version = None
         self.docutils_support = _HAS_DOCUTILS
-        self.platform_dependant = platform_dependant
+        self.platform_dependent = platform_dependent
         if path is not None:
             self.read(path)
         self.execution_context = execution_context
@@ -260,7 +260,7 @@ class DistributionMetadata(object):
         return reporter.messages
 
     def _platform(self, value):
-        if not self.platform_dependant or ';' not in value:
+        if not self.platform_dependent or ';' not in value:
             return True, value
         value, marker = value.split(';')
         return _interpret(marker, self.execution_context), value
