@@ -502,11 +502,11 @@ def extend_path(path, name):
     if one wants to distribute different parts of a single logical
     package as multiple directories.
 
-    It also looks for *.pkg files beginning where * matches the name
-    argument.  This feature is similar to *.pth files (see site.py),
+    It also looks for \*.pkg files beginning where \* matches the name
+    argument.  This feature is similar to \*.pth files (see site.py),
     except that it doesn't special-case lines starting with 'import'.
-    A *.pkg file is trusted at face value: apart from checking for
-    duplicates, all entries found in a *.pkg file are added to the
+    A \*.pkg file is trusted at face value: apart from checking for
+    duplicates, all entries found in a \*.pkg file are added to the
     path, regardless of whether they are exist the filesystem.  (This
     is a feature.)
 
@@ -651,8 +651,10 @@ class Distribution(object):
         ``'/'`` have been replaced by the system separator given by ``os.sep``.
         :parameter local: flag to say if the path should be returned a local
                           absolute path
+
         :type local: boolean
         :returns: iterator of (path, md5, size)
+
         """
         return self._get_records(local)
 
@@ -989,7 +991,8 @@ def provides_distribution(name, version=None, use_egg_info=False):
                 p_name, p_ver = p_components
                 if len(p_ver) < 2 or p_ver[0] != '(' or p_ver[-1] != ')':
                     raise DistutilsError(('Distribution %s has invalid ' +
-                                          'provides field: %s') % (dist.name,p))
+                                          'provides field: %s') \
+                                           % (dist.name, p))
                 p_ver = p_ver[1:-1] # trim off the parenthesis
                 if p_name == name and predicate.match(p_ver):
                     yield dist

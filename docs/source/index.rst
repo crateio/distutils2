@@ -12,6 +12,7 @@ Contents:
    :maxdepth: 2
 
    metadata
+   pkgutil
 
 Indices and tables
 ==================
