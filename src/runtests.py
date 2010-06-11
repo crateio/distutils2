@@ -1,6 +1,6 @@
 """Tests for distutils2.
 
-The tests for distutils2 are defined in the distutils2.tests package;
+The tests for distutils2 are defined in the distutils2.tests package.
 """
 import sys
 

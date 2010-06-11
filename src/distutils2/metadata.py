@@ -105,7 +105,6 @@ def _best_version(fields):
     keys = fields.keys()
     possible_versions = ['1.0', '1.1', '1.2']
 
-
     # first let's try to see if a field is not part of one of the version
     for key in keys:
         if key not in _241_FIELDS and '1.0' in possible_versions:
@@ -128,9 +127,9 @@ def _best_version(fields):
         raise MetadataConflictError('You used incompatible 1.1 and 1.2 fields')
 
     # we have the choice, either 1.0, or 1.2
-    #   - 1.0 has a broken Summary field but work with all tools
+    #   - 1.0 has a broken Summary field but works with all tools
     #   - 1.1 is to avoid
-    #   - 1.2 fixes Summary but is not spreaded yet
+    #   - 1.2 fixes Summary but is not widespread yet
     if not is_1_1 and not is_1_2:
         # we couldn't find any specific marker
         if PKG_INFO_PREFERRED_VERSION in possible_versions:
@@ -633,4 +632,3 @@ def _interpret(marker, execution_context=None):
     operations = _CHAIN(execution_context)
     tokenize(StringIO(marker).readline, operations.eat)
     return operations.result()
-

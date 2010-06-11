@@ -33,9 +33,9 @@ class BuildTestCase(support.TempdirManager,
         # we should add a registry
         formats = ['zip', 'gztar', 'bztar', 'ztar', 'tar', 'wininst', 'msi']
         formats.sort()
-        founded = cmd.format_command.keys()
-        founded.sort()
-        self.assertEquals(founded, formats)
+        found = cmd.format_command.keys()
+        found.sort()
+        self.assertEquals(found, formats)
 
 def test_suite():
     return unittest.makeSuite(BuildTestCase)

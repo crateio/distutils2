@@ -809,7 +809,7 @@ def get_distribution(name, use_egg_info=False):
     returned if one is found that has metadata that matches *name* for the
     *name* metadata field.
 
-    This function only returns the first result founded, as no more than one
+    This function only returns the first result found, as no more than one
     value is expected. If the directory is not found, ``None`` is returned.
 
     :rtype: :class:`Distribution` or :class:`EggInfoDistribution: or None"""
@@ -867,7 +867,7 @@ def provides_distribution(name, version=None, use_egg_info=False):
     then all files and directories ending with ``.egg-info`` are considered
     as well and returns an :class:`EggInfoDistribution` instance.
 
-    This function only returns the first result founded, since no more than
+    This function only returns the first result found, since no more than
     one values are expected. If the directory is not found, returns ``None``.
 
     :parameter version: a version specifier that indicates the version
