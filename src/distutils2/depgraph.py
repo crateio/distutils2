@@ -1,39 +1,40 @@
-"""
-A dependency graph generator. The graph is represented as an instance of
-:class:`DependencyGraph`, and DOT output is possible as well.
-"""
-
-from distutils2._backport import pkgutil
-from distutils2.errors import DistutilsError
+from di stutils2.errors import DistutilsError
 from distutils2.version import VersionPredicate
 
-__all__ = ['DependencyGraph', 'generate_graph', 'dependent_dists']
+__all__ = ['DependencyGraph', 'generate_graph', 'dependent_dists',
+           'graph_to_dot']
 
 
 class DependencyGraph(object):
     """
     Represents a dependency graph between distributions.
 
-    The depedency relationships are stored in an *adjacency_list* that maps
+    The depedency relationships are stored in an ``adjacency_list`` that maps
     distributions to a list of ``(other, label)`` tuples where  ``other``
     is a distribution and the edge is labelled with ``label`` (i.e. the version
-    specifier, if such was provided). If any missing depencies are found,
-    they are stored in ``missing``. It maps distributions to a list of
-    requirements that were not provided by any other distributions.
+    specifier, if such was provided). Also, for more efficient traversal, for
+    every distribution ``x``, a list of predecessors is kept in
+    ``reverse_list[x]``. An edge from distribution ``a`` to
+    distribution ``b`` means that ``a`` depends on ``b``. If any missing
+    depencies are found, they are stored in ``missing``, which is a dictionary
+    that maps distributions to a list of requirements that were not provided by
+    any other distributions.
     """
 
     def __init__(self):
         self.adjacency_list = {}
+        self.reverse_list = {}
         self.missing = {}
 
     def add_distribution(self, distribution):
         """
-        Add distribution *x* to the graph.
+        Add the *distribution* to the graph.
 
         :type distribution: :class:`pkgutil.Distribution` or
                             :class:`pkgutil.EggInfoDistribution`
         """
         self.adjacency_list[distribution] = list()
+        self.reverse_list[distribution] = list()
         self.missing[distribution] = list()
 
     def add_edge(self, x, y, label=None):
@@ -49,6 +50,9 @@ class DependencyGraph(object):
         :type label: ``str`` or ``None``
         """
         self.adjacency_list[x].append((y, label))
+        # multiple edges are allowed, so be careful
+        if not x in self.reverse_list[y]:
+            self.reverse_list[y].append(x)
 
     def add_missing(self, distribution, requirement):
         """
@@ -63,12 +67,12 @@ class DependencyGraph(object):
 
 def graph_to_dot(graph, f, skip_disconnected=True):
     """
-    Writes a DOT output for the graph to the provided *file*.
+    Writes a DOT output for the graph to the provided file *f*.
     If *skip_disconnected* is set to ``True``, then all distributions
-    that are not dependent on any other distributions are skipped.
+    that are not dependent on any other distribution are skipped.
 
     :type f: ``file``
-    ;type skip_disconnected: ``bool``
+    :type skip_disconnected: ``bool``
     """
     if not isinstance(f, file):
         raise TypeError('the argument has to be of type file')
@@ -162,20 +166,22 @@ def dependent_dists(dists, dist):
         raise ValueError('The given distribution is not a member of the list')
     graph = generate_graph(dists)
 
-    dep = [dist]
-    fringe = [dist] # list of nodes we should expand
-    while not len(fringe) == 0:
-        next = graph.adjacency_list[fringe.pop()]
-        for (dist, label) in next:
-            if not dist in dep: # avoid infinite loops
-                dep.append(dist)
-                fringe.append(dist)
+    dep = [dist] # dependent distributions
+    fringe = graph.reverse_list[dist] # list of nodes we should inspect
 
-    dep.pop()
+    while not len(fringe) == 0:
+        node = fringe.pop()
+        dep.append(node)
+        for prev in graph.reverse_list[node]:
+            if not prev in dep:
+                fringe.append(prev)
+
+    dep.pop(0) # remove dist from dep, was there to prevent infinite loops
     return dep
 
 if __name__ == '__main__':
-    dists = list(pkgutil.get_distributions(use_egg_info=True))
+    from distutils2._backport.pkgutil import get_distributions
+    dists = list(get_distributions(use_egg_info=True))
     graph = generate_graph(dists)
     for dist, reqs in graph.missing.iteritems():
         if len(reqs) > 0:

@@ -729,6 +729,9 @@ class Distribution(object):
         for path, md5, size in self._get_records(local):
             yield path
 
+    def __eq__(self, other):
+        return isinstance(other, Distribution) and self.path == other.path
+
 
 class EggInfoDistribution(object):
     """Created with the *path* of the ``.egg-info`` directory or file provided
@@ -748,6 +751,7 @@ class EggInfoDistribution(object):
         r'(?P<extras>\[.*\])?')
 
     def __init__(self, path):
+        self.path = path
 
         # reused from Distribute's pkg_resources
         def yield_lines(strs):
@@ -838,6 +842,10 @@ class EggInfoDistribution(object):
 
     def uses(self, path):
         return False
+
+    def __eq__(self, other):
+        return isinstance(other, EggInfoDistribution) and \
+               self.path == other.path
 
 
 def _normalize_dist_name(name):
