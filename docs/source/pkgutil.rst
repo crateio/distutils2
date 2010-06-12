@@ -26,20 +26,52 @@ API Reference
 Example Usage
 =============
 
-* Doing this and that::
+Print All Information About a Distribution
+++++++++++++++++++++++++++++++++++++++++++
 
-    import sys
+Given a path to a ``.dist-info`` distribution, we shall print out all
+information that can be obtained using functions provided in this module::
 
-    # first compute a
-    a = x+2
-    # then print it out to stdin
-    print(a)
+  from distutils2._backport import pkgutil
+  import sys
 
-* And that and this::
+  path = raw_input() # read the path from the keyboard
+  # first create the Distribution instance
+  try:
+      dist = pkgutil.Distribution(path)
+  except IOError:
+      print('No such distribution')
+      sys.exit(1)
 
-    from foo import bar
+  print('Information about %s' % dist.name)
+  print('Files')
+  print('=====')
+  for (path, md5, size) in dist.get_installed_files():
+      print('%s with hash %s [%d bytes] ' % (path, md5, size))
+  print('Metadata')
+  print('========')
+  for key, value in dist.metadata.items():
+      print('%20s: %s' % (key, value))
+  print('Extra')
+  print('=====')
+  if dist.requested:
+      print('* It was installed by user request')
+  else:
+      print('* It was installed as a dependency')
 
-    z = lambda x,y: x^2 + y
+Find Out Obsoleted Distributions
+++++++++++++++++++++++++++++++++
 
+Now, we take tackle a different problem, we are interested in finding out
+which distributions have been obsoleted. This can be easily done as follows::
 
+  from distutils2._backport import pkgutil
+
+  # iterate over all distributions in the system
+  for dist in pkgutil.get_distributions():
+      name = dist.name
+      version = dist.metadata['Version']
+      # find out which distributions obsolete this name/version combination
+      for obsoleted_by in pkgutil.obsoletes_distribution(name, version):
+          print('%s(%s) is obsoleted by %s' % (name, version, obsoleted_by.name))
 
