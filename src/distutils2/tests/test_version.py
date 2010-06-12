@@ -1,5 +1,4 @@
 """Tests for distutils.version."""
-import unittest
 import doctest
 import os
 
@@ -7,6 +6,7 @@ from distutils2.version import NormalizedVersion as V
 from distutils2.version import IrrationalVersionError
 from distutils2.version import suggest_normalized_version as suggest
 from distutils2.version import VersionPredicate
+from distutils2.tests.support import unittest
 
 class VersionTestCase(unittest.TestCase):
 

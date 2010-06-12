@@ -3,7 +3,6 @@
 import os
 import os.path
 import sys
-import unittest2
 import site
 
 from distutils2._backport import sysconfig
@@ -22,11 +21,12 @@ from distutils2.core import Distribution
 from distutils2.errors import DistutilsOptionError
 
 from distutils2.tests import support
+from distutils2.tests.support import unittest
 
 class InstallTestCase(support.TempdirManager,
                       support.EnvironGuard,
                       support.LoggingSilencer,
-                      unittest2.TestCase):
+                      unittest.TestCase):
 
     def test_home_installation_scheme(self):
         # This ensure two things:
@@ -214,7 +214,7 @@ class InstallTestCase(support.TempdirManager,
         self.assertTrue(len(self.logs) > old_logs_len)
 
 def test_suite():
-    return unittest2.makeSuite(InstallTestCase)
+    return unittest.makeSuite(InstallTestCase)
 
 if __name__ == "__main__":
-    unittest2.main(defaultTest="test_suite")
+    unittest.main(defaultTest="test_suite")

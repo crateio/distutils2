@@ -1,10 +1,10 @@
 """Tests for distutils.manifest."""
-import unittest2
 import os
 import sys
 import logging
 
 from distutils2.tests import support
+from distutils2.tests.support import unittest
 from distutils2.manifest import Manifest
 
 _MANIFEST = """\
@@ -18,7 +18,7 @@ recursive-include bar \\
 """
 
 class ManifestTestCase(support.TempdirManager,
-                       unittest2.TestCase):
+                       unittest.TestCase):
 
     def test_manifest_reader(self):
 
@@ -51,7 +51,7 @@ class ManifestTestCase(support.TempdirManager,
 
 
 def test_suite():
-    return unittest2.makeSuite(ManifestTestCase)
+    return unittest.makeSuite(ManifestTestCase)
 
 if __name__ == '__main__':
     run_unittest(test_suite())

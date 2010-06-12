@@ -1,13 +1,13 @@
 """Tests for distutils.command.bdist."""
-import unittest2
 import os
 import sys
 from StringIO import StringIO
 
 from distutils2.metadata import (DistributionMetadata, _interpret,
                                  PKG_INFO_PREFERRED_VERSION)
+from distutils2.tests.support import unittest
 
-class DistributionMetadataTestCase(unittest2.TestCase):
+class DistributionMetadataTestCase(unittest.TestCase):
 
 
     def test_interpret(self):
@@ -64,7 +64,7 @@ class DistributionMetadataTestCase(unittest2.TestCase):
         res = res.read()
         f = open(PKG_INFO)
         wanted = f.read()
-        self.assert_('Keywords: keyring,password,crypt' in res)
+        self.assertTrue('Keywords: keyring,password,crypt' in res)
         f.close()
 
     def test_metadata_markers(self):
@@ -228,7 +228,7 @@ class DistributionMetadataTestCase(unittest2.TestCase):
 
 
 def test_suite():
-    return unittest2.makeSuite(DistributionMetadataTestCase)
+    return unittest.makeSuite(DistributionMetadataTestCase)
 
 if __name__ == '__main__':
     run_unittest(test_suite())

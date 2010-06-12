@@ -2,13 +2,13 @@
 # -*- encoding: utf8 -*-
 import sys
 import os
-import unittest2
 
 from distutils2.command import upload as upload_mod
 from distutils2.command.upload import upload
 from distutils2.core import Distribution
 
 from distutils2.tests import support
+from distutils2.tests.support import unittest
 from distutils2.tests.test_config import PYPIRC, PyPIRCCommandTestCase
 
 PYPIRC_LONG_PASSWORD = """\
@@ -116,7 +116,7 @@ class uploadTestCase(PyPIRCCommandTestCase):
         # what did we send ?
         self.assertIn('dédé', self.last_open.req.data)
         headers = dict(self.last_open.req.headers)
-        self.assert_(headers['Content-length'] > 2000)
+        self.assertTrue(int(headers['Content-length']) < 2000)
         self.assertTrue(headers['Content-type'].startswith('multipart/form-data'))
         self.assertEquals(self.last_open.req.get_method(), 'POST')
         self.assertEquals(self.last_open.req.get_full_url(),
@@ -126,7 +126,7 @@ class uploadTestCase(PyPIRCCommandTestCase):
         self.assertFalse('\n' in auth)
 
 def test_suite():
-    return unittest2.makeSuite(uploadTestCase)
+    return unittest.makeSuite(uploadTestCase)
 
 if __name__ == "__main__":
-    unittest2.main(defaultTest="test_suite")
+    unittest.main(defaultTest="test_suite")

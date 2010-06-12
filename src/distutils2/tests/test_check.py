@@ -1,14 +1,14 @@
 """Tests for distutils.command.check."""
-import unittest2
 
 from distutils2.command.check import check
 from distutils2.metadata import _HAS_DOCUTILS
 from distutils2.tests import support
+from distutils2.tests.support import unittest
 from distutils2.errors import DistutilsSetupError
 
 class CheckTestCase(support.LoggingSilencer,
                     support.TempdirManager,
-                    unittest2.TestCase):
+                    unittest.TestCase):
 
     def _run(self, metadata=None, **options):
         if metadata is None:
@@ -27,7 +27,7 @@ class CheckTestCase(support.LoggingSilencer,
         # by default, check is checking the metadata
         # should have some warnings
         cmd = self._run()
-        self.assert_(len(cmd._warnings) > 0)
+        self.assertTrue(len(cmd._warnings) > 0)
 
         # now let's add the required fields
         # and run it again, to make sure we don't get
@@ -79,7 +79,7 @@ class CheckTestCase(support.LoggingSilencer,
                                  'restructuredtext': 1})
 
 def test_suite():
-    return unittest2.makeSuite(CheckTestCase)
+    return unittest.makeSuite(CheckTestCase)
 
 if __name__ == "__main__":
-    unittest2.main(defaultTest="test_suite")
+    unittest.main(defaultTest="test_suite")

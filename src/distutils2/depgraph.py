@@ -112,10 +112,7 @@ def generate_graph(dists):
     """
     graph = DependencyGraph()
     provided = {} # maps names to lists of (version, dist) tuples
-
     dists = list(dists) # maybe use generator_tools in future
-
-    missing = [] # a list of (instance, requirement) tuples
 
     # first, build the graph and find out the provides
     for dist in dists:

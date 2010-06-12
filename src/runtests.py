@@ -26,9 +26,9 @@ def test_main():
 
 if __name__ == "__main__":
     try:
-        import unittest2
+        from distutils2.tests.support import unittest
     except ImportError:
-        print('!!! You need to install unittest2')
+        print('Error: You have to install unittest2')
         sys.exit(1)
 
     sys.exit(test_main())
