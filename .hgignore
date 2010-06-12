@@ -1,5 +1,7 @@
 .*\.pyc$
 .*\.pyo$
-^src/build
-^docs/build
+__pycache__/
+^src/(build|dist)/
+^docs/(build|dist)/
+^src/MANIFEST$
 .*\.swp$
