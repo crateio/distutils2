@@ -14,6 +14,8 @@ Contents:
    metadata
    new_commands
    test_framework
+   pypi
+   version
 
 Indices and tables
 ==================

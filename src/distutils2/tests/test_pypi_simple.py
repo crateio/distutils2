@@ -79,11 +79,28 @@ class PyPISimpleTestCase(unittest2.TestCase):
                     'http://www.famfamfam.com/">')
             index.process_index(url, page)
 
-    def test_url_ok(self):
-        index = simple.SimpleIndex(
-            hosts=('www.example.com',))
-        url = 'file:///tmp/test_simple'
-        self.assertTrue(index.url_ok(url, True))
+    def test_browsable_urls(self):
+        """Test we can given PyPI index a list of allowed hosts
+
+        """
+        index = simple.SimpleIndex(hosts=["pypi.python.org","test.org"])
+        good_urls = (
+            "http://pypi.python.org/foo/bar",
+            "http://pypi.python.org/simple/foobar",
+            "http://test.org",
+            "http://test.org/",
+            "http://test.org/simple/",
+        )
+        bad_urls = (
+            "http://python.org",
+            "http://test.tld",
+        )
+
+        for url in good_urls:
+            self.assertTrue(index._is_browsable(url))
+
+        for url in bad_urls:
+            self.assertFalse(index._is_browsable(url))
     
     @use_pypi_server("test_found_links")
     def test_found_links(self, server):
@@ -162,14 +179,6 @@ class PyPISimpleTestCase(unittest2.TestCase):
         # md5 hash
         self.assertRaises(DistutilsError, pi.download,
             simple.Requirement.parse("badmd5"))
-        # XXX: is this making sense ? do file on pypi can have a wrong md5 
-        # hash ?
-        # If the pypi package index contain a file with the wrong md5, try to
-        # use the external locations to retreive it.
-        # in the test, the "wrongmd5" project contain a bad version of the
-        # archive, but a external site contains the good one. We want to use the
-        # external one to retreive the file with the good md5.
-        # if we really can't manage to get the right md5, raise an exception
         
         for path in paths:
             shutil.rmtree(os.path.dirname(path))
