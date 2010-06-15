@@ -1,5 +1,4 @@
 """Tests for distutils.spawn."""
-import unittest2
 import os
 import time
 from distutils2.tests import captured_stdout
@@ -8,10 +7,11 @@ from distutils2.spawn import _nt_quote_args
 from distutils2.spawn import spawn, find_executable
 from distutils2.errors import DistutilsExecError
 from distutils2.tests import support
+from distutils2.tests.support import unittest
 
 class SpawnTestCase(support.TempdirManager,
                     support.LoggingSilencer,
-                    unittest2.TestCase):
+                    unittest.TestCase):
 
     def test_nt_quote_args(self):
 
@@ -23,7 +23,7 @@ class SpawnTestCase(support.TempdirManager,
             self.assertEquals(res, wanted)
 
 
-    @unittest2.skipUnless(os.name in ('nt', 'posix'),
+    @unittest.skipUnless(os.name in ('nt', 'posix'),
                          'Runs only under posix or nt')
     def test_spawn(self):
         tmpdir = self.mkdtemp()
@@ -54,7 +54,7 @@ class SpawnTestCase(support.TempdirManager,
         spawn([exe])  # should work without any error
 
 def test_suite():
-    return unittest2.makeSuite(SpawnTestCase)
+    return unittest.makeSuite(SpawnTestCase)
 
 if __name__ == "__main__":
-    unittest2.main(defaultTest="test_suite")
+    unittest.main(defaultTest="test_suite")

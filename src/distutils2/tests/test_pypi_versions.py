@@ -17,9 +17,9 @@ except:
 
 import xmlrpclib
 import os.path
-import unittest2
 
 from distutils2.version import suggest_normalized_version
+from distutils2.tests.support import unittest
 
 def test_pypi():
     #
@@ -121,11 +121,11 @@ def test_pypi():
     print "Have Suggestion : ", have_sugg, pct % (have_sugg/total_versions*100,)
     print "No Suggestion   : ", no_sugg, pct % (no_sugg/total_versions*100,)
 
-class TestPyPI(unittest2.TestCase):
+class TestPyPI(unittest.TestCase):
     pass
 
 def test_suite():
-    return unittest2.makeSuite(TestPyPI)
+    return unittest.makeSuite(TestPyPI)
 
 if __name__ == '__main__':
     run_unittest(test_suite())

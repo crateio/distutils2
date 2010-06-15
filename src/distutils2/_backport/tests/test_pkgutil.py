@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """Tests for PEP 376 pkgutil functionality"""
-import unittest2
 import sys
 import os
 import csv
@@ -12,13 +11,14 @@ except ImportError:
 from test.test_support import run_unittest, TESTFN
 
 import distutils2._backport.pkgutil
+from distutils2.tests.support import unittest
 
 # TODO Add a test for getting a distribution that is provided by another
 #   distribution.
 
 # TODO Add a test for absolute pathed RECORD items (e.g. /etc/myapp/config.ini)
 
-class TestPkgUtilDistribution(unittest2.TestCase):
+class TestPkgUtilDistribution(unittest.TestCase):
     """Tests the pkgutil.Distribution class"""
 
     def setUp(self):
@@ -171,7 +171,7 @@ class TestPkgUtilDistribution(unittest2.TestCase):
         self.assertEqual(sorted(found), sorted(distinfo_record_paths))
 
 
-class TestPkgUtilFunctions(unittest2.TestCase):
+class TestPkgUtilFunctions(unittest.TestCase):
     """Tests for the new functionality added in PEP 376."""
 
     def setUp(self):
@@ -371,8 +371,8 @@ class TestPkgUtilFunctions(unittest2.TestCase):
 
 
 def test_suite():
-    suite = unittest2.TestSuite()
-    testcase_loader = unittest2.loader.defaultTestLoader.loadTestsFromTestCase
+    suite = unittest.TestSuite()
+    testcase_loader = unittest.loader.defaultTestLoader.loadTestsFromTestCase
     suite.addTest(testcase_loader(TestPkgUtilFunctions))
     suite.addTest(testcase_loader(TestPkgUtilDistribution))
     return suite
@@ -384,8 +384,8 @@ if __name__ == "__main__":
     test_main()
 
 def test_suite():
-    suite = unittest2.TestSuite()
-    testcase_loader = unittest2.loader.defaultTestLoader.loadTestsFromTestCase
+    suite = unittest.TestSuite()
+    testcase_loader = unittest.loader.defaultTestLoader.loadTestsFromTestCase
     suite.addTest(testcase_loader(TestPkgUtilFunctions))
     suite.addTest(testcase_loader(TestPkgUtilDistribution))
     return suite

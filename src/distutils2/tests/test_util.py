@@ -1,7 +1,6 @@
 """Tests for distutils.util."""
 import os
 import sys
-import unittest2
 from copy import copy
 from StringIO import StringIO
 import subprocess
@@ -17,6 +16,7 @@ from distutils2.util import (convert_path, change_root,
                             byte_compile, find_packages)
 from distutils2 import util
 from distutils2.tests import support
+from distutils2.tests.support import unittest
 
 class FakePopen(object):
     test_class = None
@@ -34,7 +34,7 @@ class FakePopen(object):
 
 class UtilTestCase(support.EnvironGuard,
                    support.TempdirManager,
-                   unittest2.TestCase):
+                   unittest.TestCase):
 
     def setUp(self):
         super(UtilTestCase, self).setUp()
@@ -243,7 +243,7 @@ class UtilTestCase(support.EnvironGuard,
         res = get_compiler_versions()
         self.assertEquals(res[2], None)
 
-    @unittest2.skipUnless(hasattr(sys, 'dont_write_bytecode'),
+    @unittest.skipUnless(hasattr(sys, 'dont_write_bytecode'),
                           'no dont_write_bytecode support')
     def test_dont_write_bytecode(self):
         # makes sure byte_compile raise a DistutilsError
@@ -298,7 +298,7 @@ class UtilTestCase(support.EnvironGuard,
 
 
 def test_suite():
-    return unittest2.makeSuite(UtilTestCase)
+    return unittest.makeSuite(UtilTestCase)
 
 if __name__ == "__main__":
-    unittest2.main(defaultTest="test_suite")
+    unittest.main(defaultTest="test_suite")
