@@ -95,8 +95,13 @@ class build_py(Command):
 
         self.byte_compile(self.get_outputs(include_bytecode=0))
 
+    # -- Top-level worker functions ------------------------------------
+
     def get_data_files(self):
-        """Generate list of '(package,src_dir,build_dir,filenames)' tuples"""
+        """Generate list of '(package,src_dir,build_dir,filenames)' tuples.
+
+        Helper function for `finalize_options()`.
+        """
         data = []
         if not self.packages:
             return data
@@ -120,7 +125,10 @@ class build_py(Command):
         return data
 
     def find_data_files(self, package, src_dir):
-        """Return filenames for package's data files in 'src_dir'"""
+        """Return filenames for package's data files in 'src_dir'.
+
+        Helper function for `get_data_files()`.
+        """
         globs = (self.package_data.get('', [])
                  + self.package_data.get(package, []))
         files = []
@@ -132,7 +140,10 @@ class build_py(Command):
         return files
 
     def build_package_data(self):
-        """Copy data files into build directory"""
+        """Copy data files into build directory.
+
+        Helper function for `run()`.
+        """
         for package, src_dir, build_dir, filenames in self.data_files:
             for filename in filenames:
                 target = os.path.join(build_dir, filename)
@@ -140,6 +151,8 @@ class build_py(Command):
                 self.copy_file(os.path.join(src_dir, filename), target,
                                preserve_mode=False)
 
+    # XXX - this should be moved to the Distribution class as it is not
+    # only needed for build_py. It also has no dependencies on this class.
     def get_package_dir(self, package):
         """Return the directory, relative to the top of the source
            distribution, where package 'package' should be found
@@ -181,6 +194,8 @@ class build_py(Command):
                     return ''
 
     def check_package(self, package, package_dir):
+        """Helper function for `find_package_modules()` and `find_modules()'.
+        """
         # Empty dir name means current directory, which we can probably
         # assume exists.  Also, os.path.exists and isdir don't know about
         # my "empty string means current dir" convention, so we have to
