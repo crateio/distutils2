@@ -1,4 +1,4 @@
-from di stutils2.errors import DistutilsError
+from distutils2.errors import DistutilsError
 from distutils2.version import VersionPredicate
 
 __all__ = ['DependencyGraph', 'generate_graph', 'dependent_dists',
