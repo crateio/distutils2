@@ -1,3 +1,7 @@
+"""Analyse the relationships between the distributions in the system and generate
+a dependency graph.
+"""
+
 from distutils2.errors import DistutilsError
 from distutils2.version import VersionPredicate
 
