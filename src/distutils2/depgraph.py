@@ -75,12 +75,9 @@ def graph_to_dot(graph, f, skip_disconnected=True):
     If *skip_disconnected* is set to ``True``, then all distributions
     that are not dependent on any other distribution are skipped.
 
-    :type f: ``file``
+    :type f: has to support ``file``-like operations
     :type skip_disconnected: ``bool``
     """
-    if not isinstance(f, file):
-        raise TypeError('the argument has to be of type file')
-
     disconnected = []
 
     f.write("digraph dependencies {\n")

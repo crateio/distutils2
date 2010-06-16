@@ -7,12 +7,20 @@ from distutils2._backport import pkgutil
 
 import os
 import sys
+import re
+try:
+    import cStringIO as StringIO
+except ImportErorr:
+    import StringIO
 
 class DepGraphTestCase(support.LoggingSilencer,
                        unittest.TestCase):
 
     DISTROS_DIST = ('choxie', 'grammar', 'towel-stuff')
     DISTROS_EGG  = ('bacon', 'banana', 'strawberry', 'cheese')
+    EDGE = re.compile(
+           r'"(?P<from>.*)" -> "(?P<to>.*)" \[label="(?P<label>.*)"\]'
+           )
 
     def checkLists(self, l1, l2):
         """ Compare two lists without taking the order into consideration """
@@ -138,6 +146,35 @@ class DepGraphTestCase(support.LoggingSilencer,
 
         deps = [d.name for d in depgraph.dependent_dists(dists, cheese)]
         self.checkLists([], deps)
+
+    def test_graph_to_dot(self):
+        expected = (
+            ('towel-stuff', 'bacon', 'bacon (<=0.2)'),
+            ('grammar', 'bacon', 'truffles (>=1.2)'),
+            ('choxie', 'towel-stuff', 'towel-stuff (0.1)'),
+            ('banana', 'strawberry', 'strawberry (>=0.5)')
+        )
+
+        dists = []
+        for name in self.DISTROS_DIST + self.DISTROS_EGG:
+            dist = pkgutil.get_distribution(name, use_egg_info=True)
+            self.assertNotEqual(dist, None)
+            dists.append(dist)
+
+        graph = depgraph.generate_graph(dists)
+        buf = StringIO.StringIO()
+        depgraph.graph_to_dot(graph, buf)
+        buf.seek(0)
+        matches = []
+        lines = buf.readlines()
+        for line in lines[1:-1]: # skip the first and the last lines
+            if line[-1] == '\n':
+                line = line[:-1]
+            match = self.EDGE.match(line.strip())
+            self.assertTrue(match is not None)
+            matches.append(match.groups())
+
+        self.checkLists(matches, expected)
 
     def tearDown(self):
         super(unittest.TestCase, self).tearDown()
