@@ -148,9 +148,14 @@ def generate_graph(dists):
             if not name in provided:
                 graph.add_missing(dist, req)
             else:
+                matched = False
                 for (version, provider) in provided[name]:
                     if predicate.match(version):
                         graph.add_edge(dist, provider, req)
+                        matched = True
+                        break
+                if not matched:
+                    graph.add_missing(dist, req)
 
     return graph
 
