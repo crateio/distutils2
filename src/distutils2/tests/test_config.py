@@ -1,7 +1,6 @@
 """Tests for distutils.pypirc.pypirc."""
 import sys
 import os
-import tempfile
 import shutil
 
 from distutils2.core import PyPIRCCommand

@@ -1,6 +1,5 @@
 import sys
 import os
-import tempfile
 import shutil
 from StringIO import StringIO
 import warnings

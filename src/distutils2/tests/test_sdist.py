@@ -20,7 +20,6 @@ except ImportError:
 
 from os.path import join
 import sys
-import tempfile
 import warnings
 
 from distutils2.tests import captured_stdout

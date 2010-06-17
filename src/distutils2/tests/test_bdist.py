@@ -1,8 +1,6 @@
 """Tests for distutils.command.bdist."""
 import sys
 import os
-import tempfile
-import shutil
 
 from distutils2.tests import run_unittest
 
