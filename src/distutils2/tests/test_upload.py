@@ -77,10 +77,10 @@ class uploadTestCase(PyPIRCCommandTestCase):
         dist = Distribution()
         cmd = upload(dist)
         cmd.finalize_options()
-        for attr, waited in (('username', 'me'), ('password', 'secret'),
-                             ('realm', 'pypi'),
-                             ('repository', 'http://pypi.python.org/pypi')):
-            self.assertEquals(getattr(cmd, attr), waited)
+        for attr, expected in (('username', 'me'), ('password', 'secret'),
+                               ('realm', 'pypi'),
+                               ('repository', 'http://pypi.python.org/pypi')):
+            self.assertEquals(getattr(cmd, attr), expected)
 
     def test_saved_password(self):
         # file with no password

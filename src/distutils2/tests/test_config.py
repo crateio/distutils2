@@ -86,20 +86,20 @@ class PyPIRCCommandTestCase(support.TempdirManager,
 
         config = config.items()
         config.sort()
-        waited = [('password', 'secret'), ('realm', 'pypi'),
-                  ('repository', 'http://pypi.python.org/pypi'),
-                  ('server', 'server1'), ('username', 'me')]
-        self.assertEquals(config, waited)
+        expected = [('password', 'secret'), ('realm', 'pypi'),
+                    ('repository', 'http://pypi.python.org/pypi'),
+                    ('server', 'server1'), ('username', 'me')]
+        self.assertEquals(config, expected)
 
         # old format
         self.write_file(self.rc, PYPIRC_OLD)
         config = cmd._read_pypirc()
         config = config.items()
         config.sort()
-        waited = [('password', 'secret'), ('realm', 'pypi'),
-                  ('repository', 'http://pypi.python.org/pypi'),
-                  ('server', 'server-login'), ('username', 'tarek')]
-        self.assertEquals(config, waited)
+        expected = [('password', 'secret'), ('realm', 'pypi'),
+                    ('repository', 'http://pypi.python.org/pypi'),
+                    ('server', 'server-login'), ('username', 'tarek')]
+        self.assertEquals(config, expected)
 
     def test_server_empty_registration(self):
         cmd = self._cmd(self.dist)
