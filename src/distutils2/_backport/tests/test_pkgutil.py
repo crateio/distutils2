@@ -4,6 +4,10 @@ import unittest2
 import sys
 import os
 import csv
+import imp
+import tempfile
+import shutil
+import zipfile
 try:
     from hashlib import md5
 except ImportError:
@@ -11,20 +15,129 @@ except ImportError:
 
 from test.test_support import run_unittest, TESTFN
 
-import distutils2._backport.pkgutil
+from distutils2._backport import pkgutil
 
 # TODO Add a test for getting a distribution that is provided by another
 #   distribution.
 
 # TODO Add a test for absolute pathed RECORD items (e.g. /etc/myapp/config.ini)
 
+# Adapted from Python 2.7's trunk
+class TestPkgUtilData(unittest2.TestCase):
+
+    def setUp(self):
+        self.dirname = tempfile.mkdtemp()
+        sys.path.insert(0, self.dirname)
+
+    def tearDown(self):
+        del sys.path[0]
+        shutil.rmtree(self.dirname)
+
+    def test_getdata_filesys(self):
+        pkg = 'test_getdata_filesys'
+
+        # Include a LF and a CRLF, to test that binary data is read back
+        RESOURCE_DATA = 'Hello, world!\nSecond line\r\nThird line'
+
+        # Make a package with some resources
+        package_dir = os.path.join(self.dirname, pkg)
+        os.mkdir(package_dir)
+        # Empty init.py
+        f = open(os.path.join(package_dir, '__init__.py'), "wb")
+        f.close()
+        # Resource files, res.txt, sub/res.txt
+        f = open(os.path.join(package_dir, 'res.txt'), "wb")
+        f.write(RESOURCE_DATA)
+        f.close()
+        os.mkdir(os.path.join(package_dir, 'sub'))
+        f = open(os.path.join(package_dir, 'sub', 'res.txt'), "wb")
+        f.write(RESOURCE_DATA)
+        f.close()
+
+        # Check we can read the resources
+        res1 = pkgutil.get_data(pkg, 'res.txt')
+        self.assertEqual(res1, RESOURCE_DATA)
+        res2 = pkgutil.get_data(pkg, 'sub/res.txt')
+        self.assertEqual(res2, RESOURCE_DATA)
+
+        del sys.modules[pkg]
+
+    def test_getdata_zipfile(self):
+        zip = 'test_getdata_zipfile.zip'
+        pkg = 'test_getdata_zipfile'
+
+        # Include a LF and a CRLF, to test that binary data is read back
+        RESOURCE_DATA = 'Hello, world!\nSecond line\r\nThird line'
+
+        # Make a package with some resources
+        zip_file = os.path.join(self.dirname, zip)
+        z = zipfile.ZipFile(zip_file, 'w')
+
+        # Empty init.py
+        z.writestr(pkg + '/__init__.py', "")
+        # Resource files, res.txt, sub/res.txt
+        z.writestr(pkg + '/res.txt', RESOURCE_DATA)
+        z.writestr(pkg + '/sub/res.txt', RESOURCE_DATA)
+        z.close()
+
+        # Check we can read the resources
+        sys.path.insert(0, zip_file)
+        res1 = pkgutil.get_data(pkg, 'res.txt')
+        self.assertEqual(res1, RESOURCE_DATA)
+        res2 = pkgutil.get_data(pkg, 'sub/res.txt')
+        self.assertEqual(res2, RESOURCE_DATA)
+        del sys.path[0]
+
+        del sys.modules[pkg]
+
+# Adapted from Python 2.7's trunk
+class TestPkgUtilPEP302(unittest2.TestCase):
+
+    class MyTestLoader(object):
+        def load_module(self, fullname):
+            # Create an empty module
+            mod = sys.modules.setdefault(fullname, imp.new_module(fullname))
+            mod.__file__ = "<%s>" % self.__class__.__name__
+            mod.__loader__ = self
+            # Make it a package
+            mod.__path__ = []
+            # Count how many times the module is reloaded
+            mod.__dict__['loads'] = mod.__dict__.get('loads',0) + 1
+            return mod
+
+        def get_data(self, path):
+            return "Hello, world!"
+
+    class MyTestImporter(object):
+        def find_module(self, fullname, path=None):
+            return TestPkgUtilPEP302.MyTestLoader()
+
+    def setUp(self):
+        sys.meta_path.insert(0, self.MyTestImporter())
+
+    def tearDown(self):
+        del sys.meta_path[0]
+
+    def test_getdata_pep302(self):
+        # Use a dummy importer/loader
+        self.assertEqual(pkgutil.get_data('foo', 'dummy'), "Hello, world!")
+        del sys.modules['foo']
+
+    def test_alreadyloaded(self):
+        # Ensure that get_data works without reloading - the "loads" module
+        # variable in the example loader should count how many times a reload
+        # occurs.
+        import foo
+        self.assertEqual(foo.loads, 1)
+        self.assertEqual(pkgutil.get_data('foo', 'dummy'), "Hello, world!")
+        self.assertEqual(foo.loads, 1)
+        del sys.modules['foo']
+
 
 class TestPkgUtilDistribution(unittest2.TestCase):
     """Tests the pkgutil.Distribution class"""
 
     def setUp(self):
-        super(TestPkgUtilDistribution, self).setUp()
-
         self.fake_dists_path = os.path.abspath(
             os.path.join(os.path.dirname(__file__), 'fake_dists'))
 
@@ -73,7 +186,6 @@ class TestPkgUtilDistribution(unittest2.TestCase):
         for distinfo_dir in self.distinfo_dirs:
             record_file = os.path.join(distinfo_dir, 'RECORD')
             open(record_file, 'w').close()
-        super(TestPkgUtilDistribution, self).tearDown()
 
     def test_instantiation(self):
         """Test the Distribution class's instantiation provides us with usable
@@ -176,11 +288,10 @@ class TestPkgUtilDistribution(unittest2.TestCase):
         self.assertEqual(sorted(found), sorted(distinfo_record_paths))
 
 
-class TestPkgUtilFunctions(unittest2.TestCase):
+class TestPkgUtilPEP376(unittest2.TestCase):
     """Tests for the new functionality added in PEP 376."""
 
     def setUp(self):
-        super(TestPkgUtilFunctions, self).setUp()
         # Setup the path environment with our fake distributions
         current_path = os.path.abspath(os.path.dirname(__file__))
         self.sys_path = sys.path[:]
@@ -188,7 +299,6 @@ class TestPkgUtilFunctions(unittest2.TestCase):
         sys.path[0:0] = [self.fake_dists_path]
 
     def tearDown(self):
-        super(TestPkgUtilFunctions, self).tearDown()
         sys.path[:] = self.sys_path
 
     def test_distinfo_dirname(self):
@@ -419,23 +529,10 @@ class TestPkgUtilFunctions(unittest2.TestCase):
 def test_suite():
     suite = unittest2.TestSuite()
     testcase_loader = unittest2.loader.defaultTestLoader.loadTestsFromTestCase
-    suite.addTest(testcase_loader(TestPkgUtilFunctions))
+    suite.addTest(testcase_loader(TestPkgUtilData))
     suite.addTest(testcase_loader(TestPkgUtilDistribution))
-    return suite
-
-
-def test_main():
-    run_unittest(test_suite())
-
-if __name__ == "__main__":
-    test_main()
-
-
-def test_suite():
-    suite = unittest2.TestSuite()
-    testcase_loader = unittest2.loader.defaultTestLoader.loadTestsFromTestCase
-    suite.addTest(testcase_loader(TestPkgUtilFunctions))
-    suite.addTest(testcase_loader(TestPkgUtilDistribution))
+    suite.addTest(testcase_loader(TestPkgUtilPEP302))
+    suite.addTest(testcase_loader(TestPkgUtilPEP376))
     return suite
 
 
