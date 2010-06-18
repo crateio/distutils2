@@ -215,7 +215,7 @@ def suggest_normalized_version(s):
     on observation of versions currently in use on PyPI. Given a dump of
     those version during PyCon 2009, 4287 of them:
     - 2312 (53.93%) match NormalizedVersion without change
-    - with the automatic suggestion
+      with the automatic suggestion
     - 3474 (81.04%) match when using this suggestion method
 
     @param s {str} An irrational version string.

@@ -16,8 +16,9 @@ except ImportError:
     from md5 import md5
 
 from distutils2.version import VersionPredicate
-from distutils2.pypi.dist import PyPIDistribution, EXTENSIONS
-from distutils2.pypi.errors import PyPIError
+from distutils2.pypi.dist import PyPIDistribution, PyPIDistributions, \
+    EXTENSIONS
+from distutils2.pypi.errors import PyPIError, DistributionNotFound
 from distutils2 import __version__ as __distutils2_version__
 
 # -- Constants -----------------------------------------------
@@ -54,21 +55,6 @@ def socket_timeout(timeout=SOCKET_TIMEOUT):
     return _socket_timeout
 
 
-class UrlProcessor(object):
-    """Tools to process urls and return links from them.
-    """
-    def __init__(self):
-        self._processed_urls = {}
-
-    def find_links(self, url, is_browsable=lambda x:True):
-        """Find links and return them, for a specific url.
-        
-        Use "is_browsable" to provides a method to tell if the found urls might
-        be browsed or not.
-        """
-        pass
-
-
 class SimpleIndex(object):
     """Provides useful tools to request the Python Package Index simple API
     """
@@ -89,11 +75,11 @@ class SimpleIndex(object):
         # create a regexp to match all given hosts
         self._allowed_hosts = re.compile('|'.join(map(translate,hosts))).match
 
-        # _current_requirements are used to know what the index is currently
-        # browsing for. This could be used to determine the distributon name
-        # while having multiple ambigous names/version couples
-        self._current_requirements = None
-        self._processed_pages = []
+        # we keep an index of pages we have processed, in order to avoid
+        # scanning them multple time (eg. if there is multiple pages pointing
+        # on one)
+        self._processed_urls = []
+        self._distributions = {}
 
     def get_distributions(self, requirements):
         """Browse the PyPI to find distributions that fullfil the given 
@@ -103,13 +89,20 @@ class SimpleIndex(object):
         version specifiers, as described in PEP345. 
         """
         requirements = VersionPredicate(requirements)
-        self.current_requirements = requirements
         
         # process the index for this project
-        distributions = self._process_pypi_page(requirements.name)
+        self._process_pypi_page(requirements.name)
         
         # filter with requirements and return the results
-        return distributions.filter(requirements)
+        if self._distributions.has_key(requirements.name):
+            dists = self._distributions[requirements.name].filter(requirements)
+        else:
+            dists = []
+
+        if dists is not []:
+            return dists
+        else:
+            raise DistributionNotFound(requirements.name)
 
     def download(self, requirements, temp_path=None):
         """Download the distribution, using the requirements.
@@ -134,23 +127,54 @@ class SimpleIndex(object):
         """
         if self.follow_externals is True:
             return True
-        return True if self._allowed_hosts(urlparse(url).netloc) else False
+        return True if self._allowed_hosts(
+            urlparse.urlparse(url).netloc) else False
 
     def _is_distribution(self, link):
         """Tell if the given URL matches to a distribution name or not.
         """
+        for ext in EXTENSIONS:
+            if ext in link:
+                return True
+        return False
          
+    def _register_dist(self, dist):
+        """Register a distribution as a part of fetched distributions for
+        SimpleIndex.
 
-    def _process_url(self, url):
-        """Process an url and return fetched links.
+        Return the PyPIDistributions object for the specified project name
+        """
+        # Internally, check if a entry exists with the project name, if not,
+        # create a new one, and if exists, add the dist to the pool.
+        if not self._distributions.has_key(dist.name):
+            self._distributions[dist.name] = PyPIDistributions()
+        self._distributions[dist.name].append(dist)
+        return self._distributions[dist.name]
+
+    def _process_url(self, url, project_name=None, follow_links=True):
+        """Process an url and search for distributions packages.
+
+        :param url: the url to analyse
+        :param project_name: the project name we are searching for.
+        :param follow_links: We do not want to follow links more than from one
+        level. This parameter tells if we want to follow the links we find (eg.
+        run recursively this method on it)
         """
         f = self._open_url(url)
         base = f.url
+        self._processed_urls.append(url)
         for match in HREF.finditer(f.read()):
             link = urlparse.urljoin(base, self._htmldecode(match.group(1)))
-            if self._is_distribution(link):
-                PyPIDistribution.from_url(link)
-            else:
+            if link not in self._processed_urls:
+                if self._is_distribution(link):
+                    # it's a distribution, so create a dist object
+                    self._processed_urls.append(link)
+                    self._register_dist(PyPIDistribution.from_url(link, 
+                        project_name))
+                else:
+                    if self._is_browsable(link) and follow_links:
+                        self._process_url(link, project_name, 
+                            follow_links=False)
 
     def _process_pypi_page(self, name):
         """Find and process a PyPI page for the given project name.
@@ -158,15 +182,8 @@ class SimpleIndex(object):
         :param name: the name of the project to find the page
         """
         # Browse and index the content of the given PyPI page.
-        # Put all informations about the processed pages in the 
-        # _processed_pages attribute.
         url = self.index_url + name + "/"
-        found_links = self._process_url(url)
-        
-        # Search for external links here, and process them if needed.
-        for link in found_links:
-            if self._is_browsable(link):
-                self._search_in_url(link)
+        self._process_url(url, name)
     
     @socket_timeout()
     def _open_url(self, url):
@@ -186,7 +203,6 @@ class SimpleIndex(object):
             request.add_header("Authorization", auth)
         else:
             request = urllib2.Request(url)
-
         request.add_header('User-Agent', USER_AGENT)
         fp = urllib2.urlopen(request)
 

@@ -6,6 +6,8 @@ on PyPI.
 import re
 import urlparse
 
+from distutils2.version import suggest_normalized_version 
+
 EXTENSIONS = ".tar.gz .tar.bz2 .tar .zip .tgz .egg".split()
 MD5_HASH = re.compile(r'^.*#md5=([a-f0-9]+)$')
 
@@ -49,15 +51,22 @@ class PyPIDistribution(object):
         # get the name from probable_dist_name
         if probable_dist_name is not None:
             if probable_dist_name in archive_name:
-                name = probable_dist_name 
+                name = probable_dist_name
 
         if name is None:
-            version = archive_name.split("-")[-1]
-            name = archive_name[:-len(version)+1]
+            # determine the name and the version
+            splits = archive_name.split("-")
+            version = splits[-1]
+            name = "-".join(splits[:-1])
+        else:
+            # just determine the version
+            version = archive_name[len(name):]
+            if version.startswith("-"):
+                version = version[1:]
         
+        version = suggest_normalized_version(version)
         if extension_matched is True:
             return PyPIDistribution(name, version, url=url, md5_hash=md5_hash)
-        raise Exception("test")
 
     def __init__(self, name, version, type=None, url=None, md5_hash=None):
         self.name = name
@@ -83,6 +92,10 @@ class PyPIDistribution(object):
             real_path = "" 
         return real_path
 
+    def __str__(self):
+        """string representation of the PyPIDistribution"""
+        return "%s-%s" % (self.name, self.version)
+
 
 class PyPIDistributions(list):
     """A container of PyPIDistribution objects.
@@ -94,7 +107,6 @@ class PyPIDistributions(list):
         """Filter the distributions and return just the one matching the given
         predicate.
         """
-        dists = self._distributions
-        return filter(predicate.match, 
-            [d.version for d in dists if d.name == predicate.name])
+        return [dist for dist in self if dist.name == predicate.name and
+            predicate.match(dist.version)]
 
