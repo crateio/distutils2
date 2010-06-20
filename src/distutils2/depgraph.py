@@ -31,8 +31,7 @@ class DependencyGraph(object):
         self.missing = {}
 
     def add_distribution(self, distribution):
-        """
-        Add the *distribution* to the graph.
+        """Add the *distribution* to the graph.
 
         :type distribution: :class:`pkgutil.Distribution` or
                             :class:`pkgutil.EggInfoDistribution`
@@ -42,10 +41,8 @@ class DependencyGraph(object):
         self.missing[distribution] = list()
 
     def add_edge(self, x, y, label=None):
-        """
-        Add an edge from distribution *x* to distribution *y* with the given
+        """Add an edge from distribution *x* to distribution *y* with the given
         *label*.
-
 
         :type x: :class:`pkgutil.Distribution` or
                  :class:`pkgutil.EggInfoDistribution`
@@ -70,8 +67,8 @@ class DependencyGraph(object):
 
 
 def graph_to_dot(graph, f, skip_disconnected=True):
-    """
-    Writes a DOT output for the graph to the provided file *f*.
+    """Writes a DOT output for the graph to the provided file *f*.
+
     If *skip_disconnected* is set to ``True``, then all distributions
     that are not dependent on any other distribution are skipped.
 
@@ -103,8 +100,7 @@ def graph_to_dot(graph, f, skip_disconnected=True):
 
 
 def generate_graph(dists):
-    """
-    Generates a dependency graph from the given distributions.
+    """Generates a dependency graph from the given distributions.
 
     :parameter dists: a list of distributions
     :type dists: list of :class:`pkgutil.Distribution` and
@@ -158,8 +154,7 @@ def generate_graph(dists):
 
 
 def dependent_dists(dists, dist):
-    """
-    Recursively generate a list of distributions from *dists* that are
+    """Recursively generate a list of distributions from *dists* that are
     dependent on *dist*.
 
     :param dists: a list of distributions
