@@ -185,13 +185,15 @@ class DistributionMetadata(object):
     """Distribution meta-data class (1.0 or 1.2).
     """
     def __init__(self, path=None, platform_dependent=False,
-                 execution_context=None):
+                 execution_context=None, fileobj=None):
         self._fields = {}
         self.version = None
         self.docutils_support = _HAS_DOCUTILS
         self.platform_dependent = platform_dependent
         if path is not None:
             self.read(path)
+        elif fileobj is not None:
+            self.read_file(fileobj)
         self.execution_context = execution_context
 
     def _set_best_version(self):

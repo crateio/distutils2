@@ -12,6 +12,8 @@ Contents:
    :maxdepth: 2
 
    metadata
+   pkgutil
+   depgraph
 
 Indices and tables
 ==================

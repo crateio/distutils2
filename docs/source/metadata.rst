@@ -5,13 +5,13 @@ Metadata
 Distutils2 provides a :class:`DistributionMetadata` class that can read and
 write Metadata files. This class is compatible with all versions of Metadata:
 
-- 1.0 : PEP 241
-- 1.1 : PEP 314
-- 1.2 : PEP 345
+* 1.0 : :pep:`241`
+* 1.1 : :pep:`314`
+* 1.2 : :pep:`345`
 
-The PEP 345 implementation supports the micro-language for the environment
+The :pep:`345` implementation supports the micro-language for the environment
 markers, and displays warnings when versions that are supposed to be
-PEP 386 are violating the scheme.
+:pep:`386` are violating the scheme.
 
 
 Reading metadata
@@ -78,7 +78,7 @@ use :attr:`metadata.PKG_INFO_PREFERRED_VERSION`. It is set by default to 1.0.
 Conflict checking and best version
 ==================================
 
-Some fields in PEP 345 have to follow a version scheme in their versions
+Some fields in :pep:`345` have to follow a version scheme in their versions
 predicate. When the scheme is violated, a warning is emitted::
 
     >>> from distutils2.metadata import DistributionMetadata
@@ -89,7 +89,4 @@ predicate. When the scheme is violated, a warning is emitted::
 
 
 
-XXX talk about check()
-
-
-
+.. TODO talk about check()
