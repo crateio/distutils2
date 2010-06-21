@@ -39,7 +39,7 @@ class PyPIDistribution(object):
             url = url.replace("#md5=%s" % md5_hash, "")
         
         # parse the archive name to find dist name and version
-        archive_name = urlparse.urlparse(url).path.split('/')[-1]
+        archive_name = urlparse.urlparse(url)[2].split('/')[-1]
         extension_matched = False
         # remove the extension from the name
         for ext in EXTENSIONS:

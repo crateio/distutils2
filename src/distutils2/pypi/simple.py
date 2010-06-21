@@ -147,8 +147,10 @@ class SimpleIndex(object):
         It uses the follow_externals and the hosts list to tell if the given 
         url is browsable or not. 
         """
-        return True if self._allowed_hosts(
-            urlparse.urlparse(url).netloc) else False
+        if self._allowed_hosts(urlparse.urlparse(url)[1]): # 1 is netloc
+            return True
+        else:
+            return False
 
     def _is_distribution(self, link):
         """Tell if the given URL matches to a distribution name or not.

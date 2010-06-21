@@ -160,7 +160,7 @@ class PyPISimpleTestCase(unittest2.TestCase):
             pi._processed_urls)
 
     @use_pypi_server("downloads_with_md5")
-    def test_download_package(self, server):
+    def download_package(self, server):
         """Download packages from pypi requests.
         """
         paths = []
