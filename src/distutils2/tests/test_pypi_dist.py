@@ -1,10 +1,17 @@
 """Tests for the distutils2.pypi.dist module.
 """
 
-from distutils2.pypi.dist import PyPIDistribution as Dist, \
-    PyPIDistributions as Dists, split_archive_name
+from distutils2.tests.pypi_server import use_pypi_server
 from distutils2.tests.support import unittest
 from distutils2.version import VersionPredicate
+from distutils2.pypi.errors import MD5HashDoesNotMatch
+from distutils2.pypi.dist import PyPIDistribution as Dist, \
+    PyPIDistributions as Dists, split_archive_name
+
+import tempfile
+import os
+import shutil
+
 
 class TestPyPIDistribution(unittest.TestCase):
     """tests the pypi.dist.PyPIDistribution class"""
@@ -67,6 +74,39 @@ class TestPyPIDistribution(unittest.TestCase):
         }
         for name, results in names.items():
             self.assertEqual(results, split_archive_name(name))
+
+    @use_pypi_server("downloads_with_md5")
+    def test_download(self, server):
+        """Download is possible, and the md5 is checked if given"""
+        
+        url = "%s/simple/foobar/foobar-0.1.tar.gz" % server.full_address
+        # check md5 if given
+        dist = Dist("FooBar", "0.1", url=url, 
+            md5_hash="d41d8cd98f00b204e9800998ecf8427e")
+        dist.download()
+        
+        # a wrong md5 fails
+        dist2 = Dist("FooBar", "0.1", url=url, 
+            md5_hash="wrongmd5")
+        self.assertRaises(MD5HashDoesNotMatch, dist2.download)
+        
+        # we can omit the md5 hash
+        dist3 = Dist("FooBar", "0.1", url=url) 
+        dist3.download()
+
+        # and specify a temporary location
+        # for an already downloaded dist
+        path1 = tempfile.mkdtemp()
+        dist3.download(path=path1)
+        # and for a new one
+        path2_base = tempfile.mkdtemp()
+        dist4 = Dist("FooBar", "0.1",url=url) 
+        path2 = dist4.download(path=path2_base)
+        self.assertTrue(path2_base in path2)
+
+        # remove the temp folders
+        shutil.rmtree(path1)
+        shutil.rmtree(os.path.dirname(path2))
 
 class TestPyPIDistributions(unittest.TestCase):
     """test the pypi.distr.PyPIDistributions class"""

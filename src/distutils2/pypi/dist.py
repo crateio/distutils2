@@ -5,8 +5,15 @@ on PyPI.
 """
 import re
 import urlparse
+import urllib
+import tempfile
+try:
+    from hashlib import md5
+except ImportError:
+    from md5 import md5
 
 from distutils2.version import suggest_normalized_version 
+from distutils2.pypi.errors import MD5HashDoesNotMatch
 
 EXTENSIONS = ".tar.gz .tar.bz2 .tar .zip .tgz .egg".split()
 MD5_HASH = re.compile(r'^.*#md5=([a-f0-9]+)$')
@@ -71,11 +78,27 @@ class PyPIDistribution(object):
         if url is not None:
             self.url = url
 
+        if path is None:
+            path=tempfile.mkdtemp()
+            
         # if we do not have downloaded it yet, do it.
         if self._downloaded_path is None:
-            # download logic goes here
-            real_path = ""
-        return real_path
+            archive_name = urlparse.urlparse(self.url)[2].split('/')[-1]
+            filename, headers = urllib.urlretrieve(self.url, path + "/" + archive_name)
+            self._downloaded_path = filename
+            self._check_md5(filename)
+        return self._downloaded_path
+
+    def _check_md5(self, filename):
+        """Check that the md5 checksum of the given file matches the one in 
+        self._md5_hash."""
+        if self.md5_hash is not None:
+            f = open(filename)
+            hash = md5()
+            hash.update(f.read())
+            if hash.hexdigest() != self.md5_hash:
+                raise MD5HashDoesNotMatch("%s instead of %s" 
+                    % (hash.hexdigest(), self.md5_hash)) 
 
     def __repr__(self):
         return "<%s %s (%s)>" % (self.__class__.__name__, self.name, self.version)

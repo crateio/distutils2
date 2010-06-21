@@ -13,3 +13,10 @@ class DistributionNotFound(PyPIError):
 
 class CantParseArchiveName(PyPIError):
     """An archive name can't be parsed to find distribution name and version"""
+
+class DownloadError(PyPIError):
+    """An error has occurs while downloading"""
+
+class MD5HashDoesNotMatch(DownloadError):
+    """Compared MD5 hashes does not match"""
+    

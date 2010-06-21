@@ -11,10 +11,6 @@ import re
 import urllib2
 import httplib
 import socket
-try:
-    from hashlib import md5
-except ImportError:
-    from md5 import md5
 
 from distutils2.version import VersionPredicate
 from distutils2.pypi.dist import PyPIDistribution, PyPIDistributions, \
