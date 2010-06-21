@@ -1,6 +1,6 @@
 """distutils2.pypi.dist
 
-Provides the PyPIDistribution class thats represents a distribution retreived 
+Provides the PyPIDistribution class thats represents a distribution retreived
 on PyPI.
 """
 import re
@@ -12,20 +12,21 @@ try:
 except ImportError:
     from md5 import md5
 
-from distutils2.version import suggest_normalized_version 
+from distutils2.version import suggest_normalized_version
 from distutils2.pypi.errors import MD5HashDoesNotMatch
 
 EXTENSIONS = ".tar.gz .tar.bz2 .tar .zip .tgz .egg".split()
 MD5_HASH = re.compile(r'^.*#md5=([a-f0-9]+)$')
 
+
 class PyPIDistribution(object):
     """Represents a distribution retreived from PyPI.
 
-    This is a simple container for various attributes as name, version, 
+    This is a simple container for various attributes as name, version,
     location, url etc.
 
     The PyPIDistribution class is used by the pypi.*Index class to return
-    information about distributions. 
+    information about distributions.
     """
 
     @classmethod
@@ -33,8 +34,8 @@ class PyPIDistribution(object):
         """Build a Distribution from a url archive (egg or zip or tgz).
 
         :param url: complete url of the distribution
-        :param probable_dist_name: the probable name of the distribution. This 
-        could be useful when multiple name can be assumed from the archive 
+        :param probable_dist_name: the probable name of the distribution. This
+        could be useful when multiple name can be assumed from the archive
         name.
         """
         # if the url contains a md5 hash, get it.
@@ -44,7 +45,7 @@ class PyPIDistribution(object):
             md5_hash = match.group(1)
             # remove the hash
             url = url.replace("#md5=%s" % md5_hash, "")
-        
+
         # parse the archive name to find dist name and version
         archive_name = urlparse.urlparse(url)[2].split('/')[-1]
         extension_matched = False
@@ -67,8 +68,8 @@ class PyPIDistribution(object):
         self.type = type
         self.md5_hash = md5_hash
         # set the downloaded path to Null by default. The goal here
-        # is to not download distributions multiple times 
-        self._downloaded_path = None
+        # is to not download distributions multiple times
+        self.location = None
 
     def download(self, url=None, path=None):
         """Download the distribution to a path, and return it.
@@ -79,33 +80,35 @@ class PyPIDistribution(object):
             self.url = url
 
         if path is None:
-            path=tempfile.mkdtemp()
-            
+            path = tempfile.mkdtemp()
+
         # if we do not have downloaded it yet, do it.
-        if self._downloaded_path is None:
+        if self.location is None:
             archive_name = urlparse.urlparse(self.url)[2].split('/')[-1]
-            filename, headers = urllib.urlretrieve(self.url, path + "/" + archive_name)
-            self._downloaded_path = filename
+            filename, headers = urllib.urlretrieve(
+                self.url, path + "/" + archive_name)
+            self.location = filename
             self._check_md5(filename)
-        return self._downloaded_path
+        return self.location
 
     def _check_md5(self, filename):
-        """Check that the md5 checksum of the given file matches the one in 
+        """Check that the md5 checksum of the given file matches the one in
         self._md5_hash."""
         if self.md5_hash is not None:
             f = open(filename)
             hash = md5()
             hash.update(f.read())
             if hash.hexdigest() != self.md5_hash:
-                raise MD5HashDoesNotMatch("%s instead of %s" 
-                    % (hash.hexdigest(), self.md5_hash)) 
+                raise MD5HashDoesNotMatch("%s instead of %s"
+                    % (hash.hexdigest(), self.md5_hash))
 
     def __repr__(self):
-        return "<%s %s (%s)>" % (self.__class__.__name__, self.name, self.version)
+        return "<%s %s (%s)>" \
+            % (self.__class__.__name__, self.name, self.version)
 
     def _check_is_comparable(self, other):
         if not isinstance(other, PyPIDistribution):
-            raise TypeError("cannot compare %s and %s" 
+            raise TypeError("cannot compare %s and %s"
                 % (type(self).__name__, type(other).__name__))
         elif self.name != other.name:
             raise TypeError("cannot compare %s and %s"
@@ -134,9 +137,10 @@ class PyPIDistribution(object):
     # See http://docs.python.org/reference/datamodel#object.__hash__
     __hash__ = object.__hash__
 
+
 class PyPIDistributions(list):
     """A container of PyPIDistribution objects.
-    
+
     Contains methods and facilities to sort and filter distributions.
     """
 
@@ -149,21 +153,22 @@ class PyPIDistributions(list):
             predicate.match(dist.version)])
 
     def get_last(self, predicate):
-        """Return the most up to date version, that satisfy the given 
+        """Return the most up to date version, that satisfy the given
         predicate
         """
         distributions = self.filter(predicate)
         distributions.sort()
         return distributions[-1]
 
+
 def split_archive_name(archive_name, probable_name=None):
     """Split an archive name into two parts: name and version.
 
     Return the tuple (name, version)
     """
-    # Try to determine wich part is the name and wich is the version using the "-"
-    # separator. Take the larger part to be the version number then reduce if this
-    # not works.
+    # Try to determine wich part is the name and wich is the version using the
+    # "-" separator. Take the larger part to be the version number then reduce
+    # if this not works.
     def eager_split(str, maxsplit=2):
         # split using the "-" separator
         splits = str.rsplit("-", maxsplit)
@@ -173,7 +178,7 @@ def split_archive_name(archive_name, probable_name=None):
             version = version[1:]
         if suggest_normalized_version(version) is None and maxsplit >= 0:
             # we dont get a good version number: recurse !
-            return eager_split(str, maxsplit-1)
+            return eager_split(str, maxsplit - 1)
         else:
             return (name, version)
     if probable_name is not None:
@@ -185,9 +190,9 @@ def split_archive_name(archive_name, probable_name=None):
         version = archive_name.lstrip(name)
     else:
         name, version = eager_split(archive_name)
-    
+
     version = suggest_normalized_version(version)
     if version != "" and name != "":
         return (name.lower(), version)
     else:
-        raise CantParseArchiveName(archive_name) 
+        raise CantParseArchiveName(archive_name)

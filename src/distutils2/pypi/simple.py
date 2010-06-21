@@ -1,7 +1,7 @@
 """pypi.simple
 
-Contains the class "SimpleIndex", a simple spider to find and retreive 
-distributions on the Python Package Index, using it's "simple" API, 
+Contains the class "SimpleIndex", a simple spider to find and retreive
+distributions on the Python Package Index, using it's "simple" API,
 avalaible at http://pypi.python.org/simple/
 """
 from fnmatch import translate
@@ -21,22 +21,22 @@ from distutils2 import __version__ as __distutils2_version__
 # -- Constants -----------------------------------------------
 PYPI_DEFAULT_INDEX_URL = "http://pypi.python.org/simple/"
 DEFAULT_HOSTS = ("*.python.org",)
-SOCKET_TIMEOUT=15
+SOCKET_TIMEOUT = 15
 USER_AGENT = "Python-urllib/%s distutils2/%s" % (
-    sys.version[:3], __distutils2_version__
-)
+    sys.version[:3], __distutils2_version__)
 
 # -- Regexps -------------------------------------------------
 EGG_FRAGMENT = re.compile(r'^egg=([-A-Za-z0-9_.]+)$')
 HREF = re.compile("""href\\s*=\\s*['"]?([^'"> ]+)""", re.I)
 PYPI_MD5 = re.compile(
     '<a href="([^"#]+)">([^<]+)</a>\n\s+\\(<a (?:title="MD5 hash"\n\s+)'
-    'href="[^?]+\?:action=show_md5&amp;digest=([0-9a-f]{32})">md5</a>\\)'
-)
-URL_SCHEME = re.compile('([-+.a-z0-9]{2,}):',re.I).match
+    'href="[^?]+\?:action=show_md5&amp;digest=([0-9a-f]{32})">md5</a>\\)')
+URL_SCHEME = re.compile('([-+.a-z0-9]{2,}):', re.I).match
+
 # This pattern matches a character entity reference (a decimal numeric
 # references, a hexadecimal numeric reference, or a named reference).
 ENTITY_SUB = re.compile(r'&(#(\d+|x[\da-fA-F]+)|[\w.:-]+);?').sub
+
 
 def socket_timeout(timeout=SOCKET_TIMEOUT):
     """Decorator to add a socket timeout when requesting pages on PyPI.
@@ -57,7 +57,7 @@ class SimpleIndex(object):
     """Provides useful tools to request the Python Package Index simple API
     """
 
-    def __init__(self, url=PYPI_DEFAULT_INDEX_URL, hosts=DEFAULT_HOSTS, 
+    def __init__(self, url=PYPI_DEFAULT_INDEX_URL, hosts=DEFAULT_HOSTS,
         mirrors=[]):
         """Class constructor.
 
@@ -73,7 +73,7 @@ class SimpleIndex(object):
         self.mirrors = mirrors
         self._hosts = hosts
         # create a regexp to match all given hosts
-        self._allowed_hosts = re.compile('|'.join(map(translate,hosts))).match
+        self._allowed_hosts = re.compile('|'.join(map(translate, hosts))).match
 
         # we keep an index of pages we have processed, in order to avoid
         # scanning them multple time (eg. if there is multiple pages pointing
@@ -82,7 +82,7 @@ class SimpleIndex(object):
         self._distributions = {}
 
     def get(self, requirements):
-        """Browse the PyPI index to find distributions that fullfil the 
+        """Browse the PyPI index to find distributions that fullfil the
         given requirements, and return the most recent one.
         """
         predicate = self._get_version_predicate(requirements)
@@ -91,23 +91,23 @@ class SimpleIndex(object):
         if len(dists) == 0:
             raise DistributionNotFound(requirements)
 
-        return dists.get_last(predicate) 
+        return dists.get_last(predicate)
 
     def find(self, requirements):
-        """Browse the PyPI to find distributions that fullfil the given 
+        """Browse the PyPI to find distributions that fullfil the given
         requirements.
 
-        :param requirements: A project name and it's distribution, using 
-        version specifiers, as described in PEP345. You can pass either a 
+        :param requirements: A project name and it's distribution, using
+        version specifiers, as described in PEP345. You can pass either a
         version.VersionPredicate or a string.
         """
         requirements = self._get_version_predicate(requirements)
-        
+
         # process the index for this project
         self._process_pypi_page(requirements.name)
-        
+
         # filter with requirements and return the results
-        if self._distributions.has_key(requirements.name):
+        if requirements.name in self._distributions:
             dists = self._distributions[requirements.name].filter(requirements)
         else:
             dists = []
@@ -119,8 +119,8 @@ class SimpleIndex(object):
 
         If more than one distribution match the requirements, use the last
         version.
-        Download the distribution, and put it in the temp_path. If no temp_path 
-        is given, creates and return one. 
+        Download the distribution, and put it in the temp_path. If no temp_path
+        is given, creates and return one.
 
         Returns the complete absolute path to the downloaded archive.
         """
@@ -129,7 +129,7 @@ class SimpleIndex(object):
         return distributions.get_last(requirements).download(path=temp_path)
 
     def _get_version_predicate(self, requirements):
-        """Return a VersionPredicate object, from a string or an already 
+        """Return a VersionPredicate object, from a string or an already
         existing object.
         """
         if isinstance(requirements, str):
@@ -140,10 +140,10 @@ class SimpleIndex(object):
         """Tell if the given URL needs to be browsed or not, according to the
         object internal attributes.
 
-        It uses the follow_externals and the hosts list to tell if the given 
-        url is browsable or not. 
+        It uses the follow_externals and the hosts list to tell if the given
+        url is browsable or not.
         """
-        if self._allowed_hosts(urlparse.urlparse(url)[1]): # 1 is netloc
+        if self._allowed_hosts(urlparse.urlparse(url)[1]):  # 1 is netloc
             return True
         else:
             return False
@@ -156,7 +156,7 @@ class SimpleIndex(object):
             if ext in link:
                 return True
         return False
-         
+
     def _register_dist(self, dist):
         """Register a distribution as a part of fetched distributions for
         SimpleIndex.
@@ -165,7 +165,7 @@ class SimpleIndex(object):
         """
         # Internally, check if a entry exists with the project name, if not,
         # create a new one, and if exists, add the dist to the pool.
-        if not self._distributions.has_key(dist.name):
+        if not dist.name in self._distributions:
             self._distributions[dist.name] = PyPIDistributions()
         self._distributions[dist.name].append(dist)
         return self._distributions[dist.name]
@@ -188,11 +188,11 @@ class SimpleIndex(object):
                 if self._is_distribution(link):
                     # it's a distribution, so create a dist object
                     self._processed_urls.append(link)
-                    self._register_dist(PyPIDistribution.from_url(link, 
+                    self._register_dist(PyPIDistribution.from_url(link,
                         project_name))
                 else:
                     if self._is_browsable(link) and follow_links:
-                        self._process_url(link, project_name, 
+                        self._process_url(link, project_name,
                             follow_links=False)
 
     def _process_pypi_page(self, name):
@@ -203,7 +203,7 @@ class SimpleIndex(object):
         # Browse and index the content of the given PyPI page.
         url = self.index_url + name + "/"
         self._process_url(url, name)
-    
+
     @socket_timeout()
     def _open_url(self, url):
         """Open a urllib2 request, handling HTTP authentication
@@ -217,8 +217,10 @@ class SimpleIndex(object):
                 auth = None
 
             if auth:
-                auth = "Basic " + urllib2.unquote(auth).encode('base64').strip()
-                new_url = urlparse.urlunparse((scheme,host,path,params,query,frag))
+                auth = "Basic " + \
+                    urllib2.unquote(auth).encode('base64').strip()
+                new_url = urlparse.urlunparse((
+                    scheme, host, path, params, query, frag))
                 request = urllib2.Request(new_url)
                 request.add_header("Authorization", auth)
             else:
@@ -229,9 +231,11 @@ class SimpleIndex(object):
             if auth:
                 # Put authentication info back into request URL if same host,
                 # so that links found on the page will work
-                s2, h2, path2, param2, query2, frag2 = urlparse.urlparse(fp.url)
-                if s2==scheme and h2==host:
-                    fp.url = urlparse.urlunparse((s2,netloc,path2,param2,query2,frag2))
+                s2, h2, path2, param2, query2, frag2 = \
+                    urlparse.urlparse(fp.url)
+                if s2 == scheme and h2 == host:
+                    fp.url = urlparse.urlunparse(
+                        (s2, netloc, path2, param2, query2, frag2))
 
             return fp
         except (ValueError, httplib.InvalidURL), v:

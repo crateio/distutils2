@@ -27,28 +27,28 @@ class TestPyPIDistribution(unittest.TestCase):
         """Test that the Distribution object can be built from a single URL"""
         url_list = {
             'FooBar-1.1.0.tar.gz': {
-                'name': 'foobar', # lowercase the name
+                'name': 'foobar',  # lowercase the name
                 'version': '1.1.0',
             },
             'Foo-Bar-1.1.0.zip': {
-                'name': 'foo-bar', # keep the dash
+                'name': 'foo-bar',  # keep the dash
                 'version': '1.1.0',
             },
             'foobar-1.1b2.tar.gz#md5=123123123123123': {
                 'name': 'foobar',
                 'version': '1.1b2',
-                'url':'http://test.tld/foobar-1.1b2.tar.gz', #without md5 hash
+                'url': 'http://test.tld/foobar-1.1b2.tar.gz',  # without hash
                 'md5_hash': '123123123123123',
-            }, 
-            'foobar-1.1-rc2.tar.gz': { # use suggested name
+            },
+            'foobar-1.1-rc2.tar.gz': {  # use suggested name
                 'name': 'foobar',
                 'version': '1.1c2',
-                'url':'http://test.tld/foobar-1.1-rc2.tar.gz',
+                'url': 'http://test.tld/foobar-1.1-rc2.tar.gz',
             }
         }
 
         for url, attributes in url_list.items():
-            dist = Dist.from_url("http://test.tld/"+url)
+            dist = Dist.from_url("http://test.tld/" + url)
             for attribute, value in attributes.items():
                 self.assertEqual(getattr(dist, attribute), value)
 
@@ -63,14 +63,14 @@ class TestPyPIDistribution(unittest.TestCase):
         self.assertFalse(foo1 == foo2)
 
         # assert we can't compare dists with different names
-        self.assertRaises(TypeError, foo1.__eq__,bar)
+        self.assertRaises(TypeError, foo1.__eq__, bar)
 
     def test_split_archive_name(self):
         """Test we can split the archive names"""
         names = {
-            'foo-bar-baz-1.0-rc2': ('foo-bar-baz','1.0c2'),
-            'foo-bar-baz-1.0': ('foo-bar-baz','1.0'),
-            'foobarbaz-1.0': ('foobarbaz','1.0'),
+            'foo-bar-baz-1.0-rc2': ('foo-bar-baz', '1.0c2'),
+            'foo-bar-baz-1.0': ('foo-bar-baz', '1.0'),
+            'foobarbaz-1.0': ('foobarbaz', '1.0'),
         }
         for name, results in names.items():
             self.assertEqual(results, split_archive_name(name))
@@ -78,20 +78,20 @@ class TestPyPIDistribution(unittest.TestCase):
     @use_pypi_server("downloads_with_md5")
     def test_download(self, server):
         """Download is possible, and the md5 is checked if given"""
-        
+
         url = "%s/simple/foobar/foobar-0.1.tar.gz" % server.full_address
         # check md5 if given
-        dist = Dist("FooBar", "0.1", url=url, 
+        dist = Dist("FooBar", "0.1", url=url,
             md5_hash="d41d8cd98f00b204e9800998ecf8427e")
         dist.download()
-        
+
         # a wrong md5 fails
-        dist2 = Dist("FooBar", "0.1", url=url, 
+        dist2 = Dist("FooBar", "0.1", url=url,
             md5_hash="wrongmd5")
         self.assertRaises(MD5HashDoesNotMatch, dist2.download)
-        
+
         # we can omit the md5 hash
-        dist3 = Dist("FooBar", "0.1", url=url) 
+        dist3 = Dist("FooBar", "0.1", url=url)
         dist3.download()
 
         # and specify a temporary location
@@ -100,13 +100,14 @@ class TestPyPIDistribution(unittest.TestCase):
         dist3.download(path=path1)
         # and for a new one
         path2_base = tempfile.mkdtemp()
-        dist4 = Dist("FooBar", "0.1",url=url) 
+        dist4 = Dist("FooBar", "0.1", url=url)
         path2 = dist4.download(path=path2_base)
         self.assertTrue(path2_base in path2)
 
         # remove the temp folders
         shutil.rmtree(path1)
         shutil.rmtree(os.path.dirname(path2))
+
 
 class TestPyPIDistributions(unittest.TestCase):
     """test the pypi.distr.PyPIDistributions class"""
