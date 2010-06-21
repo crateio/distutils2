@@ -18,8 +18,12 @@ Distutils2 provides two python modules to ease the work with those two APIs:
 `distutils2.pypi.dist`
 ======================
 
-Both `SimpleIndex` and `XmlRpcIndex` classes works with `PyPIDistribution` 
-classes.
+Both `SimpleIndex` and `XmlRpcIndex` classes works with the classes provided
+in the `pypi.dist` package.
+
+`PyPIDistribution`
+------------------
+
 `PyPIDistribution` is a simple class that defines the following attributes:
 
 :name:
@@ -31,6 +35,13 @@ classes.
     you can find them.
 :url:
     The url of the distribution
+
+
+`PyPIDistributions`
+-------------------
+
+The `dist` module also provides another class, to work with lists of 
+`PyPIDistribution` classes.
 
 
 Requesting information via the "simple" API `distutils2.pypi.simple`
@@ -57,25 +68,25 @@ Request PyPI to get a specific distribution
 --------------------------------------------
 
 Supposing you want to scan the PyPI index to get a list of distributions for 
-the "foobar" project::
+the "foobar" project. You can use the "search" method for that.::
 
     >>> from distutils2.pypi import SimpleIndex
     >>> client = SimpleIndex()
-    >>> client.get_distributions("foobar")
+    >>> client.find("foobar")
     [<PyPIDistribution "Foobar 1.1">, <PyPIDistribution "Foobar 1.2">]
     
-Then, you can get all the distribution found by the `Simple` class using the
-following syntax::
-
-    >>> client["foobar"]
-    [<PyPIDistribution "Foobar 1.1">, <PyPIDistribution "Foobar 1.2">]
-
 Note that you also can request the client about specific versions, using version
 specifiers (described in `PEP 345 
 <http://www.python.org/dev/peps/pep-0345/#version-specifiers>`_)::
 
-    >>> client.get_distributions("foobar < 1.2")
-    [<PyPIDistribution "Foobar 1.1">, ]
+    >>> client.find("foobar < 1.2")
+    [<PyPIDistribution "foobar 1.1">, ]
+
+`find` returns a list of distributions, but you also can get the last
+distribution (the more up to date) that fullfil your requirements, like this::
+    
+    >>> client.get("foobar < 1.2")
+    <PyPIDistribution "foobar 1.1">
 
 Download distributions
 ----------------------
@@ -93,9 +104,7 @@ You also can specify the directory you want to download to::
     /path/to/my/dir/foobar-1.2.tar.gz
 
 While downloading, the md5 of the archive will be checked, if not matches, it
-will try another time, then if fails again, raise `InvalidMd5Error`.
-
-XXX: Maybe try external urls if provided, if it fails ?
+will try another time, then if fails again, raise `MD5HashDoesNotMatchError`.
 
 Requesting external pages
 -------------------------
@@ -108,13 +117,9 @@ When downloading, then, it will first use the packages found ont PyPI, then
 falling back to external webpages if needed.
 
 It's possible to tell the PyPIClient to not follow external links by specifying
-the `follow_external` parameter to the constructor::
+a list of allowed hosts::
 
-    >>> client = SimpleIndex(follow_externals=False)
-
-Or later by changing it's value::
-
-    >>> client.follow_externals = True
+    >>> client = SimpleIndex(hosts=("*.python.org"))
 
 
 Requesting informations via XML-RPC (`distutils2.pypi.XmlRpcIndex`)
@@ -134,4 +139,4 @@ At a higher level
 =================
 
 XXX : A description about a wraper around PyPI simple and XmlRpc Indexes
-(PyPiIndex ?) 
+(PyPIIndex ?) 
