@@ -9,6 +9,7 @@ import urlparse
 import sys
 import re
 import urllib2
+import httplib
 import socket
 try:
     from hashlib import md5
@@ -23,6 +24,7 @@ from distutils2 import __version__ as __distutils2_version__
 
 # -- Constants -----------------------------------------------
 PYPI_DEFAULT_INDEX_URL = "http://pypi.python.org/simple/"
+DEFAULT_HOSTS = ("*.python.org",)
 SOCKET_TIMEOUT=15
 USER_AGENT = "Python-urllib/%s distutils2/%s" % (
     sys.version[:3], __distutils2_version__
@@ -59,8 +61,8 @@ class SimpleIndex(object):
     """Provides useful tools to request the Python Package Index simple API
     """
 
-    def __init__(self, url=PYPI_DEFAULT_INDEX_URL, 
-        hosts=('*',), follow_externals=False):
+    def __init__(self, url=PYPI_DEFAULT_INDEX_URL, hosts=DEFAULT_HOSTS, 
+        mirrors=[]):
         """Class constructor.
 
         :param index_url: the url of the simple index to search on.
@@ -68,10 +70,12 @@ class SimpleIndex(object):
         differenciate with external hosts)
         :param follow_externals: tell if follow external links is needed or not
         Default is False
+        :param mirrors: a list of mirrors to check out if problems occurs while
+        working with the one given in "url"
         """
         self.index_url = url
-        self.follow_externals=follow_externals
-         
+        self.mirrors = mirrors
+        self._hosts = hosts
         # create a regexp to match all given hosts
         self._allowed_hosts = re.compile('|'.join(map(translate,hosts))).match
 
@@ -81,14 +85,27 @@ class SimpleIndex(object):
         self._processed_urls = []
         self._distributions = {}
 
-    def get_distributions(self, requirements):
+    def get(self, requirements):
+        """Browse the PyPI index to find distributions that fullfil the 
+        given requirements, and return the most recent one.
+        """
+        predicate = self._get_version_predicate(requirements)
+        dists = self.find(predicate)
+
+        if len(dists) == 0:
+            raise DistributionNotFound(requirements)
+
+        return dists.get_last(predicate) 
+
+    def find(self, requirements):
         """Browse the PyPI to find distributions that fullfil the given 
         requirements.
 
         :param requirements: A project name and it's distribution, using 
-        version specifiers, as described in PEP345. 
+        version specifiers, as described in PEP345. You can pass either a 
+        version.VersionPredicate or a string.
         """
-        requirements = VersionPredicate(requirements)
+        requirements = self._get_version_predicate(requirements)
         
         # process the index for this project
         self._process_pypi_page(requirements.name)
@@ -99,10 +116,7 @@ class SimpleIndex(object):
         else:
             dists = []
 
-        if dists is not []:
-            return dists
-        else:
-            raise DistributionNotFound(requirements.name)
+        return dists
 
     def download(self, requirements, temp_path=None):
         """Download the distribution, using the requirements.
@@ -114,9 +128,17 @@ class SimpleIndex(object):
 
         Returns the complete absolute path to the downloaded archive.
         """
-        distributions = self.get_distributions(requirements)
-        return distributions.get_last(requirements) \
-            .download(temp_path=temp_path)
+        requirements = self._get_version_predicate(requirements)
+        distributions = self.find(requirements)
+        return distributions.get_last(requirements).download(path=temp_path)
+
+    def _get_version_predicate(self, requirements):
+        """Return a VersionPredicate object, from a string or an already 
+        existing object.
+        """
+        if isinstance(requirements, str):
+            requirements = VersionPredicate(requirements)
+        return requirements
 
     def _is_browsable(self, url):
         """Tell if the given URL needs to be browsed or not, according to the
@@ -125,14 +147,13 @@ class SimpleIndex(object):
         It uses the follow_externals and the hosts list to tell if the given 
         url is browsable or not. 
         """
-        if self.follow_externals is True:
-            return True
         return True if self._allowed_hosts(
             urlparse.urlparse(url).netloc) else False
 
     def _is_distribution(self, link):
         """Tell if the given URL matches to a distribution name or not.
         """
+        #XXX find a better way to check that links are distributions
         for ext in EXTENSIONS:
             if ext in link:
                 return True
@@ -189,31 +210,44 @@ class SimpleIndex(object):
     def _open_url(self, url):
         """Open a urllib2 request, handling HTTP authentication
         """
-        scheme, netloc, path, params, query, frag = urlparse.urlparse(url)
+        try:
+            scheme, netloc, path, params, query, frag = urlparse.urlparse(url)
 
-        if scheme in ('http', 'https'):
-            auth, host = urllib2.splituser(netloc)
-        else:
-            auth = None
+            if scheme in ('http', 'https'):
+                auth, host = urllib2.splituser(netloc)
+            else:
+                auth = None
 
-        if auth:
-            auth = "Basic " + urllib2.unquote(auth).encode('base64').strip()
-            new_url = urlparse.urlunparse((scheme,host,path,params,query,frag))
-            request = urllib2.Request(new_url)
-            request.add_header("Authorization", auth)
-        else:
-            request = urllib2.Request(url)
-        request.add_header('User-Agent', USER_AGENT)
-        fp = urllib2.urlopen(request)
+            if auth:
+                auth = "Basic " + urllib2.unquote(auth).encode('base64').strip()
+                new_url = urlparse.urlunparse((scheme,host,path,params,query,frag))
+                request = urllib2.Request(new_url)
+                request.add_header("Authorization", auth)
+            else:
+                request = urllib2.Request(url)
+            request.add_header('User-Agent', USER_AGENT)
+            fp = urllib2.urlopen(request)
 
-        if auth:
-            # Put authentication info back into request URL if same host,
-            # so that links found on the page will work
-            s2, h2, path2, param2, query2, frag2 = urlparse.urlparse(fp.url)
-            if s2==scheme and h2==host:
-                fp.url = urlparse.urlunparse((s2,netloc,path2,param2,query2,frag2))
+            if auth:
+                # Put authentication info back into request URL if same host,
+                # so that links found on the page will work
+                s2, h2, path2, param2, query2, frag2 = urlparse.urlparse(fp.url)
+                if s2==scheme and h2==host:
+                    fp.url = urlparse.urlunparse((s2,netloc,path2,param2,query2,frag2))
 
-        return fp
+            return fp
+        except (ValueError, httplib.InvalidURL), v:
+            msg = ' '.join([str(arg) for arg in v.args])
+            raise PyPIError('%s %s' % (url, msg))
+        except urllib2.HTTPError, v:
+            return v
+        except urllib2.URLError, v:
+            raise PyPIError("Download error for %s: %s" % (url, v.reason))
+        except httplib.BadStatusLine, v:
+            raise PyPIError('%s returned a bad status line. '
+                'The server might be down, %s' % (url, v.line))
+        except httplib.HTTPException, v:
+            raise PyPIError("Download error for %s: %s" % (url, v))
 
     def _decode_entity(self, match):
         what = match.group(1)

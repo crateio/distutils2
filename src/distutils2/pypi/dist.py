@@ -47,28 +47,13 @@ class PyPIDistribution(object):
                 archive_name = archive_name[:-len(ext)]
                 extension_matched = True
 
-        name = None
-        # get the name from probable_dist_name
-        if probable_dist_name is not None:
-            if probable_dist_name in archive_name:
-                name = probable_dist_name
-
-        if name is None:
-            # determine the name and the version
-            splits = archive_name.split("-")
-            version = splits[-1]
-            name = "-".join(splits[:-1])
-        else:
-            # just determine the version
-            version = archive_name[len(name):]
-            if version.startswith("-"):
-                version = version[1:]
-        
-        version = suggest_normalized_version(version)
+        name, version = split_archive_name(archive_name)
         if extension_matched is True:
             return PyPIDistribution(name, version, url=url, md5_hash=md5_hash)
 
     def __init__(self, name, version, type=None, url=None, md5_hash=None):
+        """Create a new instance of PyPIDistribution
+        """
         self.name = name
         self.version = version
         self.url = url
@@ -89,13 +74,42 @@ class PyPIDistribution(object):
         # if we do not have downloaded it yet, do it.
         if self._downloaded_path is None:
             # download logic goes here
-            real_path = "" 
+            real_path = ""
         return real_path
 
-    def __str__(self):
-        """string representation of the PyPIDistribution"""
-        return "%s-%s" % (self.name, self.version)
+    def __repr__(self):
+        return "<%s %s (%s)>" % (self.__class__.__name__, self.name, self.version)
 
+    def _check_is_comparable(self, other):
+        if not isinstance(other, PyPIDistribution):
+            raise TypeError("cannot compare %s and %s" 
+                % (type(self).__name__, type(other).__name__))
+        elif self.name != other.name:
+            raise TypeError("cannot compare %s and %s"
+                % (self.name, other.name))
+
+    def __eq__(self, other):
+        self._check_is_comparable(other)
+        return self.version == other.version
+
+    def __lt__(self, other):
+        self._check_is_comparable(other)
+        return self.version < other.version
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __gt__(self, other):
+        return not (self.__lt__(other) or self.__eq__(other))
+
+    def __le__(self, other):
+        return self.__eq__(other) or self.__lt__(other)
+
+    def __ge__(self, other):
+        return self.__eq__(other) or self.__gt__(other)
+
+    # See http://docs.python.org/reference/datamodel#object.__hash__
+    __hash__ = object.__hash__
 
 class PyPIDistributions(list):
     """A container of PyPIDistribution objects.
@@ -104,9 +118,53 @@ class PyPIDistributions(list):
     """
 
     def filter(self, predicate):
-        """Filter the distributions and return just the one matching the given
-        predicate.
+        """Filter the distributions and return a subset of distributions that
+        match the given predicate
         """
-        return [dist for dist in self if dist.name == predicate.name and
-            predicate.match(dist.version)]
+        return PyPIDistributions(
+            [dist for dist in self if dist.name == predicate.name and
+            predicate.match(dist.version)])
 
+    def get_last(self, predicate):
+        """Return the most up to date version, that satisfy the given 
+        predicate
+        """
+        distributions = self.filter(predicate)
+        distributions.sort()
+        return distributions[-1]
+
+def split_archive_name(archive_name, probable_name=None):
+    """Split an archive name into two parts: name and version.
+
+    Return the tuple (name, version)
+    """
+    # Try to determine wich part is the name and wich is the version using the "-"
+    # separator. Take the larger part to be the version number then reduce if this
+    # not works.
+    def eager_split(str, maxsplit=2):
+        # split using the "-" separator
+        splits = str.rsplit("-", maxsplit)
+        name = splits[0]
+        version = "-".join(splits[1:])
+        if version.startswith("-"):
+            version = version[1:]
+        if suggest_normalized_version(version) is None and maxsplit >= 0:
+            # we dont get a good version number: recurse !
+            return eager_split(str, maxsplit-1)
+        else:
+            return (name, version)
+    if probable_name is not None:
+        probable_name = probable_name.lower()
+    name = None
+    if probable_name is not None and probable_name in archive_name:
+        # we get the name from probable_name, if given.
+        name = probable_name
+        version = archive_name.lstrip(name)
+    else:
+        name, version = eager_split(archive_name)
+    
+    version = suggest_normalized_version(version)
+    if version != "" and name != "":
+        return (name.lower(), version)
+    else:
+        raise CantParseArchiveName(archive_name) 

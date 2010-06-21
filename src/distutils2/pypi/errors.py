@@ -9,4 +9,7 @@ class PyPIError(DistutilsError):
     """The base class for errors of the pypi python package."""
 
 class DistributionNotFound(PyPIError):
-    """Raised when no distribution match the given requirements."""
+    """No distribution match the given requirements."""
+
+class CantParseArchiveName(PyPIError):
+    """An archive name can't be parsed to find distribution name and version"""
