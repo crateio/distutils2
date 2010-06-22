@@ -160,41 +160,6 @@ class PyPISimpleTestCase(unittest2.TestCase):
         self.assertNotIn(server.full_address + "/external/external.html",
             index._processed_urls)
 
-    @use_pypi_server("downloads_with_md5")
-    def download_package(self, server):
-        """Download packages from pypi requests.
-        """
-        paths = []
-        # If we request a download specific version of a distribution,
-        # the system must download it, check the md5 and unpack it in a
-        # temporary location, that must be returned by the lib.
-        index = self._get_simple_index(server)
-
-        # assert we can download a specific version
-        temp_location_1 = index.download("foobar (0.1)")
-        self.assertIn("foobar-0.1.tar.gz", temp_location_1)
-        paths.append(temp_location_1)  # to delete later
-
-        # assert we take the latest
-        temp_location_2 = index.download("foobar")
-        self.assertIn("foobar-0.1.tar.gz", temp_location_2)
-        paths.append(temp_location_2)
-
-        # we also can specify a temp location
-        specific_temp_location = tempfile.mkdtemp()
-        returned_temp_location = index.download("foobar",
-            specific_temp_location)
-        self.assertIn(specific_temp_location, returned_temp_location)
-        paths.append(returned_temp_location)
-
-        # raise an error if we couldnt manage to get the file with a the good
-        # md5 hash
-        self.assertRaises(DistutilsError, index.download, "badmd5")
-
-        # delete the temp paths
-        for path in paths:
-            shutil.rmtree(os.path.dirname(path))
-
     @use_pypi_server("with_egg_files")
     def test_scan_egg_files(self, server):
         """Assert that egg files are indexed as well"""
@@ -257,7 +222,11 @@ class PyPISimpleTestCase(unittest2.TestCase):
         self.assertIn("%s/foobar-2.0.tar.gz" % server.full_address,
             index._processed_urls)  # linked from external homepage (rel)
 
-
+#    def test_uses_mirrors(self):
+#        """When the main repository seems down, try using the given mirrors"""
+#        server = 
+#        mirror = 
+#
 def test_suite():
     return unittest2.makeSuite(PyPISimpleTestCase)
 

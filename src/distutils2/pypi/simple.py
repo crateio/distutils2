@@ -125,9 +125,7 @@ class SimpleIndex(object):
 
         Returns the complete absolute path to the downloaded archive.
         """
-        requirements = self._get_version_predicate(requirements)
-        distributions = self.find(requirements)
-        return distributions.get_last(requirements).download(path=temp_path)
+        return self.get(requirements).download(path=temp_path)
 
     def _get_version_predicate(self, requirements):
         """Return a VersionPredicate object, from a string or an already
