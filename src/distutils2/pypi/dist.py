@@ -1,6 +1,6 @@
 """distutils2.pypi.dist
 
-Provides the PyPIDistribution class thats represents a distribution retreived
+Provides the PyPIDistribution class thats represents a distribution retrieved
 on PyPI.
 """
 import re
@@ -20,7 +20,7 @@ MD5_HASH = re.compile(r'^.*#md5=([a-f0-9]+)$')
 
 
 class PyPIDistribution(object):
-    """Represents a distribution retreived from PyPI.
+    """Represents a distribution retrieved from PyPI.
 
     This is a simple container for various attributes as name, version,
     location, url etc.

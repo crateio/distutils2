@@ -1,6 +1,6 @@
 """pypi.simple
 
-Contains the class "SimpleIndex", a simple spider to find and retreive
+Contains the class "SimpleIndex", a simple spider to find and retrieve
 distributions on the Python Package Index, using it's "simple" API,
 avalaible at http://pypi.python.org/simple/
 """

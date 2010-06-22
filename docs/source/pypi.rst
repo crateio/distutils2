@@ -6,11 +6,11 @@ Distutils2 comes with a module (eg. `distutils2.pypi`) which contains
 facilities to access the Python Package Index (named "pypi", and avalaible on
 the url `http://pypi.python.org`.
 
-There is two ways to retreive data from pypi: using the *simple* API, and using
+There is two ways to retrieve data from pypi: using the *simple* API, and using
 *XML-RPC*. The first one is in fact a set of HTML pages avalaible at
 `http://pypi.python.org/simple/`. In order to reduce the overload caused by
 running distant methods on the pypi server (by using the XML-RPC methods), the
-best way to retreive informations is by using the simple API.
+best way to retrieve informations is by using the simple API.
 
 Distutils2 provides two python modules to ease the work with those two APIs:
 `distutils2.pypi.simple` and `distutils2.pypi.xmlrpc`.

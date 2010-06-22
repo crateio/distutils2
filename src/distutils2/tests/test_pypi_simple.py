@@ -153,7 +153,7 @@ class PyPISimpleTestCase(unittest2.TestCase):
     def test_disable_external_pages(self, server):
         """Exclude external pages if disabled
         """
-        # Test that telling the simple pyPI client to not retreive external
+        # Test that telling the simple pyPI client to not retrieve external
         # works
         index = self._get_simple_index(server, hosts=(server.full_address,))
         index.get("foobar")
