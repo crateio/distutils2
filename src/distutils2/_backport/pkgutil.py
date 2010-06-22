@@ -29,7 +29,6 @@ __all__ = [
     'provides_distribution', 'obsoletes_distribution',
 ]
 
-
 def read_code(stream):
     # This helper is needed in order for the :pep:`302` emulation to
     # correctly handle compiled files
@@ -613,6 +612,49 @@ def get_data(package, resource):
 
 DIST_FILES = ('INSTALLER', 'METADATA', 'RECORD', 'REQUESTED',)
 
+# Cache
+_cache_name = {} # maps names to Distribution instances
+_cache_name_egg = {} # maps names to EggInfoDistribution instances
+_cache_path = {} # maps paths to Distribution instances
+_cache_path_egg = {} # maps paths to EggInfoDistribution instances
+_cache_generated = False
+
+def clear_cache():
+    global _cache_name, _cache_name_egg, cache_path, _cache_path_egg, \
+           _cache_generated
+
+    _cache_name = {}
+    _cache_name_egg = {}
+    _cache_path = {}
+    _cache_path_egg = {}
+    _cache_generated = False
+
+def _generate_cache():
+    clear_cache()
+
+    global _cache_generated
+
+    for path in sys.path:
+        realpath = os.path.realpath(path)
+        if not os.path.isdir(realpath):
+            continue
+        for dir in os.listdir(realpath):
+            dist_path = os.path.join(realpath, dir)
+            if dir.endswith('.dist-info'):
+                dist = Distribution(dist_path)
+                _cache_path[dist_path] = dist
+                if not dist.name in _cache_name:
+                    _cache_name[dist.name] = []
+                _cache_name[dist.name].append(dist)
+            elif dir.endswith('.egg-info') or dir.endswith('.egg'):
+                dist = EggInfoDistribution(dist_path)
+                _cache_path_egg[dist_path] = dist
+                if not dist.name in _cache_name_egg:
+                    _cache_name_egg[dist.name] = []
+                _cache_name_egg[dist.name].append(dist)
+    _cache_generated = True
+
+
 
 class Distribution(object):
     """Created with the *path* of the ``.dist-info`` directory provided to the
@@ -631,10 +673,17 @@ class Distribution(object):
     (in other words, whether the package was installed by user request)."""
 
     def __init__(self, path):
+        if path in _cache_path:
+            self.metadata = _cache_path[path].metadata
+        else:
+            metadata_path = os.path.join(path, 'METADATA')
+            self.metadata = DistributionMetadata(path=metadata_path)
+
         self.path = path
-        metadata_path = os.path.join(path, 'METADATA')
-        self.metadata = DistributionMetadata(path=metadata_path)
         self.name = self.metadata['name']
+
+        if not path in _cache_path:
+            _cache_path[path] = self
 
     def _get_records(self, local=False):
         RECORD = os.path.join(self.path, 'RECORD')
@@ -753,6 +802,11 @@ class EggInfoDistribution(object):
     def __init__(self, path):
         self.path = path
 
+        if path in _cache_path_egg:
+            self.metadata = _cache_path_egg[path].metadata
+            self.name = self.metadata['Name']
+            return
+
         # reused from Distribute's pkg_resources
         def yield_lines(strs):
             """Yield non-empty/non-comment lines of a ``basestring`` or sequence"""
@@ -784,7 +838,7 @@ class EggInfoDistribution(object):
                     requires = zipf.get_data('EGG-INFO/requires.txt')
                 except IOError:
                     requires = None
-            self.name = self.metadata['name']
+            self.name = self.metadata['Name']
         elif path.endswith('.egg-info'):
             if os.path.isdir(path):
                 path = os.path.join(path, 'PKG-INFO')
@@ -837,6 +891,8 @@ class EggInfoDistribution(object):
             else:
                 self.metadata['Requires'] += reqs
 
+            _cache_path_egg[path] = self
+
     def get_installed_files(self, local=False):
         return []
 
@@ -847,12 +903,10 @@ class EggInfoDistribution(object):
         return isinstance(other, EggInfoDistribution) and \
                self.path == other.path
 
-
 def _normalize_dist_name(name):
     """Returns a normalized name from the given *name*.
     :rtype: string"""
     return name.replace('-', '_')
-
 
 def distinfo_dirname(name, version):
     """
@@ -892,19 +946,13 @@ def get_distributions(use_egg_info=False):
 
     :rtype: iterator of :class:`Distribution` and :class:`EggInfoDistribution`
             instances"""
-    for path in sys.path:
-        realpath = os.path.realpath(path)
-        if not os.path.isdir(realpath):
-            continue
-        for dir in os.listdir(realpath):
-            if dir.endswith('.dist-info'):
-                dist = Distribution(os.path.join(realpath, dir))
-                yield dist
-            elif use_egg_info and (dir.endswith('.egg-info') or
-                                   dir.endswith('.egg')):
-                dist = EggInfoDistribution(os.path.join(realpath, dir))
-                yield dist
-
+    if not _cache_generated:
+        _generate_cache()
+    for dist in _cache_path.itervalues():
+        yield dist
+    if use_egg_info:
+        for dist in _cache_path_egg.itervalues():
+            yield dist
 
 def get_distribution(name, use_egg_info=False):
     """
@@ -922,17 +970,15 @@ def get_distribution(name, use_egg_info=False):
     value is expected. If the directory is not found, ``None`` is returned.
 
     :rtype: :class:`Distribution` or :class:`EggInfoDistribution` or None"""
-    found = None
-    for dist in get_distributions():
-        if dist.name == name:
-            found = dist
-            break
-    if use_egg_info:
-        for dist in get_distributions(True):
-            if dist.name == name:
-                found = dist
-                break
-    return found
+    if not _cache_generated:
+        _generate_cache()
+
+    if name in _cache_name:
+        return _cache_name[name][0]
+    elif use_egg_info and name in _cache_name_egg:
+        return _cache_name_egg[name][0]
+    else:
+        return None
 
 
 def obsoletes_distribution(name, version=None, use_egg_info=False):
