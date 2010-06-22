@@ -23,3 +23,7 @@ class DownloadError(PyPIError):
 
 class MD5HashDoesNotMatch(DownloadError):
     """Compared MD5 hashes does not match"""
+
+
+class UnableToDownload(PyPIError):
+    """All mirrors have been tried, without success"""

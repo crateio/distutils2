@@ -8,7 +8,7 @@ import tempfile
 import unittest2
 import urllib2
 
-from distutils2.tests.pypi_server import use_pypi_server
+from distutils2.tests.pypi_server import use_pypi_server, PyPIServer
 from distutils2.pypi import simple
 
 from distutils2.errors import DistutilsError
@@ -222,11 +222,24 @@ class PyPISimpleTestCase(unittest2.TestCase):
         self.assertIn("%s/foobar-2.0.tar.gz" % server.full_address,
             index._processed_urls)  # linked from external homepage (rel)
 
-#    def test_uses_mirrors(self):
-#        """When the main repository seems down, try using the given mirrors"""
-#        server = 
-#        mirror = 
-#
+    def test_uses_mirrors(self):
+        """When the main repository seems down, try using the given mirrors"""
+        server = PyPIServer("foo_bar_baz")
+        mirror = PyPIServer("foo_bar_baz")
+        mirror.start()  # we dont start the server here
+        
+        try:
+            # create the index using both servers
+            index = simple.SimpleIndex(server.full_address + "/simple/", 
+                hosts=('*',), timeout=1,  # set the timeout to 1s for the tests
+                mirrors=[mirror.full_address + "/simple/",])
+            
+            # this should not raise a timeout
+            self.assertEqual(4, len(index.find("foo")))
+        except Exception, e:
+            mirror.stop()
+            raise e
+
 def test_suite():
     return unittest2.makeSuite(PyPISimpleTestCase)
 

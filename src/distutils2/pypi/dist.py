@@ -34,9 +34,7 @@ class PyPIDistribution(object):
         """Build a Distribution from a url archive (egg or zip or tgz).
 
         :param url: complete url of the distribution
-        :param probable_dist_name: the probable name of the distribution. This
-        could be useful when multiple name can be assumed from the archive
-        name.
+        :param probable_dist_name: A probable name of the distribution. 
         """
         # if the url contains a md5 hash, get it.
         md5_hash = None

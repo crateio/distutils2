@@ -1,6 +1,6 @@
-=================
-The PyPI Module
-=================
+=========================================
+Tools to query PyPI: the PyPI package
+=========================================
 
 Distutils2 comes with a module (eg. `distutils2.pypi`) which contains
 facilities to access the Python Package Index (named "pypi", and avalaible on
@@ -14,34 +14,6 @@ best way to retreive informations is by using the simple API.
 
 Distutils2 provides two python modules to ease the work with those two APIs:
 `distutils2.pypi.simple` and `distutils2.pypi.xmlrpc`.
-
-`distutils2.pypi.dist`
-======================
-
-Both `SimpleIndex` and `XmlRpcIndex` classes works with the classes provided
-in the `pypi.dist` package.
-
-`PyPIDistribution`
-------------------
-
-`PyPIDistribution` is a simple class that defines the following attributes:
-
-:name:
-    The name of the package. `foobar` in our exemples here
-:version:
-    The version of the package
-:location:
-    If the files from the archive has been downloaded, here is the path where
-    you can find them.
-:url:
-    The url of the distribution
-
-
-`PyPIDistributions`
--------------------
-
-The `dist` module also provides another class, to work with lists of 
-`PyPIDistribution` classes.
 
 
 Requesting information via the "simple" API `distutils2.pypi.simple`
@@ -64,8 +36,17 @@ And should not be used to:
     * Things that will end up in too long index processing (like "finding all
       distributions with a specific version, no matters the name")
 
+API
+----
+
+.. autoclass:: distutils2.pypi.simple.SimpleIndex
+    :members:
+
+Usage Exemples
+---------------
+
 Request PyPI to get a specific distribution
---------------------------------------------
+++++++++++++++++++++++++++++++++++++++++++++
 
 Supposing you want to scan the PyPI index to get a list of distributions for 
 the "foobar" project. You can use the "search" method for that.::
@@ -89,7 +70,7 @@ distribution (the more up to date) that fullfil your requirements, like this::
     <PyPIDistribution "foobar 1.1">
 
 Download distributions
-----------------------
++++++++++++++++++++++++
 
 As it can get the urls of distributions provided by PyPI, the `Simple` client
 also can download the distributions and put it for you in a temporary
@@ -107,19 +88,25 @@ While downloading, the md5 of the archive will be checked, if not matches, it
 will try another time, then if fails again, raise `MD5HashDoesNotMatchError`.
 
 Requesting external pages
--------------------------
++++++++++++++++++++++++++
 
 The default behavior for distutils2 is to follow the links provided
-by distributions within their metadatas, and find distributions related
+by HTML pages in the "simple index", to find distributions related
 downloads.
-
-When downloading, then, it will first use the packages found ont PyPI, then
-falling back to external webpages if needed.
 
 It's possible to tell the PyPIClient to not follow external links by specifying
 a list of allowed hosts::
 
     >>> client = SimpleIndex(hosts=("*.python.org"))
+
+Working with mirrors
++++++++++++++++++++++
+
+The SimpleClient implement a fallback mechanism to switch from one mirror to 
+another, the simple way. All you need to do is to provide a list of mirrors to
+it at the instanciation time::
+
+    >>> client = SimpleClient(mirrors=['http://mirror1/', 'http://mirror2/'])
 
 
 Requesting informations via XML-RPC (`distutils2.pypi.XmlRpcIndex`)
@@ -134,6 +121,40 @@ methods. Distutils2 provides a simple wrapper around `xmlrpclib
     >>> from distutils2.pypi import XmlRpcIndex()
     >>> client = XmlRpcIndex()
 
+
+PyPI Distributions
+==================
+
+Both `SimpleIndex` and `XmlRpcIndex` classes works with the classes provided
+in the `pypi.dist` package.
+
+`PyPIDistribution`
+------------------
+
+`PyPIDistribution` is a simple class that defines the following attributes:
+
+:name:
+    The name of the package. `foobar` in our exemples here
+:version:
+    The version of the package
+:location:
+    If the files from the archive has been downloaded, here is the path where
+    you can find them.
+:url:
+    The url of the distribution
+
+.. autoclass:: distutils2.pypi.dist.PyPIDistribution
+    :members:
+
+`PyPIDistributions`
+-------------------
+
+The `dist` module also provides another class, to work with lists of 
+`PyPIDistribution` classes. It allow to filter results and is used as a 
+container of 
+
+.. autoclass:: distutils2.pypi.dist.PyPIDistributions
+    :members:
 
 At a higher level
 =================

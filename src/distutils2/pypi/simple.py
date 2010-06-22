@@ -15,7 +15,8 @@ import socket
 from distutils2.version import VersionPredicate
 from distutils2.pypi.dist import PyPIDistribution, PyPIDistributions, \
     EXTENSIONS
-from distutils2.pypi.errors import PyPIError, DistributionNotFound
+from distutils2.pypi.errors import PyPIError, DistributionNotFound, \
+    DownloadError, UnableToDownload
 from distutils2 import __version__ as __distutils2_version__
 
 # -- Constants -----------------------------------------------
@@ -43,11 +44,13 @@ def socket_timeout(timeout=SOCKET_TIMEOUT):
     """Decorator to add a socket timeout when requesting pages on PyPI.
     """
     def _socket_timeout(func):
-        def _socket_timeout(*args, **kwargs):
+        def _socket_timeout(self, *args, **kwargs):
             old_timeout = socket.getdefaulttimeout()
+            if hasattr(self, "_timeout"):
+                timeout = self._timeout
             socket.setdefaulttimeout(timeout)
             try:
-                return func(*args, **kwargs)
+                return func(self, *args, **kwargs)
             finally:
                 socket.setdefaulttimeout(old_timeout)
         return _socket_timeout
@@ -59,7 +62,7 @@ class SimpleIndex(object):
     """
 
     def __init__(self, url=PYPI_DEFAULT_INDEX_URL, hosts=DEFAULT_HOSTS,
-        mirrors=[]):
+        mirrors=[], timeout=SOCKET_TIMEOUT):
         """Class constructor.
 
         :param index_url: the url of the simple index to search on.
@@ -70,9 +73,10 @@ class SimpleIndex(object):
         :param mirrors: a list of mirrors to check out if problems occurs while
         working with the one given in "url"
         """
-        self.index_url = url
-        self.mirrors = mirrors
-        self._hosts = hosts
+        self._index_urls = [url]
+        self._index_urls.extend(mirrors)
+        self._current_index_url = 0
+        self._timeout = timeout
         # create a regexp to match all given hosts
         self._allowed_hosts = re.compile('|'.join(map(translate, hosts))).match
 
@@ -99,8 +103,9 @@ class SimpleIndex(object):
         requirements.
 
         :param requirements: A project name and it's distribution, using
-        version specifiers, as described in PEP345. You can pass either a
-        version.VersionPredicate or a string.
+                             version specifiers, as described in PEP345. 
+        :type requirements:  You can pass either a version.VersionPredicate 
+                             or a string.
         """
         requirements = self._get_version_predicate(requirements)
 
@@ -124,6 +129,8 @@ class SimpleIndex(object):
         is given, creates and return one.
 
         Returns the complete absolute path to the downloaded archive.
+
+        :param requirements: The same as the find attribute of `find`. 
         """
         return self.get(requirements).download(path=temp_path)
 
@@ -134,7 +141,20 @@ class SimpleIndex(object):
         if isinstance(requirements, str):
             requirements = VersionPredicate(requirements)
         return requirements
+    
+    @property
+    def index_url(self):
+        return self._index_urls[self._current_index_url] 
 
+    def _switch_to_next_mirror(self):
+        """Switch to the next mirror (eg. point self.index_url to the next
+        url.
+        """
+        if self._current_index_url < len(self._index_urls):
+            self._current_index_url = self._current_index_url + 1
+        else:
+            raise UnableToDownload("All mirrors fails")
+    
     def _is_browsable(self, url):
         """Tell if the given URL needs to be browsed or not, according to the
         object internal attributes.
@@ -229,9 +249,16 @@ class SimpleIndex(object):
 
         :param name: the name of the project to find the page
         """
-        # Browse and index the content of the given PyPI page.
-        url = self.index_url + name + "/"
-        self._process_url(url, name)
+        try:
+            # Browse and index the content of the given PyPI page.
+            url = self.index_url + name + "/"
+            self._process_url(url, name)
+        except DownloadError:
+            # if an error occurs, try with the next index_url 
+            # (provided by the mirrors)
+            self._switch_to_next_mirror()
+            self._distributions.clear()
+            self._process_pypi_page(name)
 
     @socket_timeout()
     def _open_url(self, url):
@@ -273,12 +300,12 @@ class SimpleIndex(object):
         except urllib2.HTTPError, v:
             return v
         except urllib2.URLError, v:
-            raise PyPIError("Download error for %s: %s" % (url, v.reason))
+            raise DownloadError("Download error for %s: %s" % (url, v.reason))
         except httplib.BadStatusLine, v:
-            raise PyPIError('%s returned a bad status line. '
+            raise DownloadError('%s returned a bad status line. '
                 'The server might be down, %s' % (url, v.line))
         except httplib.HTTPException, v:
-            raise PyPIError("Download error for %s: %s" % (url, v))
+            raise DownloadError("Download error for %s: %s" % (url, v))
 
     def _decode_entity(self, match):
         what = match.group(1)
