@@ -22,7 +22,7 @@ class PyPISimpleTestCase(unittest2.TestCase):
         urls
         """
         if hosts is None:
-            hosts = (server.full_address,)
+            hosts = (server.full_address.strip("http://"),)
         kwargs['hosts'] = hosts
         return simple.SimpleIndex(server.full_address + base_url, *args,
             **kwargs)
@@ -114,15 +114,15 @@ class PyPISimpleTestCase(unittest2.TestCase):
         # We query only for the version 1.1, so all distributions must be
         # filled in the package_index (as the url has been scanned), but
         # "get" must only return the one we want.
-        pi = self._get_simple_index(server)
-        last_distribution = pi.get("foobar")
+        index = self._get_simple_index(server)
+        last_distribution = index.get("foobar")
 
         # we have scanned the index page
         self.assertIn(server.full_address + "/simple/foobar/",
-            pi._processed_urls)
+            index._processed_urls)
 
         # we have found 4 distributions in this page
-        self.assertEqual(len(pi._distributions["foobar"]), 4)
+        self.assertEqual(len(index._distributions["foobar"]), 4)
 
         # and returned the most recent one
         self.assertEqual(last_distribution.version, '2.0.1')
@@ -144,10 +144,10 @@ class PyPISimpleTestCase(unittest2.TestCase):
         """
         # Try to request the package index, wich contains links to "externals"
         # resources. They have to  be scanned too.
-        pi = self._get_simple_index(server, hosts=("*",))
-        pi.get("foobar")
+        index = self._get_simple_index(server, hosts=("*",))
+        index.get("foobar")
         self.assertIn(server.full_address + "/external/external.html",
-            pi._processed_urls)
+            index._processed_urls)
 
     @use_pypi_server("with_real_externals")
     def test_disable_external_pages(self, server):
@@ -155,10 +155,10 @@ class PyPISimpleTestCase(unittest2.TestCase):
         """
         # Test that telling the simple pyPI client to not retreive external
         # works
-        pi = self._get_simple_index(server, hosts=(server.full_address,))
-        pi.get("foobar")
+        index = self._get_simple_index(server, hosts=(server.full_address,))
+        index.get("foobar")
         self.assertNotIn(server.full_address + "/external/external.html",
-            pi._processed_urls)
+            index._processed_urls)
 
     @use_pypi_server("downloads_with_md5")
     def download_package(self, server):
@@ -168,27 +168,28 @@ class PyPISimpleTestCase(unittest2.TestCase):
         # If we request a download specific version of a distribution,
         # the system must download it, check the md5 and unpack it in a
         # temporary location, that must be returned by the lib.
-        pi = self._get_simple_index(server)
+        index = self._get_simple_index(server)
 
         # assert we can download a specific version
-        temp_location_1 = pi.download("foobar (0.1)")
+        temp_location_1 = index.download("foobar (0.1)")
         self.assertIn("foobar-0.1.tar.gz", temp_location_1)
         paths.append(temp_location_1)  # to delete later
 
         # assert we take the latest
-        temp_location_2 = pi.download("foobar")
+        temp_location_2 = index.download("foobar")
         self.assertIn("foobar-0.1.tar.gz", temp_location_2)
         paths.append(temp_location_2)
 
         # we also can specify a temp location
         specific_temp_location = tempfile.mkdtemp()
-        returned_temp_location = pi.download("foobar", specific_temp_location)
+        returned_temp_location = index.download("foobar",
+            specific_temp_location)
         self.assertIn(specific_temp_location, returned_temp_location)
         paths.append(returned_temp_location)
 
         # raise an error if we couldnt manage to get the file with a the good
         # md5 hash
-        self.assertRaises(DistutilsError, pi.download, "badmd5")
+        self.assertRaises(DistutilsError, index.download, "badmd5")
 
         # delete the temp paths
         for path in paths:
@@ -209,8 +210,8 @@ class PyPISimpleTestCase(unittest2.TestCase):
 
         Usecase :
         - someone uploads a package on pypi, a md5 is generated
-        - someone manually copies this link (with the md5 in the url) onto an
-          external page accessible from the package page.
+        - someone manually coindexes this link (with the md5 in the url) onto
+          an external page accessible from the package page.
         - someone reuploads the package (with a different md5)
         - while easy_installing, an MD5 error occurs because the external link
           is used
@@ -220,8 +221,8 @@ class PyPISimpleTestCase(unittest2.TestCase):
         index_url = server.full_address + '/simple/'
 
         # scan a test index
-        pi = simple.SimpleIndex(index_url)
-        dists = pi.find("foobar")
+        index = simple.SimpleIndex(index_url)
+        dists = index.find("foobar")
         server.stop()
 
         # the distribution has been found
@@ -230,6 +231,31 @@ class PyPISimpleTestCase(unittest2.TestCase):
         self.assertEqual(len(dists), 1)
         # the link should be from the index
         self.assertEqual('12345678901234567', dists[0].md5_hash)
+
+    @use_pypi_server(static_filesystem_paths=["with_norel_links"],
+        static_uri_paths=["simple", "external"])
+    def test_not_scan_all_links(self, server):
+        """Do not follow all index page links.
+        The links not tagged with rel="download" and rel="homepage" have
+        to not be processed by the package index, while processing "pages".
+        """
+        # process the pages
+        index = self._get_simple_index(server)
+        index.find("foobar")
+        # now it should have processed only pages with links rel="download" 
+        # and rel="homepage"
+        self.assertIn("%s/simple/foobar/" % server.full_address, 
+            index._processed_urls)  # it's the simple index page
+        self.assertIn("%s/external/homepage.html" % server.full_address, 
+            index._processed_urls)  # the external homepage is rel="homepage"
+        self.assertNotIn("%s/external/nonrel.html" % server.full_address, 
+            index._processed_urls)  # this link contains no rel=*
+        self.assertNotIn("%s/unrelated-0.2.tar.gz" % server.full_address,
+            index._processed_urls)  # linked from simple index (no rel)
+        self.assertIn("%s/foobar-0.1.tar.gz" % server.full_address,
+            index._processed_urls)  # linked from simple index (rel)
+        self.assertIn("%s/foobar-2.0.tar.gz" % server.full_address,
+            index._processed_urls)  # linked from external homepage (rel)
 
 
 def test_suite():

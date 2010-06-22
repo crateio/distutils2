@@ -36,6 +36,7 @@ URL_SCHEME = re.compile('([-+.a-z0-9]{2,}):', re.I).match
 # This pattern matches a character entity reference (a decimal numeric
 # references, a hexadecimal numeric reference, or a named reference).
 ENTITY_SUB = re.compile(r'&(#(\d+|x[\da-fA-F]+)|[\w.:-]+);?').sub
+REL = re.compile("""<([^>]*\srel\s*=\s*['"]?([^'">]+)[^>]*)>""", re.I)
 
 
 def socket_timeout(timeout=SOCKET_TIMEOUT):
@@ -170,30 +171,60 @@ class SimpleIndex(object):
         self._distributions[dist.name].append(dist)
         return self._distributions[dist.name]
 
-    def _process_url(self, url, project_name=None, follow_links=True):
+    def _process_url(self, url, project_name=None,follow_links=True, 
+        filter_rel=False):
         """Process an url and search for distributions packages.
 
         :param url: the url to analyse
         :param project_name: the project name we are searching for.
-        :param follow_links: We do not want to follow links more than from one
+        :param follow_links: Do not want to follow links more than from one
         level. This parameter tells if we want to follow the links we find (eg.
         run recursively this method on it)
         """
         f = self._open_url(url)
-        base = f.url
-        self._processed_urls.append(url)
-        for match in HREF.finditer(f.read()):
-            link = urlparse.urljoin(base, self._htmldecode(match.group(1)))
-            if link not in self._processed_urls:
-                if self._is_distribution(link):
-                    # it's a distribution, so create a dist object
-                    self._processed_urls.append(link)
-                    self._register_dist(PyPIDistribution.from_url(link,
-                        project_name))
-                else:
-                    if self._is_browsable(link) and follow_links:
-                        self._process_url(link, project_name,
-                            follow_links=False)
+        base_url = f.url
+        if url not in self._processed_urls:
+            self._processed_urls.append(url)
+            link_matcher = self._get_link_matcher(url)
+            for link, is_download in link_matcher(f.read(), base_url):
+                if link not in self._processed_urls:
+                    if self._is_distribution(link) or is_download:
+                        # it's a distribution, so create a dist object
+                        self._processed_urls.append(link)
+                        self._register_dist(PyPIDistribution.from_url(link,
+                            project_name))
+                    else:
+                        if self._is_browsable(link) and follow_links:
+                            self._process_url(link, project_name,
+                                follow_links=False)
+    
+    def _get_link_matcher(self, url):
+        """Returns the right link matcher function of the given url
+        """
+        if self.index_url in url:
+            return self._simple_link_finder
+        else:
+            return self._default_link_finder
+
+    def _simple_link_finder(self, content, base_url):
+        """Yield all links with a rel="download" or rel="homepage".
+
+        This matches the simple index requirements for matching links
+        """
+        for match in REL.finditer(content):
+            tag, rel = match.groups()
+            rels = map(str.strip, rel.lower().split(','))
+            if 'homepage' in rels or 'download' in rels:
+                for match in HREF.finditer(tag):
+                    yield (urlparse.urljoin(base_url, 
+                        self._htmldecode(match.group(1))), "downloads" in rels)
+
+    def _default_link_finder(self, content, base_url):
+        """Yield all links found on the page.
+        """
+        for match in HREF.finditer(content):
+            yield (urlparse.urljoin(base_url, 
+                self._htmldecode(match.group(1))), False)
 
     def _process_pypi_page(self, name):
         """Find and process a PyPI page for the given project name.
