@@ -5,7 +5,7 @@ Contributors
 Distutils2 is a project that was started and that is maintained by
 Tarek Ziadé, and many people are contributing to the project.
 
-If you did, please add your name below in alphabetical order !
+If you did, please add your name below in alphabetical order!
 
 Thanks to:
 
@@ -15,6 +15,8 @@ Thanks to:
 - Nicolas Cadou
 - Josip Djolonga
 - Yannick Gringas
+- Jeremy Kloth
+- Martin von Löwis
 - Carl Meyer
 - Michael Mulich
 - George Peris
@@ -22,5 +24,3 @@ Thanks to:
 - Erik Rose
 - Brian Rosner
 - Alexandre Vassalotti
-- Martin von Löwis
-
