@@ -31,7 +31,7 @@ class CCompilerTestCase(support.EnvironGuard, unittest.TestCase):
         opts = gen_lib_options(compiler, libdirs, runlibdirs, libs)
         wanted = ['-Llib1', '-Llib2', '-cool', '-Rrunlib1', 'found',
                   '-lname2']
-        self.assertEquals(opts, wanted)
+        self.assertEqual(opts, wanted)
 
     def test_customize_compiler(self):
 
@@ -51,7 +51,7 @@ class CCompilerTestCase(support.EnvironGuard, unittest.TestCase):
 
         comp = compiler()
         customize_compiler(comp)
-        self.assertEquals(comp.exes['archiver'], 'my_ar -arflags')
+        self.assertEqual(comp.exes['archiver'], 'my_ar -arflags')
 
 def test_suite():
     return unittest.makeSuite(CCompilerTestCase)

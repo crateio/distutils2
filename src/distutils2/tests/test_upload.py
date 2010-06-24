@@ -80,7 +80,7 @@ class uploadTestCase(PyPIRCCommandTestCase):
         for attr, expected in (('username', 'me'), ('password', 'secret'),
                                ('realm', 'pypi'),
                                ('repository', 'http://pypi.python.org/pypi')):
-            self.assertEquals(getattr(cmd, attr), expected)
+            self.assertEqual(getattr(cmd, attr), expected)
 
     def test_saved_password(self):
         # file with no password
@@ -90,14 +90,14 @@ class uploadTestCase(PyPIRCCommandTestCase):
         dist = Distribution()
         cmd = upload(dist)
         cmd.finalize_options()
-        self.assertEquals(cmd.password, None)
+        self.assertEqual(cmd.password, None)
 
         # make sure we get it as well, if another command
         # initialized it at the dist level
         dist.password = 'xxx'
         cmd = upload(dist)
         cmd.finalize_options()
-        self.assertEquals(cmd.password, 'xxx')
+        self.assertEqual(cmd.password, 'xxx')
 
     def test_upload(self):
         tmp = self.mkdtemp()
@@ -118,8 +118,8 @@ class uploadTestCase(PyPIRCCommandTestCase):
         headers = dict(self.last_open.req.headers)
         self.assertTrue(int(headers['Content-length']) < 2000)
         self.assertTrue(headers['Content-type'].startswith('multipart/form-data'))
-        self.assertEquals(self.last_open.req.get_method(), 'POST')
-        self.assertEquals(self.last_open.req.get_full_url(),
+        self.assertEqual(self.last_open.req.get_method(), 'POST')
+        self.assertEqual(self.last_open.req.get_full_url(),
                           'http://pypi.python.org/pypi')
         self.assertTrue('xxx' in self.last_open.req.data)
         auth = self.last_open.req.headers['Authorization']

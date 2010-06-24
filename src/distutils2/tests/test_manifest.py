@@ -44,7 +44,7 @@ class ManifestTestCase(support.TempdirManager,
 
         # the manifest should have been read
         # and 3 warnings issued (we ddidn't provided the files)
-        self.assertEquals(len(warns), 3)
+        self.assertEqual(len(warns), 3)
         for warn in warns:
             self.assertIn('warning: no files found matching', warn)
 

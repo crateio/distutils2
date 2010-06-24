@@ -71,11 +71,11 @@ class DistributionTestCase(support.TempdirManager,
         sys.argv.append("build")
 
         __, stdout = captured_stdout(self.create_distribution, files)
-        self.assertEquals(stdout, '')
+        self.assertEqual(stdout, '')
         distutils2.dist.DEBUG = True
         try:
             __, stdout = captured_stdout(self.create_distribution, files)
-            self.assertEquals(stdout, '')
+            self.assertEqual(stdout, '')
         finally:
             distutils2.dist.DEBUG = False
 
@@ -174,7 +174,7 @@ class DistributionTestCase(support.TempdirManager,
         finally:
             warnings.warn = old_warn
 
-        self.assertEquals(len(warns), 0)
+        self.assertEqual(len(warns), 0)
 
     def test_finalize_options(self):
 
@@ -185,20 +185,20 @@ class DistributionTestCase(support.TempdirManager,
         dist.finalize_options()
 
         # finalize_option splits platforms and keywords
-        self.assertEquals(dist.metadata['platform'], ['one', 'two'])
-        self.assertEquals(dist.metadata['keywords'], ['one', 'two'])
+        self.assertEqual(dist.metadata['platform'], ['one', 'two'])
+        self.assertEqual(dist.metadata['keywords'], ['one', 'two'])
 
     def test_get_command_packages(self):
         dist = Distribution()
-        self.assertEquals(dist.command_packages, None)
+        self.assertEqual(dist.command_packages, None)
         cmds = dist.get_command_packages()
-        self.assertEquals(cmds, ['distutils2.command'])
-        self.assertEquals(dist.command_packages,
+        self.assertEqual(cmds, ['distutils2.command'])
+        self.assertEqual(dist.command_packages,
                           ['distutils2.command'])
 
         dist.command_packages = 'one,two'
         cmds = dist.get_command_packages()
-        self.assertEquals(cmds, ['distutils2.command', 'one', 'two'])
+        self.assertEqual(cmds, ['distutils2.command', 'one', 'two'])
 
 
     def test_announce(self):
@@ -238,7 +238,7 @@ class DistributionTestCase(support.TempdirManager,
             os.path.expanduser = old_expander
 
         # make sure --no-user-cfg disables the user cfg file
-        self.assertEquals(len(all_files)-1, len(files))
+        self.assertEqual(len(all_files)-1, len(files))
 
 
 class MetadataTestCase(support.TempdirManager, support.EnvironGuard,
@@ -365,8 +365,8 @@ class MetadataTestCase(support.TempdirManager, support.EnvironGuard,
     def test_fix_help_options(self):
         help_tuples = [('a', 'b', 'c', 'd'), (1, 2, 3, 4)]
         fancy_options = fix_help_options(help_tuples)
-        self.assertEquals(fancy_options[0], ('a', 'b', 'c'))
-        self.assertEquals(fancy_options[1], (1, 2, 3))
+        self.assertEqual(fancy_options[0], ('a', 'b', 'c'))
+        self.assertEqual(fancy_options[1], (1, 2, 3))
 
     def test_show_help(self):
         # smoke test, just makes sure some help is displayed
@@ -412,14 +412,14 @@ class MetadataTestCase(support.TempdirManager, support.EnvironGuard,
         PKG_INFO.seek(0)
 
         metadata.read_file(PKG_INFO)
-        self.assertEquals(metadata['name'], "package")
-        self.assertEquals(metadata['version'], "1.0")
-        self.assertEquals(metadata['summary'], "xxx")
-        self.assertEquals(metadata['download_url'], 'http://example.com')
-        self.assertEquals(metadata['keywords'], ['one', 'two'])
-        self.assertEquals(metadata['platform'], [])
-        self.assertEquals(metadata['obsoletes'], [])
-        self.assertEquals(metadata['requires-dist'], ['foo'])
+        self.assertEqual(metadata['name'], "package")
+        self.assertEqual(metadata['version'], "1.0")
+        self.assertEqual(metadata['summary'], "xxx")
+        self.assertEqual(metadata['download_url'], 'http://example.com')
+        self.assertEqual(metadata['keywords'], ['one', 'two'])
+        self.assertEqual(metadata['platform'], [])
+        self.assertEqual(metadata['obsoletes'], [])
+        self.assertEqual(metadata['requires-dist'], ['foo'])
 
 def test_suite():
     suite = unittest.TestSuite()
