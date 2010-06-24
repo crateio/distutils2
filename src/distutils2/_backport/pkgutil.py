@@ -20,14 +20,17 @@ except ImportError:
 import re
 import warnings
 
+
 __all__ = [
     'get_importer', 'iter_importers', 'get_loader', 'find_loader',
     'walk_packages', 'iter_modules', 'get_data',
     'ImpImporter', 'ImpLoader', 'read_code', 'extend_path',
     'Distribution', 'EggInfoDistribution', 'distinfo_dirname',
     'get_distributions', 'get_distribution', 'get_file_users',
-    'provides_distribution', 'obsoletes_distribution',
+    'provides_distribution', 'obsoletes_distribution', 'set_cache_enabled',
+    'clear_cache'
 ]
+
 
 def read_code(stream):
     # This helper is needed in order for the :pep:`302` emulation to
@@ -186,8 +189,8 @@ class ImpImporter:
     searches the current ``sys.path``, plus any modules that are frozen
     or built-in.
 
-    Note that :class:`ImpImporter` does not currently support being used by placement
-    on ``sys.meta_path``.
+    Note that :class:`ImpImporter` does not currently support being used by
+    placement on ``sys.meta_path``.
     """
 
     def __init__(self, path=None):
@@ -576,7 +579,8 @@ def get_data(package, resource):
     argument should be the name of a package, in standard module format
     (``foo.bar``). The resource argument should be in the form of a relative
     filename, using ``'/'`` as the path separator. The parent directory name
-    ``'..'`` is not allowed, and nor is a rooted name (starting with a ``'/'``).
+    ``'..'`` is not allowed, and nor is a rooted name (starting with a
+    ``'/'``).
 
     The function returns a binary string, which is the contents of the
     specified resource.
@@ -617,43 +621,84 @@ _cache_name = {} # maps names to Distribution instances
 _cache_name_egg = {} # maps names to EggInfoDistribution instances
 _cache_path = {} # maps paths to Distribution instances
 _cache_path_egg = {} # maps paths to EggInfoDistribution instances
-_cache_generated = False
+_cache_generated = False # indicates if .dist-info distributions are cached
+_cache_generated_egg = False # indicates if .dist-info and .egg are cached
+_cache_enabled = True
+
+
+def set_cache_enabled(flag):
+    """
+    Enables or disables the internal cache depending on *flag*.
+
+    Note that this function will not clear the cache in any case, for that
+    functionality see :func:`clear_cache`.
+
+    :parameter flag:
+    :type flag: boolean
+    """
+    global _cache_enabled
+
+    _cache_enabled = flag
+
 
 def clear_cache():
+    """ Clears the internal cache. """
     global _cache_name, _cache_name_egg, cache_path, _cache_path_egg, \
-           _cache_generated
+           _cache_generated, _cache_generated_egg
 
     _cache_name = {}
     _cache_name_egg = {}
     _cache_path = {}
     _cache_path_egg = {}
     _cache_generated = False
+    _cache_generated_egg = False
 
-def _generate_cache():
-    clear_cache()
 
-    global _cache_generated
+def _yield_distributions(dist, egg):
+    """
+    Yield .dist-info and .egg(-info) distributions, based on the arguments
 
+    :parameter dist: yield .dist-info distributions
+    :parameter egg: yield .egg(-info) distributions
+    """
     for path in sys.path:
         realpath = os.path.realpath(path)
         if not os.path.isdir(realpath):
             continue
         for dir in os.listdir(realpath):
             dist_path = os.path.join(realpath, dir)
-            if dir.endswith('.dist-info'):
-                dist = Distribution(dist_path)
-                _cache_path[dist_path] = dist
+            if dist and dir.endswith('.dist-info'):
+                yield Distribution(dist_path)
+            elif egg and (dir.endswith('.egg-info') or
+                          dir.endswith('.egg')):
+                yield EggInfoDistribution(dist_path)
+
+
+def _generate_cache(use_egg_info=False):
+    global _cache_generated, _cache_generated_egg
+
+    if _cache_generated_egg or (_cache_generated and not use_egg_info):
+        return
+    else:
+        gen_dist = not _cache_generated
+        gen_egg = use_egg_info
+
+        for dist in _yield_distributions(gen_dist, gen_egg):
+            if isinstance(dist, Distribution):
+                _cache_path[dist.path] = dist
                 if not dist.name in _cache_name:
                     _cache_name[dist.name] = []
                 _cache_name[dist.name].append(dist)
-            elif dir.endswith('.egg-info') or dir.endswith('.egg'):
-                dist = EggInfoDistribution(dist_path)
-                _cache_path_egg[dist_path] = dist
+            else:
+                _cache_path_egg[dist.path] = dist
                 if not dist.name in _cache_name_egg:
                     _cache_name_egg[dist.name] = []
                 _cache_name_egg[dist.name].append(dist)
-    _cache_generated = True
 
+        if gen_dist:
+            _cache_generated = True
+        if gen_egg:
+            _cache_generated_egg = True
 
 
 class Distribution(object):
@@ -669,11 +714,12 @@ class Distribution(object):
     """A :class:`distutils2.metadata.DistributionMetadata` instance loaded with
     the distribution's ``METADATA`` file."""
     requested = False
-    """A boolean that indicates whether the ``REQUESTED`` metadata file is present
-    (in other words, whether the package was installed by user request)."""
+    """A boolean that indicates whether the ``REQUESTED`` metadata file is
+    present (in other words, whether the package was installed by user
+    request)."""
 
     def __init__(self, path):
-        if path in _cache_path:
+        if _cache_enabled and path in _cache_path:
             self.metadata = _cache_path[path].metadata
         else:
             metadata_path = os.path.join(path, 'METADATA')
@@ -682,7 +728,7 @@ class Distribution(object):
         self.path = path
         self.name = self.metadata['name']
 
-        if not path in _cache_path:
+        if _cache_enabled and not path in _cache_path:
             _cache_path[path] = self
 
     def _get_records(self, local=False):
@@ -802,7 +848,7 @@ class EggInfoDistribution(object):
     def __init__(self, path):
         self.path = path
 
-        if path in _cache_path_egg:
+        if _cache_enabled and path in _cache_path_egg:
             self.metadata = _cache_path_egg[path].metadata
             self.name = self.metadata['Name']
             return
@@ -891,7 +937,8 @@ class EggInfoDistribution(object):
             else:
                 self.metadata['Requires'] += reqs
 
-            _cache_path_egg[path] = self
+        if _cache_enabled:
+            _cache_path_egg[self.path] = self
 
     def get_installed_files(self, local=False):
         return []
@@ -903,10 +950,12 @@ class EggInfoDistribution(object):
         return isinstance(other, EggInfoDistribution) and \
                self.path == other.path
 
+
 def _normalize_dist_name(name):
     """Returns a normalized name from the given *name*.
     :rtype: string"""
     return name.replace('-', '_')
+
 
 def distinfo_dirname(name, version):
     """
@@ -946,13 +995,19 @@ def get_distributions(use_egg_info=False):
 
     :rtype: iterator of :class:`Distribution` and :class:`EggInfoDistribution`
             instances"""
-    if not _cache_generated:
-        _generate_cache()
-    for dist in _cache_path.itervalues():
-        yield dist
-    if use_egg_info:
-        for dist in _cache_path_egg.itervalues():
+    if not _cache_enabled:
+        for dist in _yield_distributions(use_egg_info):
             yield dist
+    else:
+        _generate_cache(use_egg_info)
+
+        for dist in _cache_path.itervalues():
+            yield dist
+
+        if use_egg_info:
+            for dist in _cache_path_egg.itervalues():
+                yield dist
+
 
 def get_distribution(name, use_egg_info=False):
     """
@@ -970,15 +1025,19 @@ def get_distribution(name, use_egg_info=False):
     value is expected. If the directory is not found, ``None`` is returned.
 
     :rtype: :class:`Distribution` or :class:`EggInfoDistribution` or None"""
-    if not _cache_generated:
-        _generate_cache()
-
-    if name in _cache_name:
-        return _cache_name[name][0]
-    elif use_egg_info and name in _cache_name_egg:
-        return _cache_name_egg[name][0]
+    if not _cache_enabled:
+        for dist in _yield_distributions(use_egg_info):
+            if dist.name == name:
+                return dist
     else:
-        return None
+        _generate_cache(use_egg_info)
+
+        if name in _cache_name:
+            return _cache_name[name][0]
+        elif use_egg_info and name in _cache_name_egg:
+            return _cache_name_egg[name][0]
+        else:
+            return None
 
 
 def obsoletes_distribution(name, version=None, use_egg_info=False):
