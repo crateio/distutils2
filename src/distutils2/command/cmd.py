@@ -19,7 +19,7 @@ try:
 except ImportError:
     from distutils2._backport.shutil import make_archive
 
-class Command:
+class Command(object):
     """Abstract base class for defining command classes, the "worker bees"
     of the Distutils.  A useful analogy for command classes is to think of
     them as subroutines with local variables called "options".  The options

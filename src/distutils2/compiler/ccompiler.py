@@ -76,7 +76,7 @@ def customize_compiler(compiler):
 
         compiler.shared_lib_extension = so_ext
 
-class CCompiler:
+class CCompiler(object):
     """Abstract base class to define the interface that must be implemented
     by real compiler classes.  Also has some utility methods used by
     several compiler classes.

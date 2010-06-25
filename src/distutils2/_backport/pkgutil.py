@@ -179,7 +179,7 @@ def iter_importer_modules(importer, prefix=''):
 iter_importer_modules = simplegeneric(iter_importer_modules)
 
 
-class ImpImporter:
+class ImpImporter(object):
     """:pep:`302` Importer that wraps Python's "classic" import algorithm
 
     ``ImpImporter(dirname)`` produces a :pep:`302` importer that searches that
@@ -242,7 +242,7 @@ class ImpImporter:
                 yield prefix + modname, ispkg
 
 
-class ImpLoader:
+class ImpLoader(object):
     """:pep:`302` Loader that wraps Python's "classic" import algorithm """
 
     code = source = None
@@ -732,6 +732,9 @@ class Distribution(object):
     def __eq__(self, other):
         return isinstance(other, Distribution) and self.path == other.path
 
+    # See http://docs.python.org/reference/datamodel#object.__hash__
+    __hash__ = object.__hash__
+
 
 class EggInfoDistribution(object):
     """Created with the *path* of the ``.egg-info`` directory or file provided
@@ -846,6 +849,9 @@ class EggInfoDistribution(object):
     def __eq__(self, other):
         return isinstance(other, EggInfoDistribution) and \
                self.path == other.path
+
+    # See http://docs.python.org/reference/datamodel#object.__hash__
+    __hash__ = object.__hash__
 
 
 def _normalize_dist_name(name):

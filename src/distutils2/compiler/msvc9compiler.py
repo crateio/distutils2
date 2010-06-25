@@ -50,7 +50,7 @@ PLAT_TO_VCVARS = {
     'win-ia64' : 'ia64',
 }
 
-class Reg:
+class Reg(object):
     """Helper class to read values from the registry
     """
 
@@ -112,7 +112,7 @@ class Reg:
         return s
     convert_mbcs = staticmethod(convert_mbcs)
 
-class MacroExpander:
+class MacroExpander(object):
 
     def __init__(self, version):
         self.macros = {}

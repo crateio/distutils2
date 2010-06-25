@@ -104,7 +104,7 @@ def convert_mbcs(s):
             pass
     return s
 
-class MacroExpander:
+class MacroExpander(object):
 
     def __init__(self, version):
         self.macros = {}

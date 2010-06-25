@@ -11,7 +11,7 @@ FATAL = 5
 
 import sys
 
-class Log:
+class Log(object):
 
     def __init__(self, threshold=WARN):
         self.threshold = threshold

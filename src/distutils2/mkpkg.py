@@ -675,7 +675,7 @@ def buildTroveDict(troveList):
 troveDict = buildTroveDict(troveList)
 
 
-class SetupClass:
+class SetupClass(object):
     def __init__(self):
         self.config = None
         self.classifierDict = {}
