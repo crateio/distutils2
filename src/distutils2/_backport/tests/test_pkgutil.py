@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """Tests for PEP 376 pkgutil functionality"""
-import unittest2
 import sys
 import os
 import csv
@@ -14,6 +13,7 @@ except ImportError:
     from md5 import md5
 
 from test.test_support import run_unittest, TESTFN
+from distutils2.tests.support import unittest
 
 from distutils2._backport import pkgutil
 
@@ -23,13 +23,15 @@ from distutils2._backport import pkgutil
 # TODO Add a test for absolute pathed RECORD items (e.g. /etc/myapp/config.ini)
 
 # Adapted from Python 2.7's trunk
-class TestPkgUtilData(unittest2.TestCase):
+class TestPkgUtilData(unittest.TestCase):
 
     def setUp(self):
+        super(TestPkgUtilData, self).setUp()
         self.dirname = tempfile.mkdtemp()
         sys.path.insert(0, self.dirname)
 
     def tearDown(self):
+        super(TestPkgUtilData, self).tearDown()
         del sys.path[0]
         shutil.rmtree(self.dirname)
 
@@ -91,7 +93,7 @@ class TestPkgUtilData(unittest2.TestCase):
         del sys.modules[pkg]
 
 # Adapted from Python 2.7's trunk
-class TestPkgUtilPEP302(unittest2.TestCase):
+class TestPkgUtilPEP302(unittest.TestCase):
 
     class MyTestLoader(object):
         def load_module(self, fullname):
@@ -113,9 +115,11 @@ class TestPkgUtilPEP302(unittest2.TestCase):
             return TestPkgUtilPEP302.MyTestLoader()
 
     def setUp(self):
+        super(TestPkgUtilPEP302, self).setUp()
         sys.meta_path.insert(0, self.MyTestImporter())
 
     def tearDown(self):
+        super(TestPkgUtilPEP302, self).setUp()
         del sys.meta_path[0]
 
     def test_getdata_pep302(self):
@@ -134,10 +138,11 @@ class TestPkgUtilPEP302(unittest2.TestCase):
         del sys.modules['foo']
 
 
-class TestPkgUtilDistribution(unittest2.TestCase):
+class TestPkgUtilDistribution(unittest.TestCase):
     """Tests the pkgutil.Distribution class"""
 
     def setUp(self):
+        super(TestPkgUtilDistribution, self).setUp()
         self.fake_dists_path = os.path.abspath(
             os.path.join(os.path.dirname(__file__), 'fake_dists'))
 
@@ -182,6 +187,7 @@ class TestPkgUtilDistribution(unittest2.TestCase):
             self.records[distinfo_dir] = dict(record_data)
 
     def tearDown(self):
+        super(TestPkgUtilDistribution, self).setUp()
         self.records = None
         for distinfo_dir in self.distinfo_dirs:
             record_file = os.path.join(distinfo_dir, 'RECORD')
@@ -288,10 +294,11 @@ class TestPkgUtilDistribution(unittest2.TestCase):
         self.assertEqual(sorted(found), sorted(distinfo_record_paths))
 
 
-class TestPkgUtilPEP376(unittest2.TestCase):
+class TestPkgUtilPEP376(unittest.TestCase):
     """Tests for the new functionality added in PEP 376."""
 
     def setUp(self):
+        super(TestPkgUtilPEP376, self).setUp()
         # Setup the path environment with our fake distributions
         current_path = os.path.abspath(os.path.dirname(__file__))
         self.sys_path = sys.path[:]
@@ -299,6 +306,7 @@ class TestPkgUtilPEP376(unittest2.TestCase):
         sys.path[0:0] = [self.fake_dists_path]
 
     def tearDown(self):
+        super(TestPkgUtilPEP376, self).setUp()
         sys.path[:] = self.sys_path
 
     def test_distinfo_dirname(self):
@@ -527,8 +535,8 @@ class TestPkgUtilPEP376(unittest2.TestCase):
 
 
 def test_suite():
-    suite = unittest2.TestSuite()
-    testcase_loader = unittest2.loader.defaultTestLoader.loadTestsFromTestCase
+    suite = unittest.TestSuite()
+    testcase_loader = unittest.loader.defaultTestLoader.loadTestsFromTestCase
     suite.addTest(testcase_loader(TestPkgUtilData))
     suite.addTest(testcase_loader(TestPkgUtilDistribution))
     suite.addTest(testcase_loader(TestPkgUtilPEP302))
