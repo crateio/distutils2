@@ -2,8 +2,9 @@
 
 The only module that needs to be imported to use the Distutils; provides
 the 'setup' function (which is to be called from the setup script).  Also
-indirectly provides the Distribution and Command classes, although they are
-really defined in distutils2.dist and distutils2.cmd.
+exports useful classes so that setup scripts can import them from here
+although they are really defined in other modules: Distribution, Command,
+PyPIRCommand, Extension.
 """
 
 __revision__ = "$Id: core.py 77704 2010-01-23 09:23:15Z tarek.ziade $"
