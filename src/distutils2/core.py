@@ -94,11 +94,7 @@ def setup(**attrs):
 
     # Determine the distribution class -- either caller-supplied or
     # our Distribution (see below).
-    klass = attrs.get('distclass')
-    if klass:
-        del attrs['distclass']
-    else:
-        klass = Distribution
+    distclass = attrs.pop('distclass', Distribution)
 
     if 'script_name' not in attrs:
         attrs['script_name'] = os.path.basename(sys.argv[0])
@@ -108,7 +104,7 @@ def setup(**attrs):
     # Create the Distribution instance, using the remaining arguments
     # (ie. everything except distclass) to initialize it
     try:
-        _setup_distribution = dist = klass(attrs)
+        _setup_distribution = dist = distclass(attrs)
     except DistutilsSetupError, msg:
         if 'name' in attrs:
             raise SystemExit, "error in %s setup command: %s" % \

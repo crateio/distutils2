@@ -1048,7 +1048,7 @@ def new_compiler(plat=None, compiler=None, verbose=0, dry_run=0, force=0):
         module_name = "distutils2.compiler." + module_name
         __import__ (module_name)
         module = sys.modules[module_name]
-        klass = vars(module)[class_name]
+        cls = vars(module)[class_name]
     except ImportError:
         raise DistutilsModuleError, \
               "can't compile C/C++ code: unable to load module '%s'" % \
@@ -1061,7 +1061,7 @@ def new_compiler(plat=None, compiler=None, verbose=0, dry_run=0, force=0):
     # XXX The None is necessary to preserve backwards compatibility
     # with classes that expect verbose to be the first positional
     # argument.
-    return klass(None, dry_run, force)
+    return cls(None, dry_run, force)
 
 
 def gen_preprocess_options(macros, include_dirs):

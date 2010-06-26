@@ -129,13 +129,13 @@ class DistributionTestCase(support.TempdirManager,
         # Check DistributionMetadata handling of Unicode fields
         tmp_dir = self.mkdtemp()
         my_file = os.path.join(tmp_dir, 'f')
-        klass = Distribution
+        cls = Distribution
 
-        dist = klass(attrs={'author': u'Mister Café',
-                            'name': 'my.package',
-                            'maintainer': u'Café Junior',
-                            'summary': u'Café torréfié',
-                            'description': u'Héhéhé'})
+        dist = cls(attrs={'author': u'Mister Café',
+                          'name': 'my.package',
+                          'maintainer': u'Café Junior',
+                          'summary': u'Café torréfié',
+                          'description': u'Héhéhé'})
 
 
         # let's make sure the file can be written
@@ -144,11 +144,11 @@ class DistributionTestCase(support.TempdirManager,
         dist.metadata.write_file(open(my_file, 'w'))
 
         # regular ascii is of course always usable
-        dist = klass(attrs={'author': 'Mister Cafe',
-                            'name': 'my.package',
-                            'maintainer': 'Cafe Junior',
-                            'summary': 'Cafe torrefie',
-                            'description': 'Hehehe'})
+        dist = cls(attrs={'author': 'Mister Cafe',
+                          'name': 'my.package',
+                          'maintainer': 'Cafe Junior',
+                          'summary': 'Cafe torrefie',
+                          'description': 'Hehehe'})
 
         my_file2 = os.path.join(tmp_dir, 'f2')
         dist.metadata.write_file(open(my_file, 'w'))
@@ -156,7 +156,7 @@ class DistributionTestCase(support.TempdirManager,
     def test_empty_options(self):
         # an empty options dictionary should not stay in the
         # list of attributes
-        klass = Distribution
+        cls = Distribution
 
         # catching warnings
         warns = []
@@ -166,11 +166,11 @@ class DistributionTestCase(support.TempdirManager,
         old_warn = warnings.warn
         warnings.warn = _warn
         try:
-            dist = klass(attrs={'author': 'xxx',
-                                'name': 'xxx',
-                                'version': 'xxx',
-                                'url': 'xxxx',
-                                'options': {}})
+            dist = cls(attrs={'author': 'xxx',
+                              'name': 'xxx',
+                              'version': 'xxx',
+                              'url': 'xxxx',
+                              'options': {}})
         finally:
             warnings.warn = old_warn
 

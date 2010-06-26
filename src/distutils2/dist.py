@@ -627,16 +627,16 @@ Common commands: (see '--help-commands' for more)
 
         for command in self.commands:
             if isinstance(command, type) and issubclass(command, Command):
-                klass = command
+                cls = command
             else:
-                klass = self.get_command_class(command)
-            if (hasattr(klass, 'help_options') and
-                isinstance(klass.help_options, list)):
-                parser.set_option_table(klass.user_options +
-                                        fix_help_options(klass.help_options))
+                cls = self.get_command_class(command)
+            if (hasattr(cls, 'help_options') and
+                isinstance(cls.help_options, list)):
+                parser.set_option_table(cls.user_options +
+                                        fix_help_options(cls.help_options))
             else:
-                parser.set_option_table(klass.user_options)
-            parser.print_help("Options for '%s' command:" % klass.__name__)
+                parser.set_option_table(cls.user_options)
+            parser.print_help("Options for '%s' command:" % cls.__name__)
             print('')
 
         print(gen_usage(self.script_name))
@@ -688,11 +688,11 @@ Common commands: (see '--help-commands' for more)
         print(header + ":")
 
         for cmd in commands:
-            klass = self.cmdclass.get(cmd)
-            if not klass:
-                klass = self.get_command_class(cmd)
+            cls = self.cmdclass.get(cmd)
+            if not cls:
+                cls = self.get_command_class(cmd)
             try:
-                description = klass.description
+                description = cls.description
             except AttributeError:
                 description = "(no description available)"
 
@@ -754,11 +754,11 @@ Common commands: (see '--help-commands' for more)
 
         rv = []
         for cmd in (std_commands + extra_commands):
-            klass = self.cmdclass.get(cmd)
-            if not klass:
-                klass = self.get_command_class(cmd)
+            cls = self.cmdclass.get(cmd)
+            if not cls:
+                cls = self.get_command_class(cmd)
             try:
-                description = klass.description
+                description = cls.description
             except AttributeError:
                 description = "(no description available)"
             rv.append((cmd, description))
@@ -790,13 +790,13 @@ Common commands: (see '--help-commands' for more)
         Raises DistutilsModuleError if the expected module could not be
         found, or if that module does not define the expected class.
         """
-        klass = self.cmdclass.get(command)
-        if klass:
-            return klass
+        cls = self.cmdclass.get(command)
+        if cls:
+            return cls
 
         for pkgname in self.get_command_packages():
             module_name = "%s.%s" % (pkgname, command)
-            klass_name = command
+            class_name = command
 
             try:
                 __import__ (module_name)
@@ -805,14 +805,14 @@ Common commands: (see '--help-commands' for more)
                 continue
 
             try:
-                klass = getattr(module, klass_name)
+                cls = getattr(module, class_name)
             except AttributeError:
                 raise DistutilsModuleError, \
                       "invalid command '%s' (no class '%s' in module '%s')" \
-                      % (command, klass_name, module_name)
+                      % (command, class_name, module_name)
 
-            self.cmdclass[command] = klass
-            return klass
+            self.cmdclass[command] = cls
+            return cls
 
         raise DistutilsModuleError("invalid command '%s'" % command)
 
@@ -828,8 +828,8 @@ Common commands: (see '--help-commands' for more)
             log.debug("Distribution.get_command_obj(): " \
                       "creating '%s' command object" % command)
 
-            klass = self.get_command_class(command)
-            cmd_obj = self.command_obj[command] = klass(self)
+            cls = self.get_command_class(command)
+            cmd_obj = self.command_obj[command] = cls(self)
             self.have_run[command] = 0
 
             # Set any options that were supplied in config files
