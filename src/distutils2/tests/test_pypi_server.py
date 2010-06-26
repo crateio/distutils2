@@ -23,9 +23,9 @@ class PyPIServerTest(unittest.TestCase):
         self.assertEqual(len(server.requests), 1)
         handler, request_data = server.requests[-1]
         self.assertIn("Rock Around The Bunker", request_data)
-        self.assertTrue(handler.headers.dict.has_key("x-test-header"))
-        self.assertEqual(handler.headers.dict["x-test-header"], 
-            "Mister Iceberg")
+        self.assertIn("x-test-header", handler.headers.dict)
+        self.assertEqual(handler.headers.dict["x-test-header"],
+                         "Mister Iceberg")
         server.stop()
 
     def test_serve_static_content(self):

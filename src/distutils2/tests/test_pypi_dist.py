@@ -1,16 +1,16 @@
-"""Tests for the distutils2.pypi.dist module.
-"""
+"""Tests for the distutils2.pypi.dist module."""
+
+import os
+import shutil
+import tempfile
 
 from distutils2.tests.pypi_server import use_pypi_server
 from distutils2.tests.support import unittest
 from distutils2.version import VersionPredicate
 from distutils2.pypi.errors import MD5HashDoesNotMatch
-from distutils2.pypi.dist import PyPIDistribution as Dist, \
-    PyPIDistributions as Dists, split_archive_name
-
-import tempfile
-import os
-import shutil
+from distutils2.pypi.dist import (PyPIDistribution as Dist,
+                                  PyPIDistributions as Dists,
+                                  split_archive_name)
 
 
 class TestPyPIDistribution(unittest.TestCase):
