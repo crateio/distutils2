@@ -16,7 +16,7 @@ except ImportError:
 from ConfigParser import RawConfigParser
 
 from distutils2.errors import (DistutilsOptionError, DistutilsArgError,
-                              DistutilsModuleError, DistutilsClassError)
+                               DistutilsModuleError, DistutilsClassError)
 from distutils2.fancy_getopt import FancyGetopt, translate_longopt
 from distutils2.util import check_environ, strtobool
 from distutils2 import log

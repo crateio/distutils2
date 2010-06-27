@@ -13,7 +13,7 @@ import sys
 import os
 
 from distutils2.errors import (DistutilsSetupError, DistutilsArgError,
-                              DistutilsError, CCompilerError)
+                               DistutilsError, CCompilerError)
 from distutils2.util import grok_environment_error
 
 # Mainly import these so setup scripts can "from distutils2.core import" them.

@@ -10,7 +10,7 @@ import os
 import re
 
 from distutils2.errors import (CompileError, LinkError, UnknownFileError,
-                              DistutilsPlatformError, DistutilsModuleError)
+                               DistutilsPlatformError, DistutilsModuleError)
 from distutils2.spawn import spawn
 from distutils2.util import split_quoted, execute, newer_group
 from distutils2 import log

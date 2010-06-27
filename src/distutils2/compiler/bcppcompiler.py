@@ -16,7 +16,7 @@ __revision__ = "$Id: bcppcompiler.py 76956 2009-12-21 01:22:46Z tarek.ziade $"
 import os
 
 from distutils2.errors import (DistutilsExecError, CompileError, LibError,
-                              LinkError, UnknownFileError)
+                               LinkError, UnknownFileError)
 from distutils2.compiler.ccompiler import CCompiler, gen_preprocess_options
 from distutils2.file_util import write_file
 from distutils2.dep_util import newer
