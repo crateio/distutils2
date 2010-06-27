@@ -119,8 +119,8 @@ class TestPkgUtilPEP302(unittest.TestCase):
         sys.meta_path.insert(0, self.MyTestImporter())
 
     def tearDown(self):
-        super(TestPkgUtilPEP302, self).setUp()
         del sys.meta_path[0]
+        super(TestPkgUtilPEP302, self).tearDown()
 
     def test_getdata_pep302(self):
         # Use a dummy importer/loader
@@ -187,11 +187,11 @@ class TestPkgUtilDistribution(unittest.TestCase):
             self.records[distinfo_dir] = dict(record_data)
 
     def tearDown(self):
-        super(TestPkgUtilDistribution, self).setUp()
         self.records = None
         for distinfo_dir in self.distinfo_dirs:
             record_file = os.path.join(distinfo_dir, 'RECORD')
             open(record_file, 'w').close()
+        super(TestPkgUtilDistribution, self).tearDown()
 
     def test_instantiation(self):
         """Test the Distribution class's instantiation provides us with usable
@@ -306,8 +306,8 @@ class TestPkgUtilPEP376(unittest.TestCase):
         sys.path[0:0] = [self.fake_dists_path]
 
     def tearDown(self):
-        super(TestPkgUtilPEP376, self).setUp()
         sys.path[:] = self.sys_path
+        super(TestPkgUtilPEP376, self).tearDown()
 
     def test_distinfo_dirname(self):
         """Given a name and a version, we expect the distinfo_dirname function
