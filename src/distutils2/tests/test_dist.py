@@ -340,8 +340,10 @@ class MetadataTestCase(support.TempdirManager, support.EnvironGuard,
         temp_dir = self.mkdtemp()
         user_filename = os.path.join(temp_dir, user_filename)
         f = open(user_filename, 'w')
-        f.write('.')
-        f.close()
+        try:
+            f.write('.')
+        finally:
+            f.close()
 
         try:
             dist = Distribution()

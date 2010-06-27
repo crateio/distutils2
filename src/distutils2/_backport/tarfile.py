@@ -2003,8 +2003,10 @@ class TarFile(object):
         # Append the tar header and data to the archive.
         if tarinfo.isreg():
             f = bltn_open(name, "rb")
-            self.addfile(tarinfo, f)
-            f.close()
+            try:
+                self.addfile(tarinfo, f)
+            finally:
+                f.close()
 
         elif tarinfo.isdir():
             self.addfile(tarinfo)
@@ -2214,9 +2216,11 @@ class TarFile(object):
         """
         source = self.extractfile(tarinfo)
         target = bltn_open(targetpath, "wb")
-        copyfileobj(source, target)
-        source.close()
-        target.close()
+        try:
+            copyfileobj(source, target)
+        finally:
+            source.close()
+            target.close()
 
     def makeunknown(self, tarinfo, targetpath):
         """Make a file from a TarInfo object with an unknown type
@@ -2564,8 +2568,10 @@ def is_tarfile(name):
        are able to handle, else return False.
     """
     try:
-        t = open(name)
-        t.close()
+        try:
+            t = open(name)
+        finally:
+            t.close()
         return True
     except TarError:
         return False

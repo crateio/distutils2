@@ -64,9 +64,12 @@ class DistributionMetadataTestCase(unittest.TestCase):
         res.seek(0)
         res = res.read()
         f = open(PKG_INFO)
-        wanted = f.read()
+        try:
+            # XXX this is not used
+            wanted = f.read()
+        finally:
+            f.close()
         self.assertTrue('Keywords: keyring,password,crypt' in res)
-        f.close()
 
     def test_metadata_markers(self):
         # see if we can be platform-aware

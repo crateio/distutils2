@@ -46,15 +46,22 @@ class TestPkgUtilData(unittest.TestCase):
         os.mkdir(package_dir)
         # Empty init.py
         f = open(os.path.join(package_dir, '__init__.py'), "wb")
-        f.close()
+        try:
+            pass
+        finally:
+            f.close()
         # Resource files, res.txt, sub/res.txt
         f = open(os.path.join(package_dir, 'res.txt'), "wb")
-        f.write(RESOURCE_DATA)
-        f.close()
+        try:
+            f.write(RESOURCE_DATA)
+        finally:
+            f.close()
         os.mkdir(os.path.join(package_dir, 'sub'))
         f = open(os.path.join(package_dir, 'sub', 'res.txt'), "wb")
-        f.write(RESOURCE_DATA)
-        f.close()
+        try:
+            f.write(RESOURCE_DATA)
+        finally:
+            f.close()
 
         # Check we can read the resources
         res1 = pkgutil.get_data(pkg, 'res.txt')
@@ -74,13 +81,14 @@ class TestPkgUtilData(unittest.TestCase):
         # Make a package with some resources
         zip_file = os.path.join(self.dirname, zip)
         z = zipfile.ZipFile(zip_file, 'w')
-
-        # Empty init.py
-        z.writestr(pkg + '/__init__.py', "")
-        # Resource files, res.txt, sub/res.txt
-        z.writestr(pkg + '/res.txt', RESOURCE_DATA)
-        z.writestr(pkg + '/sub/res.txt', RESOURCE_DATA)
-        z.close()
+        try:
+            # Empty init.py
+            z.writestr(pkg + '/__init__.py', "")
+            # Resource files, res.txt, sub/res.txt
+            z.writestr(pkg + '/res.txt', RESOURCE_DATA)
+            z.writestr(pkg + '/sub/res.txt', RESOURCE_DATA)
+        finally:
+            z.close()
 
         # Check we can read the resources
         sys.path.insert(0, zip_file)

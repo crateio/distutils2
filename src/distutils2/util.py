@@ -358,34 +358,36 @@ def byte_compile(py_files, optimize=0, force=0, prefix=None, base_dir=None,
             else:
                 script = open(script_name, "w")
 
-            script.write("""\
+            try:
+                script.write("""\
 from distutils2.util import byte_compile
 files = [
 """)
 
-            # XXX would be nice to write absolute filenames, just for
-            # safety's sake (script should be more robust in the face of
-            # chdir'ing before running it).  But this requires abspath'ing
-            # 'prefix' as well, and that breaks the hack in build_lib's
-            # 'byte_compile()' method that carefully tacks on a trailing
-            # slash (os.sep really) to make sure the prefix here is "just
-            # right".  This whole prefix business is rather delicate -- the
-            # problem is that it's really a directory, but I'm treating it
-            # as a dumb string, so trailing slashes and so forth matter.
+                # XXX would be nice to write absolute filenames, just for
+                # safety's sake (script should be more robust in the face of
+                # chdir'ing before running it).  But this requires abspath'ing
+                # 'prefix' as well, and that breaks the hack in build_lib's
+                # 'byte_compile()' method that carefully tacks on a trailing
+                # slash (os.sep really) to make sure the prefix here is "just
+                # right".  This whole prefix business is rather delicate -- the
+                # problem is that it's really a directory, but I'm treating it
+                # as a dumb string, so trailing slashes and so forth matter.
 
-            #py_files = map(os.path.abspath, py_files)
-            #if prefix:
-            #    prefix = os.path.abspath(prefix)
+                #py_files = map(os.path.abspath, py_files)
+                #if prefix:
+                #    prefix = os.path.abspath(prefix)
 
-            script.write(",\n".join(map(repr, py_files)) + "]\n")
-            script.write("""
+                script.write(",\n".join(map(repr, py_files)) + "]\n")
+                script.write("""
 byte_compile(files, optimize=%r, force=%r,
              prefix=%r, base_dir=%r,
              verbose=%r, dry_run=0,
              direct=1)
 """ % (optimize, force, prefix, base_dir, verbose))
 
-            script.close()
+            finally:
+                script.close()
 
         cmd = [sys.executable, script_name]
         if optimize == 1:
@@ -534,10 +536,12 @@ def write_file(filename, contents):
     """Create a file with the specified name and write 'contents' (a
     sequence of strings without line terminators) to it.
     """
-    f = open(filename, "w")
-    for line in contents:
-        f.write(line + "\n")
-    f.close()
+    try:
+        f = open(filename, "w")
+        for line in contents:
+            f.write(line + "\n")
+    finally:
+        f.close()
 
 def _is_package(path):
     """Returns True if path is a package (a dir with an __init__ file."""
