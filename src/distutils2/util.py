@@ -363,7 +363,7 @@ def byte_compile(py_files, optimize=0, force=0, prefix=None, base_dir=None,
                 script = open(script_name, "w")
 
             script.write("""\
-from distutils.util import byte_compile
+from distutils2.util import byte_compile
 files = [
 """)
 
