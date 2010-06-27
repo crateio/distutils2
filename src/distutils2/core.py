@@ -4,7 +4,7 @@ The only module that needs to be imported to use the Distutils; provides
 the 'setup' function (which is to be called from the setup script).  Also
 exports useful classes so that setup scripts can import them from here
 although they are really defined in other modules: Distribution, Command,
-PyPIRCommand, Extension.
+PyPIRCommand, Extension, find_packages.
 """
 
 __revision__ = "$Id: core.py 77704 2010-01-23 09:23:15Z tarek.ziade $"
@@ -21,6 +21,7 @@ from distutils2.dist import Distribution
 from distutils2.command.cmd import Command
 from distutils2.config import PyPIRCCommand
 from distutils2.extension import Extension
+from distutils2.util import find_packages
 
 # This is a barebones help message generated displayed when the user
 # runs the setup script with no arguments at all.  More useful help
