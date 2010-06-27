@@ -8,12 +8,15 @@ the url `http://pypi.python.org`.
 
 There is two ways to retrieve data from pypi: using the *simple* API, and using
 *XML-RPC*. The first one is in fact a set of HTML pages avalaible at
-`http://pypi.python.org/simple/`. In order to reduce the overload caused by
-running distant methods on the pypi server (by using the XML-RPC methods), the
-best way to retrieve informations is by using the simple API.
+`http://pypi.python.org/simple/`, and the second one contains a set of XML-RPC
+methods. In order to reduce the overload caused by running distant methods on 
+the pypi server (by using the XML-RPC methods), the best way to retrieve 
+informations is by using the simple API, when it contains the information you 
+need.
 
 Distutils2 provides two python modules to ease the work with those two APIs:
-`distutils2.pypi.simple` and `distutils2.pypi.xmlrpc`.
+`distutils2.pypi.simple` and `distutils2.pypi.xmlrpc`. Both of them depends on 
+another python module: `distutils2.pypi.dist`.
 
 
 Requesting information via the "simple" API `distutils2.pypi.simple`
@@ -24,8 +27,7 @@ download urls of distributions, for specific versions or latests, but it also
 can process external html pages, with the goal to find *pypi unhosted* versions 
 of python distributions.
 
-You should use `distutils2.pypi.simple` way of accessing data should be used 
-to:
+You should use `distutils2.pypi.simple` for: 
 
     * Search distributions by name and versions.
     * Process pypi external pages.
@@ -39,17 +41,22 @@ And should not be used to:
 API
 ----
 
+Here is a complete overview of the APIs of the SimpleIndex class.
+
 .. autoclass:: distutils2.pypi.simple.SimpleIndex
     :members:
 
 Usage Exemples
 ---------------
 
+To help you understand how using the `SimpleIndex` class, here are some basic
+usages.
+
 Request PyPI to get a specific distribution
 ++++++++++++++++++++++++++++++++++++++++++++
 
 Supposing you want to scan the PyPI index to get a list of distributions for 
-the "foobar" project. You can use the "search" method for that.::
+the "foobar" project. You can use the "find" method for that::
 
     >>> from distutils2.pypi import SimpleIndex
     >>> client = SimpleIndex()
@@ -72,8 +79,8 @@ distribution (the more up to date) that fullfil your requirements, like this::
 Download distributions
 +++++++++++++++++++++++
 
-As it can get the urls of distributions provided by PyPI, the `Simple` client
-also can download the distributions and put it for you in a temporary
+As it can get the urls of distributions provided by PyPI, the `SimpleIndex` 
+client also can download the distributions and put it for you in a temporary
 destination::
 
     >>> client.download("foobar")
@@ -87,26 +94,51 @@ You also can specify the directory you want to download to::
 While downloading, the md5 of the archive will be checked, if not matches, it
 will try another time, then if fails again, raise `MD5HashDoesNotMatchError`.
 
-Requesting external pages
-+++++++++++++++++++++++++
+Internally, that's not the SimpleIndex which download the distributions, but the
+`PyPIDistribution` class. Please refer to this documentation for more details.
 
-The default behavior for distutils2 is to follow the links provided
+Following PyPI external links
+++++++++++++++++++++++++++++++
+
+The default behavior for distutils2 is to *not* follow the links provided
 by HTML pages in the "simple index", to find distributions related
 downloads.
 
-It's possible to tell the PyPIClient to not follow external links by specifying
-a list of allowed hosts::
+It's possible to tell the PyPIClient to follow external links by setting the 
+`follow_externals` attribute, on instanciation or after::
 
-    >>> client = SimpleIndex(hosts=("*.python.org"))
+    >>> client = SimpleIndex(follow_externals=True)
 
-Working with mirrors
-+++++++++++++++++++++
+or ::
 
-The SimpleClient implement a fallback mechanism to switch from one mirror to 
-another, the simple way. All you need to do is to provide a list of mirrors to
-it at the instanciation time::
+    >>> client = SimpleIndex()
+    >>> client.follow_externals = True
 
-    >>> client = SimpleClient(mirrors=['http://mirror1/', 'http://mirror2/'])
+Working with external indexes, and mirrors
++++++++++++++++++++++++++++++++++++++++++++
+
+The default `SimpleIndex` behavior is to rely on the Python Package index stored
+on PyPI (http://pypi.python.org/simple).
+
+As you can need to work with a local index, or private indexes, you can specify
+it using the index_url parameter::
+
+    >>> client = SimpleIndex(index_url="file://filesystem/path/")
+
+or ::
+
+    >>> client = SimpleIndex(index_url="http://some.specific.url/")
+
+You also can specify mirrors to fallback on in case the first index_url you
+provided doesnt respond, or not correctly. The default behavior for
+`SimpleIndex` is to use the list provided by Python.org DNS records, as
+described in the :pep:`381` about mirroring infrastructure.
+
+If you don't want to rely on these, you could specify the list of mirrors you
+want to try by specifying the `mirrors` attribute. It's a simple iterable::
+
+    >>> mirrors = ["http://first.mirror","http://second.mirror"]
+    >>> client = SimpleIndex(mirrors=mirrors)
 
 
 Requesting informations via XML-RPC (`distutils2.pypi.XmlRpcIndex`)
