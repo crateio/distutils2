@@ -23,7 +23,7 @@ class PyPIDistribution(object):
     """Represents a distribution retrieved from PyPI.
 
     This is a simple container for various attributes as name, version,
-    location, url etc.
+    downloaded_location, url etc.
 
     The PyPIDistribution class is used by the pypi.*Index class to return
     information about distributions.
@@ -79,7 +79,7 @@ class PyPIDistribution(object):
         self.type = type
         # set the downloaded path to None by default. The goal here
         # is to not download distributions multiple times
-        self.location = None
+        self.downloaded_location = None
         # We store urls in dict, because we need to have a bit more informations
         # than the simple URL. It will be used later to find the good url to
         # use.
@@ -125,14 +125,14 @@ class PyPIDistribution(object):
             path = tempfile.mkdtemp()
 
         # if we do not have downloaded it yet, do it.
-        if self.location is None:
+        if self.downloaded_location is None:
             url = self.url['url']
             archive_name = urlparse.urlparse(url)[2].split('/')[-1]
             filename, headers = urllib.urlretrieve(url, 
                                                    path + "/" + archive_name)
-            self.location = filename
+            self.downloaded_location = filename
             self._check_md5(filename)
-        return self.location
+        return self.downloaded_location
 
     def _check_md5(self, filename):
         """Check that the md5 checksum of the given file matches the one in
