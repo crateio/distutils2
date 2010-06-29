@@ -21,6 +21,7 @@ from distutils2 import __version__ as __distutils2_version__
 
 # -- Constants -----------------------------------------------
 PYPI_DEFAULT_INDEX_URL = "http://pypi.python.org/simple/"
+PYPI_DEFAULT_MIRROR_URL = "mirrors.pypi.python.org"
 DEFAULT_HOSTS = ("*",)  
 SOCKET_TIMEOUT = 15
 USER_AGENT = "Python-urllib/%s distutils2/%s" % (
@@ -62,22 +63,28 @@ class SimpleIndex(object):
     """
 
     def __init__(self, index_url=PYPI_DEFAULT_INDEX_URL, hosts=DEFAULT_HOSTS,
-                 mirrors=[], follow_externals=False, timeout=SOCKET_TIMEOUT):
+                 follow_externals=False, mirrors_url=PYPI_DEFAULT_MIRROR_URL, 
+                 mirrors=None, timeout=SOCKET_TIMEOUT):
         """Class constructor.
 
         :param index_url: the url of the simple index to search on.
-        :param follow_externals: tell if following external links is needed or 
-                                 not. Default is False.
         :param hosts: a list of hosts allowed to be processed while using
                       follow_externals=True. Default behavior is to follow all 
                       hosts.
-        :param mirrors: a list of mirrors to check out if problems occurs while
-                        working with the one given in "url"
+        :param follow_externals: tell if following external links is needed or 
+                                 not. Default is False.
+        :param mirrors_url: the url to look on for DNS records giving mirror
+                            adresses.
+        :param mirrors: a list of mirrors to check out if problems 
+                             occurs while working with the one given in "url"
         :param timeout: time in seconds to consider a url has timeouted.
         """
         if not index_url.endswith("/"):
             index_url += "/"
         self._index_urls = [index_url]
+        # if no mirrors are defined, use the method described in PEP 381.
+        if mirrors is None:
+            mirrors = socket.gethostbyname_ex(mirrors_url)[-1]
         self._index_urls.extend(mirrors)
         self._current_index_url = 0
         self._timeout = timeout
