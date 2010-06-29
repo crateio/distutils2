@@ -37,20 +37,49 @@ class TestPyPIDistribution(unittest.TestCase):
             'foobar-1.1b2.tar.gz#md5=123123123123123': {
                 'name': 'foobar',
                 'version': '1.1b2',
-                'url': 'http://test.tld/foobar-1.1b2.tar.gz',  # without hash
-                'md5_hash': '123123123123123',
+                'url': {
+                    'url': 'http://test.tld/foobar-1.1b2.tar.gz',  # no hash
+                    'md5': '123123123123123',
+                }
             },
             'foobar-1.1-rc2.tar.gz': {  # use suggested name
                 'name': 'foobar',
                 'version': '1.1c2',
-                'url': 'http://test.tld/foobar-1.1-rc2.tar.gz',
+                'url': {
+                    'url': 'http://test.tld/foobar-1.1-rc2.tar.gz',
+                }
             }
         }
 
         for url, attributes in url_list.items():
             dist = Dist.from_url("http://test.tld/" + url)
             for attribute, value in attributes.items():
-                self.assertEqual(getattr(dist, attribute), value)
+                if isinstance(value, dict):
+                    mylist = getattr(dist, attribute)
+                    for val in value.keys():
+                        self.assertEqual(value[val], mylist[val])
+                else:
+                    self.assertEqual(getattr(dist, attribute), value)
+
+    def test_get_url(self):
+        """Test that the url property works well"""
+
+        d = Dist("foobar", "1.1", url="test_url")
+        self.assertDictEqual(d.url, {
+            "url": "test_url",
+            "is_external": True,
+            "md5": None,
+        })
+
+        # add a new url
+        d.add_url(url="internal_url", is_external=False)
+        self.assertEqual(d._url, None)
+        self.assertDictEqual(d.url, {
+            "url": "internal_url",
+            "is_external": False,
+            "md5": None,
+        })
+        self.assertEqual(2, len(d._urls))
 
     def test_comparaison(self):
         """Test that we can compare PyPIDistributions"""
@@ -126,6 +155,26 @@ class TestPyPIDistributions(unittest.TestCase):
         self.assertNotIn(dists[3], filtered)
         self.assertIn(dists[0], filtered)
         self.assertIn(dists[1], filtered)
+
+    def test_append(self):
+        """Test the append method of PyPIDistributions"""
+        # When adding a new item to the list, the behavior is to test if
+        # a distribution with the same name and version number already exists,
+        # and if so, to add url informations to the existing PyPIDistribution
+        # object.
+        # If no object matches, just add "normally" the object to the list.
+
+        dists = Dists([
+            Dist("FooBar", "1.1", url="external_url"),
+        ])
+        self.assertEqual(1, len(dists))
+        dists.append(Dist("FooBar", "1.1", url="internal_url",
+                     is_external=False))
+        self.assertEqual(1, len(dists))
+        self.assertEqual(2, len(dists[0]._urls))
+
+        dists.append(Dist("Foobar", "1.1.1"))
+        self.assertEqual(2, len(dists))
 
 
 def test_suite():

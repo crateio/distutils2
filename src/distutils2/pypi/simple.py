@@ -21,7 +21,7 @@ from distutils2 import __version__ as __distutils2_version__
 
 # -- Constants -----------------------------------------------
 PYPI_DEFAULT_INDEX_URL = "http://pypi.python.org/simple/"
-DEFAULT_HOSTS = ("*.python.org",)
+DEFAULT_HOSTS = ("*",)  
 SOCKET_TIMEOUT = 15
 USER_AGENT = "Python-urllib/%s distutils2/%s" % (
     sys.version[:3], __distutils2_version__)
@@ -61,22 +61,26 @@ class SimpleIndex(object):
     """Provides useful tools to request the Python Package Index simple API
     """
 
-    def __init__(self, url=PYPI_DEFAULT_INDEX_URL, hosts=DEFAULT_HOSTS,
-        mirrors=[], timeout=SOCKET_TIMEOUT):
+    def __init__(self, index_url=PYPI_DEFAULT_INDEX_URL, hosts=DEFAULT_HOSTS,
+                 mirrors=[], follow_externals=False, timeout=SOCKET_TIMEOUT):
         """Class constructor.
 
         :param index_url: the url of the simple index to search on.
-        :param hosts: a list of hosts allowed to be considered as internals (to
-        differenciate with external hosts)
-        :param follow_externals: tell if follow external links is needed or not
-        Default is False
+        :param follow_externals: tell if following external links is needed or 
+                                 not. Default is False.
+        :param hosts: a list of hosts allowed to be processed while using
+                      follow_externals=True. Default behavior is to follow all 
+                      hosts.
         :param mirrors: a list of mirrors to check out if problems occurs while
-        working with the one given in "url"
+                        working with the one given in "url"
+        :param timeout: time in seconds to consider a url has timeouted.
         """
-        self._index_urls = [url]
+        self._index_urls = [index_url]
         self._index_urls.extend(mirrors)
         self._current_index_url = 0
         self._timeout = timeout
+        self.follow_externals = follow_externals
+
         # create a regexp to match all given hosts
         self._allowed_hosts = re.compile('|'.join(map(translate, hosts))).match
 
@@ -150,27 +154,38 @@ class SimpleIndex(object):
         """Switch to the next mirror (eg. point self.index_url to the next
         url.
         """
+        # Internally, iter over the _index_url iterable, if we have read all
+        # of the available indexes, raise an exception.
         if self._current_index_url < len(self._index_urls):
             self._current_index_url = self._current_index_url + 1
         else:
             raise UnableToDownload("All mirrors fails")
     
     def _is_browsable(self, url):
-        """Tell if the given URL needs to be browsed or not, according to the
-        object internal attributes.
+        """Tell if the given URL can be browsed or not.
 
         It uses the follow_externals and the hosts list to tell if the given
         url is browsable or not.
         """
-        if self._allowed_hosts(urlparse.urlparse(url)[1]):  # 1 is netloc
+        # if _index_url is contained in the given URL, we are browsing the
+        # index, and it's always "browsable".
+        # We asume here that if the url starts with "." or "..", it's browsable
+        # too. This is useful as the simple index make heavy use of relative
+        # URLS.
+        if self.index_url in url:
             return True
-        else:
-            return False
+        elif self.follow_externals is True:
+            if self._allowed_hosts(urlparse.urlparse(url)[1]):  # 1 is netloc
+                return True
+            else:
+                return False
+        return False
 
     def _is_distribution(self, link):
         """Tell if the given URL matches to a distribution name or not.
         """
         #XXX find a better way to check that links are distributions
+        # Using a regexp ?
         for ext in EXTENSIONS:
             if ext in link:
                 return True
@@ -189,15 +204,18 @@ class SimpleIndex(object):
         self._distributions[dist.name].append(dist)
         return self._distributions[dist.name]
 
-    def _process_url(self, url, project_name=None,follow_links=True, 
-        filter_rel=False):
+    def _process_url(self, url, project_name=None, follow_links=True):
         """Process an url and search for distributions packages.
 
-        :param url: the url to analyse
+        For each URL found, if it's a download, creates a PyPIdistribution 
+        object. If it's a homepage and we can follow links, process it too.
+
+        :param url: the url to process
         :param project_name: the project name we are searching for.
         :param follow_links: Do not want to follow links more than from one
-        level. This parameter tells if we want to follow the links we find (eg.
-        run recursively this method on it)
+                             level. This parameter tells if we want to follow 
+                             the links we find (eg. run recursively this 
+                             method on it)
         """
         f = self._open_url(url)
         base_url = f.url
@@ -207,10 +225,10 @@ class SimpleIndex(object):
             for link, is_download in link_matcher(f.read(), base_url):
                 if link not in self._processed_urls:
                     if self._is_distribution(link) or is_download:
-                        # it's a distribution, so create a dist object
                         self._processed_urls.append(link)
+                        # it's a distribution, so create a dist object
                         self._register_dist(PyPIDistribution.from_url(link,
-                            project_name))
+                            project_name, is_external=not self.index_url in url))
                     else:
                         if self._is_browsable(link) and follow_links:
                             self._process_url(link, project_name,
@@ -220,29 +238,36 @@ class SimpleIndex(object):
         """Returns the right link matcher function of the given url
         """
         if self.index_url in url:
-            return self._simple_link_finder
+            return self._simple_link_matcher
         else:
-            return self._default_link_finder
+            return self._default_link_matcher
 
-    def _simple_link_finder(self, content, base_url):
+    def _simple_link_matcher(self, content, base_url):
         """Yield all links with a rel="download" or rel="homepage".
 
-        This matches the simple index requirements for matching links
+        This matches the simple index requirements for matching links.
+        If follow_externals is set to False, dont yeld the external
+        urls.
         """
         for match in REL.finditer(content):
             tag, rel = match.groups()
             rels = map(str.strip, rel.lower().split(','))
             if 'homepage' in rels or 'download' in rels:
                 for match in HREF.finditer(tag):
-                    yield (urlparse.urljoin(base_url, 
-                        self._htmldecode(match.group(1))), "downloads" in rels)
+                    url = urlparse.urljoin(base_url,
+                                           self._htmldecode(match.group(1)))
+                    if 'download' in rels or self._is_browsable(url):
+                        # yield a list of (url, is_download)
+                        yield (urlparse.urljoin(base_url, url), 
+                               'download' in rels)
 
-    def _default_link_finder(self, content, base_url):
+    def _default_link_matcher(self, content, base_url):
         """Yield all links found on the page.
         """
         for match in HREF.finditer(content):
-            yield (urlparse.urljoin(base_url, 
-                self._htmldecode(match.group(1))), False)
+            url = urlparse.urljoin(base_url, self._htmldecode(match.group(1)))
+            if self._is_browsable(url):
+                yield (url, False)
 
     def _process_pypi_page(self, name):
         """Find and process a PyPI page for the given project name.
@@ -262,7 +287,8 @@ class SimpleIndex(object):
 
     @socket_timeout()
     def _open_url(self, url):
-        """Open a urllib2 request, handling HTTP authentication
+        """Open a urllib2 request, handling HTTP authentication.
+
         """
         try:
             scheme, netloc, path, params, query, frag = urlparse.urlparse(url)

@@ -83,29 +83,6 @@ class PyPISimpleTestCase(unittest2.TestCase):
                     'http://www.famfamfam.com/">')
             index.process_index(url, page)
 
-    def test_browsable_urls(self):
-        """Test we can give PyPI index a list of allowed hosts
-
-        """
-        index = simple.SimpleIndex(hosts=["pypi.python.org", "test.org"])
-        good_urls = (
-            "http://pypi.python.org/foo/bar",
-            "http://pypi.python.org/simple/foobar",
-            "http://test.org",
-            "http://test.org/",
-            "http://test.org/simple/",
-        )
-        bad_urls = (
-            "http://python.org",
-            "http://test.tld",
-        )
-
-        for url in good_urls:
-            self.assertTrue(index._is_browsable(url))
-
-        for url in bad_urls:
-            self.assertFalse(index._is_browsable(url))
-
     @use_pypi_server("test_found_links")
     def test_found_links(self, server):
         """Browse the index, asking for a specified distribution version
@@ -128,34 +105,60 @@ class PyPISimpleTestCase(unittest2.TestCase):
         self.assertEqual(last_distribution.version, '2.0.1')
 
     def test_is_browsable(self):
+        index = simple.SimpleIndex(follow_externals=False)
+        self.assertTrue(index._is_browsable(index.index_url + "test"))
+
+        # Now, when following externals, we can have a list of hosts to trust.
+        # and don't follow other external links than the one described here.
+        index = simple.SimpleIndex(hosts=["pypi.python.org", "test.org"],
+                                   follow_externals=True)
+        good_urls = (
+            "http://pypi.python.org/foo/bar",
+            "http://pypi.python.org/simple/foobar",
+            "http://test.org",
+            "http://test.org/",
+            "http://test.org/simple/",
+        )
+        bad_urls = (
+            "http://python.org",
+            "http://test.tld",
+        )
+
+        for url in good_urls:
+            self.assertTrue(index._is_browsable(url))
+
+        for url in bad_urls:
+            self.assertFalse(index._is_browsable(url))
+
         # allow all hosts
-        index = simple.SimpleIndex(hosts=("*",))
+        index = simple.SimpleIndex(follow_externals=True, hosts=("*",))
         self.assertTrue(index._is_browsable("http://an-external.link/path"))
         self.assertTrue(index._is_browsable("pypi.test.tld/a/path"))
 
         # specify a list of hosts we want to allow
-        index = simple.SimpleIndex(hosts=("*.test.tld",))
+        index = simple.SimpleIndex(follow_externals=True, 
+                                   hosts=("*.test.tld",))
         self.assertFalse(index._is_browsable("http://an-external.link/path"))
         self.assertTrue(index._is_browsable("http://pypi.test.tld/a/path"))
 
     @use_pypi_server("with_externals")
-    def test_process_external_pages(self, server):
+    def test_restrict_hosts(self, server):
         """Include external pages
         """
         # Try to request the package index, wich contains links to "externals"
         # resources. They have to  be scanned too.
-        index = self._get_simple_index(server, hosts=("*",))
+        index = self._get_simple_index(server, follow_externals=True)
         index.get("foobar")
         self.assertIn(server.full_address + "/external/external.html",
             index._processed_urls)
 
     @use_pypi_server("with_real_externals")
-    def test_disable_external_pages(self, server):
-        """Exclude external pages if disabled
+    def test_restrict_hosts(self, server):
+        """Only use a list of allowed hosts is possible
         """
         # Test that telling the simple pyPI client to not retrieve external
         # works
-        index = self._get_simple_index(server, hosts=(server.full_address,))
+        index = self._get_simple_index(server, follow_externals=False)
         index.get("foobar")
         self.assertNotIn(server.full_address + "/external/external.html",
             index._processed_urls)
@@ -186,16 +189,14 @@ class PyPISimpleTestCase(unittest2.TestCase):
         index_url = server.full_address + '/simple/'
 
         # scan a test index
-        index = simple.SimpleIndex(index_url)
+        index = simple.SimpleIndex(index_url, follow_externals=True)
         dists = index.find("foobar")
         server.stop()
 
-        # the distribution has been found
-        self.assertTrue(dists is not [])
         # we have only one link, because links are compared without md5
         self.assertEqual(len(dists), 1)
         # the link should be from the index
-        self.assertEqual('12345678901234567', dists[0].md5_hash)
+        self.assertEqual('12345678901234567', dists[0].url['md5'])
 
     @use_pypi_server(static_filesystem_paths=["with_norel_links"],
         static_uri_paths=["simple", "external"])
@@ -205,7 +206,7 @@ class PyPISimpleTestCase(unittest2.TestCase):
         to not be processed by the package index, while processing "pages".
         """
         # process the pages
-        index = self._get_simple_index(server)
+        index = self._get_simple_index(server, follow_externals=True)
         index.find("foobar")
         # now it should have processed only pages with links rel="download" 
         # and rel="homepage"
@@ -236,9 +237,42 @@ class PyPISimpleTestCase(unittest2.TestCase):
             
             # this should not raise a timeout
             self.assertEqual(4, len(index.find("foo")))
-        except Exception, e:
+        finally:
             mirror.stop()
-            raise e
+    
+    def test_simple_link_matcher(self):
+        """Test that the simple link matcher yields the right links"""
+        index = simple.SimpleIndex(follow_externals=False)
+        
+        # Here, we define:
+        #   1. one link that must be followed, cause it's a download one
+        #   2. one link that must *not* be followed, cause the is_browsable
+        #      returns false for it.
+        #   3. one link that must be followed cause it's a homepage that is
+        #      browsable
+        self.assertTrue(index._is_browsable("%stest" % index.index_url))
+        self.assertFalse(index._is_browsable("http://dl-link2"))
+        content = """
+        <a href="http://dl-link1" rel="download">download_link1</a>
+        <a href="http://dl-link2" rel="homepage">homepage_link1</a>
+        <a href="%stest" rel="homepage">homepage_link2</a>
+        """ % index.index_url
+
+        # Test that the simple link matcher yield the good links.
+        generator = index._simple_link_matcher(content, index.index_url)
+        self.assertEqual(('http://dl-link1', True), generator.next())
+        self.assertEqual(('%stest' % index.index_url, False), 
+                         generator.next())
+        self.assertRaises(StopIteration, generator.next)
+
+        # Follow the external links is possible
+        index.follow_externals = True
+        generator = index._simple_link_matcher(content, index.index_url)
+        self.assertEqual(('http://dl-link1', True), generator.next())
+        self.assertEqual(('http://dl-link2', False), generator.next())
+        self.assertEqual(('%stest' % index.index_url, False), 
+                         generator.next())
+        self.assertRaises(StopIteration, generator.next)
 
 def test_suite():
     return unittest2.makeSuite(PyPISimpleTestCase)
