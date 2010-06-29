@@ -75,6 +75,8 @@ class SimpleIndex(object):
                         working with the one given in "url"
         :param timeout: time in seconds to consider a url has timeouted.
         """
+        if not index_url.endswith("/"):
+            index_url += "/"
         self._index_urls = [index_url]
         self._index_urls.extend(mirrors)
         self._current_index_url = 0
@@ -169,10 +171,8 @@ class SimpleIndex(object):
         """
         # if _index_url is contained in the given URL, we are browsing the
         # index, and it's always "browsable".
-        # We asume here that if the url starts with "." or "..", it's browsable
-        # too. This is useful as the simple index make heavy use of relative
-        # URLS.
-        if self.index_url in url:
+        # local files are always considered browable resources
+        if self.index_url in url or urlparse.urlparse(url)[0] == "file":
             return True
         elif self.follow_externals is True:
             if self._allowed_hosts(urlparse.urlparse(url)[1]):  # 1 is netloc
@@ -287,7 +287,8 @@ class SimpleIndex(object):
 
     @socket_timeout()
     def _open_url(self, url):
-        """Open a urllib2 request, handling HTTP authentication.
+        """Open a urllib2 request, handling HTTP authentication, and local
+        files support.
 
         """
         try:
@@ -297,6 +298,11 @@ class SimpleIndex(object):
                 auth, host = urllib2.splituser(netloc)
             else:
                 auth = None
+            
+            # add index.html automatically for filesystem paths
+            if scheme == 'file':
+                if url.endswith('/'):
+                    url += "index.html"
 
             if auth:
                 auth = "Basic " + \

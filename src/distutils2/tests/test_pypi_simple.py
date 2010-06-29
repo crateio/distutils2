@@ -8,7 +8,8 @@ import tempfile
 import unittest2
 import urllib2
 
-from distutils2.tests.pypi_server import use_pypi_server, PyPIServer
+from distutils2.tests.pypi_server import use_pypi_server, PyPIServer, \
+                                         PYPI_DEFAULT_STATIC_PATH
 from distutils2.pypi import simple
 
 from distutils2.errors import DistutilsError
@@ -273,6 +274,14 @@ class PyPISimpleTestCase(unittest2.TestCase):
         self.assertEqual(('%stest' % index.index_url, False), 
                          generator.next())
         self.assertRaises(StopIteration, generator.next)
+
+    def test_browse_local_files(self):
+        """Test that we can browse local files"""
+        index_path = os.sep.join(["file://" + PYPI_DEFAULT_STATIC_PATH,
+                                  "test_found_links", "simple"])
+        index = simple.SimpleIndex(index_path)
+        dists = index.find("foobar")
+        self.assertEqual(4, len(dists))
 
 def test_suite():
     return unittest2.makeSuite(PyPISimpleTestCase)
