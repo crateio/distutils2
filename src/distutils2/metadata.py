@@ -517,7 +517,7 @@ class _Operation(object):
             raise NameError(value)
 
     def _nonsense_op(self):
-        msg = 'This operation is not supported : "%s"' % str(self)
+        msg = 'This operation is not supported : "%s"' % self
         raise SyntaxError(msg)
 
     def __call__(self):

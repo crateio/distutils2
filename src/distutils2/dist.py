@@ -250,7 +250,7 @@ Common commands: (see '--help-commands' for more)
                 elif hasattr(self, key):
                     setattr(self, key, val)
                 else:
-                    msg = "Unknown distribution option: %s" % repr(key)
+                    msg = "Unknown distribution option: %r" % key
                     if warnings is not None:
                         warnings.warn(msg)
                     else:

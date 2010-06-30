@@ -41,7 +41,7 @@ class LoggingSilencer(object):
 
     def _log(self, level, msg, args):
         if level not in (DEBUG, INFO, WARN, ERROR, FATAL):
-            raise ValueError('%s wrong log level' % str(level))
+            raise ValueError('%s wrong log level' % level)
         self.logs.append((level, msg, args))
 
     def get_logs(self, *levels):
