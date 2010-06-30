@@ -5,9 +5,9 @@ from StringIO import StringIO
 
 from distutils2.metadata import (DistributionMetadata, _interpret,
                                  PKG_INFO_PREFERRED_VERSION)
-from distutils2.tests.support import unittest
+from distutils2.tests.support import unittest, LoggingSilencer
 
-class DistributionMetadataTestCase(unittest.TestCase):
+class DistributionMetadataTestCase(LoggingSilencer, unittest.TestCase):
 
 
     def test_interpret(self):
