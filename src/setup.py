@@ -67,14 +67,15 @@ class sdist_hg(sdist):
 
 
 # additional paths to check, set from the command line
-SSL_INCDIR=''   # --openssl-incdir=
-SSL_LIBDIR=''   # --openssl-libdir=
-SSL_DIR=''      # --openssl-prefix=
+SSL_INCDIR = ''   # --openssl-incdir=
+SSL_LIBDIR = ''   # --openssl-libdir=
+SSL_DIR = ''      # --openssl-prefix=
 
 def add_dir_to_list(dirlist, dir):
     """Add the directory 'dir' to the list 'dirlist' (at the front) if
     'dir' actually exists and is a directory.  If 'dir' is already in
-    'dirlist' it is moved to the front."""
+    'dirlist' it is moved to the front.
+    """
     if dir is not None and os.path.isdir(dir) and dir not in dirlist:
         if dir in dirlist:
             dirlist.remove(dir)
@@ -83,8 +84,8 @@ def add_dir_to_list(dirlist, dir):
 
 def prepare_hashlib_extensions():
     """Decide which C extensions to build and create the appropriate
-    Extension objects to build them.  Returns a list of Extensions."""
-
+    Extension objects to build them.  Return a list of Extensions.
+    """
     # this CCompiler object is only used to locate include files
     compiler = new_compiler()
 
@@ -116,13 +117,12 @@ def prepare_hashlib_extensions():
             add_dir_to_list(compiler.library_dirs, os.path.join(SSL_DIR, 'lib'))
         add_dir_to_list(compiler.include_dirs, os.path.join(SSL_DIR, 'include'))
 
-    osNameLibsMap = {
-        'posix':  ['ssl', 'crypto'],
-        'nt':     ['libeay32',  'gdi32', 'advapi32', 'user32'],
-    }
+    oslibs = {'posix': ['ssl', 'crypto'],
+              'nt': ['libeay32',  'gdi32', 'advapi32', 'user32']}
 
-    if not osNameLibsMap.has_key(os.name):
-        print "unknown OS, please update setup.py"
+    if os.name not in oslibs:
+        sys.stderr.write(
+            'unknown operating system, impossible to compile _hashlib')
         sys.exit(1)
 
     exts = []
@@ -135,7 +135,7 @@ def prepare_hashlib_extensions():
             ssl_incs.append(f)
             ssl_inc_dirs.append(inc_dir)
 
-    ssl_lib = compiler.find_library_file(compiler.library_dirs, osNameLibsMap[os.name][0])
+    ssl_lib = compiler.find_library_file(compiler.library_dirs, oslibs[os.name][0])
 
     # find out which version of OpenSSL we have
     openssl_ver = 0
@@ -159,9 +159,7 @@ def prepare_hashlib_extensions():
         if openssl_ver:
             break
 
-    if (ssl_inc_dir and
-        ssl_lib is not None and
-        openssl_ver >= 0x00907000):
+    if (ssl_inc_dir and ssl_lib is not None and openssl_ver >= 0x00907000):
 
         print 'Using OpenSSL version 0x%08x from' % openssl_ver
         print ' Headers:\t', ssl_inc_dir
@@ -169,29 +167,29 @@ def prepare_hashlib_extensions():
 
         # The _hashlib module wraps optimized implementations
         # of hash functions from the OpenSSL library.
-        exts.append( Extension('_hashlib', ['_hashopenssl.c'],
-                               include_dirs = [ ssl_inc_dir ],
-                               library_dirs = [ os.path.dirname(ssl_lib) ],
-                               libraries = osNameLibsMap[os.name]) )
+        exts.append(Extension('_hashlib', ['_hashopenssl.c'],
+                              include_dirs = [ssl_inc_dir],
+                              library_dirs = [os.path.dirname(ssl_lib)],
+                              libraries = oslibs[os.name]))
     else:
-        exts.append( Extension('_sha', ['shamodule.c']) )
-        exts.append( Extension('_md5',
-                        sources = ['md5module.c', 'md5.c'],
-                        depends = ['md5.h']) )
+        exts.append(Extension('_sha', ['shamodule.c']) )
+        exts.append(Extension('_md5',
+                              sources=['md5module.c', 'md5.c'],
+                              depends=['md5.h']) )
 
     if (not ssl_lib or openssl_ver < 0x00908000):
         # OpenSSL doesn't do these until 0.9.8 so we'll bring our own
-        exts.append( Extension('_sha256', ['sha256module.c']) )
-        exts.append( Extension('_sha512', ['sha512module.c']) )
+        exts.append(Extension('_sha256', ['sha256module.c']))
+        exts.append(Extension('_sha512', ['sha512module.c']))
 
-    def prependModules(filename):
+    def prepend_modules(filename):
         return os.path.join('Modules', filename)
 
     # all the C code is in the Modules subdirectory, prepend the path
     for ext in exts:
-        ext.sources = [ prependModules(fn) for fn in ext.sources ]
+        ext.sources = [prepend_modules(fn) for fn in ext.sources]
         if hasattr(ext, 'depends') and ext.depends is not None:
-            ext.depends = [ prependModules(fn) for fn in ext.depends ]
+            ext.depends = [prepend_modules(fn) for fn in ext.depends]
 
     return exts
 
