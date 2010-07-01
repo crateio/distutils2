@@ -151,7 +151,7 @@ def prepare_hashlib_extensions():
                 for line in incfile:
                     m = openssl_ver_re.match(line)
                     if m:
-                        openssl_ver = eval(m.group(1))
+                        openssl_ver = int(m.group(1), 16)
                         break
             except IOError:
                 pass
