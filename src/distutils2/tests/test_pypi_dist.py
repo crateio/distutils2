@@ -145,7 +145,7 @@ class TestPyPIDistribution(unittest.TestCase):
         # should be ok
         Dist("FooBar", "0.1", hashname="md5", hashval="value")
 
-        self.assertRaises(UnsupportedHashName, Dist, "FooBar", "0.1", 
+        self.assertRaises(UnsupportedHashName, Dist, "FooBar", "0.1",
                           hashname="invalid_hashname", hashval="value")
 
 
