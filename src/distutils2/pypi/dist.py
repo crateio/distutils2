@@ -11,8 +11,9 @@ try:
     import hashlib
 except ImportError:
     from distutils2._backport import hashlib
+
 from distutils2.version import suggest_normalized_version
-from distutils2.pypi.errors import HashDoesNotMatch
+from distutils2.pypi.errors import HashDoesNotMatch, UnsupportedHashName
 
 EXTENSIONS = ".tar.gz .tar.bz2 .tar .zip .tgz .egg".split()
 MD5_HASH = re.compile(r'^.*#md5=([a-f0-9]+)$')
@@ -92,6 +93,12 @@ class PyPIDistribution(object):
     
     def add_url(self, url, hashname=None, hashval=None, is_external=True):
         """Add a new url to the list of urls"""
+        if hashname is not None:
+            try:
+                hashlib.new(hashname)
+            except ValueError:
+                raise UnsupportedHashName(hashname)
+
         self._urls.append({
             'url': url,
             'hashname': hashname,

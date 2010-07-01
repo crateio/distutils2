@@ -7,7 +7,7 @@ import tempfile
 from distutils2.tests.pypi_server import use_pypi_server
 from distutils2.tests.support import unittest
 from distutils2.version import VersionPredicate
-from distutils2.pypi.errors import HashDoesNotMatch
+from distutils2.pypi.errors import HashDoesNotMatch, UnsupportedHashName
 from distutils2.pypi.dist import (PyPIDistribution as Dist,
                                   PyPIDistributions as Dists,
                                   split_archive_name)
@@ -139,6 +139,14 @@ class TestPyPIDistribution(unittest.TestCase):
         # remove the temp folders
         shutil.rmtree(path1)
         shutil.rmtree(os.path.dirname(path2))
+
+    def test_hashname(self):
+        """Invalid hashnames raises an exception on assignation"""
+        # should be ok
+        Dist("FooBar", "0.1", hashname="md5", hashval="value")
+
+        self.assertRaises(UnsupportedHashName, Dist, "FooBar", "0.1", 
+                          hashname="invalid_hashname", hashval="value")
 
 
 class TestPyPIDistributions(unittest.TestCase):
