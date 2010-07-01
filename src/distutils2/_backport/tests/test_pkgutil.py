@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Tests for PEP 376 pkgutil functionality"""
 import unittest2
+import unittest2.compatibility
 import sys
 import os
 import csv

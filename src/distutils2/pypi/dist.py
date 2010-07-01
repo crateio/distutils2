@@ -8,12 +8,12 @@ import urlparse
 import urllib
 import tempfile
 try:
-    from hashlib import md5
+    import hashlib
 except ImportError:
-    from md5 import md5
+    from distutils2._backport import hashlib
 
 from distutils2.version import suggest_normalized_version
-from distutils2.pypi.errors import MD5HashDoesNotMatch
+from distutils2.pypi.errors import HashDoesNotMatch, UnsupportedHashName
 
 EXTENSIONS = ".tar.gz .tar.bz2 .tar .zip .tgz .egg".split()
 MD5_HASH = re.compile(r'^.*#md5=([a-f0-9]+)$')
@@ -34,8 +34,8 @@ class PyPIDistribution(object):
         """Build a Distribution from a url archive (egg or zip or tgz).
 
         :param url: complete url of the distribution
-        :param probable_dist_name: A probable name of the distribution. 
-        :param is_external: Tell if the url commes from an index or from 
+        :param probable_dist_name: A probable name of the distribution.
+        :param is_external: Tell if the url commes from an index or from
                             an external URL.
         """
         # if the url contains a md5 hash, get it.
@@ -57,20 +57,21 @@ class PyPIDistribution(object):
 
         name, version = split_archive_name(archive_name)
         if extension_matched is True:
-            return PyPIDistribution(name, version, url=url, md5_hash=md5_hash, 
-                                    is_external=is_external)
+            return PyPIDistribution(name, version, url=url, hashname="md5",
+                                    hashval=md5_hash, is_external=is_external)
 
-    def __init__(self, name, version, type=None, url=None, md5_hash=None, 
-                 is_external=True):
+    def __init__(self, name, version, type=None, url=None, hashname=None,
+                 hashval=None, is_external=True):
         """Create a new instance of PyPIDistribution.
 
         :param name: the name of the distribution
         :param version: the version of the distribution
         :param type: the type of the dist (eg. source, bin-*, etc.)
         :param url: URL where we found this distribution
-        :param md5_hash: the MD5 hash of the distribution. That's used to 
-                         check that the download is good enough.
-        :param is_external: we need to know if the provided url comes from an 
+        :param hashname: the name of the hash we want to use. Refer to the
+                         hashlib.new documentation for more information.
+        :param hashval: the hash value.
+        :param is_external: we need to know if the provided url comes from an
                             index browsing, or from an external resource.
 
         """
@@ -83,18 +84,25 @@ class PyPIDistribution(object):
         # We store urls in dict, because we need to have a bit more informations
         # than the simple URL. It will be used later to find the good url to
         # use.
-        # We have two _url* attributes: _url and _urls. _urls contains a list of 
-        # dict for the different urls, and _url contains the choosen url, in 
+        # We have two _url* attributes: _url and _urls. _urls contains a list of
+        # dict for the different urls, and _url contains the choosen url, in
         # order to dont make the selection process multiple times.
         self._urls = []
         self._url = None
-        self.add_url(url, md5_hash, is_external)
-    
-    def add_url(self, url, md5=None, is_external=True):
+        self.add_url(url, hashname, hashval, is_external)
+
+    def add_url(self, url, hashname=None, hashval=None, is_external=True):
         """Add a new url to the list of urls"""
+        if hashname is not None:
+            try:
+                hashlib.new(hashname)
+            except ValueError:
+                raise UnsupportedHashName(hashname)
+
         self._urls.append({
             'url': url,
-            'md5': md5,
+            'hashname': hashname,
+            'hashval': hashval,
             'is_external': is_external,
         })
         # reset the url selection process
@@ -110,7 +118,7 @@ class PyPIDistribution(object):
             if len(self._urls) > 1:
                 internals_urls = [u for u in self._urls \
                                   if u['is_external'] == False]
-                if len(internals_urls) >= 1: 
+                if len(internals_urls) >= 1:
                     self._url = internals_urls[0]
             if self._url is None:
                 self._url = self._urls[0]
@@ -128,7 +136,7 @@ class PyPIDistribution(object):
         if self.downloaded_location is None:
             url = self.url['url']
             archive_name = urlparse.urlparse(url)[2].split('/')[-1]
-            filename, headers = urllib.urlretrieve(url, 
+            filename, headers = urllib.urlretrieve(url,
                                                    path + "/" + archive_name)
             self.downloaded_location = filename
             self._check_md5(filename)
@@ -136,15 +144,16 @@ class PyPIDistribution(object):
 
     def _check_md5(self, filename):
         """Check that the md5 checksum of the given file matches the one in
-        self._md5_hash."""
-        md5_hash = self.url['md5']
-        if md5_hash is not None:
+        url param"""
+        hashname = self.url['hashname']
+        expected_hashval = self.url['hashval']
+        if not None in (expected_hashval, hashname):
             f = open(filename)
-            hash = md5()
-            hash.update(f.read())
-            if hash.hexdigest() != md5_hash:
-                raise MD5HashDoesNotMatch("%s instead of %s"
-                    % (hash.hexdigest(), md5_hash))
+            hashval = hashlib.new(hashname)
+            hashval.update(f.read())
+            if hashval.hexdigest() != expected_hashval:
+                raise HashDoesNotMatch("got %s instead of %s"
+                    % (hashval.hexdigest(), expected_hashval))
 
     def __repr__(self):
         return "<%s %s (%s)>" \
@@ -211,7 +220,7 @@ class PyPIDistributions(list):
 
     def append(self, o):
         """Append a new distribution to the list.
-        
+
         If a distribution with the same name and version exists, just grab the
         URL informations and add a new new url for the existing one.
         """
@@ -222,7 +231,7 @@ class PyPIDistributions(list):
             dist.add_url(**o.url)
         else:
             super(PyPIDistributions, self).append(o)
-        
+
 
 def split_archive_name(archive_name, probable_name=None):
     """Split an archive name into two parts: name and version.

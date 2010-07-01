@@ -21,8 +21,12 @@ class DownloadError(PyPIError):
     """An error has occurs while downloading"""
 
 
-class MD5HashDoesNotMatch(DownloadError):
-    """Compared MD5 hashes does not match"""
+class HashDoesNotMatch(DownloadError):
+    """Compared hashes does not match"""
+
+
+class UnsupportedHashName(PyPIError):
+    """A unsupported hashname has been used"""
 
 
 class UnableToDownload(PyPIError):

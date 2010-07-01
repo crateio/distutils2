@@ -137,7 +137,7 @@ class PyPISimpleTestCase(unittest2.TestCase):
         self.assertTrue(index._is_browsable("pypi.test.tld/a/path"))
 
         # specify a list of hosts we want to allow
-        index = simple.SimpleIndex(follow_externals=True, 
+        index = simple.SimpleIndex(follow_externals=True,
                                    hosts=("*.test.tld",))
         self.assertFalse(index._is_browsable("http://an-external.link/path"))
         self.assertTrue(index._is_browsable("http://pypi.test.tld/a/path"))
@@ -197,7 +197,8 @@ class PyPISimpleTestCase(unittest2.TestCase):
         # we have only one link, because links are compared without md5
         self.assertEqual(len(dists), 1)
         # the link should be from the index
-        self.assertEqual('12345678901234567', dists[0].url['md5'])
+        self.assertEqual('12345678901234567', dists[0].url['hashval'])
+        self.assertEqual('md5', dists[0].url['hashname'])
 
     @use_pypi_server(static_filesystem_paths=["with_norel_links"],
         static_uri_paths=["simple", "external"])
@@ -209,13 +210,13 @@ class PyPISimpleTestCase(unittest2.TestCase):
         # process the pages
         index = self._get_simple_index(server, follow_externals=True)
         index.find("foobar")
-        # now it should have processed only pages with links rel="download" 
+        # now it should have processed only pages with links rel="download"
         # and rel="homepage"
-        self.assertIn("%s/simple/foobar/" % server.full_address, 
+        self.assertIn("%s/simple/foobar/" % server.full_address,
             index._processed_urls)  # it's the simple index page
-        self.assertIn("%s/external/homepage.html" % server.full_address, 
+        self.assertIn("%s/external/homepage.html" % server.full_address,
             index._processed_urls)  # the external homepage is rel="homepage"
-        self.assertNotIn("%s/external/nonrel.html" % server.full_address, 
+        self.assertNotIn("%s/external/nonrel.html" % server.full_address,
             index._processed_urls)  # this link contains no rel=*
         self.assertNotIn("%s/unrelated-0.2.tar.gz" % server.full_address,
             index._processed_urls)  # linked from simple index (no rel)
@@ -229,22 +230,22 @@ class PyPISimpleTestCase(unittest2.TestCase):
         server = PyPIServer("foo_bar_baz")
         mirror = PyPIServer("foo_bar_baz")
         mirror.start()  # we dont start the server here
-        
+
         try:
             # create the index using both servers
-            index = simple.SimpleIndex(server.full_address + "/simple/", 
+            index = simple.SimpleIndex(server.full_address + "/simple/",
                 hosts=('*',), timeout=1,  # set the timeout to 1s for the tests
                 mirrors=[mirror.full_address + "/simple/",])
-            
+
             # this should not raise a timeout
             self.assertEqual(4, len(index.find("foo")))
         finally:
             mirror.stop()
-    
+
     def test_simple_link_matcher(self):
         """Test that the simple link matcher yields the right links"""
         index = simple.SimpleIndex(follow_externals=False)
-        
+
         # Here, we define:
         #   1. one link that must be followed, cause it's a download one
         #   2. one link that must *not* be followed, cause the is_browsable
@@ -262,7 +263,7 @@ class PyPISimpleTestCase(unittest2.TestCase):
         # Test that the simple link matcher yield the good links.
         generator = index._simple_link_matcher(content, index.index_url)
         self.assertEqual(('http://dl-link1', True), generator.next())
-        self.assertEqual(('%stest' % index.index_url, False), 
+        self.assertEqual(('%stest' % index.index_url, False),
                          generator.next())
         self.assertRaises(StopIteration, generator.next)
 
@@ -271,7 +272,7 @@ class PyPISimpleTestCase(unittest2.TestCase):
         generator = index._simple_link_matcher(content, index.index_url)
         self.assertEqual(('http://dl-link1', True), generator.next())
         self.assertEqual(('http://dl-link2', False), generator.next())
-        self.assertEqual(('%stest' % index.index_url, False), 
+        self.assertEqual(('%stest' % index.index_url, False),
                          generator.next())
         self.assertRaises(StopIteration, generator.next)
 

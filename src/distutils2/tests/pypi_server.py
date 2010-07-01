@@ -26,8 +26,10 @@ def use_pypi_server(*server_args, **server_kwargs):
         def wrapped(*args, **kwargs):
             server = PyPIServer(*server_args, **server_kwargs)
             server.start()
-            func(server=server, *args, **kwargs)
-            server.stop()
+            try:
+                func(server=server, *args, **kwargs)
+            finally:
+                server.stop()
         return wrapped
     return wrapper
 

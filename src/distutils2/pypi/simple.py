@@ -22,7 +22,7 @@ from distutils2 import __version__ as __distutils2_version__
 # -- Constants -----------------------------------------------
 PYPI_DEFAULT_INDEX_URL = "http://pypi.python.org/simple/"
 PYPI_DEFAULT_MIRROR_URL = "mirrors.pypi.python.org"
-DEFAULT_HOSTS = ("*",)  
+DEFAULT_HOSTS = ("*",)
 SOCKET_TIMEOUT = 15
 USER_AGENT = "Python-urllib/%s distutils2/%s" % (
     sys.version[:3], __distutils2_version__)
@@ -63,19 +63,21 @@ class SimpleIndex(object):
     """
 
     def __init__(self, index_url=PYPI_DEFAULT_INDEX_URL, hosts=DEFAULT_HOSTS,
-                 follow_externals=False, mirrors_url=PYPI_DEFAULT_MIRROR_URL, 
+                 follow_externals=False, mirrors_url=PYPI_DEFAULT_MIRROR_URL,
                  mirrors=None, timeout=SOCKET_TIMEOUT):
         """Class constructor.
 
         :param index_url: the url of the simple index to search on.
+        :param follow_externals: tell if following external links is needed or
+                                 not. Default is False.
         :param hosts: a list of hosts allowed to be processed while using
-                      follow_externals=True. Default behavior is to follow all 
+                      follow_externals=True. Default behavior is to follow all
                       hosts.
-        :param follow_externals: tell if following external links is needed or 
+        :param follow_externals: tell if following external links is needed or
                                  not. Default is False.
         :param mirrors_url: the url to look on for DNS records giving mirror
                             adresses.
-        :param mirrors: a list of mirrors to check out if problems 
+        :param mirrors: a list of mirrors to check out if problems
                              occurs while working with the one given in "url"
         :param timeout: time in seconds to consider a url has timeouted.
         """
@@ -116,8 +118,8 @@ class SimpleIndex(object):
         requirements.
 
         :param requirements: A project name and it's distribution, using
-                             version specifiers, as described in PEP345. 
-        :type requirements:  You can pass either a version.VersionPredicate 
+                             version specifiers, as described in PEP345.
+        :type requirements:  You can pass either a version.VersionPredicate
                              or a string.
         """
         requirements = self._get_version_predicate(requirements)
@@ -143,7 +145,7 @@ class SimpleIndex(object):
 
         Returns the complete absolute path to the downloaded archive.
 
-        :param requirements: The same as the find attribute of `find`. 
+        :param requirements: The same as the find attribute of `find`.
         """
         return self.get(requirements).download(path=temp_path)
 
@@ -154,10 +156,10 @@ class SimpleIndex(object):
         if isinstance(requirements, str):
             requirements = VersionPredicate(requirements)
         return requirements
-    
+
     @property
     def index_url(self):
-        return self._index_urls[self._current_index_url] 
+        return self._index_urls[self._current_index_url]
 
     def _switch_to_next_mirror(self):
         """Switch to the next mirror (eg. point self.index_url to the next
@@ -169,7 +171,7 @@ class SimpleIndex(object):
             self._current_index_url = self._current_index_url + 1
         else:
             raise UnableToDownload("All mirrors fails")
-    
+
     def _is_browsable(self, url):
         """Tell if the given URL can be browsed or not.
 
@@ -214,14 +216,14 @@ class SimpleIndex(object):
     def _process_url(self, url, project_name=None, follow_links=True):
         """Process an url and search for distributions packages.
 
-        For each URL found, if it's a download, creates a PyPIdistribution 
+        For each URL found, if it's a download, creates a PyPIdistribution
         object. If it's a homepage and we can follow links, process it too.
 
         :param url: the url to process
         :param project_name: the project name we are searching for.
         :param follow_links: Do not want to follow links more than from one
-                             level. This parameter tells if we want to follow 
-                             the links we find (eg. run recursively this 
+                             level. This parameter tells if we want to follow
+                             the links we find (eg. run recursively this
                              method on it)
         """
         f = self._open_url(url)
@@ -240,7 +242,7 @@ class SimpleIndex(object):
                         if self._is_browsable(link) and follow_links:
                             self._process_url(link, project_name,
                                 follow_links=False)
-    
+
     def _get_link_matcher(self, url):
         """Returns the right link matcher function of the given url
         """
@@ -265,7 +267,7 @@ class SimpleIndex(object):
                                            self._htmldecode(match.group(1)))
                     if 'download' in rels or self._is_browsable(url):
                         # yield a list of (url, is_download)
-                        yield (urlparse.urljoin(base_url, url), 
+                        yield (urlparse.urljoin(base_url, url),
                                'download' in rels)
 
     def _default_link_matcher(self, content, base_url):
@@ -286,7 +288,7 @@ class SimpleIndex(object):
             url = self.index_url + name + "/"
             self._process_url(url, name)
         except DownloadError:
-            # if an error occurs, try with the next index_url 
+            # if an error occurs, try with the next index_url
             # (provided by the mirrors)
             self._switch_to_next_mirror()
             self._distributions.clear()
@@ -305,7 +307,7 @@ class SimpleIndex(object):
                 auth, host = urllib2.splituser(netloc)
             else:
                 auth = None
-            
+
             # add index.html automatically for filesystem paths
             if scheme == 'file':
                 if url.endswith('/'):
