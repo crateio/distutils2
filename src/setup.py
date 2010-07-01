@@ -3,8 +3,10 @@
 __revision__ = "$Id$"
 import sys
 import os
+import re
 
-from distutils2.core import setup
+from distutils2.core import setup, Extension
+from distutils2.compiler.ccompiler import new_compiler
 from distutils2.command.sdist import sdist
 from distutils2.command.install import install
 from distutils2 import __version__ as VERSION
@@ -30,6 +32,7 @@ def get_tip_revision(path=os.getcwd()):
     return int(rev)
 
 DEV_SUFFIX = '.dev%d' % get_tip_revision('..')
+
 
 class install_hg(install):
 
@@ -62,9 +65,142 @@ class sdist_hg(sdist):
             self.distribution.metadata.version += DEV_SUFFIX
         sdist.run(self)
 
+
+# additional paths to check, set from the command line
+SSL_INCDIR=''   # --openssl-incdir=
+SSL_LIBDIR=''   # --openssl-libdir=
+SSL_DIR=''      # --openssl-prefix=
+
+def add_dir_to_list(dirlist, dir):
+    """Add the directory 'dir' to the list 'dirlist' (at the front) if
+    'dir' actually exists and is a directory.  If 'dir' is already in
+    'dirlist' it is moved to the front."""
+    if dir is not None and os.path.isdir(dir) and dir not in dirlist:
+        if dir in dirlist:
+            dirlist.remove(dir)
+        dirlist.insert(0, dir)
+
+
+def prepare_hashlib_extensions():
+    """Decide which C extensions to build and create the appropriate
+    Extension objects to build them.  Returns a list of Extensions."""
+
+    # this CCompiler object is only used to locate include files
+    compiler = new_compiler()
+
+    # Ensure that these paths are always checked
+    if os.name == 'posix':
+        add_dir_to_list(compiler.library_dirs, '/usr/local/lib')
+        add_dir_to_list(compiler.include_dirs, '/usr/local/include')
+
+        add_dir_to_list(compiler.library_dirs, '/usr/local/ssl/lib')
+        add_dir_to_list(compiler.include_dirs, '/usr/local/ssl/include')
+
+        add_dir_to_list(compiler.library_dirs, '/usr/contrib/ssl/lib')
+        add_dir_to_list(compiler.include_dirs, '/usr/contrib/ssl/include')
+
+        add_dir_to_list(compiler.library_dirs, '/usr/lib')
+        add_dir_to_list(compiler.include_dirs, '/usr/include')
+
+    # look in command line supplied paths
+    if SSL_LIBDIR:
+        add_dir_to_list(compiler.library_dirs, SSL_LIBDIR)
+    if SSL_INCDIR:
+        add_dir_to_list(compiler.include_dirs, SSL_INCDIR)
+    if SSL_DIR:
+        if os.name == 'nt':
+            add_dir_to_list(compiler.library_dirs, os.path.join(SSL_DIR, 'out32dll'))
+            # prefer the static library
+            add_dir_to_list(compiler.library_dirs, os.path.join(SSL_DIR, 'out32'))
+        else:
+            add_dir_to_list(compiler.library_dirs, os.path.join(SSL_DIR, 'lib'))
+        add_dir_to_list(compiler.include_dirs, os.path.join(SSL_DIR, 'include'))
+
+    osNameLibsMap = {
+        'posix':  ['ssl', 'crypto'],
+        'nt':     ['libeay32',  'gdi32', 'advapi32', 'user32'],
+    }
+
+    if not osNameLibsMap.has_key(os.name):
+        print "unknown OS, please update setup.py"
+        sys.exit(1)
+
+    exts = []
+
+    ssl_inc_dirs = []
+    ssl_incs = []
+    for inc_dir in compiler.include_dirs:
+        f = os.path.join(inc_dir, 'openssl', 'ssl.h')
+        if os.path.exists(f):
+            ssl_incs.append(f)
+            ssl_inc_dirs.append(inc_dir)
+
+    ssl_lib = compiler.find_library_file(compiler.library_dirs, osNameLibsMap[os.name][0])
+
+    # find out which version of OpenSSL we have
+    openssl_ver = 0
+    openssl_ver_re = re.compile(
+        '^\s*#\s*define\s+OPENSSL_VERSION_NUMBER\s+(0x[0-9a-fA-F]+)' )
+    ssl_inc_dir = ''
+    for ssl_inc_dir in ssl_inc_dirs:
+        name = os.path.join(ssl_inc_dir, 'openssl', 'opensslv.h')
+        if os.path.isfile(name):
+            try:
+                incfile = open(name, 'r')
+                for line in incfile:
+                    m = openssl_ver_re.match(line)
+                    if m:
+                        openssl_ver = eval(m.group(1))
+                        break
+            except IOError:
+                pass
+
+        # first version found is what we'll use
+        if openssl_ver:
+            break
+
+    if (ssl_inc_dir and
+        ssl_lib is not None and
+        openssl_ver >= 0x00907000):
+
+        print 'Using OpenSSL version 0x%08x from' % openssl_ver
+        print ' Headers:\t', ssl_inc_dir
+        print ' Library:\t', ssl_lib
+
+        # The _hashlib module wraps optimized implementations
+        # of hash functions from the OpenSSL library.
+        exts.append( Extension('_hashlib', ['_hashopenssl.c'],
+                               include_dirs = [ ssl_inc_dir ],
+                               library_dirs = [ os.path.dirname(ssl_lib) ],
+                               libraries = osNameLibsMap[os.name]) )
+    else:
+        exts.append( Extension('_sha', ['shamodule.c']) )
+        exts.append( Extension('_md5',
+                        sources = ['md5module.c', 'md5.c'],
+                        depends = ['md5.h']) )
+
+    if (not ssl_lib or openssl_ver < 0x00908000):
+        # OpenSSL doesn't do these until 0.9.8 so we'll bring our own
+        exts.append( Extension('_sha256', ['sha256module.c']) )
+        exts.append( Extension('_sha512', ['sha512module.c']) )
+
+    def prependModules(filename):
+        return os.path.join('Modules', filename)
+
+    # all the C code is in the Modules subdirectory, prepend the path
+    for ext in exts:
+        ext.sources = [ prependModules(fn) for fn in ext.sources ]
+        if hasattr(ext, 'depends') and ext.depends is not None:
+            ext.depends = [ prependModules(fn) for fn in ext.depends ]
+
+    return exts
+
 setup_kwargs = {}
 if sys.version < '2.6':
     setup_kwargs['scripts'] = ['distutils2/mkpkg.py']
+
+if sys.version < '2.5':
+    setup_kwargs['ext_modules'] = prepare_hashlib_extensions()
 
 _CLASSIFIERS = """\
 Development Status :: 3 - Alpha
@@ -97,6 +233,4 @@ setup (name="Distutils2",
                     ('Repository', 'http://hg.python.org/distutils2'),
                     ('Bug tracker', 'http://bugs.python.org')],
        **setup_kwargs
-       )
-
-
+          )
