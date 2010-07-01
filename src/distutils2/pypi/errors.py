@@ -21,7 +21,7 @@ class DownloadError(PyPIError):
     """An error has occurs while downloading"""
 
 
-class MD5HashDoesNotMatch(DownloadError):
+class HashDoesNotMatch(DownloadError):
     """Compared MD5 hashes does not match"""
 
 

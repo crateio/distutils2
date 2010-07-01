@@ -7,7 +7,7 @@ import tempfile
 from distutils2.tests.pypi_server import use_pypi_server
 from distutils2.tests.support import unittest
 from distutils2.version import VersionPredicate
-from distutils2.pypi.errors import MD5HashDoesNotMatch
+from distutils2.pypi.errors import HashDoesNotMatch
 from distutils2.pypi.dist import (PyPIDistribution as Dist,
                                   PyPIDistributions as Dists,
                                   split_archive_name)
@@ -39,7 +39,8 @@ class TestPyPIDistribution(unittest.TestCase):
                 'version': '1.1b2',
                 'url': {
                     'url': 'http://test.tld/foobar-1.1b2.tar.gz',  # no hash
-                    'md5': '123123123123123',
+                    'hashval': '123123123123123',
+                    'hashname': 'md5',
                 }
             },
             'foobar-1.1-rc2.tar.gz': {  # use suggested name
@@ -68,7 +69,8 @@ class TestPyPIDistribution(unittest.TestCase):
         self.assertDictEqual(d.url, {
             "url": "test_url",
             "is_external": True,
-            "md5": None,
+            "hashname": None,
+            "hashval": None,
         })
 
         # add a new url
@@ -77,7 +79,8 @@ class TestPyPIDistribution(unittest.TestCase):
         self.assertDictEqual(d.url, {
             "url": "internal_url",
             "is_external": False,
-            "md5": None,
+            "hashname": None,
+            "hashval": None,
         })
         self.assertEqual(2, len(d._urls))
 
@@ -111,13 +114,13 @@ class TestPyPIDistribution(unittest.TestCase):
         url = "%s/simple/foobar/foobar-0.1.tar.gz" % server.full_address
         # check md5 if given
         dist = Dist("FooBar", "0.1", url=url,
-            md5_hash="d41d8cd98f00b204e9800998ecf8427e")
+            hashname="md5", hashval="d41d8cd98f00b204e9800998ecf8427e")
         dist.download()
 
         # a wrong md5 fails
         dist2 = Dist("FooBar", "0.1", url=url,
-            md5_hash="wrongmd5")
-        self.assertRaises(MD5HashDoesNotMatch, dist2.download)
+            hashname="md5", hashval="wrongmd5")
+        self.assertRaises(HashDoesNotMatch, dist2.download)
 
         # we can omit the md5 hash
         dist3 = Dist("FooBar", "0.1", url=url)

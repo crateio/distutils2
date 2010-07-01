@@ -196,7 +196,8 @@ class PyPISimpleTestCase(unittest2.TestCase):
         # we have only one link, because links are compared without md5
         self.assertEqual(len(dists), 1)
         # the link should be from the index
-        self.assertEqual('12345678901234567', dists[0].url['md5'])
+        self.assertEqual('12345678901234567', dists[0].url['hashval'])
+        self.assertEqual('md5', dists[0].url['hashname'])
 
     @use_pypi_server(static_filesystem_paths=["with_norel_links"],
         static_uri_paths=["simple", "external"])
