@@ -5,11 +5,12 @@ import sys
 import os
 import re
 
+from distutils2 import __version__ as VERSION
+from distutils2 import log
 from distutils2.core import setup, Extension
 from distutils2.compiler.ccompiler import new_compiler
 from distutils2.command.sdist import sdist
 from distutils2.command.install import install
-from distutils2 import __version__ as VERSION
 from distutils2.util import find_packages
 
 f = open('README.txt')
@@ -161,9 +162,9 @@ def prepare_hashlib_extensions():
 
     if (ssl_inc_dir and ssl_lib is not None and openssl_ver >= 0x00907000):
 
-        print 'Using OpenSSL version 0x%08x from' % openssl_ver
-        print ' Headers:\t', ssl_inc_dir
-        print ' Library:\t', ssl_lib
+        log.info('Using OpenSSL version 0x%08x from', openssl_ver)
+        log.info(' Headers:\t%s', ssl_inc_dir)
+        log.info(' Library:\t%s', ssl_lib)
 
         # The _hashlib module wraps optimized implementations
         # of hash functions from the OpenSSL library.
