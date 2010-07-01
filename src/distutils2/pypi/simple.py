@@ -63,7 +63,8 @@ class SimpleIndex(object):
     """
 
     def __init__(self, index_url=PYPI_DEFAULT_INDEX_URL, hosts=DEFAULT_HOSTS,
-                 follow_externals=False, mirrors_url=PYPI_DEFAULT_MIRROR_URL,
+                 follow_externals=False, prefer_source=True,
+                 prefer_final=False, mirrors_url=PYPI_DEFAULT_MIRROR_URL,
                  mirrors=None, timeout=SOCKET_TIMEOUT):
         """Class constructor.
 
@@ -75,12 +76,19 @@ class SimpleIndex(object):
                       hosts.
         :param follow_externals: tell if following external links is needed or
                                  not. Default is False.
+        :param prefer_source: if there is binary and source distributions, the
+                              source prevails.
+        :param prefer_final: if the version is not mentioned, and the last
+                             version is not a "final" one (alpha, beta, etc.),
+                             pick up the last final version.
         :param mirrors_url: the url to look on for DNS records giving mirror
                             adresses.
         :param mirrors: a list of mirrors to check out if problems
                              occurs while working with the one given in "url"
         :param timeout: time in seconds to consider a url has timeouted.
         """
+        self.follow_externals = follow_externals
+
         if not index_url.endswith("/"):
             index_url += "/"
         self._index_urls = [index_url]
@@ -90,7 +98,8 @@ class SimpleIndex(object):
         self._index_urls.extend(mirrors)
         self._current_index_url = 0
         self._timeout = timeout
-        self.follow_externals = follow_externals
+        self._prefer_source = prefer_source
+        self._prefer_final = prefer_final
 
         # create a regexp to match all given hosts
         self._allowed_hosts = re.compile('|'.join(map(translate, hosts))).match
@@ -101,19 +110,7 @@ class SimpleIndex(object):
         self._processed_urls = []
         self._distributions = {}
 
-    def get(self, requirements):
-        """Browse the PyPI index to find distributions that fullfil the
-        given requirements, and return the most recent one.
-        """
-        predicate = self._get_version_predicate(requirements)
-        dists = self.find(predicate)
-
-        if len(dists) == 0:
-            raise DistributionNotFound(requirements)
-
-        return dists.get_last(predicate)
-
-    def find(self, requirements):
+    def find(self, requirements, prefer_source=None, prefer_final=None):
         """Browse the PyPI to find distributions that fullfil the given
         requirements.
 
@@ -121,8 +118,17 @@ class SimpleIndex(object):
                              version specifiers, as described in PEP345.
         :type requirements:  You can pass either a version.VersionPredicate
                              or a string.
+        :param prefer_source: if there is binary and source distributions, the
+                              source prevails.
+        :param prefer_final: if the version is not mentioned, and the last
+                             version is not a "final" one (alpha, beta, etc.),
+                             pick up the last final version.
         """
         requirements = self._get_version_predicate(requirements)
+        if prefer_source is None:
+            prefer_source = self._prefer_source
+        if prefer_final is None:
+            prefer_final = self._prefer_final
 
         # process the index for this project
         self._process_pypi_page(requirements.name)
@@ -130,12 +136,28 @@ class SimpleIndex(object):
         # filter with requirements and return the results
         if requirements.name in self._distributions:
             dists = self._distributions[requirements.name].filter(requirements)
+            dists.sort(prefer_source=prefer_source, prefer_final=prefer_final)
         else:
             dists = []
 
         return dists
 
-    def download(self, requirements, temp_path=None):
+    def get(self, requirements, *args, **kwargs):
+        """Browse the PyPI index to find distributions that fullfil the
+        given requirements, and return the most recent one.
+
+        You can specify prefer_final and prefer_source arguments here.
+        If not, the default one will be used.
+        """
+        predicate = self._get_version_predicate(requirements)
+        dists = self.find(predicate, *args, **kwargs)
+
+        if len(dists) == 0:
+            raise DistributionNotFound(requirements)
+
+        return dists.get_last(predicate)
+
+    def download(self, requirements, temp_path=None, *args, **kwargs):
         """Download the distribution, using the requirements.
 
         If more than one distribution match the requirements, use the last
@@ -146,8 +168,12 @@ class SimpleIndex(object):
         Returns the complete absolute path to the downloaded archive.
 
         :param requirements: The same as the find attribute of `find`.
+
+        You can specify prefer_final and prefer_source arguments here.
+        If not, the default one will be used.
         """
-        return self.get(requirements).download(path=temp_path)
+        return self.get(requirements, *args, **kwargs)\
+                   .download(path=temp_path)
 
     def _get_version_predicate(self, requirements):
         """Return a VersionPredicate object, from a string or an already
