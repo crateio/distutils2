@@ -187,6 +187,38 @@ class TestPyPIDistributions(unittest.TestCase):
         dists.append(Dist("Foobar", "1.1.1"))
         self.assertEqual(2, len(dists))
 
+    def test_prefer_final(self):
+        """Ordering support prefer_final"""
+
+        fb10 = Dist("FooBar", "1.0")  # final distribution
+        fb11a = Dist("FooBar", "1.1a")  # alpha
+        fb12a = Dist("FooBar", "1.2a")  # alpha
+        fb12b = Dist("FooBar", "1.2b")  # beta
+        dists = Dists([fb10, fb11a, fb12a, fb12b])
+
+        dists.sort(prefer_final=True)
+        self.assertEqual(fb10, dists[0])
+
+        dists.sort(prefer_final=False)
+        self.assertEqual(fb12b, dists[0])
+
+    def test_prefer_source(self):
+        """Ordering support prefer_source"""
+        fb_source = Dist("FooBar", "1.0", type="source")
+        fb_binary = Dist("FooBar", "1.0", type="binary")
+        fb2_binary = Dist("FooBar", "2.0", type="binary")
+        dists = Dists([fb_binary, fb_source])
+
+        dists.sort(prefer_source=True)
+        self.assertEqual(fb_source, dists[0])
+
+        dists.sort(prefer_source=False)
+        self.assertEqual(fb_binary, dists[0])
+
+        dists.append(fb2_binary)
+        dists.sort(prefer_source=True)
+        self.assertEqual(fb2_binary, dists[0])
+
 
 def test_suite():
     suite = unittest.TestSuite()
