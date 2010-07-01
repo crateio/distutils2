@@ -232,6 +232,9 @@ class PyPIDistributions(list):
         else:
             super(PyPIDistributions, self).append(o)
 
+    def sort(self, prefer_source=None, prefer_final=None, *args, **kwargs):
+        return super(PyPIDistributions, self).sort(*args, **kwargs)
+
 
 def split_archive_name(archive_name, probable_name=None):
     """Split an archive name into two parts: name and version.
