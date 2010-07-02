@@ -94,7 +94,10 @@ class SimpleIndex(object):
         self._index_urls = [index_url]
         # if no mirrors are defined, use the method described in PEP 381.
         if mirrors is None:
-            mirrors = socket.gethostbyname_ex(mirrors_url)[-1]
+            try:
+                mirrors = socket.gethostbyname_ex(mirrors_url)[-1]
+            except socket.gaierror:
+                mirrors = []
         self._index_urls.extend(mirrors)
         self._current_index_url = 0
         self._timeout = timeout
