@@ -154,6 +154,17 @@ class VersionTestCase(unittest.TestCase):
         # XXX need to silent the micro version in this case
         #assert not VersionPredicate('Ho (<3.0,!=2.6)').match('2.6.3')
 
+    def test_is_final(self):
+        # VersionPredicate knows is a distribution is a final one or not.
+        final_versions = ('1.0', '1.0.post456')
+        other_versions = ('1.0.dev1', '1.0a2', '1.0c3')
+
+        for version in final_versions:
+            self.assertTrue(V(version).is_final)
+        for version in other_versions:
+            self.assertFalse(V(version).is_final)
+
+
 def test_suite():
     #README = os.path.join(os.path.dirname(__file__), 'README.txt')
     #suite = [doctest.DocFileSuite(README), unittest.makeSuite(VersionTestCase)]
@@ -162,4 +173,3 @@ def test_suite():
 
 if __name__ == "__main__":
     unittest.main(defaultTest="test_suite")
-
