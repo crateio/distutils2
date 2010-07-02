@@ -89,9 +89,6 @@ class PyPISimpleTestCase(unittest2.TestCase):
         """Browse the index, asking for a specified distribution version
         """
         # The PyPI index contains links for version 1.0, 1.1, 2.0 and 2.0.1
-        # We query only for the version 1.1, so all distributions must be
-        # filled in the package_index (as the url has been scanned), but
-        # "get" must only return the one we want.
         index = self._get_simple_index(server)
         last_distribution = index.get("foobar")
 
@@ -103,7 +100,7 @@ class PyPISimpleTestCase(unittest2.TestCase):
         self.assertEqual(len(index._distributions["foobar"]), 4)
 
         # and returned the most recent one
-        self.assertEqual(last_distribution.version, '2.0.1')
+        self.assertEqual("%s" % last_distribution.version, '2.0.1')
 
     def test_is_browsable(self):
         index = simple.SimpleIndex(follow_externals=False)

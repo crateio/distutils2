@@ -136,7 +136,8 @@ class SimpleIndex(object):
         # filter with requirements and return the results
         if requirements.name in self._distributions:
             dists = self._distributions[requirements.name].filter(requirements)
-            dists.sort(prefer_source=prefer_source, prefer_final=prefer_final)
+            dists.sort_distributions(prefer_source=prefer_source,
+                                     prefer_final=prefer_final)
         else:
             dists = []
 
@@ -262,8 +263,9 @@ class SimpleIndex(object):
                     if self._is_distribution(link) or is_download:
                         self._processed_urls.append(link)
                         # it's a distribution, so create a dist object
-                        self._register_dist(PyPIDistribution.from_url(link,
-                            project_name, is_external=not self.index_url in url))
+                        dist = PyPIDistribution.from_url(link, project_name,
+                                    is_external=not self.index_url in url)
+                        self._register_dist(dist)
                     else:
                         if self._is_browsable(link) and follow_links:
                             self._process_url(link, project_name,

@@ -7,12 +7,14 @@ import re
 import urlparse
 import urllib
 import tempfile
+from operator import attrgetter
+
 try:
     import hashlib
 except ImportError:
     from distutils2._backport import hashlib
 
-from distutils2.version import suggest_normalized_version
+from distutils2.version import suggest_normalized_version, NormalizedVersion
 from distutils2.pypi.errors import HashDoesNotMatch, UnsupportedHashName
 
 EXTENSIONS = ".tar.gz .tar.bz2 .tar .zip .tgz .egg".split()
@@ -57,26 +59,26 @@ class PyPIDistribution(object):
 
         name, version = split_archive_name(archive_name)
         if extension_matched is True:
-            return PyPIDistribution(name, version, url=url, hashname="md5",
-                                    hashval=md5_hash, is_external=is_external)
+            return PyPIDistribution(name, version, url=url, url_hashname="md5",
+                                    url_hashval=md5_hash, url_is_external=is_external)
 
-    def __init__(self, name, version, type=None, url=None, hashname=None,
-                 hashval=None, is_external=True):
+    def __init__(self, name, version, type=None, url=None, url_hashname=None,
+                 url_hashval=None, url_is_external=True):
         """Create a new instance of PyPIDistribution.
 
         :param name: the name of the distribution
         :param version: the version of the distribution
         :param type: the type of the dist (eg. source, bin-*, etc.)
         :param url: URL where we found this distribution
-        :param hashname: the name of the hash we want to use. Refer to the
+        :param url_hashname: the name of the hash we want to use. Refer to the
                          hashlib.new documentation for more information.
-        :param hashval: the hash value.
-        :param is_external: we need to know if the provided url comes from an
+        :param url_hashval: the hash value.
+        :param url_is_external: we need to know if the provided url comes from an
                             index browsing, or from an external resource.
 
         """
         self.name = name
-        self.version = version
+        self.version = NormalizedVersion(version)
         self.type = type
         # set the downloaded path to None by default. The goal here
         # is to not download distributions multiple times
@@ -89,7 +91,7 @@ class PyPIDistribution(object):
         # order to dont make the selection process multiple times.
         self._urls = []
         self._url = None
-        self.add_url(url, hashname, hashval, is_external)
+        self.add_url(url, url_hashname, url_hashval, url_is_external)
 
     def add_url(self, url, hashname=None, hashval=None, is_external=True):
         """Add a new url to the list of urls"""
@@ -124,6 +126,16 @@ class PyPIDistribution(object):
                 self._url = self._urls[0]
         return self._url
 
+    @property
+    def is_source(self):
+        """return if the distribution is a source one or not"""
+        return self.type == 'source'
+
+    @property
+    def is_final(self):
+        """proxy to version.is_final"""
+        return self.version.is_final
+
     def download(self, path=None):
         """Download the distribution to a path, and return it.
 
@@ -156,8 +168,9 @@ class PyPIDistribution(object):
                     % (hashval.hexdigest(), expected_hashval))
 
     def __repr__(self):
-        return "<%s %s (%s)>" \
-            % (self.__class__.__name__, self.name, self.version)
+        return "%s %s %s %s" \
+            % (self.__class__.__name__, self.name, self.version,
+               self.type or "")
 
     def _check_is_comparable(self, other):
         if not isinstance(other, PyPIDistribution):
@@ -210,13 +223,28 @@ class PyPIDistributions(list):
             [dist for dist in self if dist.name == predicate.name and
             predicate.match(dist.version)])
 
-    def get_last(self, predicate):
+    def get_last(self, predicate, prefer_source=None, prefer_final=None):
         """Return the most up to date version, that satisfy the given
         predicate
         """
         distributions = self.filter(predicate)
-        distributions.sort()
-        return distributions[-1]
+        distributions.sort_distributions(prefer_source, prefer_final, reverse=True)
+        return distributions[0]
+
+    def get_same_name_and_version(self):
+        """Return lists of PyPIDistribution objects that refer to the same
+        name and version number. This do not consider the type (source, binary,
+        etc.)"""
+        processed = []
+        duplicates = []
+        for dist in self:
+            if (dist.name, dist.version) not in processed:
+                processed.append((dist.name, dist.version))
+                found_duplicates = [d for d in self if d.name == dist.name and
+                                    d.version == dist.version]
+                if len(found_duplicates) > 1:
+                    duplicates.append(found_duplicates)
+        return duplicates
 
     def append(self, o):
         """Append a new distribution to the list.
@@ -225,16 +253,30 @@ class PyPIDistributions(list):
         URL informations and add a new new url for the existing one.
         """
         similar_dists = [d for d in self if d.name == o.name and
-                         d.version == o.version]
+                         d.version == o.version and d.type == o.type]
         if len(similar_dists) > 0:
             dist = similar_dists[0]
             dist.add_url(**o.url)
         else:
             super(PyPIDistributions, self).append(o)
 
-    def sort(self, prefer_source=None, prefer_final=None, *args, **kwargs):
-        return super(PyPIDistributions, self).sort(*args, **kwargs)
+    def sort_distributions(self, prefer_source=None, prefer_final=None,
+                           reverse=True, *args, **kwargs):
+        """order the results with the given properties"""
 
+        sort_by = []
+        if prefer_final is not None:
+            if prefer_final is True:
+                sort_by.append("is_final")
+        sort_by.append("version")
+
+        if prefer_source is not None:
+            if prefer_source is True:
+                sort_by.append("is_source")
+
+        super(PyPIDistributions, self).sort(
+            key=lambda i: [getattr(i, arg) for arg in sort_by],
+            reverse=reverse, *args, **kwargs)
 
 def split_archive_name(archive_name, probable_name=None):
     """Split an archive name into two parts: name and version.

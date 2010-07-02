@@ -21,18 +21,18 @@ class TestPyPIDistribution(unittest.TestCase):
         given on construction"""
         dist = Dist("FooBar", "1.1")
         self.assertEqual("FooBar", dist.name)
-        self.assertEqual("1.1", dist.version)
+        self.assertEqual("1.1", "%s" % dist.version)
 
     def test_from_url(self):
         """Test that the Distribution object can be built from a single URL"""
         url_list = {
             'FooBar-1.1.0.tar.gz': {
                 'name': 'foobar',  # lowercase the name
-                'version': '1.1.0',
+                'version': '1.1',
             },
             'Foo-Bar-1.1.0.zip': {
                 'name': 'foo-bar',  # keep the dash
-                'version': '1.1.0',
+                'version': '1.1',
             },
             'foobar-1.1b2.tar.gz#md5=123123123123123': {
                 'name': 'foobar',
@@ -60,7 +60,10 @@ class TestPyPIDistribution(unittest.TestCase):
                     for val in value.keys():
                         self.assertEqual(value[val], mylist[val])
                 else:
-                    self.assertEqual(getattr(dist, attribute), value)
+                    if attribute == "version":
+                        self.assertEqual("%s" % getattr(dist, "version"), value)
+                    else:
+                        self.assertEqual(getattr(dist, attribute), value)
 
     def test_get_url(self):
         """Test that the url property works well"""
@@ -114,12 +117,12 @@ class TestPyPIDistribution(unittest.TestCase):
         url = "%s/simple/foobar/foobar-0.1.tar.gz" % server.full_address
         # check md5 if given
         dist = Dist("FooBar", "0.1", url=url,
-            hashname="md5", hashval="d41d8cd98f00b204e9800998ecf8427e")
+            url_hashname="md5", url_hashval="d41d8cd98f00b204e9800998ecf8427e")
         dist.download()
 
         # a wrong md5 fails
         dist2 = Dist("FooBar", "0.1", url=url,
-            hashname="md5", hashval="wrongmd5")
+            url_hashname="md5", url_hashval="wrongmd5")
         self.assertRaises(HashDoesNotMatch, dist2.download)
 
         # we can omit the md5 hash
@@ -143,10 +146,10 @@ class TestPyPIDistribution(unittest.TestCase):
     def test_hashname(self):
         """Invalid hashnames raises an exception on assignation"""
         # should be ok
-        Dist("FooBar", "0.1", hashname="md5", hashval="value")
+        Dist("FooBar", "0.1", url_hashname="md5", url_hashval="value")
 
         self.assertRaises(UnsupportedHashName, Dist, "FooBar", "0.1",
-                          hashname="invalid_hashname", hashval="value")
+                          url_hashname="invalid_hashname", url_hashval="value")
 
 
 class TestPyPIDistributions(unittest.TestCase):
@@ -176,30 +179,35 @@ class TestPyPIDistributions(unittest.TestCase):
         # If no object matches, just add "normally" the object to the list.
 
         dists = Dists([
-            Dist("FooBar", "1.1", url="external_url"),
+            Dist("FooBar", "1.1", url="external_url", type="source"),
         ])
         self.assertEqual(1, len(dists))
         dists.append(Dist("FooBar", "1.1", url="internal_url",
-                     is_external=False))
+                          url_is_external=False, type="source"))
         self.assertEqual(1, len(dists))
         self.assertEqual(2, len(dists[0]._urls))
 
-        dists.append(Dist("Foobar", "1.1.1"))
+        dists.append(Dist("Foobar", "1.1.1", type="source"))
         self.assertEqual(2, len(dists))
+
+        # when adding a distribution whith a different type, a new distribution
+        # has to be added.
+        dists.append(Dist("Foobar", "1.1.1", type="binary"))
+        self.assertEqual(3, len(dists))
 
     def test_prefer_final(self):
         """Ordering support prefer_final"""
 
         fb10 = Dist("FooBar", "1.0")  # final distribution
-        fb11a = Dist("FooBar", "1.1a")  # alpha
-        fb12a = Dist("FooBar", "1.2a")  # alpha
-        fb12b = Dist("FooBar", "1.2b")  # beta
+        fb11a = Dist("FooBar", "1.1a1")  # alpha
+        fb12a = Dist("FooBar", "1.2a1")  # alpha
+        fb12b = Dist("FooBar", "1.2b1")  # beta
         dists = Dists([fb10, fb11a, fb12a, fb12b])
 
-        dists.sort(prefer_final=True)
+        dists.sort_distributions(prefer_final=True)
         self.assertEqual(fb10, dists[0])
 
-        dists.sort(prefer_final=False)
+        dists.sort_distributions(prefer_final=False)
         self.assertEqual(fb12b, dists[0])
 
     def test_prefer_source(self):
@@ -209,15 +217,26 @@ class TestPyPIDistributions(unittest.TestCase):
         fb2_binary = Dist("FooBar", "2.0", type="binary")
         dists = Dists([fb_binary, fb_source])
 
-        dists.sort(prefer_source=True)
+        dists.sort_distributions(prefer_source=True)
         self.assertEqual(fb_source, dists[0])
 
-        dists.sort(prefer_source=False)
+        dists.sort_distributions(prefer_source=False)
         self.assertEqual(fb_binary, dists[0])
 
         dists.append(fb2_binary)
-        dists.sort(prefer_source=True)
+        dists.sort_distributions(prefer_source=True)
         self.assertEqual(fb2_binary, dists[0])
+
+    def test_get_same_name_and_version(self):
+        """PyPIDistributions can return a list of "duplicates"
+        """
+        fb_source = Dist("FooBar", "1.0", type="source")
+        fb_binary = Dist("FooBar", "1.0", type="binary")
+        fb2_binary = Dist("FooBar", "2.0", type="binary")
+        dists = Dists([fb_binary, fb_source, fb2_binary])
+        duplicates = dists.get_same_name_and_version()
+        self.assertTrue(1, len(duplicates))
+        self.assertIn(fb_source, duplicates[0])
 
 
 def test_suite():
