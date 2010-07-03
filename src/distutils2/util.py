@@ -6,6 +6,7 @@ Miscellaneous utility functions.
 __revision__ = "$Id: util.py 77761 2010-01-26 22:46:15Z tarek.ziade $"
 
 import sys, os, string, re
+from copy import copy
 from fnmatch import fnmatchcase
 
 from distutils2.errors import (DistutilsPlatformError, DistutilsFileError,
@@ -394,9 +395,14 @@ byte_compile(files, optimize=%r, force=%r,
             cmd.insert(1, "-O")
         elif optimize == 2:
             cmd.insert(1, "-OO")
-        spawn(cmd, dry_run=dry_run)
-        execute(os.remove, (script_name,), "removing %s" % script_name,
-                dry_run=dry_run)
+
+        env = copy(os.environ)
+        env['PYTHONPATH'] = ':'.join(sys.path)
+        try:
+            spawn(cmd, dry_run=dry_run, env=env)
+        finally:
+            execute(os.remove, (script_name,), "removing %s" % script_name,
+                    dry_run=dry_run)
 
     # "Direct" byte-compilation: use the py_compile module to compile
     # right here, right now.  Note that the script generated in indirect
