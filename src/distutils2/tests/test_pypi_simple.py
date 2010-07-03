@@ -5,9 +5,10 @@ import sys
 import os
 import shutil
 import tempfile
-import unittest2
 import urllib2
 
+from distutils2.tests import support
+from distutils2.tests.support import unittest
 from distutils2.tests.pypi_server import use_pypi_server, PyPIServer, \
                                          PYPI_DEFAULT_STATIC_PATH
 from distutils2.pypi import simple
@@ -15,7 +16,8 @@ from distutils2.pypi import simple
 from distutils2.errors import DistutilsError
 
 
-class PyPISimpleTestCase(unittest2.TestCase):
+class PyPISimpleTestCase(support.TempdirManager,
+                         unittest.TestCase):
 
     def _get_simple_index(self, server, base_url="/simple/", hosts=None,
         *args, **kwargs):
@@ -282,7 +284,7 @@ class PyPISimpleTestCase(unittest2.TestCase):
         self.assertEqual(4, len(dists))
 
 def test_suite():
-    return unittest2.makeSuite(PyPISimpleTestCase)
+    return unittest.makeSuite(PyPISimpleTestCase)
 
 if __name__ == '__main__':
-    unittest2.main(defaultTest="test_suite")
+    run_unittest(test_suite())

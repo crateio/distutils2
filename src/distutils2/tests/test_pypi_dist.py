@@ -5,6 +5,7 @@ import shutil
 import tempfile
 
 from distutils2.tests.pypi_server import use_pypi_server
+from distutils2.tests import support
 from distutils2.tests.support import unittest
 from distutils2.version import VersionPredicate
 from distutils2.pypi.errors import HashDoesNotMatch, UnsupportedHashName
@@ -13,7 +14,8 @@ from distutils2.pypi.dist import (PyPIDistribution as Dist,
                                   split_archive_name)
 
 
-class TestPyPIDistribution(unittest.TestCase):
+class TestPyPIDistribution(support.TempdirManager,
+                           unittest.TestCase):
     """tests the pypi.dist.PyPIDistribution class"""
 
     def test_instanciation(self):
@@ -246,4 +248,4 @@ def test_suite():
     return suite
 
 if __name__ == '__main__':
-    unittest.main(defaultTest="test_suite")
+    run_unittest(test_suite())
