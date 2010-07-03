@@ -112,7 +112,11 @@ Common commands: (see '--help-commands' for more)
         ('requires', None,
          "print the list of packages/modules required"),
         ('obsoletes', None,
-         "print the list of packages/modules made obsolete")
+         "print the list of packages/modules made obsolete"),
+        ('use-2to3', None,
+         "use 2to3 to make source python 3.x compatible"),
+        ('convert-2to3-doctests', None,
+         "use 2to3 to convert doctests in seperate text files"), 
         ]
     display_option_names = map(lambda x: translate_longopt(x[0]),
                                display_options)
@@ -206,6 +210,8 @@ Common commands: (see '--help-commands' for more)
         self.scripts = None
         self.data_files = None
         self.password = ''
+        self.use_2to3 = False
+        self.convert_2to3_doctests = []
 
         # And now initialize bookkeeping stuff that can't be supplied by
         # the caller at all.  'command_obj' maps command names to
@@ -581,15 +587,11 @@ Common commands: (see '--help-commands' for more)
         instance, analogous to the .finalize_options() method of Command
         objects.
         """
-
-        # XXX conversion -- removed
-        #for attr in ('keywords', 'platforms'):
-        #    value = self.metadata.get_field(attr)
-        #    if value is None:
-        #        continue
-        #    if isinstance(value, str):
-        #        value = [elm.strip() for elm in value.split(',')]
-        #        setattr(self.metadata, attr, value)
+        if getattr(self, 'convert_2to3_doctests', None):
+            self.convert_2to3_doctests = [os.path.join(p) 
+                                for p in self.convert_2to3_doctests]
+        else:
+            self.convert_2to3_doctests = []
 
     def _show_help(self, parser, global_options=1, display_options=1,
                    commands=[]):
