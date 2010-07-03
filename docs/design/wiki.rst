@@ -399,7 +399,7 @@ Open issues
   the folder hierarchy from the module until we find a setup.cfg? A setup.cfg is
   necessary if you use distutils2, is it not?
 
-  -> information founded in setup.cfg will be put in the *FILES* file upon
+  -> information found in setup.cfg will be put in the *FILES* file upon
   installation in the egg-info directory. 
   IOW in the unbuit-egg case, we would need to create that dir, then use 
   pkgutil APIs.

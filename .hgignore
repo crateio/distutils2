@@ -1,5 +1,8 @@
-.*\.pyc$
-.*\.pyo$
-^src/build
-^docs/build
-.*\.swp$
+syntax: glob
+*.py[co]
+__pycache__/
+configure.cache
+build/
+MANIFEST
+dist/
+*.swp

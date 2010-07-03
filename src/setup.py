@@ -11,6 +11,7 @@ from distutils2.core import setup, Extension
 from distutils2.compiler.ccompiler import new_compiler
 from distutils2.command.sdist import sdist
 from distutils2.command.install import install
+from distutils2 import __version__ as VERSION
 from distutils2.util import find_packages
 
 f = open('README.txt')

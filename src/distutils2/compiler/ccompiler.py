@@ -10,7 +10,7 @@ import os
 import re
 
 from distutils2.errors import (CompileError, LinkError, UnknownFileError,
-                              DistutilsPlatformError, DistutilsModuleError)
+                               DistutilsPlatformError, DistutilsModuleError)
 from distutils2.spawn import spawn
 from distutils2.util import split_quoted, execute, newer_group
 from distutils2 import log
@@ -76,7 +76,7 @@ def customize_compiler(compiler):
 
         compiler.shared_lib_extension = so_ext
 
-class CCompiler:
+class CCompiler(object):
     """Abstract base class to define the interface that must be implemented
     by real compiler classes.  Also has some utility methods used by
     several compiler classes.
@@ -800,14 +800,16 @@ class CCompiler:
             library_dirs = []
         fd, fname = tempfile.mkstemp(".c", funcname, text=True)
         f = os.fdopen(fd, "w")
-        for incl in includes:
-            f.write("""#include "%s"\n""" % incl)
-        f.write("""\
+        try:
+            for incl in includes:
+                f.write("""#include "%s"\n""" % incl)
+            f.write("""\
 main (int argc, char **argv) {
     %s();
 }
 """ % funcname)
-        f.close()
+        finally:
+            f.close()
         try:
             objects = self.compile([fname], include_dirs=include_dirs)
         except CompileError:
@@ -1048,7 +1050,7 @@ def new_compiler(plat=None, compiler=None, verbose=0, dry_run=0, force=0):
         module_name = "distutils2.compiler." + module_name
         __import__ (module_name)
         module = sys.modules[module_name]
-        klass = vars(module)[class_name]
+        cls = vars(module)[class_name]
     except ImportError:
         raise DistutilsModuleError, \
               "can't compile C/C++ code: unable to load module '%s'" % \
@@ -1061,7 +1063,7 @@ def new_compiler(plat=None, compiler=None, verbose=0, dry_run=0, force=0):
     # XXX The None is necessary to preserve backwards compatibility
     # with classes that expect verbose to be the first positional
     # argument.
-    return klass(None, dry_run, force)
+    return cls(None, dry_run, force)
 
 
 def gen_preprocess_options(macros, include_dirs):

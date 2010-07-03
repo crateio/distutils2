@@ -30,7 +30,7 @@ class ConverterTestCase(unittest.TestCase):
             wanted = file_.replace('before', 'after')
             wanted = _read_file(os.path.join(convdir, wanted))
             res = ref.refactor_string(original, 'setup.py')
-            self.assertEquals(str(res), wanted)
+            self.assertEqual(str(res), wanted)
 
 def test_suite():
     return unittest.makeSuite(ConverterTestCase)

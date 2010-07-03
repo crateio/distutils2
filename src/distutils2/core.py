@@ -2,8 +2,9 @@
 
 The only module that needs to be imported to use the Distutils; provides
 the 'setup' function (which is to be called from the setup script).  Also
-indirectly provides the Distribution and Command classes, although they are
-really defined in distutils2.dist and distutils2.cmd.
+exports useful classes so that setup scripts can import them from here
+although they are really defined in other modules: Distribution, Command,
+PyPIRCommand, Extension, find_packages.
 """
 
 __revision__ = "$Id: core.py 77704 2010-01-23 09:23:15Z tarek.ziade $"
@@ -12,7 +13,7 @@ import sys
 import os
 
 from distutils2.errors import (DistutilsSetupError, DistutilsArgError,
-                              DistutilsError, CCompilerError)
+                               DistutilsError, CCompilerError)
 from distutils2.util import grok_environment_error
 
 # Mainly import these so setup scripts can "from distutils2.core import" them.
@@ -20,6 +21,7 @@ from distutils2.dist import Distribution
 from distutils2.command.cmd import Command
 from distutils2.config import PyPIRCCommand
 from distutils2.extension import Extension
+from distutils2.util import find_packages
 
 # This is a barebones help message generated displayed when the user
 # runs the setup script with no arguments at all.  More useful help
@@ -94,11 +96,7 @@ def setup(**attrs):
 
     # Determine the distribution class -- either caller-supplied or
     # our Distribution (see below).
-    klass = attrs.get('distclass')
-    if klass:
-        del attrs['distclass']
-    else:
-        klass = Distribution
+    distclass = attrs.pop('distclass', Distribution)
 
     if 'script_name' not in attrs:
         attrs['script_name'] = os.path.basename(sys.argv[0])
@@ -108,7 +106,7 @@ def setup(**attrs):
     # Create the Distribution instance, using the remaining arguments
     # (ie. everything except distclass) to initialize it
     try:
-        _setup_distribution = dist = klass(attrs)
+        _setup_distribution = dist = distclass(attrs)
     except DistutilsSetupError, msg:
         if 'name' in attrs:
             raise SystemExit, "error in %s setup command: %s" % \

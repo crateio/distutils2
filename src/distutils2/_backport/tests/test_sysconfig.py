@@ -8,7 +8,7 @@ import sys
 import os
 import shutil
 from copy import copy, deepcopy
-from ConfigParser import ConfigParser
+from ConfigParser import RawConfigParser
 
 from test.test_support import run_unittest, TESTFN
 
@@ -107,7 +107,7 @@ class TestSysConfig(unittest.TestCase):
         wanted.sort()
         scheme = scheme.items()
         scheme.sort()
-        self.assertEquals(scheme, wanted)
+        self.assertEqual(scheme, wanted)
 
     def test_get_config_vars(self):
         cvars = get_config_vars()
@@ -120,21 +120,21 @@ class TestSysConfig(unittest.TestCase):
         sys.version = ('2.4.4 (#71, Oct 18 2006, 08:34:43) '
                        '[MSC v.1310 32 bit (Intel)]')
         sys.platform = 'win32'
-        self.assertEquals(get_platform(), 'win32')
+        self.assertEqual(get_platform(), 'win32')
 
         # windows XP, amd64
         os.name = 'nt'
         sys.version = ('2.4.4 (#71, Oct 18 2006, 08:34:43) '
                        '[MSC v.1310 32 bit (Amd64)]')
         sys.platform = 'win32'
-        self.assertEquals(get_platform(), 'win-amd64')
+        self.assertEqual(get_platform(), 'win-amd64')
 
         # windows XP, itanium
         os.name = 'nt'
         sys.version = ('2.4.4 (#71, Oct 18 2006, 08:34:43) '
                        '[MSC v.1310 32 bit (Itanium)]')
         sys.platform = 'win32'
-        self.assertEquals(get_platform(), 'win-ia64')
+        self.assertEqual(get_platform(), 'win-ia64')
 
         # macbook
         os.name = 'posix'
@@ -153,9 +153,9 @@ class TestSysConfig(unittest.TestCase):
         maxint = sys.maxint
         try:
             sys.maxint = 2147483647
-            self.assertEquals(get_platform(), 'macosx-10.3-ppc')
+            self.assertEqual(get_platform(), 'macosx-10.3-ppc')
             sys.maxint = 9223372036854775807
-            self.assertEquals(get_platform(), 'macosx-10.3-ppc64')
+            self.assertEqual(get_platform(), 'macosx-10.3-ppc64')
         finally:
             sys.maxint = maxint
 
@@ -173,9 +173,9 @@ class TestSysConfig(unittest.TestCase):
         maxint = sys.maxint
         try:
             sys.maxint = 2147483647
-            self.assertEquals(get_platform(), 'macosx-10.3-i386')
+            self.assertEqual(get_platform(), 'macosx-10.3-i386')
             sys.maxint = 9223372036854775807
-            self.assertEquals(get_platform(), 'macosx-10.3-x86_64')
+            self.assertEqual(get_platform(), 'macosx-10.3-x86_64')
         finally:
             sys.maxint = maxint
 
@@ -186,33 +186,33 @@ class TestSysConfig(unittest.TestCase):
                                        '-fno-strict-aliasing -fno-common '
                                        '-dynamic -DNDEBUG -g -O3')
 
-        self.assertEquals(get_platform(), 'macosx-10.4-fat')
+        self.assertEqual(get_platform(), 'macosx-10.4-fat')
 
         get_config_vars()['CFLAGS'] = ('-arch x86_64 -arch i386 -isysroot '
                                        '/Developer/SDKs/MacOSX10.4u.sdk  '
                                        '-fno-strict-aliasing -fno-common '
                                        '-dynamic -DNDEBUG -g -O3')
 
-        self.assertEquals(get_platform(), 'macosx-10.4-intel')
+        self.assertEqual(get_platform(), 'macosx-10.4-intel')
 
         get_config_vars()['CFLAGS'] = ('-arch x86_64 -arch ppc -arch i386 -isysroot '
                                        '/Developer/SDKs/MacOSX10.4u.sdk  '
                                        '-fno-strict-aliasing -fno-common '
                                        '-dynamic -DNDEBUG -g -O3')
-        self.assertEquals(get_platform(), 'macosx-10.4-fat3')
+        self.assertEqual(get_platform(), 'macosx-10.4-fat3')
 
         get_config_vars()['CFLAGS'] = ('-arch ppc64 -arch x86_64 -arch ppc -arch i386 -isysroot '
                                        '/Developer/SDKs/MacOSX10.4u.sdk  '
                                        '-fno-strict-aliasing -fno-common '
                                        '-dynamic -DNDEBUG -g -O3')
-        self.assertEquals(get_platform(), 'macosx-10.4-universal')
+        self.assertEqual(get_platform(), 'macosx-10.4-universal')
 
         get_config_vars()['CFLAGS'] = ('-arch x86_64 -arch ppc64 -isysroot '
                                        '/Developer/SDKs/MacOSX10.4u.sdk  '
                                        '-fno-strict-aliasing -fno-common '
                                        '-dynamic -DNDEBUG -g -O3')
 
-        self.assertEquals(get_platform(), 'macosx-10.4-fat64')
+        self.assertEqual(get_platform(), 'macosx-10.4-fat64')
 
         for arch in ('ppc', 'i386', 'x86_64', 'ppc64'):
             get_config_vars()['CFLAGS'] = ('-arch %s -isysroot '
@@ -220,7 +220,7 @@ class TestSysConfig(unittest.TestCase):
                                            '-fno-strict-aliasing -fno-common '
                                            '-dynamic -DNDEBUG -g -O3'%(arch,))
 
-            self.assertEquals(get_platform(), 'macosx-10.4-%s'%(arch,))
+            self.assertEqual(get_platform(), 'macosx-10.4-%s'%(arch,))
 
         # linux debian sarge
         os.name = 'posix'
@@ -230,7 +230,7 @@ class TestSysConfig(unittest.TestCase):
         self._set_uname(('Linux', 'aglae', '2.6.21.1dedibox-r7',
                     '#1 Mon Apr 30 17:25:38 CEST 2007', 'i686'))
 
-        self.assertEquals(get_platform(), 'linux-i686')
+        self.assertEqual(get_platform(), 'linux-i686')
 
         # XXX more platforms to tests here
 
@@ -241,11 +241,11 @@ class TestSysConfig(unittest.TestCase):
     def test_get_scheme_names(self):
         wanted = ('nt', 'nt_user', 'os2', 'os2_home', 'posix_home',
                   'posix_prefix', 'posix_user')
-        self.assertEquals(get_scheme_names(), wanted)
+        self.assertEqual(get_scheme_names(), wanted)
 
     def test_expand_globals(self):
 
-        config = ConfigParser()
+        config = RawConfigParser()
         config.add_section('globals')
         config.set('globals', 'foo', 'ok')
         config.add_section('posix')
@@ -254,8 +254,8 @@ class TestSysConfig(unittest.TestCase):
 
         _expand_globals(config)
 
-        self.assertEquals(config.get('posix', 'foo'), 'ok')
-        self.assertEquals(config.get('posix', 'more'), '/etc/ok')
+        self.assertEqual(config.get('posix', 'foo'), 'ok')
+        self.assertEqual(config.get('posix', 'more'), '/etc/ok')
 
         # we might not have globals after all
         # extending again (==no more globals section)

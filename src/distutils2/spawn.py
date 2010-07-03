@@ -14,7 +14,7 @@ import os
 from distutils2.errors import DistutilsPlatformError, DistutilsExecError
 from distutils2 import log
 
-def spawn(cmd, search_path=1, verbose=0, dry_run=0):
+def spawn(cmd, search_path=1, verbose=0, dry_run=0, env=None):
     """Run another program, specified as a command list 'cmd', in a new process.
 
     'cmd' is just the argument list for the new process, ie.
@@ -27,15 +27,18 @@ def spawn(cmd, search_path=1, verbose=0, dry_run=0):
     must be the exact path to the executable.  If 'dry_run' is true,
     the command will not actually be run.
 
+    If 'env' is given, it's a environment dictionary used for the execution
+    environment.
+
     Raise DistutilsExecError if running the program fails in any way; just
     return on success.
     """
     if os.name == 'posix':
-        _spawn_posix(cmd, search_path, dry_run=dry_run)
+        _spawn_posix(cmd, search_path, dry_run=dry_run, env=env)
     elif os.name == 'nt':
-        _spawn_nt(cmd, search_path, dry_run=dry_run)
+        _spawn_nt(cmd, search_path, dry_run=dry_run, env=env)
     elif os.name == 'os2':
-        _spawn_os2(cmd, search_path, dry_run=dry_run)
+        _spawn_os2(cmd, search_path, dry_run=dry_run, env=env)
     else:
         raise DistutilsPlatformError, \
               "don't know how to spawn programs on platform '%s'" % os.name
@@ -56,7 +59,7 @@ def _nt_quote_args(args):
             args[i] = '"%s"' % arg
     return args
 
-def _spawn_nt(cmd, search_path=1, verbose=0, dry_run=0):
+def _spawn_nt(cmd, search_path=1, verbose=0, dry_run=0, env=None):
     executable = cmd[0]
     cmd = _nt_quote_args(cmd)
     if search_path:
@@ -66,7 +69,11 @@ def _spawn_nt(cmd, search_path=1, verbose=0, dry_run=0):
     if not dry_run:
         # spawn for NT requires a full path to the .exe
         try:
-            rc = os.spawnv(os.P_WAIT, executable, cmd)
+            if env is None:
+                rc = os.spawnv(os.P_WAIT, executable, cmd)
+            else:
+                rc = os.spawnve(os.P_WAIT, executable, cmd, env)
+
         except OSError, exc:
             # this seems to happen when the command isn't found
             raise DistutilsExecError, \
@@ -76,7 +83,7 @@ def _spawn_nt(cmd, search_path=1, verbose=0, dry_run=0):
             raise DistutilsExecError, \
                   "command '%s' failed with exit status %d" % (cmd[0], rc)
 
-def _spawn_os2(cmd, search_path=1, verbose=0, dry_run=0):
+def _spawn_os2(cmd, search_path=1, verbose=0, dry_run=0, env=None):
     executable = cmd[0]
     if search_path:
         # either we find one or it stays the same
@@ -85,7 +92,11 @@ def _spawn_os2(cmd, search_path=1, verbose=0, dry_run=0):
     if not dry_run:
         # spawnv for OS/2 EMX requires a full path to the .exe
         try:
-            rc = os.spawnv(os.P_WAIT, executable, cmd)
+            if env is None:
+                rc = os.spawnv(os.P_WAIT, executable, cmd)
+            else:
+                rc = os.spawnve(os.P_WAIT, executable, cmd, env)
+
         except OSError, exc:
             # this seems to happen when the command isn't found
             raise DistutilsExecError, \
@@ -97,16 +108,24 @@ def _spawn_os2(cmd, search_path=1, verbose=0, dry_run=0):
                   "command '%s' failed with exit status %d" % (cmd[0], rc)
 
 
-def _spawn_posix(cmd, search_path=1, verbose=0, dry_run=0):
+def _spawn_posix(cmd, search_path=1, verbose=0, dry_run=0, env=None):
     log.info(' '.join(cmd))
     if dry_run:
         return
-    exec_fn = search_path and os.execvp or os.execv
+
+    if env is None:
+        exec_fn = search_path and os.execvp or os.execv
+    else:
+        exec_fn = search_path and os.execvpe or os.execve
+
     pid = os.fork()
 
     if pid == 0:  # in the child
         try:
-            exec_fn(cmd[0], cmd)
+            if env is None:
+                exec_fn(cmd[0], cmd)
+            else:
+                exec_fn(cmd[0], cmd, env)
         except OSError, e:
             sys.stderr.write("unable to execute %s: %s\n" %
                              (cmd[0], e.strerror))

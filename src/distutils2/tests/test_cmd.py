@@ -43,7 +43,7 @@ class CommandTestCase(unittest.TestCase):
 
         # making sure execute gets called properly
         def _execute(func, args, exec_msg, level):
-            self.assertEquals(exec_msg, 'generating out from in')
+            self.assertEqual(exec_msg, 'generating out from in')
         cmd.force = True
         cmd.execute = _execute
         cmd.make_file(infiles='in', outfile='out', func='func', args=())
@@ -62,7 +62,7 @@ class CommandTestCase(unittest.TestCase):
 
         wanted = ["command options for 'MyCmd':", '  option1 = 1',
                   '  option2 = 1']
-        self.assertEquals(msgs, wanted)
+        self.assertEqual(msgs, wanted)
 
     def test_ensure_string(self):
         cmd = self.cmd
@@ -80,7 +80,7 @@ class CommandTestCase(unittest.TestCase):
         cmd = self.cmd
         cmd.option1 = 'ok,dok'
         cmd.ensure_string_list('option1')
-        self.assertEquals(cmd.option1, ['ok', 'dok'])
+        self.assertEqual(cmd.option1, ['ok', 'dok'])
 
         cmd.option2 = ['xxx', 'www']
         cmd.ensure_string_list('option2')

@@ -13,7 +13,7 @@ class DependencyGraph(object):
     """
     Represents a dependency graph between distributions.
 
-    The depedency relationships are stored in an ``adjacency_list`` that maps
+    The dependency relationships are stored in an ``adjacency_list`` that maps
     distributions to a list of ``(other, label)`` tuples where  ``other``
     is a distribution and the edge is labelled with ``label`` (i.e. the version
     specifier, if such was provided). Also, for more efficient traversal, for

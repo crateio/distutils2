@@ -14,7 +14,6 @@ import warnings
 
 from distutils2 import log
 from distutils2.log import DEBUG, INFO, WARN, ERROR, FATAL
-from distutils2.core import Distribution
 
 if sys.version_info >= (2, 7):
     # improved unittest package from 2.7's standard library
@@ -42,7 +41,7 @@ class LoggingSilencer(object):
 
     def _log(self, level, msg, args):
         if level not in (DEBUG, INFO, WARN, ERROR, FATAL):
-            raise ValueError('%s wrong log level' % str(level))
+            raise ValueError('%s wrong log level' % level)
         self.logs.append((level, msg, args))
 
     def get_logs(self, *levels):
@@ -105,6 +104,7 @@ class TempdirManager(object):
         It returns the package directory and the distribution
         instance.
         """
+        from distutils2.dist import Distribution
         tmp_dir = self.mkdtemp()
         pkg_dir = os.path.join(tmp_dir, pkg_name)
         os.mkdir(pkg_dir)

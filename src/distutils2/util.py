@@ -1,12 +1,12 @@
 """distutils.util
 
-Miscellaneous utility functions -- anything that doesn't fit into
-one of the other *util.py modules.
+Miscellaneous utility functions.
 """
 
 __revision__ = "$Id: util.py 77761 2010-01-26 22:46:15Z tarek.ziade $"
 
 import sys, os, string, re
+from copy import copy
 from fnmatch import fnmatchcase
 
 from distutils2.errors import (DistutilsPlatformError, DistutilsFileError,
@@ -350,12 +350,8 @@ def byte_compile(py_files, optimize=0, force=0, prefix=None, base_dir=None,
     # "Indirect" byte-compilation: write a temporary script and then
     # run it with the appropriate flags.
     if not direct:
-        try:
-            from tempfile import mkstemp
-            (script_fd, script_name) = mkstemp(".py")
-        except ImportError:
-            from tempfile import mktemp
-            (script_fd, script_name) = None, mktemp(".py")
+        from tempfile import mkstemp
+        script_fd, script_name = mkstemp(".py")
         log.info("writing byte-compilation script '%s'", script_name)
         if not dry_run:
             if script_fd is not None:
@@ -363,43 +359,50 @@ def byte_compile(py_files, optimize=0, force=0, prefix=None, base_dir=None,
             else:
                 script = open(script_name, "w")
 
-            script.write("""\
-from distutils.util import byte_compile
+            try:
+                script.write("""\
+from distutils2.util import byte_compile
 files = [
 """)
 
-            # XXX would be nice to write absolute filenames, just for
-            # safety's sake (script should be more robust in the face of
-            # chdir'ing before running it).  But this requires abspath'ing
-            # 'prefix' as well, and that breaks the hack in build_lib's
-            # 'byte_compile()' method that carefully tacks on a trailing
-            # slash (os.sep really) to make sure the prefix here is "just
-            # right".  This whole prefix business is rather delicate -- the
-            # problem is that it's really a directory, but I'm treating it
-            # as a dumb string, so trailing slashes and so forth matter.
+                # XXX would be nice to write absolute filenames, just for
+                # safety's sake (script should be more robust in the face of
+                # chdir'ing before running it).  But this requires abspath'ing
+                # 'prefix' as well, and that breaks the hack in build_lib's
+                # 'byte_compile()' method that carefully tacks on a trailing
+                # slash (os.sep really) to make sure the prefix here is "just
+                # right".  This whole prefix business is rather delicate -- the
+                # problem is that it's really a directory, but I'm treating it
+                # as a dumb string, so trailing slashes and so forth matter.
 
-            #py_files = map(os.path.abspath, py_files)
-            #if prefix:
-            #    prefix = os.path.abspath(prefix)
+                #py_files = map(os.path.abspath, py_files)
+                #if prefix:
+                #    prefix = os.path.abspath(prefix)
 
-            script.write(",\n".join(map(repr, py_files)) + "]\n")
-            script.write("""
+                script.write(",\n".join(map(repr, py_files)) + "]\n")
+                script.write("""
 byte_compile(files, optimize=%r, force=%r,
              prefix=%r, base_dir=%r,
              verbose=%r, dry_run=0,
              direct=1)
 """ % (optimize, force, prefix, base_dir, verbose))
 
-            script.close()
+            finally:
+                script.close()
 
         cmd = [sys.executable, script_name]
         if optimize == 1:
             cmd.insert(1, "-O")
         elif optimize == 2:
             cmd.insert(1, "-OO")
-        spawn(cmd, dry_run=dry_run)
-        execute(os.remove, (script_name,), "removing %s" % script_name,
-                dry_run=dry_run)
+
+        env = copy(os.environ)
+        env['PYTHONPATH'] = ':'.join(sys.path)
+        try:
+            spawn(cmd, dry_run=dry_run, env=env)
+        finally:
+            execute(os.remove, (script_name,), "removing %s" % script_name,
+                    dry_run=dry_run)
 
     # "Direct" byte-compilation: use the py_compile module to compile
     # right here, right now.  Note that the script generated in indirect
@@ -539,10 +542,12 @@ def write_file(filename, contents):
     """Create a file with the specified name and write 'contents' (a
     sequence of strings without line terminators) to it.
     """
-    f = open(filename, "w")
-    for line in contents:
-        f.write(line + "\n")
-    f.close()
+    try:
+        f = open(filename, "w")
+        for line in contents:
+            f.write(line + "\n")
+    finally:
+        f.close()
 
 def _is_package(path):
     """Returns True if path is a package (a dir with an __init__ file."""
