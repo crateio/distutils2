@@ -296,6 +296,35 @@ class UtilTestCase(support.EnvironGuard,
         res = find_packages([root], ['pkg1.pkg2'])
         self.assertEqual(set(res), set(['pkg1', 'pkg5', 'pkg1.pkg3', 'pkg1.pkg3.pkg6']))
 
+    def test_run_2to3_on_code(self):
+        content = "print 'test'"
+        converted_content = "print('test')"
+        file_handle = tempfile.NamedTemporaryFile(delete=True)
+        file_name = file_handle.name
+        file_handle.write(content)
+        file_handle.flush()
+        file_handle.seek(0)
+        from distutils2.util import run_2to3
+        run_2to3([file_name])
+        new_content = "".join(file_handle.read())
+        file_handle.close()
+        self.assertEquals(new_content, converted_content)
+
+    def test_run_2to3_on_doctests(self):
+        # to check if text files containing doctests only get converted.
+        content = ">>> print 'test'\ntest\n"
+        converted_content = ">>> print('test')\ntest\n\n"
+        file_handle = tempfile.NamedTemporaryFile(delete=True)
+        file_name = file_handle.name
+        file_handle.write(content)
+        file_handle.flush()
+        file_handle.seek(0)
+        from distutils2.util import run_2to3
+        run_2to3([file_name], doctests_only=True)
+        new_content = "".join(file_handle.readlines())
+        file_handle.close()
+        self.assertEquals(new_content, converted_content)
+
 
 def test_suite():
     return unittest.makeSuite(UtilTestCase)
