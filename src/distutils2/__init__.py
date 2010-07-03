@@ -18,3 +18,9 @@ __all__ = ['__version__']
 
 __revision__ = "$Id: __init__.py 78020 2010-02-06 16:37:32Z benjamin.peterson $"
 __version__ = "1.0a2"
+
+
+# when set to True, converts doctests by default too 
+run_2to3_on_doctests = True
+# Standard package names for fixer packages
+lib2to3_fixer_packages = ['lib2to3.fixes']

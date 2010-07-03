@@ -6,14 +6,65 @@ __revision__ = "$Id: build_py.py 76956 2009-12-21 01:22:46Z tarek.ziade $"
 
 import os
 import sys
+import logging
 from glob import glob
 
 from distutils2.core import Command
 from distutils2.errors import DistutilsOptionError, DistutilsFileError
 from distutils2.util import convert_path
-from distutils2 import log
+from distutils2.converter.refactor import DistutilsRefactoringTool
 
-class build_py(Command):
+# marking public APIs
+__all__ = ['Mixin2to3', 'build_py']
+
+try:
+    from distutils2.util import Mixin2to3 as _Mixin2to3
+    from lib2to3.refactor import get_fixers_from_package
+    _CONVERT = True
+    _KLASS = _Mixin2to3
+except ImportError:
+    _CONVERT = False
+    _KLASS = object
+
+class Mixin2to3(_KLASS):
+    """ The base class which can be used for refactoring. When run under
+    Python 3.0, the run_2to3 method provided by Mixin2to3 is overridden. 
+    When run on Python 2.x, it merely creates a class which overrides run_2to3, 
+    yet does nothing in particular with it. 
+    """
+    if _CONVERT:
+        def _run_2to3(self, files, doctests=[]):
+            """ Takes a list of files and doctests, and performs conversion
+            on those. 
+              - First, the files which contain the code(`files`) are converted.
+              - Second, the doctests in `files` are converted.
+              - Thirdly, the doctests in `doctests` are converted.
+            """
+
+            # Convert the ".py" files.
+            logging.info("Converting Python code")
+            _KLASS.run_2to3(self, files)
+
+            # Convert the doctests in the ".py" files.
+            logging.info("Converting doctests with '.py' files")
+            _KLASS.run_2to3(self, files, doctests_only=True)
+
+            # If the following conditions are met, then convert:-
+            # 1. User has specified the 'convert_2to3_doctests' option. So, we
+            #    can expect that the list 'doctests' is not empty.
+            # 2. The default is allow distutils2 to allow conversion of text files
+            #    containing doctests. It is set as 
+            #    distutils2.run_2to3_on_doctests
+
+            if doctests != [] and distutils2.run_2to3_on_doctests:
+                logging.info("Converting text files which contain doctests")
+                _KLASS.run_2to3(self, doctests, doctests_only=True)
+    else:
+        # If run on Python 2.x, there is nothing to do.
+        def _run_2to3(self, files, doctests=[]):
+            pass
+
+class build_py(Command, Mixin2to3):
 
     description = "\"build\" pure Python modules (copy to build directory)"
 
@@ -39,6 +90,8 @@ class build_py(Command):
         self.compile = 0
         self.optimize = 0
         self.force = None
+        self._updated_files = []
+        self._doctests_2to3 = []
 
     def finalize_options(self):
         self.set_undefined_options('build',
@@ -93,6 +146,9 @@ class build_py(Command):
             self.build_packages()
             self.build_package_data()
 
+        if self.distribution.use_2to3 and self_updated_files:
+            self.run_2to3(self._updated_files, self._doctests_2to3)
+
         self.byte_compile(self.get_outputs(include_bytecode=0))
 
     def get_data_files(self):
@@ -137,8 +193,10 @@ class build_py(Command):
             for filename in filenames:
                 target = os.path.join(build_dir, filename)
                 self.mkpath(os.path.dirname(target))
-                self.copy_file(os.path.join(src_dir, filename), target,
-                               preserve_mode=False)
+                outf, copied = self.copy_file(os.path.join(src_dir, filename),
+                               target, preserve_mode=False)
+                if copied and srcfile in self.distribution.convert_2to3.doctests:
+                    self._doctests_2to3.append(outf)
 
     def get_package_dir(self, package):
         """Return the directory, relative to the top of the source
