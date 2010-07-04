@@ -150,8 +150,8 @@ Common commands: (see '--help-commands' for more)
         # information here (and enough command-line options) that it's
         # worth it.  Also delegate 'get_XXX()' methods to the 'metadata'
         # object in a sneaky and underhanded (but efficient!) way.
-
         self.metadata = DistributionMetadata()
+
         #for basename in self.metadata._METHOD_BASENAMES:
         #    method_name = "get_" + basename
         #    setattr(self, method_name, getattr(self.metadata, method_name))

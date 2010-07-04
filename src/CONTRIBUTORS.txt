@@ -18,6 +18,7 @@ Thanks to:
 - Jeremy Kloth
 - Martin von Löwis
 - Carl Meyer
+- Alexis Metaireau
 - Michael Mulich
 - George Peris
 - Sean Reifschneider

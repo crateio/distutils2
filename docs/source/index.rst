@@ -14,6 +14,10 @@ Contents:
    metadata
    pkgutil
    depgraph
+   new_commands
+   test_framework
+   pypi
+   version
 
 Indices and tables
 ==================

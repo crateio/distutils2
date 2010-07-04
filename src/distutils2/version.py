@@ -36,6 +36,7 @@ _VERSION_RE = re.compile(r'''
     (?P<postdev>(\.post(?P<post>\d+))?(\.dev(?P<dev>\d+))?)?
     $''', re.VERBOSE)
 
+
 class NormalizedVersion(object):
     """A rational version.
 
@@ -61,7 +62,8 @@ class NormalizedVersion(object):
         @param error_on_huge_major_num {bool} Whether to consider an
             apparent use of a year or full date as the major version number
             an error. Default True. One of the observed patterns on PyPI before
-            the introduction of `NormalizedVersion` was version numbers like this:
+            the introduction of `NormalizedVersion` was version numbers like
+            this:
                 2009.01.03
                 20040603
                 2005.01
@@ -71,6 +73,7 @@ class NormalizedVersion(object):
             the possibility of using a version number like "1.0" (i.e.
             where the major number is less than that huge major number).
         """
+        self.is_final = True  # by default, consider a version as final.
         self._parse(s, error_on_huge_major_num)
 
     @classmethod
@@ -101,6 +104,7 @@ class NormalizedVersion(object):
             block += self._parse_numdots(groups.get('prerelversion'), s,
                                          pad_zeros_length=1)
             parts.append(tuple(block))
+            self.is_final = False
         else:
             parts.append(_FINAL_MARKER)
 
@@ -115,6 +119,7 @@ class NormalizedVersion(object):
                     postdev.append(_FINAL_MARKER[0])
             if dev is not None:
                 postdev.extend(['dev', int(dev)])
+                self.is_final = False
             parts.append(tuple(postdev))
         else:
             parts.append(_FINAL_MARKER)
@@ -204,6 +209,7 @@ class NormalizedVersion(object):
     # See http://docs.python.org/reference/datamodel#object.__hash__
     __hash__ = object.__hash__
 
+
 def suggest_normalized_version(s):
     """Suggest a normalized version close to the given version string.
 
@@ -215,7 +221,7 @@ def suggest_normalized_version(s):
     on observation of versions currently in use on PyPI. Given a dump of
     those version during PyCon 2009, 4287 of them:
     - 2312 (53.93%) match NormalizedVersion without change
-    - with the automatic suggestion
+      with the automatic suggestion
     - 3474 (81.04%) match when using this suggestion method
 
     @param s {str} An irrational version string.
@@ -305,7 +311,6 @@ def suggest_normalized_version(s):
     # PyPI stats: ~21 (0.62%) better
     rs = re.sub(r"\.?(pre|preview|-c)(\d+)$", r"c\g<2>", rs)
 
-
     # Tcl/Tk uses "px" for their post release markers
     rs = re.sub(r"p(\d+)$", r".post\1", rs)
 
@@ -321,6 +326,7 @@ _PREDICATE = re.compile(r"(?i)^\s*([a-z_]\w*(?:\.[a-z_]\w*)*)(.*)")
 _VERSIONS = re.compile(r"^\s*\((.*)\)\s*$")
 _PLAIN_VERSIONS = re.compile(r"^\s*(.*)\s*$")
 _SPLIT_CMP = re.compile(r"^\s*(<=|>=|<|>|!=|==)\s*([^\s,]+)\s*$")
+
 
 def _split_predicate(predicate):
     match = _SPLIT_CMP.match(predicate)
@@ -368,6 +374,7 @@ class VersionPredicate(object):
                 return False
         return True
 
+
 class _Versions(VersionPredicate):
     def __init__(self, predicate):
         predicate = predicate.strip()
@@ -379,6 +386,7 @@ class _Versions(VersionPredicate):
         self.predicates = [_split_predicate(pred.strip())
                            for pred in predicates.split(',')]
 
+
 class _Version(VersionPredicate):
     def __init__(self, predicate):
         predicate = predicate.strip()
@@ -388,6 +396,7 @@ class _Version(VersionPredicate):
         self.name = None
         self.predicates = _split_predicate(match.groups()[0])
 
+
 def is_valid_predicate(predicate):
     try:
         VersionPredicate(predicate)
@@ -395,6 +404,7 @@ def is_valid_predicate(predicate):
         return False
     else:
         return True
+
 
 def is_valid_versions(predicate):
     try:
@@ -404,6 +414,7 @@ def is_valid_versions(predicate):
     else:
         return True
 
+
 def is_valid_version(predicate):
     try:
         _Version(predicate)
@@ -411,4 +422,3 @@ def is_valid_version(predicate):
         return False
     else:
         return True
-

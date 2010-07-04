@@ -160,7 +160,7 @@ class upload(PyPIRCCommand):
         # send the data
         try:
             result = urlopen(request)
-            status = result.getcode()
+            status = result.code
             reason = result.msg
         except socket.error, e:
             self.announce(str(e), log.ERROR)
