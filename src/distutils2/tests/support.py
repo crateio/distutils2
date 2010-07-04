@@ -64,12 +64,22 @@ class TempdirManager(object):
     def setUp(self):
         super(TempdirManager, self).setUp()
         self.tempdirs = []
+        self.tempfiles = []
 
     def tearDown(self):
         super(TempdirManager, self).tearDown()
         while self.tempdirs:
             d = self.tempdirs.pop()
             shutil.rmtree(d, os.name in ('nt', 'cygwin'))
+        for file_ in self.tempfiles:
+            if os.path.exists(file_):
+                os.remove(file_)
+
+    def mktempfile(self):
+        """Create a temporary file that will be cleaned up."""
+        tempfile_ = tempfile.NamedTemporaryFile()
+        self.tempfiles.append(tempfile_.name)
+        return tempfile_
 
     def mkdtemp(self):
         """Create a temporary directory that will be cleaned up.

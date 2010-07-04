@@ -28,14 +28,14 @@ except ImportError:
 
 class Mixin2to3(_KLASS):
     """ The base class which can be used for refactoring. When run under
-    Python 3.0, the run_2to3 method provided by Mixin2to3 is overridden. 
-    When run on Python 2.x, it merely creates a class which overrides run_2to3, 
-    yet does nothing in particular with it. 
+    Python 3.0, the run_2to3 method provided by Mixin2to3 is overridden.
+    When run on Python 2.x, it merely creates a class which overrides run_2to3,
+    yet does nothing in particular with it.
     """
     if _CONVERT:
         def _run_2to3(self, files, doctests=[]):
             """ Takes a list of files and doctests, and performs conversion
-            on those. 
+            on those.
               - First, the files which contain the code(`files`) are converted.
               - Second, the doctests in `files` are converted.
               - Thirdly, the doctests in `doctests` are converted.
@@ -53,7 +53,7 @@ class Mixin2to3(_KLASS):
             # 1. User has specified the 'convert_2to3_doctests' option. So, we
             #    can expect that the list 'doctests' is not empty.
             # 2. The default is allow distutils2 to allow conversion of text files
-            #    containing doctests. It is set as 
+            #    containing doctests. It is set as
             #    distutils2.run_2to3_on_doctests
 
             if doctests != [] and distutils2.run_2to3_on_doctests:
@@ -258,8 +258,8 @@ class build_py(Command, Mixin2to3):
             if os.path.isfile(init_py):
                 return init_py
             else:
-                log.warn(("package init file '%s' not found " +
-                          "(or not a regular file)"), init_py)
+                logging.warning(("package init file '%s' not found " +
+                                 "(or not a regular file)"), init_py)
 
         # Either not in a package at all (__init__.py not expected), or
         # __init__.py doesn't exist -- so don't return the filename.
@@ -267,7 +267,8 @@ class build_py(Command, Mixin2to3):
 
     def check_module(self, module, module_file):
         if not os.path.isfile(module_file):
-            log.warn("file %s (for module %s) not found", module_file, module)
+            logging.warning("file %s (for module %s) not found",
+                            module_file, module)
             return False
         else:
             return True

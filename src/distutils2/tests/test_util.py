@@ -296,10 +296,11 @@ class UtilTestCase(support.EnvironGuard,
         res = find_packages([root], ['pkg1.pkg2'])
         self.assertEqual(set(res), set(['pkg1', 'pkg5', 'pkg1.pkg3', 'pkg1.pkg3.pkg6']))
 
+    @unittest.skipUnless(sys.version > '2.6', 'Need Python 2.6 or more')
     def test_run_2to3_on_code(self):
         content = "print 'test'"
         converted_content = "print('test')"
-        file_handle = tempfile.NamedTemporaryFile(delete=True)
+        file_handle = self.mktempfile()
         file_name = file_handle.name
         file_handle.write(content)
         file_handle.flush()
@@ -310,11 +311,12 @@ class UtilTestCase(support.EnvironGuard,
         file_handle.close()
         self.assertEquals(new_content, converted_content)
 
+    @unittest.skipUnless(sys.version > '2.6', 'Need Python 2.6 or more')
     def test_run_2to3_on_doctests(self):
         # to check if text files containing doctests only get converted.
         content = ">>> print 'test'\ntest\n"
         converted_content = ">>> print('test')\ntest\n\n"
-        file_handle = tempfile.NamedTemporaryFile(delete=True)
+        file_handle = self.mktempfile()
         file_name = file_handle.name
         file_handle.write(content)
         file_handle.flush()
