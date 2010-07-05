@@ -7,7 +7,7 @@ import shutil
 import tempfile
 import urllib2
 
-from distutils2.tests import support
+from distutils2.tests import support, run_unittest
 from distutils2.tests.support import unittest
 from distutils2.tests.pypi_server import use_pypi_server, PyPIServer, \
                                          PYPI_DEFAULT_STATIC_PATH
@@ -84,7 +84,7 @@ class PyPISimpleTestCase(support.TempdirManager,
             url = 'http://example.com'
             page = ('<a href="http://www.famfamfam.com]('
                     'http://www.famfamfam.com/">')
-            index.process_index(url, page)
+            index._process_url(url, page)
 
     @use_pypi_server("test_found_links")
     def test_found_links(self, server):
@@ -213,9 +213,6 @@ class PyPISimpleTestCase(support.TempdirManager,
         # and rel="homepage"
         self.assertIn("%s/simple/foobar/" % server.full_address,
             index._processed_urls)  # it's the simple index page
-
-        # FIXME
-        return
 
         self.assertIn("%s/external/homepage.html" % server.full_address,
             index._processed_urls)  # the external homepage is rel="homepage"
