@@ -3,7 +3,7 @@ import doctest
 import os
 
 from distutils2.version import NormalizedVersion as V
-from distutils2.version import IrrationalVersionError
+from distutils2.version import HugeMajorVersionNumError, IrrationalVersionError
 from distutils2.version import suggest_normalized_version as suggest
 from distutils2.version import VersionPredicate
 from distutils2.tests.support import unittest
@@ -21,6 +21,10 @@ class VersionTestCase(unittest.TestCase):
                 (V('1.2.0.0.0'), '1.2'),
                 (V('1.0.dev345'), '1.0.dev345'),
                 (V('1.0.post456.dev623'), '1.0.post456.dev623'))
+
+    def test_repr(self):
+
+        self.assertEqual(repr(V('1.0')), "NormalizedVersion('1.0')")
 
     def test_basic_versions(self):
 
@@ -44,9 +48,20 @@ class VersionTestCase(unittest.TestCase):
         for s in irrational:
             self.assertRaises(IrrationalVersionError, V, s)
 
+    def test_huge_version(self):
+
+        self.assertEquals(str(V('1980.0')), '1980.0')
+        self.assertRaises(HugeMajorVersionNumError, V, '1981.0')
+        self.assertEquals(str(V('1981.0', error_on_huge_major_num=False)), '1981.0')
+
     def test_comparison(self):
         r"""
         >>> V('1.2.0') == '1.2'
+        Traceback (most recent call last):
+        ...
+        TypeError: cannot compare NormalizedVersion and str
+
+        >>> V('1.2') < '1.3'
         Traceback (most recent call last):
         ...
         TypeError: cannot compare NormalizedVersion and str
@@ -55,8 +70,24 @@ class VersionTestCase(unittest.TestCase):
         True
         >>> V('1.2.0') == V('1.2.3')
         False
+        >>> V('1.2.0') != V('1.2.3')
+        True
         >>> V('1.2.0') < V('1.2.3')
         True
+        >>> V('1.2.0') < V('1.2.0')
+        False
+        >>> V('1.2.0') <= V('1.2.0')
+        True
+        >>> V('1.2.0') <= V('1.2.3')
+        True
+        >>> V('1.2.3') <= V('1.2.0')
+        False
+        >>> V('1.2.0') >= V('1.2.0')
+        True
+        >>> V('1.2.3') >= V('1.2.0')
+        True
+        >>> V('1.2.0') >= V('1.2.3')
+        False
         >>> (V('1.0') > V('1.0b2'))
         True
         >>> (V('1.0') > V('1.0c2') > V('1.0c1') > V('1.0b2') > V('1.0b1')
@@ -101,6 +132,7 @@ class VersionTestCase(unittest.TestCase):
         self.assertEqual(suggest('1.0c2'), '1.0c2')
         self.assertEqual(suggest('walla walla washington'), None)
         self.assertEqual(suggest('2.4c1'), '2.4c1')
+        self.assertEqual(suggest('v1.0'), '1.0')
 
         # from setuptools
         self.assertEqual(suggest('0.4a1.r10'), '0.4a1.post10')
@@ -151,6 +183,8 @@ class VersionTestCase(unittest.TestCase):
         self.assertFalse(VersionPredicate('Hey (<=2.5)').match('2.6.0'))
         self.assertTrue(VersionPredicate('Hey (>=2.5)').match('2.5.1'))
 
+        self.assertRaises(ValueError, VersionPredicate, '')
+
         # XXX need to silent the micro version in this case
         #assert not VersionPredicate('Ho (<3.0,!=2.6)').match('2.6.3')
 
@@ -163,6 +197,11 @@ class VersionTestCase(unittest.TestCase):
             self.assertTrue(V(version).is_final)
         for version in other_versions:
             self.assertFalse(V(version).is_final)
+
+    def test_parse_numdots(self):
+        # For code coverage completeness
+        self.assertEquals(V('1.0')._parse_numdots('1.0', '1.0', pad_zeros_length=3),
+                          [1, 0, 0])
 
 
 def test_suite():
