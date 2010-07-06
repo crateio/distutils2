@@ -36,11 +36,16 @@ class FixImports(BaseFix):
             pattern = []
             next = imp.next_sibling
             while next is not None:
+                # Get the first child if we have a Node
+                if not hasattr(next, "value"):
+                    next = next.children[0]
                 pattern.append(next.value)
                 if not hasattr(next, "next_sibling"):
                     next.next_sibling = next.get_next_sibling()
                 next = next.next_sibling
-            if pattern == ['import', 'setup']:
+            
+            if set(pattern).issubset(set(
+                    ['import', ',', 'setup', 'find_packages'])):
                 imp.value = 'distutils2.core'
                 imp.changed()
 
