@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 """Tests for PEP 376 pkgutil functionality"""
-import unittest2
-import unittest2.compatibility
 import sys
 import os
 import csv
@@ -17,6 +15,15 @@ except ImportError:
 from test.test_support import run_unittest, TESTFN
 
 from distutils2._backport import pkgutil
+from distutils2.tests.support import unittest
+
+try:
+    from os.path import relpath
+except ImportError:
+    try:
+        from unittest.compatibility import relpath
+    except ImportError:
+        from unittest2.compatibility import relpath
 
 # TODO Add a test for getting a distribution that is provided by another
 #   distribution.
@@ -24,7 +31,7 @@ from distutils2._backport import pkgutil
 # TODO Add a test for absolute pathed RECORD items (e.g. /etc/myapp/config.ini)
 
 # Adapted from Python 2.7's trunk
-class TestPkgUtilData(unittest2.TestCase):
+class TestPkgUtilData(unittest.TestCase):
 
     def setUp(self):
         self.dirname = tempfile.mkdtemp()
@@ -92,7 +99,7 @@ class TestPkgUtilData(unittest2.TestCase):
         del sys.modules[pkg]
 
 # Adapted from Python 2.7's trunk
-class TestPkgUtilPEP302(unittest2.TestCase):
+class TestPkgUtilPEP302(unittest.TestCase):
 
     class MyTestLoader(object):
         def load_module(self, fullname):
@@ -135,7 +142,7 @@ class TestPkgUtilPEP302(unittest2.TestCase):
         del sys.modules['foo']
 
 
-class TestPkgUtilDistribution(unittest2.TestCase):
+class TestPkgUtilDistribution(unittest.TestCase):
     """Tests the pkgutil.Distribution class"""
 
     def setUp(self):
@@ -152,7 +159,7 @@ class TestPkgUtilDistribution(unittest2.TestCase):
             return md5_hash.hexdigest()
 
         def record_pieces(file):
-            path = os.path.relpath(file, sys.prefix)
+            path = relpath(file, sys.prefix)
             digest = get_hexdigest(file)
             size = os.path.getsize(file)
             return [path, digest, size]
@@ -172,7 +179,7 @@ class TestPkgUtilDistribution(unittest2.TestCase):
             for file in ['INSTALLER', 'METADATA', 'REQUESTED']:
                 record_writer.writerow(record_pieces(
                     os.path.join(distinfo_dir, file)))
-            record_writer.writerow([os.path.relpath(record_file, sys.prefix)])
+            record_writer.writerow([relpath(record_file, sys.prefix)])
             del record_writer # causes the RECORD file to close
             record_reader = csv.reader(open(record_file, 'rb'))
             record_data = []
@@ -227,10 +234,10 @@ class TestPkgUtilDistribution(unittest2.TestCase):
             distinfo_name + '.dist-info')
         true_path = [self.fake_dists_path, distinfo_name, \
                      'grammar', 'utils.py']
-        true_path = os.path.relpath(os.path.join(*true_path), sys.prefix)
+        true_path = relpath(os.path.join(*true_path), sys.prefix)
         false_path = [self.fake_dists_path, 'towel_stuff-0.1', 'towel_stuff',
             '__init__.py']
-        false_path = os.path.relpath(os.path.join(*false_path), sys.prefix)
+        false_path = relpath(os.path.join(*false_path), sys.prefix)
 
         # Test if the distribution uses the file in question
         from distutils2._backport.pkgutil import Distribution
@@ -289,7 +296,7 @@ class TestPkgUtilDistribution(unittest2.TestCase):
         self.assertEqual(sorted(found), sorted(distinfo_record_paths))
 
 
-class TestPkgUtilPEP376(unittest2.TestCase):
+class TestPkgUtilPEP376(unittest.TestCase):
     """Tests for the new functionality added in PEP 376."""
 
     def setUp(self):
@@ -528,12 +535,12 @@ class TestPkgUtilPEP376(unittest2.TestCase):
 
 
 def test_suite():
-    suite = unittest2.TestSuite()
-    testcase_loader = unittest2.loader.defaultTestLoader.loadTestsFromTestCase
-    suite.addTest(testcase_loader(TestPkgUtilData))
-    suite.addTest(testcase_loader(TestPkgUtilDistribution))
-    suite.addTest(testcase_loader(TestPkgUtilPEP302))
-    suite.addTest(testcase_loader(TestPkgUtilPEP376))
+    suite = unittest.TestSuite()
+    load = unittest.defaultTestLoader.loadTestsFromTestCase
+    suite.addTest(load(TestPkgUtilData))
+    suite.addTest(load(TestPkgUtilDistribution))
+    suite.addTest(load(TestPkgUtilPEP302))
+    suite.addTest(load(TestPkgUtilPEP376))
     return suite
 
 
