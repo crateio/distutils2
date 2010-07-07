@@ -7,13 +7,11 @@ import shutil
 import tempfile
 import urllib2
 
+from distutils2.pypi import simple
 from distutils2.tests import support, run_unittest
 from distutils2.tests.support import unittest
-from distutils2.tests.pypi_server import use_pypi_server, PyPIServer, \
-                                         PYPI_DEFAULT_STATIC_PATH
-from distutils2.pypi import simple
-
-from distutils2.errors import DistutilsError
+from distutils2.tests.pypi_server import (use_pypi_server, PyPIServer,
+                                          PYPI_DEFAULT_STATIC_PATH)
 
 
 class PyPISimpleTestCase(support.TempdirManager,
@@ -276,4 +274,4 @@ def test_suite():
     return unittest.makeSuite(PyPISimpleTestCase)
 
 if __name__ == '__main__':
-    run_unittest(test_suite())
+    unittest.main(defaultTest="test_suite")
