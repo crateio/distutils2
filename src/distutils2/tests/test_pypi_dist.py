@@ -5,8 +5,8 @@ import shutil
 import tempfile
 
 from distutils2.tests.pypi_server import use_pypi_server
-from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests import run_unittest
+from distutils2.tests.support import unittest, TempdirManager
 from distutils2.version import VersionPredicate
 from distutils2.pypi.errors import HashDoesNotMatch, UnsupportedHashName
 from distutils2.pypi.dist import (PyPIDistribution as Dist,
@@ -14,7 +14,7 @@ from distutils2.pypi.dist import (PyPIDistribution as Dist,
                                   split_archive_name)
 
 
-class TestPyPIDistribution(support.TempdirManager,
+class TestPyPIDistribution(TempdirManager,
                            unittest.TestCase):
     """Tests the pypi.dist.PyPIDistribution class"""
 
@@ -116,34 +116,34 @@ class TestPyPIDistribution(support.TempdirManager,
     def test_download(self, server):
         # Download is possible, and the md5 is checked if given
 
+        add_to_tmpdirs = lambda x: self.tempdirs.append(os.path.dirname(x))
+
         url = "%s/simple/foobar/foobar-0.1.tar.gz" % server.full_address
         # check md5 if given
         dist = Dist("FooBar", "0.1", url=url,
             url_hashname="md5", url_hashval="d41d8cd98f00b204e9800998ecf8427e")
-        dist.download()
+        add_to_tmpdirs(dist.download())
 
         # a wrong md5 fails
         dist2 = Dist("FooBar", "0.1", url=url,
             url_hashname="md5", url_hashval="wrongmd5")
+
         self.assertRaises(HashDoesNotMatch, dist2.download)
+        add_to_tmpdirs(dist2.downloaded_location)
 
         # we can omit the md5 hash
         dist3 = Dist("FooBar", "0.1", url=url)
-        dist3.download()
+        add_to_tmpdirs(dist3.download())
 
         # and specify a temporary location
         # for an already downloaded dist
-        path1 = tempfile.mkdtemp()
+        path1 = self.mkdtemp()
         dist3.download(path=path1)
         # and for a new one
-        path2_base = tempfile.mkdtemp()
+        path2_base = self.mkdtemp()
         dist4 = Dist("FooBar", "0.1", url=url)
         path2 = dist4.download(path=path2_base)
         self.assertTrue(path2_base in path2)
-
-        # remove the temp folders
-        shutil.rmtree(path1)
-        shutil.rmtree(os.path.dirname(path2))
 
     def test_hashname(self):
         # Invalid hashnames raises an exception on assignation
