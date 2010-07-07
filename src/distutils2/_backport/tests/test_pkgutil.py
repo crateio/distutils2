@@ -13,9 +13,9 @@ except ImportError:
     from md5 import md5
 
 from test.test_support import run_unittest, TESTFN
+from distutils2.tests.support import unittest
 
 from distutils2._backport import pkgutil
-from distutils2.tests.support import unittest
 
 try:
     from os.path import relpath
@@ -34,10 +34,12 @@ except ImportError:
 class TestPkgUtilData(unittest.TestCase):
 
     def setUp(self):
+        super(TestPkgUtilData, self).setUp()
         self.dirname = tempfile.mkdtemp()
         sys.path.insert(0, self.dirname)
 
     def tearDown(self):
+        super(TestPkgUtilData, self).tearDown()
         del sys.path[0]
         shutil.rmtree(self.dirname)
 
@@ -52,15 +54,22 @@ class TestPkgUtilData(unittest.TestCase):
         os.mkdir(package_dir)
         # Empty init.py
         f = open(os.path.join(package_dir, '__init__.py'), "wb")
-        f.close()
+        try:
+            pass
+        finally:
+            f.close()
         # Resource files, res.txt, sub/res.txt
         f = open(os.path.join(package_dir, 'res.txt'), "wb")
-        f.write(RESOURCE_DATA)
-        f.close()
+        try:
+            f.write(RESOURCE_DATA)
+        finally:
+            f.close()
         os.mkdir(os.path.join(package_dir, 'sub'))
         f = open(os.path.join(package_dir, 'sub', 'res.txt'), "wb")
-        f.write(RESOURCE_DATA)
-        f.close()
+        try:
+            f.write(RESOURCE_DATA)
+        finally:
+            f.close()
 
         # Check we can read the resources
         res1 = pkgutil.get_data(pkg, 'res.txt')
@@ -80,13 +89,14 @@ class TestPkgUtilData(unittest.TestCase):
         # Make a package with some resources
         zip_file = os.path.join(self.dirname, zip)
         z = zipfile.ZipFile(zip_file, 'w')
-
-        # Empty init.py
-        z.writestr(pkg + '/__init__.py', "")
-        # Resource files, res.txt, sub/res.txt
-        z.writestr(pkg + '/res.txt', RESOURCE_DATA)
-        z.writestr(pkg + '/sub/res.txt', RESOURCE_DATA)
-        z.close()
+        try:
+            # Empty init.py
+            z.writestr(pkg + '/__init__.py', "")
+            # Resource files, res.txt, sub/res.txt
+            z.writestr(pkg + '/res.txt', RESOURCE_DATA)
+            z.writestr(pkg + '/sub/res.txt', RESOURCE_DATA)
+        finally:
+            z.close()
 
         # Check we can read the resources
         sys.path.insert(0, zip_file)
@@ -121,10 +131,12 @@ class TestPkgUtilPEP302(unittest.TestCase):
             return TestPkgUtilPEP302.MyTestLoader()
 
     def setUp(self):
+        super(TestPkgUtilPEP302, self).setUp()
         sys.meta_path.insert(0, self.MyTestImporter())
 
     def tearDown(self):
         del sys.meta_path[0]
+        super(TestPkgUtilPEP302, self).tearDown()
 
     def test_getdata_pep302(self):
         # Use a dummy importer/loader
@@ -146,6 +158,7 @@ class TestPkgUtilDistribution(unittest.TestCase):
     # Tests the pkgutil.Distribution class
 
     def setUp(self):
+        super(TestPkgUtilDistribution, self).setUp()
         self.fake_dists_path = os.path.abspath(
             os.path.join(os.path.dirname(__file__), 'fake_dists'))
 
@@ -194,6 +207,7 @@ class TestPkgUtilDistribution(unittest.TestCase):
         for distinfo_dir in self.distinfo_dirs:
             record_file = os.path.join(distinfo_dir, 'RECORD')
             open(record_file, 'w').close()
+        super(TestPkgUtilDistribution, self).tearDown()
 
     def test_instantiation(self):
         # Test the Distribution class's instantiation provides us with usable
@@ -300,6 +314,7 @@ class TestPkgUtilPEP376(unittest.TestCase):
     # Tests for the new functionality added in PEP 376.
 
     def setUp(self):
+        super(TestPkgUtilPEP376, self).setUp()
         # Setup the path environment with our fake distributions
         current_path = os.path.abspath(os.path.dirname(__file__))
         self.sys_path = sys.path[:]
@@ -308,6 +323,7 @@ class TestPkgUtilPEP376(unittest.TestCase):
 
     def tearDown(self):
         sys.path[:] = self.sys_path
+        super(TestPkgUtilPEP376, self).tearDown()
 
     def test_distinfo_dirname(self):
         # Given a name and a version, we expect the distinfo_dirname function
