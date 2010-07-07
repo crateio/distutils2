@@ -11,7 +11,7 @@ from distutils2.version import VersionPredicate
 from distutils2.pypi.errors import HashDoesNotMatch, UnsupportedHashName
 from distutils2.pypi.dist import (PyPIDistribution as Dist,
                                   PyPIDistributions as Dists,
-                                  split_archive_name, create_from_url)
+                                  split_archive_name)
 
 
 class TestPyPIDistribution(support.TempdirManager,
@@ -55,7 +55,7 @@ class TestPyPIDistribution(support.TempdirManager,
         }
 
         for url, attributes in url_list.items():
-            dist = create_from_url("http://test.tld/" + url)
+            dist = Dist.from_url("http://test.tld/" + url)
             for attribute, value in attributes.items():
                 if isinstance(value, dict):
                     mylist = getattr(dist, attribute)

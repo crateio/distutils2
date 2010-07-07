@@ -14,7 +14,7 @@ import urlparse
 
 from distutils2.version import VersionPredicate
 from distutils2.pypi.dist import (PyPIDistribution, PyPIDistributions,
-                                  create_from_url, EXTENSIONS)
+                                  EXTENSIONS)
 from distutils2.pypi.errors import (PyPIError, DistributionNotFound,
                                     DownloadError, UnableToDownload)
 from distutils2 import __version__ as __distutils2_version__
@@ -264,7 +264,7 @@ class SimpleIndex(object):
                     if self._is_distribution(link) or is_download:
                         self._processed_urls.append(link)
                         # it's a distribution, so create a dist object
-                        dist = create_from_url(link, project_name,
+                        dist = PyPIDistribution.from_url(link, project_name,
                                     is_external=not self.index_url in url)
                         self._register_dist(dist)
                     else:
