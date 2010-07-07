@@ -26,7 +26,7 @@ except ImportError:
         from unittest2.compatibility import relpath
 
 # TODO Add a test for getting a distribution that is provided by another
-#   distribution.
+# distribution.
 
 # TODO Add a test for absolute pathed RECORD items (e.g. /etc/myapp/config.ini)
 
@@ -143,7 +143,7 @@ class TestPkgUtilPEP302(unittest.TestCase):
 
 
 class TestPkgUtilDistribution(unittest.TestCase):
-    """Tests the pkgutil.Distribution class"""
+    # Tests the pkgutil.Distribution class
 
     def setUp(self):
         self.fake_dists_path = os.path.abspath(
@@ -196,8 +196,8 @@ class TestPkgUtilDistribution(unittest.TestCase):
             open(record_file, 'w').close()
 
     def test_instantiation(self):
-        """Test the Distribution class's instantiation provides us with usable
-        attributes."""
+        # Test the Distribution class's instantiation provides us with usable
+        # attributes.
         # Import the Distribution class
         from distutils2._backport.pkgutil import distinfo_dirname, Distribution
 
@@ -215,7 +215,7 @@ class TestPkgUtilDistribution(unittest.TestCase):
         self.assertTrue(isinstance(dist.requested, type(bool())))
 
     def test_installed_files(self):
-        """Test the iteration of installed files."""
+        # Test the iteration of installed files.
         # Test the distribution's installed files
         from distutils2._backport.pkgutil import Distribution
         for distinfo_dir in self.distinfo_dirs:
@@ -227,7 +227,7 @@ class TestPkgUtilDistribution(unittest.TestCase):
                 self.assertEqual(size, record_data[path][1])
 
     def test_uses(self):
-        """Test to determine if a distribution uses a specified file."""
+        # Test to determine if a distribution uses a specified file.
         # Criteria to test against
         distinfo_name = 'grammar-1.0a4'
         distinfo_dir = os.path.join(self.fake_dists_path,
@@ -246,7 +246,7 @@ class TestPkgUtilDistribution(unittest.TestCase):
         self.assertFalse(dist.uses(false_path))
 
     def test_get_distinfo_file(self):
-        """Test the retrieval of dist-info file objects."""
+        # Test the retrieval of dist-info file objects.
         from distutils2._backport.pkgutil import Distribution
         distinfo_name = 'choxie-2.0.0.9'
         other_distinfo_name = 'grammar-1.0a4'
@@ -279,7 +279,7 @@ class TestPkgUtilDistribution(unittest.TestCase):
                           'ENTRYPOINTS')
 
     def test_get_distinfo_files(self):
-        """Test for the iteration of RECORD path entries."""
+        # Test for the iteration of RECORD path entries.
         from distutils2._backport.pkgutil import Distribution
         distinfo_name = 'towel_stuff-0.1'
         distinfo_dir = os.path.join(self.fake_dists_path,
@@ -297,7 +297,7 @@ class TestPkgUtilDistribution(unittest.TestCase):
 
 
 class TestPkgUtilPEP376(unittest.TestCase):
-    """Tests for the new functionality added in PEP 376."""
+    # Tests for the new functionality added in PEP 376.
 
     def setUp(self):
         # Setup the path environment with our fake distributions
@@ -310,15 +310,15 @@ class TestPkgUtilPEP376(unittest.TestCase):
         sys.path[:] = self.sys_path
 
     def test_distinfo_dirname(self):
-        """Given a name and a version, we expect the distinfo_dirname function
-        to return a standard distribution information directory name."""
+        # Given a name and a version, we expect the distinfo_dirname function
+        # to return a standard distribution information directory name.
 
         items = [# (name, version, standard_dirname)
             # Test for a very simple single word name and decimal
             # version number
             ('docutils', '0.5', 'docutils-0.5.dist-info'),
             # Test for another except this time with a '-' in the name, which
-            #   needs to be transformed during the name lookup
+            # needs to be transformed during the name lookup
             ('python-ldap', '2.5', 'python_ldap-2.5.dist-info'),
             # Test for both '-' in the name and a funky version number
             ('python-ldap', '2.5 a---5', 'python_ldap-2.5 a---5.dist-info'),
@@ -333,7 +333,7 @@ class TestPkgUtilPEP376(unittest.TestCase):
             self.assertEqual(dirname, standard_dirname)
 
     def test_get_distributions(self):
-        """Lookup all distributions found in the ``sys.path``."""
+        # Lookup all distributions found in the ``sys.path``.
         # This test could potentially pick up other installed distributions
         fake_dists = [('grammar', '1.0a4'), ('choxie', '2.0.0.9'),
             ('towel-stuff', '0.1')]
@@ -374,7 +374,7 @@ class TestPkgUtilPEP376(unittest.TestCase):
         self.assertListEqual(sorted(fake_dists), sorted(found_dists))
 
     def test_get_distribution(self):
-        """Test for looking up a distribution by name."""
+        # Test for looking up a distribution by name.
         # Test the lookup of the towel-stuff distribution
         name = 'towel-stuff' # Note: This is different from the directory name
 
@@ -420,7 +420,7 @@ class TestPkgUtilPEP376(unittest.TestCase):
         self.assertEqual(dist.name, 'strawberry')
 
     def test_get_file_users(self):
-        """Test the iteration of distributions that use a file."""
+        # Test the iteration of distributions that use a file.
         from distutils2._backport.pkgutil import get_file_users, Distribution
         name = 'towel_stuff-0.1'
         path = os.path.join(self.fake_dists_path, name,
@@ -430,7 +430,7 @@ class TestPkgUtilPEP376(unittest.TestCase):
             self.assertEqual(dist.name, name)
 
     def test_provides(self):
-        """ Test for looking up distributions by what they provide """
+        # Test for looking up distributions by what they provide
         from distutils2._backport.pkgutil import provides_distribution
         from distutils2.errors import DistutilsError
 
@@ -502,7 +502,7 @@ class TestPkgUtilPEP376(unittest.TestCase):
         checkLists(l, [])
 
     def test_obsoletes(self):
-        """ Test looking for distributions based on what they obsolete """
+        # Test looking for distributions based on what they obsolete
         from distutils2._backport.pkgutil import obsoletes_distribution
         from distutils2.errors import DistutilsError
 

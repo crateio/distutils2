@@ -88,15 +88,13 @@ class TestSysConfig(unittest.TestCase):
             shutil.rmtree(path)
 
     def test_nested_var_substitution(self):
-        """Assert that the {curly brace token} expansion pattern will replace
-        only the inner {something} on nested expressions like {py{something}} on
-        the first pass.
+        # Assert that the {curly brace token} expansion pattern will replace
+        # only the inner {something} on nested expressions like {py{something}} on
+        # the first pass.
 
-        We have no plans to make use of this, but it keeps the option open for
-        the future, at the cost only of disallowing { itself as a piece of a
-        substitution key (which would be weird).
-
-        """
+        # We have no plans to make use of this, but it keeps the option open for
+        # the future, at the cost only of disallowing { itself as a piece of a
+        # substitution key (which would be weird).
         self.assertEqual(_subst_vars('{py{version}}', {'version': '31'}), '{py31}')
 
     def test_get_paths(self):

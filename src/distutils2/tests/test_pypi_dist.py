@@ -16,17 +16,17 @@ from distutils2.pypi.dist import (PyPIDistribution as Dist,
 
 class TestPyPIDistribution(support.TempdirManager,
                            unittest.TestCase):
-    """tests the pypi.dist.PyPIDistribution class"""
+    """Tests the pypi.dist.PyPIDistribution class"""
 
     def test_instanciation(self):
-        """Test the Distribution class provides us the good attributes when
-        given on construction"""
+        # Test the Distribution class provides us the good attributes when
+        # given on construction
         dist = Dist("FooBar", "1.1")
         self.assertEqual("FooBar", dist.name)
         self.assertEqual("1.1", "%s" % dist.version)
 
     def test_create_from_url(self):
-        """Test that the Distribution object can be built from a single URL"""
+        # Test that the Distribution object can be built from a single URL
         url_list = {
             'FooBar-1.1.0.tar.gz': {
                 'name': 'foobar',  # lowercase the name
@@ -68,7 +68,7 @@ class TestPyPIDistribution(support.TempdirManager,
                         self.assertEqual(getattr(dist, attribute), value)
 
     def test_get_url(self):
-        """Test that the url property works well"""
+        # Test that the url property works well
 
         d = Dist("foobar", "1.1", url="test_url")
         self.assertDictEqual(d.url, {
@@ -90,7 +90,7 @@ class TestPyPIDistribution(support.TempdirManager,
         self.assertEqual(2, len(d._urls))
 
     def test_comparaison(self):
-        """Test that we can compare PyPIDistributions"""
+        # Test that we can compare PyPIDistributions
         foo1 = Dist("foo", "1.0")
         foo2 = Dist("foo", "2.0")
         bar = Dist("bar", "2.0")
@@ -103,7 +103,7 @@ class TestPyPIDistribution(support.TempdirManager,
         self.assertRaises(TypeError, foo1.__eq__, bar)
 
     def test_split_archive_name(self):
-        """Test we can split the archive names"""
+        # Test we can split the archive names
         names = {
             'foo-bar-baz-1.0-rc2': ('foo-bar-baz', '1.0c2'),
             'foo-bar-baz-1.0': ('foo-bar-baz', '1.0'),
@@ -114,7 +114,7 @@ class TestPyPIDistribution(support.TempdirManager,
 
     @use_pypi_server("downloads_with_md5")
     def test_download(self, server):
-        """Download is possible, and the md5 is checked if given"""
+        # Download is possible, and the md5 is checked if given
 
         url = "%s/simple/foobar/foobar-0.1.tar.gz" % server.full_address
         # check md5 if given
@@ -146,8 +146,7 @@ class TestPyPIDistribution(support.TempdirManager,
         shutil.rmtree(os.path.dirname(path2))
 
     def test_hashname(self):
-        """Invalid hashnames raises an exception on assignation"""
-        # should be ok
+        # Invalid hashnames raises an exception on assignation
         Dist("FooBar", "0.1", url_hashname="md5", url_hashval="value")
 
         self.assertRaises(UnsupportedHashName, Dist, "FooBar", "0.1",
@@ -155,11 +154,10 @@ class TestPyPIDistribution(support.TempdirManager,
 
 
 class TestPyPIDistributions(unittest.TestCase):
-    """test the pypi.distr.PyPIDistributions class"""
 
     def test_filter(self):
-        """Test we filter the distributions the right way, using version
-        predicate match method"""
+        # Test we filter the distributions the right way, using version
+        # predicate match method
         dists = Dists((
             Dist("FooBar", "1.1"),
             Dist("FooBar", "1.1.1"),
@@ -173,7 +171,6 @@ class TestPyPIDistributions(unittest.TestCase):
         self.assertIn(dists[1], filtered)
 
     def test_append(self):
-        """Test the append method of PyPIDistributions"""
         # When adding a new item to the list, the behavior is to test if
         # a distribution with the same name and version number already exists,
         # and if so, to add url informations to the existing PyPIDistribution
@@ -198,7 +195,7 @@ class TestPyPIDistributions(unittest.TestCase):
         self.assertEqual(3, len(dists))
 
     def test_prefer_final(self):
-        """Ordering support prefer_final"""
+        # Can order the distributions using prefer_final
 
         fb10 = Dist("FooBar", "1.0")  # final distribution
         fb11a = Dist("FooBar", "1.1a1")  # alpha
@@ -213,7 +210,7 @@ class TestPyPIDistributions(unittest.TestCase):
         self.assertEqual(fb12b, dists[0])
 
     def test_prefer_source(self):
-        """Ordering support prefer_source"""
+        # Ordering support prefer_source
         fb_source = Dist("FooBar", "1.0", type="source")
         fb_binary = Dist("FooBar", "1.0", type="binary")
         fb2_binary = Dist("FooBar", "2.0", type="binary")
@@ -230,8 +227,7 @@ class TestPyPIDistributions(unittest.TestCase):
         self.assertEqual(fb2_binary, dists[0])
 
     def test_get_same_name_and_version(self):
-        """PyPIDistributions can return a list of "duplicates"
-        """
+        # PyPIDistributions can return a list of "duplicates"
         fb_source = Dist("FooBar", "1.0", type="source")
         fb_binary = Dist("FooBar", "1.0", type="binary")
         fb2_binary = Dist("FooBar", "2.0", type="binary")
