@@ -11,7 +11,7 @@ from distutils2.version import VersionPredicate
 from distutils2.pypi.errors import HashDoesNotMatch, UnsupportedHashName
 from distutils2.pypi.dist import (PyPIDistribution as Dist,
                                   PyPIDistributions as Dists,
-                                  split_archive_name)
+                                  split_archive_name, create_from_url)
 
 
 class TestPyPIDistribution(support.TempdirManager,
@@ -25,7 +25,7 @@ class TestPyPIDistribution(support.TempdirManager,
         self.assertEqual("FooBar", dist.name)
         self.assertEqual("1.1", "%s" % dist.version)
 
-    def test_from_url(self):
+    def test_create_from_url(self):
         """Test that the Distribution object can be built from a single URL"""
         url_list = {
             'FooBar-1.1.0.tar.gz': {
@@ -55,7 +55,7 @@ class TestPyPIDistribution(support.TempdirManager,
         }
 
         for url, attributes in url_list.items():
-            dist = Dist.from_url("http://test.tld/" + url)
+            dist = create_from_url("http://test.tld/" + url)
             for attribute, value in attributes.items():
                 if isinstance(value, dict):
                     mylist = getattr(dist, attribute)

@@ -5,18 +5,18 @@ distributions on the Python Package Index, using it's "simple" API,
 avalaible at http://pypi.python.org/simple/
 """
 from fnmatch import translate
-import urlparse
-import sys
-import re
-import urllib2
 import httplib
+import re
 import socket
+import sys
+import urllib2
+import urlparse
 
 from distutils2.version import VersionPredicate
-from distutils2.pypi.dist import PyPIDistribution, PyPIDistributions, \
-    EXTENSIONS
-from distutils2.pypi.errors import PyPIError, DistributionNotFound, \
-    DownloadError, UnableToDownload
+from distutils2.pypi.dist import (PyPIDistribution, PyPIDistributions,
+                                  create_from_url, EXTENSIONS)
+from distutils2.pypi.errors import (PyPIError, DistributionNotFound,
+                                    DownloadError, UnableToDownload)
 from distutils2 import __version__ as __distutils2_version__
 
 # -- Constants -----------------------------------------------
@@ -60,33 +60,31 @@ def socket_timeout(timeout=SOCKET_TIMEOUT):
 
 class SimpleIndex(object):
     """Provides useful tools to request the Python Package Index simple API
+
+    :param index_url: the url of the simple index to search on.
+    :param follow_externals: tell if following external links is needed or
+                             not. Default is False.
+    :param hosts: a list of hosts allowed to be processed while using
+                  follow_externals=True. Default behavior is to follow all
+                  hosts.
+    :param follow_externals: tell if following external links is needed or
+                             not. Default is False.
+    :param prefer_source: if there is binary and source distributions, the
+                          source prevails.
+    :param prefer_final: if the version is not mentioned, and the last
+                         version is not a "final" one (alpha, beta, etc.),
+                         pick up the last final version.
+    :param mirrors_url: the url to look on for DNS records giving mirror
+                        adresses.
+    :param mirrors: a list of mirrors to check out if problems
+                         occurs while working with the one given in "url"
+    :param timeout: time in seconds to consider a url has timeouted.
     """
 
     def __init__(self, index_url=PYPI_DEFAULT_INDEX_URL, hosts=DEFAULT_HOSTS,
                  follow_externals=False, prefer_source=True,
                  prefer_final=False, mirrors_url=PYPI_DEFAULT_MIRROR_URL,
                  mirrors=None, timeout=SOCKET_TIMEOUT):
-        """Class constructor.
-
-        :param index_url: the url of the simple index to search on.
-        :param follow_externals: tell if following external links is needed or
-                                 not. Default is False.
-        :param hosts: a list of hosts allowed to be processed while using
-                      follow_externals=True. Default behavior is to follow all
-                      hosts.
-        :param follow_externals: tell if following external links is needed or
-                                 not. Default is False.
-        :param prefer_source: if there is binary and source distributions, the
-                              source prevails.
-        :param prefer_final: if the version is not mentioned, and the last
-                             version is not a "final" one (alpha, beta, etc.),
-                             pick up the last final version.
-        :param mirrors_url: the url to look on for DNS records giving mirror
-                            adresses.
-        :param mirrors: a list of mirrors to check out if problems
-                             occurs while working with the one given in "url"
-        :param timeout: time in seconds to consider a url has timeouted.
-        """
         self.follow_externals = follow_externals
 
         if not index_url.endswith("/"):
@@ -213,7 +211,7 @@ class SimpleIndex(object):
         # local files are always considered browable resources
         if self.index_url in url or urlparse.urlparse(url)[0] == "file":
             return True
-        elif self.follow_externals is True:
+        elif self.follow_externals:
             if self._allowed_hosts(urlparse.urlparse(url)[1]):  # 1 is netloc
                 return True
             else:
@@ -266,7 +264,7 @@ class SimpleIndex(object):
                     if self._is_distribution(link) or is_download:
                         self._processed_urls.append(link)
                         # it's a distribution, so create a dist object
-                        dist = PyPIDistribution.from_url(link, project_name,
+                        dist = create_from_url(link, project_name,
                                     is_external=not self.index_url in url)
                         self._register_dist(dist)
                     else:

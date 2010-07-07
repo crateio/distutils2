@@ -31,37 +31,6 @@ class PyPIDistribution(object):
     information about distributions.
     """
 
-    @classmethod
-    def from_url(cls, url, probable_dist_name=None, is_external=True):
-        """Build a Distribution from a url archive (egg or zip or tgz).
-
-        :param url: complete url of the distribution
-        :param probable_dist_name: A probable name of the distribution.
-        :param is_external: Tell if the url commes from an index or from
-                            an external URL.
-        """
-        # if the url contains a md5 hash, get it.
-        md5_hash = None
-        match = MD5_HASH.match(url)
-        if match is not None:
-            md5_hash = match.group(1)
-            # remove the hash
-            url = url.replace("#md5=%s" % md5_hash, "")
-
-        # parse the archive name to find dist name and version
-        archive_name = urlparse.urlparse(url)[2].split('/')[-1]
-        extension_matched = False
-        # remove the extension from the name
-        for ext in EXTENSIONS:
-            if archive_name.endswith(ext):
-                archive_name = archive_name[:-len(ext)]
-                extension_matched = True
-
-        name, version = split_archive_name(archive_name)
-        if extension_matched is True:
-            return PyPIDistribution(name, version, url=url, url_hashname="md5",
-                                    url_hashval=md5_hash, url_is_external=is_external)
-
     def __init__(self, name, version, type=None, url=None, url_hashname=None,
                  url_hashval=None, url_is_external=True):
         """Create a new instance of PyPIDistribution.
@@ -260,23 +229,52 @@ class PyPIDistributions(list):
         else:
             super(PyPIDistributions, self).append(o)
 
-    def sort_distributions(self, prefer_source=None, prefer_final=None,
+    def sort_distributions(self, prefer_source=True, prefer_final=False,
                            reverse=True, *args, **kwargs):
         """order the results with the given properties"""
 
         sort_by = []
-        if prefer_final is not None:
-            if prefer_final is True:
-                sort_by.append("is_final")
+        if prefer_final:
+            sort_by.append("is_final")
         sort_by.append("version")
 
-        if prefer_source is not None:
-            if prefer_source is True:
-                sort_by.append("is_source")
+        if prefer_source:
+            sort_by.append("is_source")
 
         super(PyPIDistributions, self).sort(
             key=lambda i: [getattr(i, arg) for arg in sort_by],
             reverse=reverse, *args, **kwargs)
+
+def create_from_url(url, probable_dist_name=None,
+                                 is_external=True):
+    """Build a Distribution from a url archive (egg or zip or tgz).
+
+    :param url: complete url of the distribution
+    :param probable_dist_name: A probable name of the distribution.
+    :param is_external: Tell if the url commes from an index or from
+                        an external URL.
+    """
+    # if the url contains a md5 hash, get it.
+    md5_hash = None
+    match = MD5_HASH.match(url)
+    if match is not None:
+        md5_hash = match.group(1)
+        # remove the hash
+        url = url.replace("#md5=%s" % md5_hash, "")
+
+    # parse the archive name to find dist name and version
+    archive_name = urlparse.urlparse(url)[2].split('/')[-1]
+    extension_matched = False
+    # remove the extension from the name
+    for ext in EXTENSIONS:
+        if archive_name.endswith(ext):
+            archive_name = archive_name[:-len(ext)]
+            extension_matched = True
+
+    name, version = split_archive_name(archive_name)
+    if extension_matched is True:
+        return PyPIDistribution(name, version, url=url, url_hashname="md5",
+                                url_hashval=md5_hash, url_is_external=is_external)
 
 def split_archive_name(archive_name, probable_name=None):
     """Split an archive name into two parts: name and version.
