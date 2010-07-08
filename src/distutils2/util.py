@@ -667,7 +667,7 @@ def run_2to3(files=[], doctests_only=False, fixer_names=[], options=None,
                     'lib2to3.fixes.fix_ws_comma'):
             fixers.append(fixer)
 
-    if fixer_names is not None:
+    if fixer_names != []:
         for fixer_package in fixer_names:
             fixers.extend(get_fixers_from_package(fixer_package))
 
