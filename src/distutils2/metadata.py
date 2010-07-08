@@ -105,7 +105,6 @@ def _best_version(fields):
     keys = fields.keys()
     possible_versions = ['1.0', '1.1', '1.2']
 
-
     # first let's try to see if a field is not part of one of the version
     for key in keys:
         if key not in _241_FIELDS and '1.0' in possible_versions:
@@ -128,9 +127,9 @@ def _best_version(fields):
         raise MetadataConflictError('You used incompatible 1.1 and 1.2 fields')
 
     # we have the choice, either 1.0, or 1.2
-    #   - 1.0 has a broken Summary field but work with all tools
+    #   - 1.0 has a broken Summary field but works with all tools
     #   - 1.1 is to avoid
-    #   - 1.2 fixes Summary but is not spreaded yet
+    #   - 1.2 fixes Summary but is not widespread yet
     if not is_1_1 and not is_1_2:
         # we couldn't find any specific marker
         if PKG_INFO_PREFERRED_VERSION in possible_versions:
@@ -185,14 +184,16 @@ _UNICODEFIELDS = ('Author', 'Maintainer', 'Summary', 'Description')
 class DistributionMetadata(object):
     """Distribution meta-data class (1.0 or 1.2).
     """
-    def __init__(self, path=None, platform_dependant=False,
-                 execution_context=None):
+    def __init__(self, path=None, platform_dependent=False,
+                 execution_context=None, fileobj=None):
         self._fields = {}
         self.version = None
         self.docutils_support = _HAS_DOCUTILS
-        self.platform_dependant = platform_dependant
+        self.platform_dependent = platform_dependent
         if path is not None:
             self.read(path)
+        elif fileobj is not None:
+            self.read_file(fileobj)
         self.execution_context = execution_context
 
     def _set_best_version(self):
@@ -261,7 +262,7 @@ class DistributionMetadata(object):
         return reporter.messages
 
     def _platform(self, value):
-        if not self.platform_dependant or ';' not in value:
+        if not self.platform_dependent or ';' not in value:
             return True, value
         value, marker = value.split(';')
         return _interpret(marker, self.execution_context), value
@@ -516,7 +517,7 @@ class _Operation(object):
             raise NameError(value)
 
     def _nonsense_op(self):
-        msg = 'This operation is not supported : "%s"' % str(self)
+        msg = 'This operation is not supported : "%s"' % self
         raise SyntaxError(msg)
 
     def __call__(self):
@@ -633,4 +634,3 @@ def _interpret(marker, execution_context=None):
     operations = _CHAIN(execution_context)
     tokenize(StringIO(marker).readline, operations.eat)
     return operations.result()
-

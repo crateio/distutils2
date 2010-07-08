@@ -11,14 +11,14 @@ FATAL = 5
 
 import sys
 
-class Log:
+class Log(object):
 
     def __init__(self, threshold=WARN):
         self.threshold = threshold
 
     def _log(self, level, msg, args):
         if level not in (DEBUG, INFO, WARN, ERROR, FATAL):
-            raise ValueError('%s wrong log level' % str(level))
+            raise ValueError('%s wrong log level' % level)
 
         if level >= self.threshold:
             if args:

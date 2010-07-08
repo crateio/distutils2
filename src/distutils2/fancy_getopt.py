@@ -30,7 +30,7 @@ neg_alias_re = re.compile("^(%s)=!(%s)$" % (longopt_pat, longopt_pat))
 # (for use as attributes of some object).
 longopt_xlate = string.maketrans('-', '_')
 
-class FancyGetopt:
+class FancyGetopt(object):
     """Wrapper around the standard 'getopt()' module that provides some
     handy extra functionality:
       * short and long options are tied together
@@ -473,7 +473,7 @@ def translate_longopt(opt):
     return string.translate(opt, longopt_xlate)
 
 
-class OptionDummy:
+class OptionDummy(object):
     """Dummy class just used as a place to hold command-line option
     values as instance attributes."""
 

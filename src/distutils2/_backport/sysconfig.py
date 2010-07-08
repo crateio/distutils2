@@ -5,7 +5,7 @@ import sys
 import os
 import re
 from os.path import pardir, abspath
-from ConfigParser import ConfigParser
+from ConfigParser import RawConfigParser
 
 _PREFIX = os.path.normpath(sys.prefix)
 _EXEC_PREFIX = os.path.normpath(sys.exec_prefix)
@@ -14,7 +14,7 @@ _EXEC_PREFIX = os.path.normpath(sys.exec_prefix)
 # XXX _CONFIG_DIR will be set by the Makefile later
 _CONFIG_DIR = os.path.normpath(os.path.dirname(__file__))
 _CONFIG_FILE = os.path.join(_CONFIG_DIR, 'sysconfig.cfg')
-_SCHEMES = ConfigParser()
+_SCHEMES = RawConfigParser()
 _SCHEMES.read(_CONFIG_FILE)
 _VAR_REPL = re.compile(r'\{([^{]*?)\}')
 
@@ -580,10 +580,11 @@ def get_platform():
                 # behaviour.
                 pass
             else:
-                m = re.search(
-                        r'<key>ProductUserVisibleVersion</key>\s*' +
-                        r'<string>(.*?)</string>', f.read())
-                f.close()
+                try:
+                    m = re.search(r'<key>ProductUserVisibleVersion</key>\s*'
+                                  r'<string>(.*?)</string>', f.read())
+                finally:
+                    f.close()
                 if m is not None:
                     macrelease = '.'.join(m.group(1).split('.')[:2])
                 # else: fall back to the default behaviour

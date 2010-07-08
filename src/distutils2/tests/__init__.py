@@ -45,7 +45,7 @@ class TestFailed(Error):
     """Test failed."""
 
 
-class BasicTestRunner:
+class BasicTestRunner(object):
     def run(self, test):
         result = unittest.TestResult()
         test(result)

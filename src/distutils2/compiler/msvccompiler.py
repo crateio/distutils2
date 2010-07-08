@@ -15,7 +15,7 @@ import os
 import string
 
 from distutils2.errors import (DistutilsExecError, DistutilsPlatformError,
-                              CompileError, LibError, LinkError)
+                               CompileError, LibError, LinkError)
 from distutils2.compiler.ccompiler import CCompiler, gen_lib_options
 from distutils2 import log
 
@@ -104,7 +104,7 @@ def convert_mbcs(s):
             pass
     return s
 
-class MacroExpander:
+class MacroExpander(object):
 
     def __init__(self, version):
         self.macros = {}

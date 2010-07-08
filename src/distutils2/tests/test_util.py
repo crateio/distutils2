@@ -100,7 +100,7 @@ class UtilTestCase(support.EnvironGuard,
             return '/'.join(path)
         os.path.join = _join
 
-        self.assertEquals(convert_path('/home/to/my/stuff'),
+        self.assertEqual(convert_path('/home/to/my/stuff'),
                           '/home/to/my/stuff')
 
         # win
@@ -112,9 +112,9 @@ class UtilTestCase(support.EnvironGuard,
         self.assertRaises(ValueError, convert_path, '/home/to/my/stuff')
         self.assertRaises(ValueError, convert_path, 'home/to/my/stuff/')
 
-        self.assertEquals(convert_path('home/to/my/stuff'),
+        self.assertEqual(convert_path('home/to/my/stuff'),
                           'home\\to\\my\\stuff')
-        self.assertEquals(convert_path('.'),
+        self.assertEqual(convert_path('.'),
                           os.curdir)
 
     def test_change_root(self):
@@ -127,9 +127,9 @@ class UtilTestCase(support.EnvironGuard,
             return '/'.join(path)
         os.path.join = _join
 
-        self.assertEquals(change_root('/root', '/old/its/here'),
+        self.assertEqual(change_root('/root', '/old/its/here'),
                           '/root/old/its/here')
-        self.assertEquals(change_root('/root', 'its/here'),
+        self.assertEqual(change_root('/root', 'its/here'),
                           '/root/its/here')
 
         # windows
@@ -146,9 +146,9 @@ class UtilTestCase(support.EnvironGuard,
             return '\\'.join(path)
         os.path.join = _join
 
-        self.assertEquals(change_root('c:\\root', 'c:\\old\\its\\here'),
+        self.assertEqual(change_root('c:\\root', 'c:\\old\\its\\here'),
                           'c:\\root\\old\\its\\here')
-        self.assertEquals(change_root('c:\\root', 'its\\here'),
+        self.assertEqual(change_root('c:\\root', 'its\\here'),
                           'c:\\root\\its\\here')
 
         # BugsBunny os (it's a great os)
@@ -159,7 +159,7 @@ class UtilTestCase(support.EnvironGuard,
         # XXX platforms to be covered: os2, mac
 
     def test_split_quoted(self):
-        self.assertEquals(split_quoted('""one"" "two" \'three\' \\four'),
+        self.assertEqual(split_quoted('""one"" "two" \'three\' \\four'),
                           ['one', 'two', 'three', 'four'])
 
     def test_strtobool(self):
@@ -177,7 +177,7 @@ class UtilTestCase(support.EnvironGuard,
         res = rfc822_escape(header)
         wanted = ('I am a%(8s)spoor%(8s)slonesome%(8s)s'
                   'header%(8s)s') % {'8s': '\n'+8*' '}
-        self.assertEquals(res, wanted)
+        self.assertEqual(res, wanted)
 
     def test_find_exe_version(self):
         # the ld version scheme under MAC OS is:
@@ -195,7 +195,7 @@ class UtilTestCase(support.EnvironGuard,
                                 ('@(#)PROGRAM:ld  PROJECT:ld64-95.2.12',
                                  '95.2.12')):
             result = _MAC_OS_X_LD_VERSION.search(output)
-            self.assertEquals(result.group(1), version)
+            self.assertEqual(result.group(1), version)
 
     def _find_executable(self, name):
         if name in self._exes:
@@ -205,43 +205,43 @@ class UtilTestCase(support.EnvironGuard,
     def test_get_compiler_versions(self):
         # get_versions calls distutils.spawn.find_executable on
         # 'gcc', 'ld' and 'dllwrap'
-        self.assertEquals(get_compiler_versions(), (None, None, None))
+        self.assertEqual(get_compiler_versions(), (None, None, None))
 
         # Let's fake we have 'gcc' and it returns '3.4.5'
         self._exes['gcc'] = 'gcc (GCC) 3.4.5 (mingw special)\nFSF'
         res = get_compiler_versions()
-        self.assertEquals(str(res[0]), '3.4.5')
+        self.assertEqual(str(res[0]), '3.4.5')
 
         # and let's see what happens when the version
         # doesn't match the regular expression
         # (\d+\.\d+(\.\d+)*)
         self._exes['gcc'] = 'very strange output'
         res = get_compiler_versions()
-        self.assertEquals(res[0], None)
+        self.assertEqual(res[0], None)
 
         # same thing for ld
         if sys.platform != 'darwin':
             self._exes['ld'] = 'GNU ld version 2.17.50 20060824'
             res = get_compiler_versions()
-            self.assertEquals(str(res[1]), '2.17.50')
+            self.assertEqual(str(res[1]), '2.17.50')
             self._exes['ld'] = '@(#)PROGRAM:ld  PROJECT:ld64-77'
             res = get_compiler_versions()
-            self.assertEquals(res[1], None)
+            self.assertEqual(res[1], None)
         else:
             self._exes['ld'] = 'GNU ld version 2.17.50 20060824'
             res = get_compiler_versions()
-            self.assertEquals(res[1], None)
+            self.assertEqual(res[1], None)
             self._exes['ld'] = '@(#)PROGRAM:ld  PROJECT:ld64-77'
             res = get_compiler_versions()
-            self.assertEquals(str(res[1]), '77')
+            self.assertEqual(str(res[1]), '77')
 
         # and dllwrap
         self._exes['dllwrap'] = 'GNU dllwrap 2.17.50 20060824\nFSF'
         res = get_compiler_versions()
-        self.assertEquals(str(res[2]), '2.17.50')
+        self.assertEqual(str(res[2]), '2.17.50')
         self._exes['dllwrap'] = 'Cheese Wrap'
         res = get_compiler_versions()
-        self.assertEquals(res[2], None)
+        self.assertEqual(res[2], None)
 
     @unittest.skipUnless(hasattr(sys, 'dont_write_bytecode'),
                           'no dont_write_bytecode support')
@@ -294,7 +294,38 @@ class UtilTestCase(support.EnvironGuard,
         self.write_file(os.path.join(pkg5, '__init__.py'))
 
         res = find_packages([root], ['pkg1.pkg2'])
-        self.assertEquals(set(res), set(['pkg1', 'pkg5', 'pkg1.pkg3', 'pkg1.pkg3.pkg6']))
+        self.assertEqual(set(res), set(['pkg1', 'pkg5', 'pkg1.pkg3', 'pkg1.pkg3.pkg6']))
+
+    @unittest.skipUnless(sys.version > '2.6', 'Need Python 2.6 or more')
+    def test_run_2to3_on_code(self):
+        content = "print 'test'"
+        converted_content = "print('test')"
+        file_handle = self.mktempfile()
+        file_name = file_handle.name
+        file_handle.write(content)
+        file_handle.flush()
+        file_handle.seek(0)
+        from distutils2.util import run_2to3
+        run_2to3([file_name])
+        new_content = "".join(file_handle.read())
+        file_handle.close()
+        self.assertEquals(new_content, converted_content)
+
+    @unittest.skipUnless(sys.version > '2.6', 'Need Python 2.6 or more')
+    def test_run_2to3_on_doctests(self):
+        # to check if text files containing doctests only get converted.
+        content = ">>> print 'test'\ntest\n"
+        converted_content = ">>> print('test')\ntest\n\n"
+        file_handle = self.mktempfile()
+        file_name = file_handle.name
+        file_handle.write(content)
+        file_handle.flush()
+        file_handle.seek(0)
+        from distutils2.util import run_2to3
+        run_2to3([file_name], doctests_only=True)
+        new_content = "".join(file_handle.readlines())
+        file_handle.close()
+        self.assertEquals(new_content, converted_content)
 
 
 def test_suite():

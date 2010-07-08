@@ -1,12 +1,15 @@
 """distutils.util
 
-Miscellaneous utility functions -- anything that doesn't fit into
-one of the other *util.py modules.
+Miscellaneous utility functions.
 """
 
 __revision__ = "$Id: util.py 77761 2010-01-26 22:46:15Z tarek.ziade $"
 
-import sys, os, string, re
+import sys
+import os
+import string
+import re
+from copy import copy
 from fnmatch import fnmatchcase
 
 from distutils2.errors import (DistutilsPlatformError, DistutilsFileError,
@@ -16,6 +19,7 @@ from distutils2 import log
 from distutils2._backport import sysconfig as _sysconfig
 
 _PLATFORM = None
+
 
 def newer(source, target):
     """Tells if the target is newer than the source.
@@ -37,6 +41,7 @@ def newer(source, target):
 
     return os.stat(source).st_mtime > os.stat(target).st_mtime
 
+
 def get_platform():
     """Return a string that identifies the current platform.
 
@@ -48,6 +53,7 @@ def get_platform():
         _PLATFORM = _sysconfig.get_platform()
     return _PLATFORM
 
+
 def set_platform(identifier):
     """Sets the platform string identifier returned by get_platform().
 
@@ -56,6 +62,7 @@ def set_platform(identifier):
     """
     global _PLATFORM
     _PLATFORM = identifier
+
 
 def convert_path(pathname):
     """Return 'pathname' as a name that will work on the native filesystem.
@@ -125,6 +132,7 @@ def change_root(new_root, pathname):
 
 _environ_checked = 0
 
+
 def check_environ():
     """Ensure that 'os.environ' has all the environment variables needed.
 
@@ -147,6 +155,7 @@ def check_environ():
 
     _environ_checked = 1
 
+
 def subst_vars(s, local_vars):
     """Perform shell/Perl-style variable substitution on 'string'.
 
@@ -158,7 +167,8 @@ def subst_vars(s, local_vars):
     variables not found in either 'local_vars' or 'os.environ'.
     """
     check_environ()
-    def _subst (match, local_vars=local_vars):
+
+    def _subst(match, local_vars=local_vars):
         var_name = match.group(1)
         if var_name in local_vars:
             return str(local_vars[var_name])
@@ -169,6 +179,7 @@ def subst_vars(s, local_vars):
         return re.sub(r'\$([a-zA-Z_][a-zA-Z_0-9]*)', _subst, s)
     except KeyError, var:
         raise ValueError("invalid variable '$%s'" % var)
+
 
 def grok_environment_error(exc, prefix="error: "):
     """Generate a useful error message from an EnvironmentError.
@@ -196,11 +207,13 @@ def grok_environment_error(exc, prefix="error: "):
 # Needed by 'split_quoted()'
 _wordchars_re = _squote_re = _dquote_re = None
 
+
 def _init_regex():
     global _wordchars_re, _squote_re, _dquote_re
     _wordchars_re = re.compile(r'[^\\\'\"%s ]*' % string.whitespace)
     _squote_re = re.compile(r"'(?:[^'\\]|\\.)*'")
     _dquote_re = re.compile(r'"(?:[^"\\]|\\.)*"')
+
 
 def split_quoted(s):
     """Split a string up according to Unix shell-like rules for quotes and
@@ -217,7 +230,8 @@ def split_quoted(s):
     # This is a nice algorithm for splitting up a single string, since it
     # doesn't require character-by-character examination.  It was a little
     # bit of a brain-bender to get it working right, though...
-    if _wordchars_re is None: _init_regex()
+    if _wordchars_re is None:
+        _init_regex()
 
     s = s.strip()
     words = []
@@ -237,8 +251,8 @@ def split_quoted(s):
 
         elif s[end] == '\\':            # preserve whatever is being escaped;
                                         # will become part of the current word
-            s = s[:end] + s[end+1:]
-            pos = end+1
+            s = s[:end] + s[end + 1:]
+            pos = end + 1
 
         else:
             if s[end] == "'":           # slurp singly-quoted string
@@ -253,7 +267,7 @@ def split_quoted(s):
                 raise ValueError("bad string (mismatched %s quotes?)" % s[end])
 
             (beg, end) = m.span()
-            s = s[:beg] + s[beg+1:end-1] + s[end:]
+            s = s[:beg] + s[beg + 1:end - 1] + s[end:]
             pos = m.end() - 2
 
         if pos >= len(s):
@@ -296,7 +310,7 @@ def strtobool(val):
     elif val in ('n', 'no', 'f', 'false', 'off', '0'):
         return 0
     else:
-        raise ValueError, "invalid truth value %r" % (val,)
+        raise ValueError("invalid truth value %r" % (val,))
 
 
 def byte_compile(py_files, optimize=0, force=0, prefix=None, base_dir=None,
@@ -350,12 +364,8 @@ def byte_compile(py_files, optimize=0, force=0, prefix=None, base_dir=None,
     # "Indirect" byte-compilation: write a temporary script and then
     # run it with the appropriate flags.
     if not direct:
-        try:
-            from tempfile import mkstemp
-            (script_fd, script_name) = mkstemp(".py")
-        except ImportError:
-            from tempfile import mktemp
-            (script_fd, script_name) = None, mktemp(".py")
+        from tempfile import mkstemp
+        script_fd, script_name = mkstemp(".py")
         log.info("writing byte-compilation script '%s'", script_name)
         if not dry_run:
             if script_fd is not None:
@@ -363,43 +373,50 @@ def byte_compile(py_files, optimize=0, force=0, prefix=None, base_dir=None,
             else:
                 script = open(script_name, "w")
 
-            script.write("""\
-from distutils.util import byte_compile
+            try:
+                script.write("""\
+from distutils2.util import byte_compile
 files = [
 """)
 
-            # XXX would be nice to write absolute filenames, just for
-            # safety's sake (script should be more robust in the face of
-            # chdir'ing before running it).  But this requires abspath'ing
-            # 'prefix' as well, and that breaks the hack in build_lib's
-            # 'byte_compile()' method that carefully tacks on a trailing
-            # slash (os.sep really) to make sure the prefix here is "just
-            # right".  This whole prefix business is rather delicate -- the
-            # problem is that it's really a directory, but I'm treating it
-            # as a dumb string, so trailing slashes and so forth matter.
+                # XXX would be nice to write absolute filenames, just for
+                # safety's sake (script should be more robust in the face of
+                # chdir'ing before running it).  But this requires abspath'ing
+                # 'prefix' as well, and that breaks the hack in build_lib's
+                # 'byte_compile()' method that carefully tacks on a trailing
+                # slash (os.sep really) to make sure the prefix here is "just
+                # right".  This whole prefix business is rather delicate -- the
+                # problem is that it's really a directory, but I'm treating it
+                # as a dumb string, so trailing slashes and so forth matter.
 
-            #py_files = map(os.path.abspath, py_files)
-            #if prefix:
-            #    prefix = os.path.abspath(prefix)
+                #py_files = map(os.path.abspath, py_files)
+                #if prefix:
+                #    prefix = os.path.abspath(prefix)
 
-            script.write(",\n".join(map(repr, py_files)) + "]\n")
-            script.write("""
+                script.write(",\n".join(map(repr, py_files)) + "]\n")
+                script.write("""
 byte_compile(files, optimize=%r, force=%r,
              prefix=%r, base_dir=%r,
              verbose=%r, dry_run=0,
              direct=1)
 """ % (optimize, force, prefix, base_dir, verbose))
 
-            script.close()
+            finally:
+                script.close()
 
         cmd = [sys.executable, script_name]
         if optimize == 1:
             cmd.insert(1, "-O")
         elif optimize == 2:
             cmd.insert(1, "-OO")
-        spawn(cmd, dry_run=dry_run)
-        execute(os.remove, (script_name,), "removing %s" % script_name,
-                dry_run=dry_run)
+
+        env = copy(os.environ)
+        env['PYTHONPATH'] = ':'.join(sys.path)
+        try:
+            spawn(cmd, dry_run=dry_run, env=env)
+        finally:
+            execute(os.remove, (script_name,), "removing %s" % script_name,
+                    dry_run=dry_run)
 
     # "Direct" byte-compilation: use the py_compile module to compile
     # right here, right now.  Note that the script generated in indirect
@@ -447,7 +464,9 @@ def rfc822_escape(header):
     return sep.join(lines)
 
 _RE_VERSION = re.compile('(\d+\.\d+(\.\d+)*)')
-_MAC_OS_X_LD_VERSION = re.compile('^@\(#\)PROGRAM:ld  PROJECT:ld64-((\d+)(\.\d+)*)')
+_MAC_OS_X_LD_VERSION = re.compile('^@\(#\)PROGRAM:ld  '
+                                  'PROJECT:ld64-((\d+)(\.\d+)*)')
+
 
 def _find_ld_version():
     """Finds the ld version. The version scheme differs under Mac OSX."""
@@ -455,6 +474,7 @@ def _find_ld_version():
         return _find_exe_version('ld -v', _MAC_OS_X_LD_VERSION)
     else:
         return _find_exe_version('ld -v')
+
 
 def _find_exe_version(cmd, pattern=_RE_VERSION):
     """Find the version of an executable by running `cmd` in the shell.
@@ -485,6 +505,7 @@ def _find_exe_version(cmd, pattern=_RE_VERSION):
         return None
     return result.group(1)
 
+
 def get_compiler_versions():
     """Returns a tuple providing the versions of gcc, ld and dllwrap
 
@@ -495,6 +516,7 @@ def get_compiler_versions():
     ld = _find_ld_version()
     dllwrap = _find_exe_version('dllwrap --version')
     return gcc, ld, dllwrap
+
 
 def newer_group(sources, target, missing='error'):
     """Return true if 'target' is out-of-date with respect to any file
@@ -535,20 +557,25 @@ def newer_group(sources, target, missing='error'):
 
     return False
 
+
 def write_file(filename, contents):
     """Create a file with the specified name and write 'contents' (a
     sequence of strings without line terminators) to it.
     """
-    f = open(filename, "w")
-    for line in contents:
-        f.write(line + "\n")
-    f.close()
+    try:
+        f = open(filename, "w")
+        for line in contents:
+            f.write(line + "\n")
+    finally:
+        f.close()
+
 
 def _is_package(path):
     """Returns True if path is a package (a dir with an __init__ file."""
     if not os.path.isdir(path):
         return False
     return os.path.isfile(os.path.join(path, '__init__.py'))
+
 
 def _under(path, root):
     path = path.split(os.sep)
@@ -560,11 +587,13 @@ def _under(path, root):
             return False
     return True
 
+
 def _package_name(root_path, path):
     """Returns a dotted package name, given a subpath."""
     if not _under(path, root_path):
         raise ValueError('"%s" is not a subpath of "%s"' % (path, root_path))
     return path[len(root_path) + 1:].replace(os.sep, '.')
+
 
 def find_packages(paths=('.',), exclude=()):
     """Return a list all Python packages found recursively within
@@ -580,6 +609,7 @@ def find_packages(paths=('.',), exclude=()):
     """
     packages = []
     discarded = []
+
     def _discarded(path):
         for discard in discarded:
             if _under(path, discard):
@@ -611,3 +641,50 @@ def find_packages(paths=('.',), exclude=()):
                 packages.append(package_name)
     return packages
 
+
+# utility functions for 2to3 support
+
+def run_2to3(files, doctests_only=False, fixer_names=None, options=None,
+                                                            explicit=None):
+    """ Wrapper function around the refactor() class which
+    performs the conversions on a list of python files.
+    Invoke 2to3 on a list of Python files. The files should all come
+    from the build area, as the modification is done in-place."""
+
+    if not files:
+        return
+
+    # Make this class local, to delay import of 2to3
+    from lib2to3.refactor import get_fixers_from_package
+    from distutils2.converter.refactor import DistutilsRefactoringTool
+
+    if fixer_names is None:
+        fixer_names = get_fixers_from_package('lib2to3.fixes')
+
+    r = DistutilsRefactoringTool(fixer_names, options=options)
+    if doctests_only:
+        r.refactor(files, doctests_only=True, write=True)
+    else:
+        r.refactor(files, write=True)
+
+
+class Mixin2to3:
+    """ Wrapper class for commands that run 2to3.
+    To configure 2to3, setup scripts may either change
+    the class variables, or inherit from this class
+    to override how 2to3 is invoked.
+    """
+    # provide list of fixers to run.
+    # defaults to all from lib2to3.fixers
+    fixer_names = None
+
+    # options dictionary
+    options = None
+
+    # list of fixers to invoke even though they are marked as explicit
+    explicit = None
+
+    def run_2to3(self, files, doctests_only=False):
+        """ Issues a call to util.run_2to3. """
+        return run_2to3(files, doctests_only, self.fixer_names,
+                        self.options, self.explicit)

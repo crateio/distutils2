@@ -1,4 +1,4 @@
-This directory contains the Distutils package.
+This directory contains the Distutils2 package.
 
 There's a full documentation available at:
 
@@ -8,6 +8,6 @@ The Distutils-SIG web page is also a good starting point:
 
     http://www.python.org/sigs/distutils-sig/
 
-WARNING: Distutils2 must remain compatible with 2.4
+WARNING: Distutils2 must remain compatible with Python 2.4
 
 $Id: README 70017 2009-02-27 12:53:34Z tarek.ziade $

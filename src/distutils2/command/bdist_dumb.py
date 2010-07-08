@@ -85,7 +85,7 @@ class bdist_dumb (Command):
         if not self.skip_build:
             self.run_command('build')
 
-        install = self.reinitialize_command('install', reinit_subcommands=1)
+        install = self.get_reinitialized_command('install', reinit_subcommands=1)
         install.root = self.bdist_dir
         install.skip_build = self.skip_build
         install.warn_dir = 0

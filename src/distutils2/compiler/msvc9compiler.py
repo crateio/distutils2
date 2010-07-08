@@ -20,7 +20,7 @@ import sys
 import re
 
 from distutils2.errors import (DistutilsExecError, DistutilsPlatformError,
-                              CompileError, LibError, LinkError)
+                               CompileError, LibError, LinkError)
 from distutils2.compiler.ccompiler import CCompiler, gen_lib_options
 from distutils2 import log
 from distutils2.util import get_platform
@@ -50,7 +50,7 @@ PLAT_TO_VCVARS = {
     'win-ia64' : 'ia64',
 }
 
-class Reg:
+class Reg(object):
     """Helper class to read values from the registry
     """
 
@@ -112,7 +112,7 @@ class Reg:
         return s
     convert_mbcs = staticmethod(convert_mbcs)
 
-class MacroExpander:
+class MacroExpander(object):
 
     def __init__(self, version):
         self.macros = {}
