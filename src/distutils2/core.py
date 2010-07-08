@@ -49,8 +49,8 @@ setup_keywords = ('distclass', 'script_name', 'script_args', 'options',
                   'maintainer', 'maintainer_email', 'url', 'license',
                   'description', 'long_description', 'keywords',
                   'platforms', 'classifiers', 'download_url',
-                  'requires', 'provides', 'obsoletes', 'use_2to3',
-                  'convert_2to3_doctests',
+                  'requires', 'provides', 'obsoletes', 'use_2to3_fixers',
+                  'convert_2to3_doctests', 'use_2to3_fixers'
                   )
 
 # Legal keyword arguments for the Extension constructor

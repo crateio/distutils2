@@ -116,7 +116,9 @@ Common commands: (see '--help-commands' for more)
         ('use-2to3', None,
          "use 2to3 to make source python 3.x compatible"),
         ('convert-2to3-doctests', None,
-         "use 2to3 to convert doctests in seperate text files"), 
+         "use 2to3 to convert doctests in seperate text files"),
+        ('use-2to3-fixers', None,
+         "list additional fixers opted for during 2to3 conversion")
         ]
     display_option_names = map(lambda x: translate_longopt(x[0]),
                                display_options)
@@ -212,6 +214,7 @@ Common commands: (see '--help-commands' for more)
         self.password = ''
         self.use_2to3 = False
         self.convert_2to3_doctests = []
+        self.use_2to3_fixers = []
 
         # And now initialize bookkeeping stuff that can't be supplied by
         # the caller at all.  'command_obj' maps command names to

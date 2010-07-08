@@ -19,6 +19,7 @@ __all__ = ['Mixin2to3', 'build_py']
 
 try:
     from distutils2.util import Mixin2to3 as _Mixin2to3
+    from distutils2 import run_2to3_on_doctests
     from lib2to3.refactor import get_fixers_from_package
     _CONVERT = True
     _KLASS = _Mixin2to3
@@ -33,13 +34,16 @@ class Mixin2to3(_KLASS):
     yet does nothing in particular with it.
     """
     if _CONVERT:
-        def _run_2to3(self, files, doctests=[]):
+        def _run_2to3(self, files, doctests=[], fixers=[]):
             """ Takes a list of files and doctests, and performs conversion
             on those.
               - First, the files which contain the code(`files`) are converted.
               - Second, the doctests in `files` are converted.
               - Thirdly, the doctests in `doctests` are converted.
             """
+            # if additional fixers are present, use them
+            if fixers:
+                self.fixer_names = fixers
 
             # Convert the ".py" files.
             logging.info("Converting Python code")
@@ -56,12 +60,12 @@ class Mixin2to3(_KLASS):
             #    containing doctests. It is set as
             #    distutils2.run_2to3_on_doctests
 
-            if doctests != [] and distutils2.run_2to3_on_doctests:
+            if doctests != [] and run_2to3_on_doctests:
                 logging.info("Converting text files which contain doctests")
                 _KLASS.run_2to3(self, doctests, doctests_only=True)
     else:
         # If run on Python 2.x, there is nothing to do.
-        def _run_2to3(self, files, doctests=[]):
+        def _run_2to3(self, files, doctests=[], fixers=[]):
             pass
 
 class build_py(Command, Mixin2to3):
@@ -147,7 +151,8 @@ class build_py(Command, Mixin2to3):
             self.build_package_data()
 
         if self.distribution.use_2to3 and self_updated_files:
-            self.run_2to3(self._updated_files, self._doctests_2to3)
+            self.run_2to3(self._updated_files, self._doctests_2to3, 
+                                            self.distribution.use_2to3_fixers)
 
         self.byte_compile(self.get_outputs(include_bytecode=0))
 

@@ -644,7 +644,7 @@ def find_packages(paths=('.',), exclude=()):
 
 # utility functions for 2to3 support
 
-def run_2to3(files, doctests_only=False, fixer_names=None, options=None,
+def run_2to3(files=[], doctests_only=False, fixer_names=[], options=None,
                                                             explicit=None):
     """ Wrapper function around the refactor() class which
     performs the conversions on a list of python files.
@@ -655,13 +655,23 @@ def run_2to3(files, doctests_only=False, fixer_names=None, options=None,
         return
 
     # Make this class local, to delay import of 2to3
-    from lib2to3.refactor import get_fixers_from_package
-    from distutils2.converter.refactor import DistutilsRefactoringTool
+    from lib2to3.refactor import get_fixers_from_package, RefactoringTool
+    #from distutils2.converter.refactor import DistutilsRefactoringTool
 
-    if fixer_names is None:
-        fixer_names = get_fixers_from_package('lib2to3.fixes')
+    fixers = []
+    
+    # select only the 'default fixers' from the lib2to3 package
+    for fixer in get_fixers_from_package('lib2to3.fixes'):
+        if fixers not in ('lib2to3.fixes.fix_buffer', 'lib2to3.fixes.fix_idioms', 
+                    'lib2to3.fixes.fix_numliterals', 'lib2to3.fixes.fix_set_literal', 
+                    'lib2to3.fixes.fix_ws_comma'):
+            fixers.append(fixer)
 
-    r = DistutilsRefactoringTool(fixer_names, options=options)
+    if fixer_names is not None:
+        for fixer_package in fixer_names:
+            fixers.extend(get_fixers_from_package(fixer_package))
+
+    r = RefactoringTool(fixers, options=options)
     if doctests_only:
         r.refactor(files, doctests_only=True, write=True)
     else:
@@ -676,7 +686,7 @@ class Mixin2to3:
     """
     # provide list of fixers to run.
     # defaults to all from lib2to3.fixers
-    fixer_names = None
+    fixer_names = []
 
     # options dictionary
     options = None

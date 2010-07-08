@@ -327,6 +327,21 @@ class UtilTestCase(support.EnvironGuard,
         file_handle.close()
         self.assertEquals(new_content, converted_content)
 
+    @unittest.skipUnless(sys.version > '2.6', 'Need Python 2.6 or more')
+    def test_use_additional_fixers(self):
+        # to check if additional fixers work
+        content = "type(x) is T"
+        converted_content = "isinstance(x, T)"
+        file_handle = self.mktempfile()
+        file_name = file_handle.name
+        file_handle.write(content)
+        file_handle.flush()
+        file_handle.seek(0)
+        from distutils2.util import run_2to3
+        run_2to3([file_name], None, ['distutils2.tests.fixer'])
+        new_content = "".join(file_handle.read())
+        file_handle.close()
+        self.assertEquals(new_content, converted_content)
 
 def test_suite():
     return unittest.makeSuite(UtilTestCase)
