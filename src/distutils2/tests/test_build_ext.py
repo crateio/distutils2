@@ -237,53 +237,6 @@ class BuildExtTestCase(support.TempdirManager,
         cmd.finalize_options()
         self.assertEqual(cmd.swig_opts, ['1', '2'])
 
-    def test_check_extensions_list(self):
-        dist = Distribution()
-        cmd = build_ext(dist)
-        cmd.finalize_options()
-
-        #'extensions' option must be a list of Extension instances
-        self.assertRaises(DistutilsSetupError, cmd.check_extensions_list, 'foo')
-
-        # each element of 'ext_modules' option must be an
-        # Extension instance or 2-tuple
-        exts = [('bar', 'foo', 'bar'), 'foo']
-        self.assertRaises(DistutilsSetupError, cmd.check_extensions_list, exts)
-
-        # first element of each tuple in 'ext_modules'
-        # must be the extension name (a string) and match
-        # a python dotted-separated name
-        exts = [('foo-bar', '')]
-        self.assertRaises(DistutilsSetupError, cmd.check_extensions_list, exts)
-
-        # second element of each tuple in 'ext_modules'
-        # must be a ary (build info)
-        exts = [('foo.bar', '')]
-        self.assertRaises(DistutilsSetupError, cmd.check_extensions_list, exts)
-
-        # ok this one should pass
-        exts = [('foo.bar', {'sources': [''], 'libraries': 'foo',
-                             'some': 'bar'})]
-        cmd.check_extensions_list(exts)
-        ext = exts[0]
-        self.assertTrue(isinstance(ext, Extension))
-
-        # check_extensions_list adds in ext the values passed
-        # when they are in ('include_dirs', 'library_dirs', 'libraries'
-        # 'extra_objects', 'extra_compile_args', 'extra_link_args')
-        self.assertEqual(ext.libraries, 'foo')
-        self.assertTrue(not hasattr(ext, 'some'))
-
-        # 'macros' element of build info dict must be 1- or 2-tuple
-        exts = [('foo.bar', {'sources': [''], 'libraries': 'foo',
-                'some': 'bar', 'macros': [('1', '2', '3'), 'foo']})]
-        self.assertRaises(DistutilsSetupError, cmd.check_extensions_list, exts)
-
-        exts[0][1]['macros'] = [('1', '2'), ('3',)]
-        cmd.check_extensions_list(exts)
-        self.assertEqual(exts[0].undef_macros, ['3'])
-        self.assertEqual(exts[0].define_macros, [('1', '2')])
-
     def test_get_source_files(self):
         modules = [Extension('foo', ['xxx'], optional=False)]
         dist = Distribution({'name': 'xx', 'ext_modules': modules})
