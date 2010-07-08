@@ -655,8 +655,8 @@ def run_2to3(files=[], doctests_only=False, fixer_names=[], options=None,
         return
 
     # Make this class local, to delay import of 2to3
-    from lib2to3.refactor import get_fixers_from_package, RefactoringTool
-    #from distutils2.converter.refactor import DistutilsRefactoringTool
+    from lib2to3.refactor import get_fixers_from_package
+    from distutils2.converter.refactor import DistutilsRefactoringTool
 
     fixers = []
     
@@ -671,7 +671,7 @@ def run_2to3(files=[], doctests_only=False, fixer_names=[], options=None,
         for fixer_package in fixer_names:
             fixers.extend(get_fixers_from_package(fixer_package))
 
-    r = RefactoringTool(fixers, options=options)
+    r = DistutilsRefactoringTool(fixers, options=options)
     if doctests_only:
         r.refactor(files, doctests_only=True, write=True)
     else:
