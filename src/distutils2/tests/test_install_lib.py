@@ -57,9 +57,8 @@ class InstallLibTestCase(support.TempdirManager,
         # setting up a dist environment
         cmd.compile = cmd.optimize = 1
         cmd.install_dir = pkg_dir
-        f = os.path.join(pkg_dir, 'foo.py')
-        self.write_file(f, '# python file')
-        cmd.distribution.py_modules = [pkg_dir]
+        f = os.path.join(pkg_dir, '__init__.py')
+        self.write_file(f, '# python package')
         cmd.distribution.ext_modules = [Extension('foo', ['xxx'])]
         cmd.distribution.packages = [pkg_dir]
         cmd.distribution.script_name = 'setup.py'
@@ -74,9 +73,8 @@ class InstallLibTestCase(support.TempdirManager,
         # setting up a dist environment
         cmd.compile = cmd.optimize = 1
         cmd.install_dir = pkg_dir
-        f = os.path.join(pkg_dir, 'foo.py')
-        self.write_file(f, '# python file')
-        cmd.distribution.py_modules = [pkg_dir]
+        f = os.path.join(pkg_dir, '__init__.py')
+        self.write_file(f, '# python package')
         cmd.distribution.ext_modules = [Extension('foo', ['xxx'])]
         cmd.distribution.packages = [pkg_dir]
         cmd.distribution.script_name = 'setup.py'
