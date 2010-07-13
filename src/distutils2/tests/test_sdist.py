@@ -241,7 +241,7 @@ class SDistTestCase(support.TempdirManager, support.LoggingSilencer,
 
     @unittest.skipUnless(zlib, "requires zlib")
     def test_metadata_check_option(self):
-        # testing the `medata-check` option
+        # testing the `check-metadata` option
         dist, cmd = self.get_cmd(metadata={})
 
         # this should raise some warnings !

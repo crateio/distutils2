@@ -70,7 +70,7 @@ class sdist(Command):
         ('dist-dir=', 'd',
          "directory to put the source distribution archive(s) in "
          "[default: dist]"),
-        ('medata-check', None,
+        ('check-metadata', None,
          "Ensure that all required elements of meta-data "
          "are supplied. Warn if any missing. [default]"),
         ('owner=', 'u',
@@ -80,7 +80,7 @@ class sdist(Command):
         ]
 
     boolean_options = ['use-defaults', 'prune',
-                       'manifest-only', 'keep-temp', 'metadata-check']
+                       'manifest-only', 'keep-temp', 'check-metadata']
 
     help_options = [
         ('help-formats', None,
