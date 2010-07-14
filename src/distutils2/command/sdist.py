@@ -45,12 +45,6 @@ class sdist(Command):
 
     description = "create a source distribution (tarball, zip file, etc.)"
 
-    def checking_metadata(self):
-        """Callable used for the check sub-command.
-
-        Placed here so user_options can view it"""
-        return self.metadata_check
-
     user_options = [
         ('template=', 't',
          "name of manifest template file [default: MANIFEST.in]"),
@@ -99,8 +93,6 @@ class sdist(Command):
 
     default_format = {'posix': 'gztar',
                       'nt': 'zip' }
-
-    sub_commands = [('check', checking_metadata)]
 
     def initialize_options(self):
         # 'template' and 'manifest' are, respectively, the names of
@@ -162,9 +154,9 @@ class sdist(Command):
         # manifest
         self.filelist.clear()
 
-        # Run sub commands
-        for cmd_name in self.get_sub_commands():
-            self.run_command(cmd_name)
+        # Check the package metadata
+        if self.metadata_check:
+            self.run_command('check')
 
         # Do whatever it takes to get the list of files to process
         # (process the manifest template, read an existing manifest,
