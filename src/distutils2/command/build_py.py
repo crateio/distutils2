@@ -372,7 +372,13 @@ class build_py(Command, Mixin2to3):
         return modules
 
     def get_source_files(self):
-        return [module[-1] for module in self.find_all_modules()]
+        sources = [module[-1] for module in self.find_all_modules()]
+        sources += [
+            os.path.join(src_dir, filename)
+            for package, src_dir, build_dir, filenames in self.data_files
+            for filename in filenames
+            ]
+        return sources
 
     def get_module_outfile(self, build_dir, package, module):
         outfile_path = [build_dir] + list(package) + [module + ".py"]

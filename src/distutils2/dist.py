@@ -197,18 +197,18 @@ Common commands: (see '--help-commands' for more)
         # These options are really the business of various commands, rather
         # than of the Distribution itself.  We provide aliases for them in
         # Distribution as a convenience to the developer.
-        self.packages = None
+        self.packages = []
         self.package_data = {}
         self.package_dir = None
-        self.py_modules = None
-        self.libraries = None
-        self.headers = None
-        self.ext_modules = None
+        self.py_modules = []
+        self.libraries = []
+        self.headers = []
+        self.ext_modules = []
         self.ext_package = None
-        self.include_dirs = None
+        self.include_dirs = []
         self.extra_path = None
-        self.scripts = None
-        self.data_files = None
+        self.scripts = []
+        self.data_files = []
         self.password = ''
         self.use_2to3 = False
         self.convert_2to3_doctests = []
@@ -700,13 +700,11 @@ Common commands: (see '--help-commands' for more)
 
             print("  %-*s  %s" % (max_length, cmd, description))
 
-    def print_commands(self):
-        """Print out a help message listing all available commands with a
-        description of each.  The list is divided into "standard commands"
-        (listed in distutils2.command.__all__) and "extra commands"
-        (mentioned in self.cmdclass, but not a standard command).  The
-        descriptions come from the command class attribute
-        'description'.
+    def _get_command_groups(self):
+        """Helper function to retrieve all the command class names divided
+        into "standard commands" (listed in distutils2.command.__all__)
+        and "extra commands" (mentioned in self.cmdclass, but not a standard
+        command).
         """
         import distutils2.command
         std_commands = distutils2.command.__all__
@@ -715,10 +713,20 @@ Common commands: (see '--help-commands' for more)
             is_std[cmd] = 1
 
         extra_commands = []
-        for cmd in self.cmdclass.keys():
+        for cmd in self.cmdclass:
             if not is_std.get(cmd):
                 extra_commands.append(cmd)
+        return std_commands, extra_commands
 
+    def print_commands(self):
+        """Print out a help message listing all available commands with a
+        description of each.  The list is divided into "standard commands"
+        (listed in distutils2.command.__all__) and "extra commands"
+        (mentioned in self.cmdclass, but not a standard command).  The
+        descriptions come from the command class attribute
+        'description'.
+        """
+        std_commands, extra_commands = self._get_command_groups()
         max_length = 0
         for cmd in (std_commands + extra_commands):
             if len(cmd) > max_length:
@@ -743,22 +751,8 @@ Common commands: (see '--help-commands' for more)
         # Currently this is only used on Mac OS, for the Mac-only GUI
         # Distutils interface (by Jack Jansen)
 
-        import distutils2.command
-        std_commands = distutils2.command.__all__
-        is_std = {}
-        for cmd in std_commands:
-            is_std[cmd] = 1
-
-        extra_commands = []
-        for cmd in self.cmdclass.keys():
-            if not is_std.get(cmd):
-                extra_commands.append(cmd)
-
         rv = []
-        for cmd in (std_commands + extra_commands):
-            cls = self.cmdclass.get(cmd)
-            if not cls:
-                cls = self.get_command_class(cmd)
+        for cls in self.get_command_classes():
             try:
                 description = cls.description
             except AttributeError:
@@ -779,6 +773,23 @@ Common commands: (see '--help-commands' for more)
                 pkgs.insert(0, "distutils2.command")
             self.command_packages = pkgs
         return pkgs
+
+    def get_command_names(self):
+        """Return a list of command names."""
+        return [getattr(cls, 'command_name', cls.__name__)
+                for cls in self.get_command_classes()]
+
+    def get_command_classes(self):
+        """Return a list of all command classes."""
+        std_commands, extra_commands = self._get_command_groups()
+        classes = []
+        for cmd in (std_commands + extra_commands):
+            try:
+                cls = self.cmdclass[cmd]
+            except KeyError:
+                cls = self.get_command_class(cmd)
+            classes.append(cls)
+        return classes
 
     def get_command_class(self, command):
         """Return the class that implements the Distutils command named by
@@ -817,7 +828,6 @@ Common commands: (see '--help-commands' for more)
             return cls
 
         raise DistutilsModuleError("invalid command '%s'" % command)
-
 
     def get_command_obj(self, command, create=1):
         """Return the command object for 'command'.  Normally this object
