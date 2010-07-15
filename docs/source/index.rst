@@ -16,7 +16,7 @@ Contents:
    depgraph
    new_commands
    test_framework
-   pypi
+   projects-index
    version
 
 Indices and tables

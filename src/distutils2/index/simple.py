@@ -1,6 +1,6 @@
-"""pypi.simple
+"""index.simple
 
-Contains the class "SimpleIndex", a simple spider to find and retrieve
+Contains the class "SimpleIndexCrawler", a simple spider to find and retrieve
 distributions on the Python Package Index, using it's "simple" API,
 avalaible at http://pypi.python.org/simple/
 """
@@ -12,16 +12,16 @@ import sys
 import urllib2
 import urlparse
 
-from distutils2.version import VersionPredicate
-from distutils2.pypi.dist import (PyPIDistribution, PyPIDistributions,
-                                  EXTENSIONS)
-from distutils2.pypi.errors import (PyPIError, DistributionNotFound,
-                                    DownloadError, UnableToDownload)
+from distutils2.index.base import IndexClient
+from distutils2.index.dist import (ReleasesList, EXTENSIONS,
+                                   get_infos_from_url)
+from distutils2.index.errors import (IndexError, DownloadError,
+                                     UnableToDownload)
 from distutils2 import __version__ as __distutils2_version__
 
 # -- Constants -----------------------------------------------
-PYPI_DEFAULT_INDEX_URL = "http://pypi.python.org/simple/"
-PYPI_DEFAULT_MIRROR_URL = "mirrors.pypi.python.org"
+DEFAULT_INDEX_URL = "http://pypi.python.org/simple/"
+DEFAULT_MIRROR_URL = "mirrors.pypi.python.org"
 DEFAULT_HOSTS = ("*",)
 SOCKET_TIMEOUT = 15
 USER_AGENT = "Python-urllib/%s distutils2/%s" % (
@@ -58,8 +58,8 @@ def socket_timeout(timeout=SOCKET_TIMEOUT):
     return _socket_timeout
 
 
-class SimpleIndex(object):
-    """Provides useful tools to request the Python Package Index simple API
+class Crawler(IndexClient):
+    """Provides useful tools to request the Python Package Index simple API.
 
     :param index_url: the url of the simple index to search on.
     :param follow_externals: tell if following external links is needed or
@@ -69,8 +69,6 @@ class SimpleIndex(object):
                   hosts.
     :param follow_externals: tell if following external links is needed or
                              not. Default is False.
-    :param prefer_source: if there is binary and source distributions, the
-                          source prevails.
     :param prefer_final: if the version is not mentioned, and the last
                          version is not a "final" one (alpha, beta, etc.),
                          pick up the last final version.
@@ -81,10 +79,10 @@ class SimpleIndex(object):
     :param timeout: time in seconds to consider a url has timeouted.
     """
 
-    def __init__(self, index_url=PYPI_DEFAULT_INDEX_URL, hosts=DEFAULT_HOSTS,
-                 follow_externals=False, prefer_source=True,
-                 prefer_final=False, mirrors_url=PYPI_DEFAULT_MIRROR_URL,
-                 mirrors=None, timeout=SOCKET_TIMEOUT):
+    def __init__(self, index_url=DEFAULT_INDEX_URL, hosts=DEFAULT_HOSTS,
+                 follow_externals=False, prefer_final=False,
+                 mirrors_url=DEFAULT_MIRROR_URL, mirrors=None,
+                 timeout=SOCKET_TIMEOUT):
         self.follow_externals = follow_externals
 
         if not index_url.endswith("/"):
@@ -99,7 +97,6 @@ class SimpleIndex(object):
         self._index_urls.extend(mirrors)
         self._current_index_url = 0
         self._timeout = timeout
-        self._prefer_source = prefer_source
         self._prefer_final = prefer_final
 
         # create a regexp to match all given hosts
@@ -109,85 +106,25 @@ class SimpleIndex(object):
         # scanning them multple time (eg. if there is multiple pages pointing
         # on one)
         self._processed_urls = []
-        self._distributions = {}
-
-    def find(self, requirements, prefer_source=None, prefer_final=None):
-        """Browse the PyPI to find distributions that fullfil the given
-        requirements.
-
-        :param requirements: A project name and it's distribution, using
-                             version specifiers, as described in PEP345.
-        :type requirements:  You can pass either a version.VersionPredicate
-                             or a string.
-        :param prefer_source: if there is binary and source distributions, the
-                              source prevails.
-        :param prefer_final: if the version is not mentioned, and the last
-                             version is not a "final" one (alpha, beta, etc.),
-                             pick up the last final version.
-        """
-        requirements = self._get_version_predicate(requirements)
-        if prefer_source is None:
-            prefer_source = self._prefer_source
-        if prefer_final is None:
-            prefer_final = self._prefer_final
-
-        # process the index for this project
-        self._process_pypi_page(requirements.name)
-
-        # filter with requirements and return the results
-        if requirements.name in self._distributions:
-            dists = self._distributions[requirements.name].filter(requirements)
-            dists.sort_distributions(prefer_source=prefer_source,
-                                     prefer_final=prefer_final)
-        else:
-            dists = []
-
-        return dists
-
-    def get(self, requirements, *args, **kwargs):
-        """Browse the PyPI index to find distributions that fullfil the
-        given requirements, and return the most recent one.
-
-        You can specify prefer_final and prefer_source arguments here.
-        If not, the default one will be used.
-        """
-        predicate = self._get_version_predicate(requirements)
-        dists = self.find(predicate, *args, **kwargs)
-
-        if len(dists) == 0:
-            raise DistributionNotFound(requirements)
-
-        return dists.get_last(predicate)
-
-    def download(self, requirements, temp_path=None, *args, **kwargs):
-        """Download the distribution, using the requirements.
-
-        If more than one distribution match the requirements, use the last
-        version.
-        Download the distribution, and put it in the temp_path. If no temp_path
-        is given, creates and return one.
-
-        Returns the complete absolute path to the downloaded archive.
-
-        :param requirements: The same as the find attribute of `find`.
-
-        You can specify prefer_final and prefer_source arguments here.
-        If not, the default one will be used.
-        """
-        return self.get(requirements, *args, **kwargs)\
-                   .download(path=temp_path)
-
-    def _get_version_predicate(self, requirements):
-        """Return a VersionPredicate object, from a string or an already
-        existing object.
-        """
-        if isinstance(requirements, str):
-            requirements = VersionPredicate(requirements)
-        return requirements
-
+        self._releases = {}
+  
     @property
     def index_url(self):
         return self._index_urls[self._current_index_url]
+
+    def _search_for_releases(self, requirements):
+        """Search for distributions and return a ReleaseList object containing
+        the results
+        """
+        # process the index page for the project name, searching for
+        # distributions.
+        self._process_index_page(requirements.name)
+        return self._releases.setdefault(requirements.name,
+                                         ReleasesList(requirements.name))
+    
+    def _get_release(self, requirements, prefer_final):
+        """Return only one release that fulfill the given requirements"""
+        return self.find(requirements, prefer_final).get_last(requirements)
 
     def _switch_to_next_mirror(self):
         """Switch to the next mirror (eg. point self.index_url to the next
@@ -228,18 +165,33 @@ class SimpleIndex(object):
                 return True
         return False
 
-    def _register_dist(self, dist):
-        """Register a distribution as a part of fetched distributions for
-        SimpleIndex.
+    def _register_release(self, release=None, release_info={}):
+        """Register a new release.
 
-        Return the PyPIDistributions object for the specified project name
+        Both a release or a dict of release_info can be provided, the prefered
+        way (eg. the quicker) is the dict one.
+
+        Return the list of existing releases for the given project.
         """
-        # Internally, check if a entry exists with the project name, if not,
-        # create a new one, and if exists, add the dist to the pool.
-        if not dist.name in self._distributions:
-            self._distributions[dist.name] = PyPIDistributions()
-        self._distributions[dist.name].append(dist)
-        return self._distributions[dist.name]
+        # Check if the project already has a list of releases (refering to
+        # the project name). If not, create a new release list.
+        # Then, add the release to the list.
+        if release:
+            name = release.name
+        else:
+            name = release_info['name']
+        if not name in self._releases:
+            self._releases[name] = ReleasesList(name)
+
+        if release:
+            self._releases[name].add_release(release=release)
+        else:
+            name = release_info.pop('name')
+            version = release_info.pop('version')
+            dist_type = release_info.pop('dist_type')
+            self._releases[name].add_release(version, dist_type,
+                                             **release_info)
+        return self._releases[name]
 
     def _process_url(self, url, project_name=None, follow_links=True):
         """Process an url and search for distributions packages.
@@ -264,9 +216,9 @@ class SimpleIndex(object):
                     if self._is_distribution(link) or is_download:
                         self._processed_urls.append(link)
                         # it's a distribution, so create a dist object
-                        dist = PyPIDistribution.from_url(link, project_name,
-                                    is_external=not self.index_url in url)
-                        self._register_dist(dist)
+                        infos = get_infos_from_url(link, project_name,
+                                   is_external=not self.index_url in url)
+                        self._register_release(release_info=infos)
                     else:
                         if self._is_browsable(link) and follow_links:
                             self._process_url(link, project_name,
@@ -307,7 +259,7 @@ class SimpleIndex(object):
             if self._is_browsable(url):
                 yield (url, False)
 
-    def _process_pypi_page(self, name):
+    def _process_index_page(self, name):
         """Find and process a PyPI page for the given project name.
 
         :param name: the name of the project to find the page
@@ -320,8 +272,8 @@ class SimpleIndex(object):
             # if an error occurs, try with the next index_url
             # (provided by the mirrors)
             self._switch_to_next_mirror()
-            self._distributions.clear()
-            self._process_pypi_page(name)
+            self._releases.clear()
+            self._process_index_page(name)
 
     @socket_timeout()
     def _open_url(self, url):
@@ -366,7 +318,7 @@ class SimpleIndex(object):
             return fp
         except (ValueError, httplib.InvalidURL), v:
             msg = ' '.join([str(arg) for arg in v.args])
-            raise PyPIError('%s %s' % (url, msg))
+            raise IndexError('%s %s' % (url, msg))
         except urllib2.HTTPError, v:
             return v
         except urllib2.URLError, v:
