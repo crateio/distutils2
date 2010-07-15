@@ -25,11 +25,13 @@ class PyPISimpleTestCase(support.TempdirManager,
         if hosts is None:
             hosts = (server.full_address.strip("http://"),)
         kwargs['hosts'] = hosts
+        if not 'mirrors' in kwargs:
+            kwargs['mirrors'] = [] # to speed up tests
         return simple.SimpleIndex(server.full_address + base_url, *args,
             **kwargs)
 
     def test_bad_urls(self):
-        index = simple.SimpleIndex()
+        index = simple.SimpleIndex(mirrors=[])
         url = 'http://127.0.0.1:0/nonesuch/test_simple'
         try:
             v = index._open_url(url)
@@ -41,7 +43,7 @@ class PyPISimpleTestCase(support.TempdirManager,
         # issue 16
         # easy_install inquant.contentmirror.plone breaks because of a typo
         # in its home URL
-        index = simple.SimpleIndex(hosts=('www.example.com',))
+        index = simple.SimpleIndex(hosts=('www.example.com',), mirrors=[])
         url = 'url:%20https://svn.plone.org/svn/collective/inquant.contentmirror.plone/trunk'
         try:
             v = index._open_url(url)
@@ -100,13 +102,13 @@ class PyPISimpleTestCase(support.TempdirManager,
         self.assertEqual("%s" % last_distribution.version, '2.0.1')
 
     def test_is_browsable(self):
-        index = simple.SimpleIndex(follow_externals=False)
+        index = simple.SimpleIndex(follow_externals=False, mirrors=[])
         self.assertTrue(index._is_browsable(index.index_url + "test"))
 
         # Now, when following externals, we can have a list of hosts to trust.
         # and don't follow other external links than the one described here.
         index = simple.SimpleIndex(hosts=["pypi.python.org", "test.org"],
-                                   follow_externals=True)
+                                   follow_externals=True, mirrors=[])
         good_urls = (
             "http://pypi.python.org/foo/bar",
             "http://pypi.python.org/simple/foobar",
@@ -126,13 +128,14 @@ class PyPISimpleTestCase(support.TempdirManager,
             self.assertFalse(index._is_browsable(url))
 
         # allow all hosts
-        index = simple.SimpleIndex(follow_externals=True, hosts=("*",))
+        index = simple.SimpleIndex(follow_externals=True, hosts=("*",),
+                                   mirrors=[])
         self.assertTrue(index._is_browsable("http://an-external.link/path"))
         self.assertTrue(index._is_browsable("pypi.test.tld/a/path"))
 
         # specify a list of hosts we want to allow
         index = simple.SimpleIndex(follow_externals=True,
-                                   hosts=("*.test.tld",))
+                                   hosts=("*.test.tld",), mirrors=[])
         self.assertFalse(index._is_browsable("http://an-external.link/path"))
         self.assertTrue(index._is_browsable("http://pypi.test.tld/a/path"))
 
@@ -176,7 +179,7 @@ class PyPISimpleTestCase(support.TempdirManager,
         index_url = server.full_address + '/simple/'
 
         # scan a test index
-        index = simple.SimpleIndex(index_url, follow_externals=True)
+        index = simple.SimpleIndex(index_url, follow_externals=True, mirrors=[])
         dists = index.find("foobar")
         server.stop()
 
@@ -230,7 +233,7 @@ class PyPISimpleTestCase(support.TempdirManager,
 
     def test_simple_link_matcher(self):
         # Test that the simple link matcher yields the right links"""
-        index = simple.SimpleIndex(follow_externals=False)
+        index = simple.SimpleIndex(follow_externals=False, mirrors=[])
 
         # Here, we define:
         #   1. one link that must be followed, cause it's a download one
