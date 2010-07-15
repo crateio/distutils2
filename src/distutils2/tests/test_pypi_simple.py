@@ -270,6 +270,29 @@ class PyPISimpleTestCase(support.TempdirManager,
         dists = index.find("foobar")
         self.assertEqual(4, len(dists))
 
+    def test_get_link_matcher(self):
+        crawler = simple.SimpleIndex("http://example.org")
+        self.assertEqual('_simple_link_matcher', crawler._get_link_matcher(
+                         "http://example.org/some/file").__name__)
+        self.assertEqual('_default_link_matcher', crawler._get_link_matcher(
+                         "http://other-url").__name__)
+
+    def test_default_link_matcher(self):
+        crawler = simple.SimpleIndex("http://example.org", mirrors=[])
+        crawler.follow_externals = True
+        crawler._is_browsable = lambda *args:True
+        base_url = "http://example.org/some/file/"
+        content = """
+<a href="../homepage" rel="homepage">link</a>
+<a href="../download" rel="download">link2</a>
+<a href="../simpleurl">link2</a>
+        """
+        found_links = dict(crawler._default_link_matcher(content,
+                                                         base_url)).keys()
+        self.assertIn('http://example.org/some/homepage', found_links)
+        self.assertIn('http://example.org/some/simpleurl', found_links)
+        self.assertIn('http://example.org/some/download', found_links)
+
 def test_suite():
     return unittest.makeSuite(PyPISimpleTestCase)
 
