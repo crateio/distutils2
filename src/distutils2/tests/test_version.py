@@ -198,16 +198,21 @@ class VersionTestCase(unittest.TestCase):
         for version in other_versions:
             self.assertFalse(V(version).is_final)
 
+class VersionWhiteBoxTestCase(unittest.TestCase):
+
     def test_parse_numdots(self):
-        # For code coverage completeness
-        self.assertEquals(V('1.0')._parse_numdots('1.0', '1.0', pad_zeros_length=3),
+        # For code coverage completeness, as pad_zeros_length can't be set or
+        # influenced from the public interface
+        self.assertEquals(V('1.0')._parse_numdots('1.0', '1.0',
+                                                  pad_zeros_length=3),
                           [1, 0, 0])
 
 
 def test_suite():
     #README = os.path.join(os.path.dirname(__file__), 'README.txt')
     #suite = [doctest.DocFileSuite(README), unittest.makeSuite(VersionTestCase)]
-    suite = [unittest.makeSuite(VersionTestCase)]
+    suite = [unittest.makeSuite(VersionTestCase),
+             unittest.makeSuite(VersionWhiteBoxTestCase)]
     return unittest.TestSuite(suite)
 
 if __name__ == "__main__":
