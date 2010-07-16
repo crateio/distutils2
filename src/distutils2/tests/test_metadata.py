@@ -6,6 +6,8 @@ from StringIO import StringIO
 from distutils2.metadata import (DistributionMetadata, _interpret,
                                  PKG_INFO_PREFERRED_VERSION)
 from distutils2.tests.support import unittest, LoggingSilencer
+from distutils2.errors import (MetadataConflictError,
+                               MetadataUnrecognizedVersionError)
 
 class DistributionMetadataTestCase(LoggingSilencer, unittest.TestCase):
 
@@ -125,6 +127,10 @@ class DistributionMetadataTestCase(LoggingSilencer, unittest.TestCase):
         metadata['Obsoletes-Dist'] = 'ok'
         self.assertEqual(metadata['Metadata-Version'], '1.2')
 
+        self.assertRaises(MetadataConflictError, metadata.set,
+                          'Obsoletes', 'ok')
+
+        del metadata['Obsoletes']
         del metadata['Obsoletes-Dist']
         metadata['Version'] = '1'
         self.assertEqual(metadata['Metadata-Version'], '1.0')
@@ -138,6 +144,9 @@ class DistributionMetadataTestCase(LoggingSilencer, unittest.TestCase):
                                 'SETUPTOOLS-PKG-INFO2')
         metadata.read_file(StringIO(open(PKG_INFO).read()))
         self.assertEqual(metadata['Metadata-Version'], '1.1')
+
+        metadata.version = '1.618'
+        self.assertRaises(MetadataUnrecognizedVersionError, metadata.keys)
 
     def test_warnings(self):
         metadata = DistributionMetadata()
