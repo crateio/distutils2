@@ -586,5 +586,7 @@ class install(Command):
                     ('install_headers', has_headers),
                     ('install_scripts', has_scripts),
                     ('install_data',    has_data),
-                    ('install_egg_info', lambda self:True),
+                    # keep install_dist_info last, as it needs the record
+                    # with files to be completely generated
+                    ('install_dist_info', lambda self:True),
                    ]
