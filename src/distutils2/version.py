@@ -379,8 +379,6 @@ class _Versions(VersionPredicate):
     def __init__(self, predicate):
         predicate = predicate.strip()
         match = _PLAIN_VERSIONS.match(predicate)
-        if match is None:
-            raise ValueError('Bad predicate "%s"' % predicate)
         self.name = None
         predicates = match.groups()[0]
         self.predicates = [_split_predicate(pred.strip())
@@ -391,8 +389,6 @@ class _Version(VersionPredicate):
     def __init__(self, predicate):
         predicate = predicate.strip()
         match = _PLAIN_VERSIONS.match(predicate)
-        if match is None:
-            raise ValueError('Bad predicate "%s"' % predicate)
         self.name = None
         self.predicates = _split_predicate(match.groups()[0])
 

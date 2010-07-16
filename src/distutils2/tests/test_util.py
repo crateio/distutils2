@@ -4,6 +4,8 @@ import sys
 from copy import copy
 from StringIO import StringIO
 import subprocess
+import tempfile
+import time
 
 from distutils2.errors import (DistutilsPlatformError,
                                DistutilsByteCompileError,
@@ -257,7 +259,10 @@ class UtilTestCase(support.EnvironGuard,
 
     def test_newer(self):
         self.assertRaises(DistutilsFileError, util.newer, 'xxx', 'xxx')
-
+        self.newer_f1 = tempfile.NamedTemporaryFile()
+        time.sleep(1)
+        self.newer_f2 = tempfile.NamedTemporaryFile()
+        self.assertTrue(util.newer(self.newer_f2.name, self.newer_f1.name))
 
     def test_find_packages(self):
         # let's create a structure we want to scan:

@@ -60,7 +60,8 @@ class PyPIDistribution(object):
         name, version = split_archive_name(archive_name)
         if extension_matched is True:
             return PyPIDistribution(name, version, url=url, url_hashname="md5",
-                                    url_hashval=md5_hash, url_is_external=is_external)
+                                    url_hashval=md5_hash,
+                                    url_is_external=is_external)
 
     def __init__(self, name, version, type=None, url=None, url_hashname=None,
                  url_hashval=None, url_is_external=True):
@@ -260,23 +261,22 @@ class PyPIDistributions(list):
         else:
             super(PyPIDistributions, self).append(o)
 
-    def sort_distributions(self, prefer_source=None, prefer_final=None,
+    def sort_distributions(self, prefer_source=True, prefer_final=False,
                            reverse=True, *args, **kwargs):
         """order the results with the given properties"""
 
         sort_by = []
-        if prefer_final is not None:
-            if prefer_final is True:
-                sort_by.append("is_final")
+        if prefer_final:
+            sort_by.append("is_final")
         sort_by.append("version")
 
-        if prefer_source is not None:
-            if prefer_source is True:
-                sort_by.append("is_source")
+        if prefer_source:
+            sort_by.append("is_source")
 
         super(PyPIDistributions, self).sort(
             key=lambda i: [getattr(i, arg) for arg in sort_by],
             reverse=reverse, *args, **kwargs)
+
 
 def split_archive_name(archive_name, probable_name=None):
     """Split an archive name into two parts: name and version.

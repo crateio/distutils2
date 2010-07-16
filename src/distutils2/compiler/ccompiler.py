@@ -940,8 +940,10 @@ main (int argc, char **argv) {
         if os.path.isdir(name) or name == '':
             return
         if self.dry_run:
+            head = ''
             for part in name.split(os.sep):
-                self.log(part)
+                log.info("created directory %s%s", head, part)
+                head += part + os.sep
             return
         os.makedirs(name, mode)
 
