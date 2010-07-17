@@ -79,15 +79,26 @@ class install(Command):
 
         ('record=', None,
          "filename in which to record list of installed files"),
+         
+        # .dist-info related arguments, read by install_dist_info
+        ('no-distinfo', None, 'do not create a .dist-info directory'),
+        ('distinfo-dir=', None,
+                           'directory where the the .dist-info directory will '
+                           'be installed'),
+        ('installer=', None, 'the name of the installer'),
+        ('requested', None, 'generate a REQUESTED file'),
+        ('no-requested', None, 'do not generate a REQUESTED file'),
+        ('no-distinfo-record', None, 'do not generate a RECORD file'),
         ]
 
-    boolean_options = ['compile', 'force', 'skip-build']
+    boolean_options = ['compile', 'force', 'skip-build', 'no-dist-info',
+                       'requested', 'no-dist-record',]
 
     user_options.append(('user', None,
                         "install in user site-package '%s'" % \
                             get_path('purelib', '%s_user' % os.name)))
     boolean_options.append('user')
-    negative_opt = {'no-compile' : 'compile'}
+    negative_opt = {'no-compile' : 'compile', 'no-requested': 'requested'}
 
 
     def initialize_options(self):
@@ -159,6 +170,13 @@ class install(Command):
         #self.install_info = None
 
         self.record = None
+        
+        # .dist-info related options
+        self.no_distinfo = None
+        self.distinfo_dir = None
+        self.installer = None
+        self.requested = None
+        self.no_distinfo_record = None
 
 
     # -- Option finalizing methods -------------------------------------
@@ -305,6 +323,9 @@ class install(Command):
 
         # Punt on doc directories for now -- after all, we're punting on
         # documentation completely!
+        
+        if self.no_distinfo is None:
+            self.no_distinfo = False
 
     def dump_dirs(self, msg):
         """Dumps the list of user options."""
@@ -586,7 +607,7 @@ class install(Command):
                     ('install_headers', has_headers),
                     ('install_scripts', has_scripts),
                     ('install_data',    has_data),
-                    # keep install_dist_info last, as it needs the record
+                    # keep install_distinfo last, as it needs the record
                     # with files to be completely generated
-                    ('install_dist_info', lambda self:True),
+                    ('install_distinfo', lambda self: not self.no_distinfo),
                    ]
