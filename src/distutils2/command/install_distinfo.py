@@ -40,7 +40,7 @@ class install_distinfo(Command):
         'requested',
         'no-dist-record',
     ]
-    
+
     negative_opt = {'no-requested': 'requested'}
 
     def initialize_options(self):
@@ -54,11 +54,12 @@ class install_distinfo(Command):
                                    ('distinfo_dir', 'distinfo_dir'),
                                    ('installer', 'installer'),
                                    ('requested', 'requested'),
-                                   ('no_distinfo_record', 'no_distinfo_record'))
+                                   ('no_distinfo_record',
+                                        'no_distinfo_record'))
 
         self.set_undefined_options('install_lib',
                                    ('install_dir', 'distinfo_dir'))
-        
+
         if self.installer is None:
             self.installer = 'distutils'
         if self.requested is None:
