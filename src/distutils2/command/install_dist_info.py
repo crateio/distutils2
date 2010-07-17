@@ -97,19 +97,21 @@ class install_dist_info(Command):
                 install = self.get_finalized_command('install')
                 
                 for fpath in install.get_outputs():
-                    if fpath.endswith('.pyc'):
-                        continue
-                        # FIXME, in get_outputs() missing .pyc files exist
-                    size = os.path.getsize(fpath)
-                    fd = open(fpath, 'r')
-                    hash = hashlib.md5()
-                    hash.update(fd.read())
-                    md5sum = hash.hexdigest()
-                    writer.writerow((fpath, md5sum, size))
-                    
+                    if fpath.endswith('.pyc') or fpath.endswith('.pyo'):
+                        # do not put size and md5 hash, as in PEP-376
+                        writer.writerow((fpath, '', ''))
+                    else:
+                        size = os.path.getsize(fpath)
+                        fd = open(fpath, 'r')
+                        hash = hashlib.md5()
+                        hash.update(fd.read())
+                        md5sum = hash.hexdigest()
+                        writer.writerow((fpath, md5sum, size))
+                
+                # add the RECORD file itself
                 writer.writerow((record_path, '', ''))
                 self.outputs.append(record_path)
-                
+
                 f.close()
                 
     def get_outputs(self):
