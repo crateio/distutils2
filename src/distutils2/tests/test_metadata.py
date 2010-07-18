@@ -5,6 +5,7 @@ from StringIO import StringIO
 
 from distutils2.metadata import (DistributionMetadata, _interpret,
                                  PKG_INFO_PREFERRED_VERSION)
+from distutils2.tests import run_unittest
 from distutils2.tests.support import unittest, LoggingSilencer
 from distutils2.errors import (MetadataConflictError,
                                MetadataUnrecognizedVersionError)

@@ -5,13 +5,7 @@ modules in setup scripts."""
 
 __revision__ = "$Id: extension.py 77704 2010-01-23 09:23:15Z tarek.ziade $"
 
-import os
 import warnings
-
-try:
-    import sysconfig
-except ImportError:
-    from distutils2._backport import sysconfig
 
 # This class is really only used by the "build_ext" command, so it might
 # make sense to put it in distutils.command.build_ext.  However, that

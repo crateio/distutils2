@@ -1,4 +1,4 @@
-import base64, httplib, os.path, socket, tempfile, urlparse, zipfile
+import base64, httplib, os.path, socket, urlparse, zipfile
 from cStringIO import StringIO
 from distutils2 import log
 from distutils2.command.upload import upload
@@ -81,7 +81,6 @@ class upload_docs(PyPIRCCommand):
             raise DistutilsFileError(mesg % upload_dir)
 
     def run(self):
-        tmp_dir = tempfile.mkdtemp()
         name = self.distribution.metadata['Name']
         zip_file = zip_dir(self.upload_dir)
 
@@ -124,7 +123,7 @@ class upload_docs(PyPIRCCommand):
         elif r.status == 301:
             location = r.getheader('Location')
             if location is None:
-                location = 'http://packages.python.org/%s/' % meta.get_name()
+                location = 'http://packages.python.org/%s/' % name
             self.announce('Upload successful. Visit %s' % location,
                           log.INFO)
         else:

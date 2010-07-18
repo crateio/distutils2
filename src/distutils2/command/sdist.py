@@ -18,12 +18,11 @@ except ImportError:
     from distutils2._backport.shutil import get_archive_formats
 
 from distutils2.core import Command
-from distutils2 import util
 from distutils2.errors import (DistutilsPlatformError, DistutilsOptionError,
                                DistutilsTemplateError)
 from distutils2.manifest import Manifest
 from distutils2 import log
-from distutils2.util import convert_path, newer
+from distutils2.util import convert_path
 
 def show_formats():
     """Print all possible values for the 'formats' option (used by

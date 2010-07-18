@@ -3,6 +3,7 @@ import os
 import sys
 import logging
 
+from distutils2.tests import run_unittest
 from distutils2.tests import support
 from distutils2.tests.support import unittest
 from distutils2.manifest import Manifest

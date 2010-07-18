@@ -368,4 +368,4 @@ def test_suite():
     else: return unittest.makeSuite(BuildExtTestCase)
 
 if __name__ == '__main__':
-    distsutils2.tests.run_unittest(test_suite())
+    distutils2.tests.run_unittest(test_suite())

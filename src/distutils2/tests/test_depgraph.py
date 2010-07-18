@@ -10,7 +10,7 @@ import sys
 import re
 try:
     import cStringIO as StringIO
-except ImportErorr:
+except ImportError:
     import StringIO
 
 class DepGraphTestCase(support.LoggingSilencer,
