@@ -6,7 +6,7 @@ in the distutils.command package.
 
 __revision__ = "$Id: cmd.py 75192 2009-10-02 23:49:48Z tarek.ziade $"
 
-import sys, os, re
+import os, re
 from distutils2.errors import DistutilsOptionError
 from distutils2 import util
 from distutils2 import log
@@ -447,7 +447,7 @@ class Command(object):
         # If 'outfile' must be regenerated (either because it doesn't
         # exist, is out-of-date, or the 'force' flag is true) then
         # perform the action that presumably regenerates it
-        if self.force or dep_util.newer_group(infiles, outfile):
+        if self.force or util.newer_group(infiles, outfile):
             self.execute(func, args, exec_msg, level)
 
         # Otherwise, print the "skip" message

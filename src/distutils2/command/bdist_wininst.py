@@ -8,6 +8,7 @@ __revision__ = "$Id: bdist_wininst.py 77761 2010-01-26 22:46:15Z tarek.ziade $"
 import sys
 import os
 import string
+from shutil import rmtree
 try:
     from sysconfig import get_python_version
 except ImportError:

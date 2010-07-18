@@ -23,16 +23,16 @@ def ignore_prefixes(module):
     return dirnames
 
 def parse_opts():
-    parser = OptionParser(usage="%prog [OPTIONS]", 
+    parser = OptionParser(usage="%prog [OPTIONS]",
                           description="run the distutils2 unittests")
     
-    parser.add_option("-q", "--quiet", help="do not print verbose messages", 
+    parser.add_option("-q", "--quiet", help="do not print verbose messages",
                       action="store_true", default=False)
     parser.add_option("-c", "--coverage", action="store_true", default=False,
                       help="produce a coverage report at the end of the run")
     parser.add_option("-r", "--report", action="store_true", default=False,
                       help="produce a coverage report from the last test run")
-    parser.add_option("-m", "--show-missing", action="store_true", 
+    parser.add_option("-m", "--show-missing", action="store_true",
                       default=False,
                       help=("Show line numbers of statements in each module "
                             "that weren't executed."))
@@ -42,12 +42,12 @@ def parse_opts():
 
 def coverage_report(opts):
     import coverage
-    import unittest2
+    from distutils2.tests.support import unittest
     cov = coverage.coverage()
     cov.load()
 
     prefixes = ["runtests", "distutils2/tests", "distutils2/_backport"]
-    prefixes += ignore_prefixes(unittest2)
+    prefixes += ignore_prefixes(unittest)
 
     try:
         import docutils
@@ -70,10 +70,10 @@ def test_main():
     opts, args = parse_opts()
     verbose = not opts.quiet
     ret = 0
-    
+
     if opts.coverage or opts.report:
         import coverage
-        
+
     if opts.coverage:
         cov = coverage.coverage()
         cov.erase()
@@ -86,9 +86,9 @@ def test_main():
 
     if opts.report or opts.coverage:
         coverage_report(opts)
-    
+
     return ret
-    
+
 def run_tests(verbose):
     import distutils2.tests
     from distutils2.tests import run_unittest, reap_children, TestFailed
