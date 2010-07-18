@@ -171,14 +171,6 @@ class sdist(Command):
         # or zipfile, or whatever.
         self.make_distribution()
 
-    def check_metadata(self):
-        """Deprecated API."""
-        warn("distutils.command.sdist.check_metadata is deprecated, \
-              use the check command instead", PendingDeprecationWarning)
-        check = self.distribution.get_command_obj('check')
-        check.ensure_finalized()
-        check.run()
-
     def get_file_list(self):
         """Figure out the list of files to include in the source
         distribution, and put it in 'self.filelist'.  This might involve
