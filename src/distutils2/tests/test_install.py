@@ -195,11 +195,12 @@ class InstallTestCase(support.TempdirManager,
         cmd.ensure_finalized()
         cmd.run()
 
-        # let's check the RECORD file was created with one
-        # line (the egg info file)
+        # let's check the RECORD file was created with four
+        # lines, one for each .dist-info entry: METADATA,
+        # INSTALLER, REQUSTED, RECORD
         f = open(cmd.record)
         try:
-            self.assertEqual(len(f.readlines()), 1)
+            self.assertEqual(len(f.readlines()), 4)
         finally:
             f.close()
 

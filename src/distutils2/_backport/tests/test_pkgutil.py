@@ -485,7 +485,7 @@ class TestPkgUtilPEP376(unittest.TestCase):
 
         l = [dist.name for dist in provides_distribution('truffles', '>1.5',
                                                          use_egg_info=True)]
-        checkLists(l, ['bacon'])
+        checkLists(l, ['bacon', 'truffles'])
 
         l = [dist.name for dist in provides_distribution('truffles', '>=1.0')]
         checkLists(l, ['choxie', 'towel-stuff'])
