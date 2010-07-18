@@ -115,8 +115,9 @@ class bdist_dumb (Command):
                        % (repr(install.install_base),
                           repr(install.install_platbase)))
             else:
-                archive_root = os.path.join(self.bdist_dir,
-                                   ensure_relative(install.install_base))
+                archive_root = os.path.join(
+                    self.bdist_dir,
+                    self._ensure_relative(install.install_base))
 
         # Make the archive
         filename = self.make_archive(pseudoinstall_root,
@@ -135,3 +136,9 @@ class bdist_dumb (Command):
             else:
                 rmtree(self.bdist_dir)
 
+    def _ensure_relative(self, path):
+        # copied from dir_util, deleted
+        drive, path = os.path.splitdrive(path)
+        if path[0:1] == os.sep:
+            path = drive + path[1:]
+        return path

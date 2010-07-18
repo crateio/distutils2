@@ -4,32 +4,35 @@
 The tests for distutils2 are defined in the distutils2.tests package.
 """
 
-# TODO:
-
-# The coverage report is only accurate when ran inside a virtualenv
-# created with the --no-site-packages option.  When it's not the case,
-# the built-in ignore list is not accurate and third party packages
-# show-up in the report, lowering the overall coverage.  
-
-# One particular problem it docutils on Ubuntu which has a __file__
-# starting with /usr/lib/python2.6 while the path in the coverage
-# report starts with /usr/share/pyshared.
-
 import sys
-from os.path import dirname
+from os.path import dirname, islink, realpath
 from optparse import OptionParser
 
+def ignore_prefixes(module):
+    """ Return a list of prefixes to ignore in the coverage report if
+    we want to completely skip `module`.
+    """
+    # A function like that is needed because some GNU/Linux
+    # distributions, such a Ubuntu, really like to build link farm in
+    # /usr/lib in order to save a few bytes on the disk.
+    dirnames = [dirname(module.__file__)]
+    
+    pymod = module.__file__.rstrip("c")
+    if islink(pymod):
+        dirnames.append(dirname(realpath(pymod)))
+    return dirnames
+
 def parse_opts():
-    parser = OptionParser(usage="%prog [OPTIONS]", 
+    parser = OptionParser(usage="%prog [OPTIONS]",
                           description="run the distutils2 unittests")
     
-    parser.add_option("-q", "--quiet", help="do not print verbose messages", 
+    parser.add_option("-q", "--quiet", help="do not print verbose messages",
                       action="store_true", default=False)
     parser.add_option("-c", "--coverage", action="store_true", default=False,
                       help="produce a coverage report at the end of the run")
     parser.add_option("-r", "--report", action="store_true", default=False,
                       help="produce a coverage report from the last test run")
-    parser.add_option("-m", "--show-missing", action="store_true", 
+    parser.add_option("-m", "--show-missing", action="store_true",
                       default=False,
                       help=("Show line numbers of statements in each module "
                             "that weren't executed."))
@@ -39,27 +42,38 @@ def parse_opts():
 
 def coverage_report(opts):
     import coverage
-    import unittest2
-    import docutils
+    from distutils2.tests.support import unittest
     cov = coverage.coverage()
     cov.load()
 
-    cov.report(omit_prefixes=["distutils2/tests", 
-                              "runtests", 
-                              "distutils2/_backport", 
-                              dirname(unittest2.__file__),
-                              dirname(dirname(docutils.__file__))], 
-               show_missing=opts.show_missing)
+    prefixes = ["runtests", "distutils2/tests", "distutils2/_backport"]
+    prefixes += ignore_prefixes(unittest)
+
+    try:
+        import docutils
+        prefixes += ignore_prefixes(docutils)
+    except ImportError:
+        # that module is completely optional
+        pass
+
+    try:
+        import roman
+        prefixes += ignore_prefixes(roman)
+    except ImportError:
+        # that module is also completely optional
+        pass
+
+    cov.report(omit_prefixes=prefixes, show_missing=opts.show_missing)
 
 
 def test_main():
     opts, args = parse_opts()
     verbose = not opts.quiet
     ret = 0
-    
+
     if opts.coverage or opts.report:
         import coverage
-        
+
     if opts.coverage:
         cov = coverage.coverage()
         cov.erase()
@@ -72,9 +86,9 @@ def test_main():
 
     if opts.report or opts.coverage:
         coverage_report(opts)
-    
+
     return ret
-    
+
 def run_tests(verbose):
     import distutils2.tests
     from distutils2.tests import run_unittest, reap_children, TestFailed

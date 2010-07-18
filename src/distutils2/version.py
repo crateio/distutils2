@@ -1,4 +1,3 @@
-import sys
 import re
 
 from distutils2.errors import IrrationalVersionError, HugeMajorVersionNumError
