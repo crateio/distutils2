@@ -27,7 +27,7 @@ class DepGraphTestCase(support.LoggingSilencer,
         self.assertListEqual(sorted(l1), sorted(l2))
 
     def setUp(self):
-        super(unittest.TestCase, self).setUp()
+        super(DepGraphTestCase, self).setUp()
         path = os.path.join(os.path.dirname(__file__), '..', '_backport',
                             'tests', 'fake_dists')
         path = os.path.abspath(path)
@@ -177,7 +177,7 @@ class DepGraphTestCase(support.LoggingSilencer,
         self.checkLists(matches, expected)
 
     def tearDown(self):
-        super(unittest.TestCase, self).tearDown()
+        super(DepGraphTestCase, self).tearDown()
         sys.path = self.sys_path
 
 def test_suite():

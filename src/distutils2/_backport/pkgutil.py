@@ -1,4 +1,4 @@
-""" Utilities to support packages. """
+"""Utilities to support packages."""
 
 # NOTE: This module must remain compatible with Python 2.3, as it is shared
 # by setuptools for distribution with Python 2.3 and up.
@@ -181,7 +181,7 @@ def iter_importer_modules(importer, prefix=''):
 iter_importer_modules = simplegeneric(iter_importer_modules)
 
 
-class ImpImporter:
+class ImpImporter(object):
     """:pep:`302` Importer that wraps Python's "classic" import algorithm
 
     ``ImpImporter(dirname)`` produces a :pep:`302` importer that searches that
@@ -244,7 +244,7 @@ class ImpImporter:
                 yield prefix + modname, ispkg
 
 
-class ImpLoader:
+class ImpLoader(object):
     """:pep:`302` Loader that wraps Python's "classic" import algorithm """
 
     code = source = None
@@ -827,6 +827,9 @@ class Distribution(object):
     def __eq__(self, other):
         return isinstance(other, Distribution) and self.path == other.path
 
+    # See http://docs.python.org/reference/datamodel#object.__hash__
+    __hash__ = object.__hash__
+
 
 class EggInfoDistribution(object):
     """Created with the *path* of the ``.egg-info`` directory or file provided
@@ -950,6 +953,9 @@ class EggInfoDistribution(object):
         return isinstance(other, EggInfoDistribution) and \
                self.path == other.path
 
+    # See http://docs.python.org/reference/datamodel#object.__hash__
+    __hash__ = object.__hash__
+
 
 def _normalize_dist_name(name):
     """Returns a normalized name from the given *name*.
@@ -1021,7 +1027,7 @@ def get_distribution(name, use_egg_info=False):
     returned if one is found that has metadata that matches *name* for the
     *name* metadata field.
 
-    This function only returns the first result founded, as no more than one
+    This function only returns the first result found, as no more than one
     value is expected. If the directory is not found, ``None`` is returned.
 
     :rtype: :class:`Distribution` or :class:`EggInfoDistribution` or None"""
@@ -1081,7 +1087,7 @@ def provides_distribution(name, version=None, use_egg_info=False):
     then all files and directories ending with ``.egg-info`` are considered
     as well and returns an :class:`EggInfoDistribution` instance.
 
-    This function only returns the first result founded, since no more than
+    This function only returns the first result found, since no more than
     one values are expected. If the directory is not found, returns ``None``.
 
     :parameter version: a version specifier that indicates the version

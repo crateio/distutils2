@@ -19,7 +19,7 @@ try:
 except ImportError:
     from distutils2._backport.shutil import make_archive
 
-class Command:
+class Command(object):
     """Abstract base class for defining command classes, the "worker bees"
     of the Distutils.  A useful analogy for command classes is to think of
     them as subroutines with local variables called "options".  The options
@@ -57,8 +57,7 @@ class Command:
     def __init__(self, dist):
         """Create and initialize a new Command object.  Most importantly,
         invokes the 'initialize_options()' method, which is the real
-        initializer and depends on the actual command being
-        instantiated.
+        initializer and depends on the actual command being instantiated.
         """
         # late import because of mutual dependence between these classes
         from distutils2.dist import Distribution
@@ -189,6 +188,31 @@ class Command:
         """
         log.log(level, msg)
 
+    # -- External interface --------------------------------------------
+    # (called by outsiders)
+
+    def get_source_files(self):
+        """Return the list of files that are used as inputs to this command,
+        i.e. the files used to generate the output files.  The result is used
+        by the `sdist` command in determining the set of default files.
+
+        Command classes should implement this method if they operate on files
+        from the source tree.
+        """
+        return []
+
+    def get_outputs(self):
+        """Return the list of files that would be produced if this command
+        were actually run.  Not affected by the "dry-run" flag or whether
+        any other commands have been run.
+
+        Command classes should implement this method if they produce any
+        output files that get consumed by another command.  e.g., `build_ext`
+        returns the list of built extension modules, but not any temporary
+        files used in the compilation process.
+        """
+        return []
+
     # -- Option validation methods -------------------------------------
     # (these are very handy in writing the 'finalize_options()' method)
     #
@@ -308,10 +332,8 @@ class Command:
         cmd_obj.ensure_finalized()
         return cmd_obj
 
-    # XXX rename to 'get_reinitialized_command()'? (should do the
-    # same in dist.py, if so)
-    def reinitialize_command(self, command, reinit_subcommands=0):
-        return self.distribution.reinitialize_command(
+    def get_reinitialized_command(self, command, reinit_subcommands=0):
+        return self.distribution.get_reinitialized_command(
             command, reinit_subcommands)
 
     def run_command(self, command):
@@ -351,8 +373,10 @@ class Command:
         if os.path.isdir(name) or name == '':
             return
         if dry_run:
+            head = ''
             for part in name.split(os.sep):
-                self.log(part)
+                log.info("created directory %s%s", head, part)
+                head += part + os.sep
             return
         os.makedirs(name, mode)
 

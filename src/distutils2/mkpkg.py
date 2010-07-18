@@ -675,7 +675,7 @@ def buildTroveDict(troveList):
 troveDict = buildTroveDict(troveList)
 
 
-class SetupClass:
+class SetupClass(object):
     def __init__(self):
         self.config = None
         self.classifierDict = {}
@@ -717,14 +717,16 @@ class SetupClass:
 
     def inspectFile(self, path):
         fp = open(path, 'r')
-        for line in [ fp.readline() for x in range(10) ]:
-            m = re.match(r'^#!.*python((?P<major>\d)(\.\d+)?)?$', line)
-            if m:
-                if m.group('major') == '3':
-                    self.classifierDict['Programming Language :: Python :: 3'] = 1
-                else:
-                    self.classifierDict['Programming Language :: Python :: 2'] = 1
-        fp.close()
+        try:
+            for line in [ fp.readline() for x in range(10) ]:
+                m = re.match(r'^#!.*python((?P<major>\d)(\.\d+)?)?$', line)
+                if m:
+                    if m.group('major') == '3':
+                        self.classifierDict['Programming Language :: Python :: 3'] = 1
+                    else:
+                        self.classifierDict['Programming Language :: Python :: 2'] = 1
+        finally:
+            fp.close()
 
 
     def inspectDirectory(self):
@@ -885,38 +887,33 @@ Status''', required = False)
         if os.path.exists('setup.py'): shutil.move('setup.py', 'setup.py.old')
 
         fp = open('setup.py', 'w')
-        fp.write('#!/usr/bin/env python\n\n')
-        fp.write('from distutils2.core import setup\n\n')
+        try:
+            fp.write('#!/usr/bin/env python\n\n')
+            fp.write('from distutils2.core import setup\n\n')
+            fp.write('setup(name=%s,\n' % repr(self.setupData['name']))
+            fp.write('      version=%s,\n' % repr(self.setupData['version']))
+            fp.write('      description=%s,\n'
+                    % repr(self.setupData['description']))
+            fp.write('      author=%s,\n' % repr(self.setupData['author']))
+            fp.write('      author_email=%s,\n'
+                    % repr(self.setupData['author_email']))
+            if self.setupData['url']:
+                fp.write('      url=%s,\n' % repr(self.setupData['url']))
+            if self.setupData['classifier']:
+                fp.write('      classifier=[\n')
+                for classifier in sorted(self.setupData['classifier'].keys()):
+                    fp.write('            %s,\n' % repr(classifier))
+                fp.write('         ],\n')
+            if self.setupData['packages']:
+                fp.write('      packages=%s,\n'
+                        % repr(self._dotted_packages(self.setupData['packages'])))
+                fp.write('      package_dir=%s,\n'
+                        % repr(self.setupData['packages']))
+            fp.write('      #scripts=[\'path/to/script\']\n')
 
-        fp.write('from sys import version\n')
-        fp.write('if version < \'2.2.3\':\n')
-        fp.write('    from distutils2.dist import DistributionMetadata\n')
-        fp.write('    DistributionMetadata.classifier = None\n')
-        fp.write('    DistributionMetadata.download_url = None\n')
-
-        fp.write('setup(name = %s,\n' % repr(self.setupData['name']))
-        fp.write('        version = %s,\n' % repr(self.setupData['version']))
-        fp.write('        description = %s,\n'
-                % repr(self.setupData['description']))
-        fp.write('        author = %s,\n' % repr(self.setupData['author']))
-        fp.write('        author_email = %s,\n'
-                % repr(self.setupData['author_email']))
-        if self.setupData['url']:
-            fp.write('        url = %s,\n' % repr(self.setupData['url']))
-        if self.setupData['classifier']:
-            fp.write('        classifier = [\n')
-            for classifier in sorted(self.setupData['classifier'].keys()):
-                fp.write('              %s,\n' % repr(classifier))
-            fp.write('           ],\n')
-        if self.setupData['packages']:
-            fp.write('        packages = %s,\n'
-                    % repr(self._dotted_packages(self.setupData['packages'])))
-            fp.write('        package_dir = %s,\n'
-                    % repr(self.setupData['packages']))
-        fp.write('        #scripts = [\'path/to/script\']\n')
-
-        fp.write('        )\n')
-        fp.close()
+            fp.write('      )\n')
+        finally:
+            fp.close()
         os.chmod('setup.py', 0755)
 
         print 'Wrote "setup.py".'

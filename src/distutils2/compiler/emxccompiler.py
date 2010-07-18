@@ -25,9 +25,8 @@ import os, sys, copy
 from warnings import warn
 
 from distutils2.compiler.unixccompiler import UnixCCompiler
-from distutils2.util import write_file
 from distutils2.errors import DistutilsExecError, CompileError, UnknownFileError
-from distutils2.util import get_compiler_versions
+from distutils2.util import get_compiler_versions, write_file
 
 class EMXCCompiler (UnixCCompiler):
 
@@ -273,8 +272,10 @@ def check_config_h():
         # It would probably better to read single lines to search.
         # But we do this only once, and it is fast enough
         f = open(fn)
-        s = f.read()
-        f.close()
+        try:
+            s = f.read()
+        finally:
+            f.close()
 
     except IOError, exc:
         # if we can't read this file, we cannot say it is wrong

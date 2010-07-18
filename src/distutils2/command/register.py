@@ -28,8 +28,6 @@ class register(PyPIRCCommand):
     boolean_options = PyPIRCCommand.boolean_options + [
         'verify', 'list-classifiers', 'strict']
 
-    sub_commands = [('check', lambda self: True)]
-
     def initialize_options(self):
         PyPIRCCommand.initialize_options(self)
         self.list_classifiers = 0
@@ -46,9 +44,8 @@ class register(PyPIRCCommand):
         self.finalize_options()
         self._set_config()
 
-        # Run sub commands
-        for cmd_name in self.get_sub_commands():
-            self.run_command(cmd_name)
+        # Check the package metadata
+        self.run_command('check')
 
         if self.dry_run:
             self.verify_metadata()

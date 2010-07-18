@@ -402,7 +402,7 @@ The new functions added in the ``pkgutil`` are :
   ``.egg-info`` directory that contains a PKG-INFO that matches `name` 
   for the `name` metadata.
 
-  Notice that there should be at most one result. The first result founded
+  Notice that there should be at most one result. The first result found
   is returned. If the directory is not found, returns None.
 
 - ``get_file_users(path)`` -> iterator of ``Distribution`` instances.
@@ -633,7 +633,7 @@ and 3.1 is provided so people can benefit from these new features.
 
 Distributions installed using existing, pre-standardization formats do not have
 the necessary metadata available for the new API, and thus will be
-ignored. Third-party tools may of course to continue to support previous
+ignored. Third-party tools may of course continue to support previous
 formats in addition to the new format, in order to ease the transition.
 
 

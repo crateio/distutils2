@@ -44,48 +44,48 @@ class CygwinCCompilerTestCase(support.TempdirManager,
         sys.version = ('2.6.1 (r261:67515, Dec  6 2008, 16:42:21) \n[GCC '
                        '4.0.1 (Apple Computer, Inc. build 5370)]')
 
-        self.assertEquals(check_config_h()[0], CONFIG_H_OK)
+        self.assertEqual(check_config_h()[0], CONFIG_H_OK)
 
         # then it tries to see if it can find "__GNUC__" in pyconfig.h
         sys.version = 'something without the *CC word'
 
         # if the file doesn't exist it returns  CONFIG_H_UNCERTAIN
-        self.assertEquals(check_config_h()[0], CONFIG_H_UNCERTAIN)
+        self.assertEqual(check_config_h()[0], CONFIG_H_UNCERTAIN)
 
         # if it exists but does not contain __GNUC__, it returns CONFIG_H_NOTOK
         self.write_file(self.python_h, 'xxx')
-        self.assertEquals(check_config_h()[0], CONFIG_H_NOTOK)
+        self.assertEqual(check_config_h()[0], CONFIG_H_NOTOK)
 
         # and CONFIG_H_OK if __GNUC__ is found
         self.write_file(self.python_h, 'xxx __GNUC__ xxx')
-        self.assertEquals(check_config_h()[0], CONFIG_H_OK)
+        self.assertEqual(check_config_h()[0], CONFIG_H_OK)
 
     def test_get_msvcr(self):
 
         # none
         sys.version  = ('2.6.1 (r261:67515, Dec  6 2008, 16:42:21) '
                         '\n[GCC 4.0.1 (Apple Computer, Inc. build 5370)]')
-        self.assertEquals(get_msvcr(), None)
+        self.assertEqual(get_msvcr(), None)
 
         # MSVC 7.0
         sys.version = ('2.5.1 (r251:54863, Apr 18 2007, 08:51:08) '
                        '[MSC v.1300 32 bits (Intel)]')
-        self.assertEquals(get_msvcr(), ['msvcr70'])
+        self.assertEqual(get_msvcr(), ['msvcr70'])
 
         # MSVC 7.1
         sys.version = ('2.5.1 (r251:54863, Apr 18 2007, 08:51:08) '
                        '[MSC v.1310 32 bits (Intel)]')
-        self.assertEquals(get_msvcr(), ['msvcr71'])
+        self.assertEqual(get_msvcr(), ['msvcr71'])
 
         # VS2005 / MSVC 8.0
         sys.version = ('2.5.1 (r251:54863, Apr 18 2007, 08:51:08) '
                        '[MSC v.1400 32 bits (Intel)]')
-        self.assertEquals(get_msvcr(), ['msvcr80'])
+        self.assertEqual(get_msvcr(), ['msvcr80'])
 
         # VS2008 / MSVC 9.0
         sys.version = ('2.5.1 (r251:54863, Apr 18 2007, 08:51:08) '
                        '[MSC v.1500 32 bits (Intel)]')
-        self.assertEquals(get_msvcr(), ['msvcr90'])
+        self.assertEqual(get_msvcr(), ['msvcr90'])
 
         # unknown
         sys.version = ('2.5.1 (r251:54863, Apr 18 2007, 08:51:08) '
