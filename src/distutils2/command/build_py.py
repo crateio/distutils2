@@ -9,6 +9,7 @@ import sys
 import logging
 from glob import glob
 
+import distutils2
 from distutils2.core import Command
 from distutils2.errors import DistutilsOptionError, DistutilsFileError
 from distutils2.util import convert_path
