@@ -79,7 +79,7 @@ class install(Command):
 
         ('record=', None,
          "filename in which to record list of installed files"),
-         
+
         # .dist-info related arguments, read by install_dist_info
         ('no-distinfo', None, 'do not create a .dist-info directory'),
         ('distinfo-dir=', None,
@@ -170,7 +170,7 @@ class install(Command):
         #self.install_info = None
 
         self.record = None
-        
+
         # .dist-info related options
         self.no_distinfo = None
         self.distinfo_dir = None
@@ -323,7 +323,7 @@ class install(Command):
 
         # Punt on doc directories for now -- after all, we're punting on
         # documentation completely!
-        
+
         if self.no_distinfo is None:
             self.no_distinfo = False
 

@@ -27,8 +27,8 @@ __all__ = [
     'ImpImporter', 'ImpLoader', 'read_code', 'extend_path',
     'Distribution', 'EggInfoDistribution', 'distinfo_dirname',
     'get_distributions', 'get_distribution', 'get_file_users',
-    'provides_distribution', 'obsoletes_distribution', 'set_cache_enabled',
-    'clear_cache'
+    'provides_distribution', 'obsoletes_distribution',
+    'enable_cache', 'disable_cache', 'clear_cache'
 ]
 
 
@@ -626,20 +626,27 @@ _cache_generated_egg = False # indicates if .dist-info and .egg are cached
 _cache_enabled = True
 
 
-def set_cache_enabled(flag):
+def enable_cache():
     """
-    Enables or disables the internal cache depending on *flag*.
+    Enables the internal cache.
 
     Note that this function will not clear the cache in any case, for that
     functionality see :func:`clear_cache`.
-
-    :parameter flag:
-    :type flag: boolean
     """
     global _cache_enabled
 
-    _cache_enabled = flag
+    _cache_enabled = True
 
+def disable_cache():
+    """
+    Disables the internal cache.
+
+    Note that this function will not clear the cache in any case, for that
+    functionality see :func:`clear_cache`.
+    """
+    global _cache_enabled
+
+    _cache_enabled = False
 
 def clear_cache():
     """ Clears the internal cache. """
@@ -654,12 +661,12 @@ def clear_cache():
     _cache_generated_egg = False
 
 
-def _yield_distributions(dist, egg):
+def _yield_distributions(include_dist, include_egg):
     """
     Yield .dist-info and .egg(-info) distributions, based on the arguments
 
-    :parameter dist: yield .dist-info distributions
-    :parameter egg: yield .egg(-info) distributions
+    :parameter include_dist: yield .dist-info distributions
+    :parameter include_egg: yield .egg(-info) distributions
     """
     for path in sys.path:
         realpath = os.path.realpath(path)
@@ -667,10 +674,10 @@ def _yield_distributions(dist, egg):
             continue
         for dir in os.listdir(realpath):
             dist_path = os.path.join(realpath, dir)
-            if dist and dir.endswith('.dist-info'):
+            if include_dist and dir.endswith('.dist-info'):
                 yield Distribution(dist_path)
-            elif egg and (dir.endswith('.egg-info') or
-                          dir.endswith('.egg')):
+            elif include_egg and (dir.endswith('.egg-info') or
+                                  dir.endswith('.egg')):
                 yield EggInfoDistribution(dist_path)
 
 
@@ -716,7 +723,7 @@ class Distribution(object):
     requested = False
     """A boolean that indicates whether the ``REQUESTED`` metadata file is
     present (in other words, whether the package was installed by user
-    request)."""
+    request or it was installed as a dependency)."""
 
     def __init__(self, path):
         if _cache_enabled and path in _cache_path:
