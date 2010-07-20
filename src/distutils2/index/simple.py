@@ -223,7 +223,7 @@ class Crawler(IndexClient):
                         try:
                             infos = get_infos_from_url(link, project_name,
                                         is_external=not self.index_url in url)
-                        except CantParseArchiveName as e:
+                        except CantParseArchiveName, e:
                             logging.warning("version has not been parsed: %s" 
                                             % e)
                         else:

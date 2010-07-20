@@ -84,4 +84,30 @@ It's easy to add distribution informatons to releases::
     >>> r['sdist'].url
     {'url': 'http://example.org/foobar-1.0.tar.gz', 'hashname': None, 'hashval':
     None, 'is_external': True}
+ 
+Attributes Lazy loading
+-----------------------
 
+.. note:: This is not currently available. So you have to rely on the indexes by
+   yourself to fill in the fields !
+
+To abstract a maximum the way of querying informations to the indexes,
+attributes and releases informations can be retrieved "on demand", in a "lazy"
+way.
+
+For instance, if you have a release instance that does not contain the metadata
+attribute, it can be build directly when accedded::
+
+    >>> r = Release("FooBar", "1.1")
+    >>> r.has_metadata()
+    False # metadata field is actually set to "None"
+    >>> r.metadata
+    <Metadata for FooBar 1.1>
+
+Like this, it's possible to retrieve project's releases, releases metadata and 
+releases distributions informations. 
+
+Internally, this is possible because while retrieving for the first time
+informations about projects, releases or distributions, a reference to the
+client used is stored in the objects. Then, while trying to access undefined
+fields, it will be used if necessary.

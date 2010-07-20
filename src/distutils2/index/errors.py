@@ -9,6 +9,10 @@ class IndexError(DistutilsError):
     """The base class for errors of the index python package."""
 
 
+class ProjectNotFound(IndexError):
+    """Project has not been found"""
+
+
 class DistributionNotFound(IndexError):
     """No distribution match the given requirements."""
 
@@ -31,3 +35,7 @@ class UnsupportedHashName(IndexError):
 
 class UnableToDownload(IndexError):
     """All mirrors have been tried, without success"""
+
+
+class InvalidSearchField(IndexError):
+    """An invalid search field has been used"""

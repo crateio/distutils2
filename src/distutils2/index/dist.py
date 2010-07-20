@@ -20,6 +20,7 @@ try:
 except ImportError:
     from distutils2._backport import hashlib
 
+from distutils2.errors import IrrationalVersionError
 from distutils2.index.errors import (HashDoesNotMatch, UnsupportedHashName,
                                      CantParseArchiveName)
 from distutils2.version import suggest_normalized_version, NormalizedVersion
@@ -47,14 +48,30 @@ class ReleaseInfo(object):
         :param kwargs: optional arguments for a new distribution.
         """
         self.name = name
-        self.version = NormalizedVersion(version)
-        self.metadata = DistributionMetadata() # XXX from_dict=metadata)
+        self._version = None
+        self.version = version
+        self.metadata = DistributionMetadata(mapping=metadata)
         self.dists = {}
         self.hidden = hidden
-
+        
         if 'dist_type' in kwargs:
             dist_type = kwargs.pop('dist_type')
             self.add_distribution(dist_type, **kwargs)
+    
+    def set_version(self, version):
+        try:
+            self._version = NormalizedVersion(version)
+        except IrrationalVersionError:
+            suggestion = suggest_normalized_version(version)
+            if suggestion: 
+                self.version = suggestion
+            else:
+                raise IrrationalVersionError(version)
+
+    def get_version(self):
+        return self._version
+
+    version = property(get_version, set_version)
 
     @property
     def is_final(self):
@@ -110,6 +127,9 @@ class ReleaseInfo(object):
         """
         return self.get_distribution(prefer_source=prefer_source)\
                    .download(path=temp_path)
+
+    def set_metadata(self, metadata):
+        self.metadata.update(metadata)
 
     def __getitem__(self, item):
         """distributions are available using release["sdist"]"""
@@ -262,13 +282,12 @@ class ReleasesList(list):
 
     Provides useful methods and facilities to sort and filter releases.
     """
-    def __init__(self, name, list=[], contains_hidden=False):
+    def __init__(self, name, releases=[], contains_hidden=False):
         super(ReleasesList, self).__init__()
-        for item in list:
-            self.append(item)
         self.name = name
         self.contains_hidden = contains_hidden
-    
+        self.add_releases(releases)
+
     def filter(self, predicate):
         """Filter and return a subset of releases matching the given predicate.
         """
@@ -286,6 +305,14 @@ class ReleasesList(list):
         releases.sort_releases(prefer_final, reverse=True)
         return releases[0]
 
+    def add_releases(self, releases):
+        """Add releases in the release list.
+        
+        :param: releases is a list of ReleaseInfo objects.
+        """
+        for r in releases:
+            self.add_release(release=r)
+
     def add_release(self, version=None, dist_type='sdist', release=None,
                     **dist_args):
         """Add a release to the list.
@@ -302,6 +329,9 @@ class ReleasesList(list):
             if release.name != self.name:
                 raise ValueError(release.name)
             version = '%s' % release.version
+            if not version in self.get_versions():
+                # append only if not already exists
+                self.append(release)
             for dist in release.dists.values():
                 for url in dist.urls:
                     self.add_release(version, dist.dist_type, **url)
@@ -349,6 +379,12 @@ class ReleasesList(list):
     def get_versions(self):
         """Return a list of releases versions contained"""
         return ["%s" % r.version for r in self]
+
+    def __repr__(self):
+        string = 'Project "%s"' % self.name
+        if self.get_versions():
+            string += ' versions: %s' % ', '.join(self.get_versions())
+        return '<%s>' % string 
 
 
 def get_infos_from_url(url, probable_dist_name=None, is_external=True):
