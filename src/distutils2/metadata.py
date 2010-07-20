@@ -183,9 +183,12 @@ _UNICODEFIELDS = ('Author', 'Maintainer', 'Summary', 'Description')
 
 class DistributionMetadata(object):
     """Distribution meta-data class (1.0 or 1.2).
+
+    if from_dict attribute is set, all key/values pairs will be sent to the
+    "set" method, building the metadata from the dict.
     """
     def __init__(self, path=None, platform_dependent=False,
-                 execution_context=None, fileobj=None):
+                 execution_context=None, fileobj=None, from_dict=None):
         self._fields = {}
         self.version = None
         self.docutils_support = _HAS_DOCUTILS
@@ -195,6 +198,8 @@ class DistributionMetadata(object):
         elif fileobj is not None:
             self.read_file(fileobj)
         self.execution_context = execution_context
+        if from_dict:
+            self.set_from_dict(from_dict)
 
     def _set_best_version(self):
         self.version = _best_version(self._fields)
@@ -329,6 +334,21 @@ class DistributionMetadata(object):
 
             for value in values:
                 self._write_field(fileobject, field, value)
+
+    def set_from_dict(self, from_dict):
+        """Set metadata values from the given dict.
+
+        If overwrite is set to False, just add metadata values that are
+        actually not defined.
+
+        If there is existing values in conflict with the dictionary ones, the
+        dictionary values prevails. 
+        
+        Empty values (e.g. None and []) are not setted this way.
+        """
+        for key, value in from_dict.items():
+            if value not in ([], None):
+                self.set(key, value)
 
     def set(self, name, value):
         """Controls then sets a metadata field"""
