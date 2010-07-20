@@ -17,11 +17,11 @@ from distutils2.index.dist import (ReleasesList, EXTENSIONS,
                                    get_infos_from_url)
 from distutils2.index.errors import (IndexError, DownloadError,
                                      UnableToDownload)
+from distutils2.index.mirrors import get_mirrors
 from distutils2 import __version__ as __distutils2_version__
 
 # -- Constants -----------------------------------------------
-DEFAULT_INDEX_URL = "http://pypi.python.org/simple/"
-DEFAULT_MIRROR_URL = "mirrors.pypi.python.org"
+DEFAULT_INDEX_URL = "http://a.pypi.python.org/simple/"
 DEFAULT_HOSTS = ("*",)
 SOCKET_TIMEOUT = 15
 USER_AGENT = "Python-urllib/%s distutils2/%s" % (
@@ -61,6 +61,9 @@ def socket_timeout(timeout=SOCKET_TIMEOUT):
 class Crawler(IndexClient):
     """Provides useful tools to request the Python Package Index simple API.
 
+    You can specify both mirrors and mirrors_url, but mirrors_url will only be
+    used if mirrors is set to None.
+
     :param index_url: the url of the simple index to search on.
     :param follow_externals: tell if following external links is needed or
                              not. Default is False.
@@ -74,28 +77,30 @@ class Crawler(IndexClient):
                          pick up the last final version.
     :param mirrors_url: the url to look on for DNS records giving mirror
                         adresses.
-    :param mirrors: a list of mirrors to check out if problems
-                         occurs while working with the one given in "url"
+    :param mirrors: a list of mirrors (see PEP 381).
     :param timeout: time in seconds to consider a url has timeouted.
+    :param mirrors_max_tries": number of times to try requesting informations
+                               on mirrors before switching.
     """
 
     def __init__(self, index_url=DEFAULT_INDEX_URL, hosts=DEFAULT_HOSTS,
                  follow_externals=False, prefer_final=False,
-                 mirrors_url=DEFAULT_MIRROR_URL, mirrors=None,
-                 timeout=SOCKET_TIMEOUT):
+                 mirrors_url=None, mirrors=None,
+                 timeout=SOCKET_TIMEOUT, mirrors_max_tries=0):
         self.follow_externals = follow_externals
-
+        
+        # mirroring attributes.
         if not index_url.endswith("/"):
             index_url += "/"
-        self._index_urls = [index_url]
         # if no mirrors are defined, use the method described in PEP 381.
         if mirrors is None:
-            try:
-                mirrors = socket.gethostbyname_ex(mirrors_url)[-1]
-            except socket.gaierror:
-                mirrors = []
-        self._index_urls.extend(mirrors)
-        self._current_index_url = 0
+            mirrors = get_mirrors(mirrors_url)
+        self._mirrors = set(mirrors)
+        self._mirrors_used = set()
+        self.index_url = index_url 
+        self._mirrors_max_tries = mirrors_max_tries
+        self._mirrors_tries = 0
+
         self._timeout = timeout
         self._prefer_final = prefer_final
 
@@ -108,10 +113,6 @@ class Crawler(IndexClient):
         self._processed_urls = []
         self._releases = {}
   
-    @property
-    def index_url(self):
-        return self._index_urls[self._current_index_url]
-
     def _search_for_releases(self, requirements):
         """Search for distributions and return a ReleaseList object containing
         the results
@@ -128,14 +129,19 @@ class Crawler(IndexClient):
 
     def _switch_to_next_mirror(self):
         """Switch to the next mirror (eg. point self.index_url to the next
-        url.
+        mirror url.
+
+        Raise a KeyError if all mirrors have been tried.
         """
-        # Internally, iter over the _index_url iterable, if we have read all
-        # of the available indexes, raise an exception.
-        if self._current_index_url < len(self._index_urls):
-            self._current_index_url = self._current_index_url + 1
-        else:
-            raise UnableToDownload("All mirrors fails")
+        self._mirrors_used.add(self.index_url)
+        index_url = self._mirrors.pop()
+        if not ("http://" or "https://" or "file://") in index_url:
+            index_url = "http://%s" % index_url
+
+        if not index_url.endswith("/simple"):
+            index_url = "%s/simple/" % index_url
+
+        self.index_url = index_url
 
     def _is_browsable(self, url):
         """Tell if the given URL can be browsed or not.
@@ -270,8 +276,13 @@ class Crawler(IndexClient):
             self._process_url(url, name)
         except DownloadError:
             # if an error occurs, try with the next index_url
-            # (provided by the mirrors)
-            self._switch_to_next_mirror()
+            if self._mirrors_tries >= self._mirrors_max_tries:
+                try:
+                    self._switch_to_next_mirror()
+                except KeyError:
+                   raise UnableToDownload("Tried all mirrors") 
+            else:
+                self._mirrors_tries += 1
             self._releases.clear()
             self._process_index_page(name)
 
