@@ -123,6 +123,9 @@ class ReleaseInfo(object):
             raise TypeError("cannot compare %s and %s"
                 % (self.name, other.name))
 
+    def __repr__(self):
+        return "<%s %s>" %(self.name, self.version)
+
     def __eq__(self, other):
         self._check_is_comparable(other)
         return self.version == other.version

@@ -14,7 +14,7 @@ import urlparse
 
 from distutils2.index.base import IndexClient
 from distutils2.index.dist import (ReleasesList, EXTENSIONS,
-                                   get_infos_from_url)
+                                   get_infos_from_url, MD5_HASH)
 from distutils2.index.errors import (IndexError, DownloadError,
                                      UnableToDownload)
 from distutils2.index.mirrors import get_mirrors
@@ -30,9 +30,6 @@ USER_AGENT = "Python-urllib/%s distutils2/%s" % (
 # -- Regexps -------------------------------------------------
 EGG_FRAGMENT = re.compile(r'^egg=([-A-Za-z0-9_.]+)$')
 HREF = re.compile("""href\\s*=\\s*['"]?([^'"> ]+)""", re.I)
-PYPI_MD5 = re.compile(
-    '<a href="([^"#]+)">([^<]+)</a>\n\s+\\(<a (?:title="MD5 hash"\n\s+)'
-    'href="[^?]+\?:action=show_md5&amp;digest=([0-9a-f]{32})">md5</a>\\)')
 URL_SCHEME = re.compile('([-+.a-z0-9]{2,}):', re.I).match
 
 # This pattern matches a character entity reference (a decimal numeric
@@ -238,6 +235,9 @@ class Crawler(IndexClient):
         else:
             return self._default_link_matcher
 
+    def _get_full_url(self, url, base_url):
+        return urlparse.urljoin(base_url, self._htmldecode(url))
+
     def _simple_link_matcher(self, content, base_url):
         """Yield all links with a rel="download" or rel="homepage".
 
@@ -245,23 +245,27 @@ class Crawler(IndexClient):
         If follow_externals is set to False, dont yeld the external
         urls.
         """
+        for match in HREF.finditer(content):
+            url = self._get_full_url(match.group(1), base_url)
+            if MD5_HASH.match(url):
+                yield (url, True)
+
         for match in REL.finditer(content):
+            # search for rel links.
             tag, rel = match.groups()
             rels = map(str.strip, rel.lower().split(','))
             if 'homepage' in rels or 'download' in rels:
                 for match in HREF.finditer(tag):
-                    url = urlparse.urljoin(base_url,
-                                           self._htmldecode(match.group(1)))
+                    url = self._get_full_url(match.group(1), base_url)
                     if 'download' in rels or self._is_browsable(url):
                         # yield a list of (url, is_download)
-                        yield (urlparse.urljoin(base_url, url),
-                               'download' in rels)
+                        yield (url, 'download' in rels)
 
     def _default_link_matcher(self, content, base_url):
         """Yield all links found on the page.
         """
         for match in HREF.finditer(content):
-            url = urlparse.urljoin(base_url, self._htmldecode(match.group(1)))
+            url = self._get_full_url(match.group(1), base_url)
             if self._is_browsable(url):
                 yield (url, False)
 

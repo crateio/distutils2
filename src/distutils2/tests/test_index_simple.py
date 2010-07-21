@@ -239,24 +239,30 @@ class SimpleCrawlerTestCase(support.TempdirManager, unittest.TestCase):
         #      returns false for it.
         #   3. one link that must be followed cause it's a homepage that is
         #      browsable
+        #   4. one link that must be followed, because it contain a md5 hash
         self.assertTrue(crawler._is_browsable("%stest" % crawler.index_url))
         self.assertFalse(crawler._is_browsable("http://dl-link2"))
         content = """
         <a href="http://dl-link1" rel="download">download_link1</a>
         <a href="http://dl-link2" rel="homepage">homepage_link1</a>
-        <a href="%stest" rel="homepage">homepage_link2</a>
-        """ % crawler.index_url
+        <a href="%(index_url)stest" rel="homepage">homepage_link2</a>
+        <a href="%(index_url)stest/foobar-1.tar.gz#md5=abcdef>download_link2</a>
+        """ % {'index_url': crawler.index_url }
 
         # Test that the simple link matcher yield the good links.
         generator = crawler._simple_link_matcher(content, crawler.index_url)
+        self.assertEqual(('%stest/foobar-1.tar.gz#md5=abcdef' % crawler.index_url, 
+                         True), generator.next())
         self.assertEqual(('http://dl-link1', True), generator.next())
         self.assertEqual(('%stest' % crawler.index_url, False),
                          generator.next())
         self.assertRaises(StopIteration, generator.next)
 
-        # Follow the external links is possible
+        # Follow the external links is possible (eg. homepages)
         crawler.follow_externals = True
         generator = crawler._simple_link_matcher(content, crawler.index_url)
+        self.assertEqual(('%stest/foobar-1.tar.gz#md5=abcdef' % crawler.index_url, 
+                         True), generator.next())
         self.assertEqual(('http://dl-link1', True), generator.next())
         self.assertEqual(('http://dl-link2', False), generator.next())
         self.assertEqual(('%stest' % crawler.index_url, False),
