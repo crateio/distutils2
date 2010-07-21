@@ -292,41 +292,32 @@ class Crawler(IndexClient):
         files support.
 
         """
+        scheme, netloc, path, params, query, frag = urlparse.urlparse(url)
+        
+        # authentication stuff
+        if scheme in ('http', 'https'):
+            auth, host = urllib2.splituser(netloc)
+        else:
+            auth = None
+
+        # add index.html automatically for filesystem paths
+        if scheme == 'file':
+            if url.endswith('/'):
+                url += "index.html"
+        
+        # add authorization headers if auth is provided
+        if auth:
+            auth = "Basic " + \
+                urllib2.unquote(auth).encode('base64').strip()
+            new_url = urlparse.urlunparse((
+                scheme, host, path, params, query, frag))
+            request = urllib2.Request(new_url)
+            request.add_header("Authorization", auth)
+        else:
+            request = urllib2.Request(url)
+        request.add_header('User-Agent', USER_AGENT)
         try:
-            scheme, netloc, path, params, query, frag = urlparse.urlparse(url)
-
-            if scheme in ('http', 'https'):
-                auth, host = urllib2.splituser(netloc)
-            else:
-                auth = None
-
-            # add index.html automatically for filesystem paths
-            if scheme == 'file':
-                if url.endswith('/'):
-                    url += "index.html"
-
-            if auth:
-                auth = "Basic " + \
-                    urllib2.unquote(auth).encode('base64').strip()
-                new_url = urlparse.urlunparse((
-                    scheme, host, path, params, query, frag))
-                request = urllib2.Request(new_url)
-                request.add_header("Authorization", auth)
-            else:
-                request = urllib2.Request(url)
-            request.add_header('User-Agent', USER_AGENT)
             fp = urllib2.urlopen(request)
-
-            if auth:
-                # Put authentication info back into request URL if same host,
-                # so that links found on the page will work
-                s2, h2, path2, param2, query2, frag2 = \
-                    urlparse.urlparse(fp.url)
-                if s2 == scheme and h2 == host:
-                    fp.url = urlparse.urlunparse(
-                        (s2, netloc, path2, param2, query2, frag2))
-
-            return fp
         except (ValueError, httplib.InvalidURL), v:
             msg = ' '.join([str(arg) for arg in v.args])
             raise IndexError('%s %s' % (url, msg))
@@ -339,6 +330,19 @@ class Crawler(IndexClient):
                 'The server might be down, %s' % (url, v.line))
         except httplib.HTTPException, v:
             raise DownloadError("Download error for %s: %s" % (url, v))
+        except socket.timeout:
+            raise DownloadError("The server timeouted")
+
+        if auth:
+            # Put authentication info back into request URL if same host,
+            # so that links found on the page will work
+            s2, h2, path2, param2, query2, frag2 = \
+                urlparse.urlparse(fp.url)
+            if s2 == scheme and h2 == host:
+                fp.url = urlparse.urlunparse(
+                    (s2, netloc, path2, param2, query2, frag2))
+
+        return fp
 
     def _decode_entity(self, match):
         what = match.group(1)
