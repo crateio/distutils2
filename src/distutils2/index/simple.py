@@ -11,12 +11,13 @@ import socket
 import sys
 import urllib2
 import urlparse
+import logging
 
 from distutils2.index.base import IndexClient
 from distutils2.index.dist import (ReleasesList, EXTENSIONS,
                                    get_infos_from_url, MD5_HASH)
 from distutils2.index.errors import (IndexError, DownloadError,
-                                     UnableToDownload)
+                                     UnableToDownload, CantParseArchiveName)
 from distutils2.index.mirrors import get_mirrors
 from distutils2 import __version__ as __distutils2_version__
 
@@ -219,9 +220,14 @@ class Crawler(IndexClient):
                     if self._is_distribution(link) or is_download:
                         self._processed_urls.append(link)
                         # it's a distribution, so create a dist object
-                        infos = get_infos_from_url(link, project_name,
-                                   is_external=not self.index_url in url)
-                        self._register_release(release_info=infos)
+                        try:
+                            infos = get_infos_from_url(link, project_name,
+                                        is_external=not self.index_url in url)
+                        except CantParseArchiveName as e:
+                            logging.warning("version has not been parsed: %s" 
+                                            % e)
+                        else:
+                            self._register_release(release_info=infos)
                     else:
                         if self._is_browsable(link) and follow_links:
                             self._process_url(link, project_name,

@@ -418,9 +418,9 @@ def split_archive_name(archive_name, probable_name=None):
         version = archive_name.lstrip(name)
     else:
         name, version = eager_split(archive_name)
-
+    
     version = suggest_normalized_version(version)
-    if version != "" and name != "":
+    if version is not None and name != "":
         return (name.lower(), version)
     else:
         raise CantParseArchiveName(archive_name)
