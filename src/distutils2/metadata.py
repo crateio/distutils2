@@ -337,6 +337,9 @@ class DistributionMetadata(object):
 
     def update(self, other=None, **kwargs):
         """Set metadata values from the given mapping
+        
+        Convert the keys to Metadata fields. Given keys that don't match a
+        metadata argument will not be used.
 
         If overwrite is set to False, just add metadata values that are
         actually not defined.
@@ -347,8 +350,8 @@ class DistributionMetadata(object):
         Empty values (e.g. None and []) are not setted this way.
         """
         def _set(key, value):
-            if value not in ([], None):
-                self.set(key, value)
+            if value not in ([], None) and key in _ATTR2FIELD:
+                self.set(self._convert_name(key), value)
 
         if other is None:
             pass
