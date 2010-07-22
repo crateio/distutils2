@@ -75,9 +75,9 @@ class TempdirManager(object):
             if os.path.exists(file_):
                 os.remove(file_)
 
-    def mktempfile(self):
+    def mktempfile(self, *args, **kwargs):
         """Create a temporary file that will be cleaned up."""
-        tempfile_ = tempfile.NamedTemporaryFile()
+        tempfile_ = tempfile.NamedTemporaryFile(*args, **kwargs)
         self.tempfiles.append(tempfile_.name)
         return tempfile_
 

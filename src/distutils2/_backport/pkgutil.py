@@ -1009,7 +1009,7 @@ def get_distributions(use_egg_info=False):
     :rtype: iterator of :class:`Distribution` and :class:`EggInfoDistribution`
             instances"""
     if not _cache_enabled:
-        for dist in _yield_distributions(use_egg_info):
+        for dist in _yield_distributions(True, use_egg_info):
             yield dist
     else:
         _generate_cache(use_egg_info)
@@ -1039,7 +1039,7 @@ def get_distribution(name, use_egg_info=False):
 
     :rtype: :class:`Distribution` or :class:`EggInfoDistribution` or None"""
     if not _cache_enabled:
-        for dist in _yield_distributions(use_egg_info):
+        for dist in _yield_distributions(True, use_egg_info):
             if dist.name == name:
                 return dist
     else:

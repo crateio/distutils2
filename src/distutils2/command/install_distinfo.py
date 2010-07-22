@@ -27,13 +27,13 @@ class install_distinfo(Command):
     description = 'Install a .dist-info directory for the package'
 
     user_options = [
-        ('dist-info-dir=', None,
+        ('distinfo-dir=', None,
                            'directory where the the .dist-info directory will '
                            'be installed'),
         ('installer=', None, 'the name of the installer'),
         ('requested', None, 'generate a REQUESTED file'),
         ('no-requested', None, 'do not generate a REQUESTED file'),
-        ('no-dist-record', None, 'do not generate a RECORD file'),
+        ('no-distinfo-record', None, 'do not generate a RECORD file'),
     ]
 
     boolean_options = [
