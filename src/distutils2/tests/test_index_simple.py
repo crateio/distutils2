@@ -300,6 +300,15 @@ class SimpleCrawlerTestCase(support.TempdirManager, unittest.TestCase):
         self.assertIn('http://example.org/some/simpleurl', found_links)
         self.assertIn('http://example.org/some/download', found_links)
 
+    @use_pypi_server("project_list")
+    def test_search(self, server):
+        # we can search the index for some projects, on their names
+        # the case used no matters here
+        crawler = self._get_simple_crawler(server)
+        projects = crawler.search("Foobar")
+        self.assertListEqual(['FooBar-bar', 'Foobar-baz', 'Baz-FooBar'], 
+                             projects)
+
 def test_suite():
     return unittest.makeSuite(SimpleCrawlerTestCase)
 

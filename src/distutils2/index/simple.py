@@ -55,6 +55,25 @@ def socket_timeout(timeout=SOCKET_TIMEOUT):
         return _socket_timeout
     return _socket_timeout
 
+def with_mirror_support():
+    """Decorator that makes the mirroring support easier"""
+    def wrapper(func):
+        def wrapped(self, *args, **kwargs):
+            try:
+                return func(self, *args, **kwargs)
+            except DownloadError:
+                # if an error occurs, try with the next index_url
+                if self._mirrors_tries >= self._mirrors_max_tries:
+                    try:
+                        self._switch_to_next_mirror()
+                    except KeyError:
+                       raise UnableToDownload("Tried all mirrors") 
+                else:
+                    self._mirrors_tries += 1
+                self._releases.clear()
+                return wrapped(self, *args, **kwargs)
+        return wrapped
+    return wrapper
 
 class Crawler(IndexClient):
     """Provides useful tools to request the Python Package Index simple API.
@@ -110,7 +129,20 @@ class Crawler(IndexClient):
         # on one)
         self._processed_urls = []
         self._releases = {}
-  
+    
+    @with_mirror_support()
+    def search(self, name=None, **kwargs):
+        """Search the index for projects containing the given name"""
+        index = self._open_url(self.index_url)
+        
+        projectname = re.compile("""<a[^>]*>(.?[^<]*%s.?[^<]*)</a>""" % name,
+                                 flags=re.I)
+        matching_projects = []
+        for match in projectname.finditer(index.read()):
+           matching_projects.append(match.group(1))
+        
+        return matching_projects
+
     def _search_for_releases(self, requirements):
         """Search for distributions and return a ReleaseList object containing
         the results
@@ -275,26 +307,15 @@ class Crawler(IndexClient):
             if self._is_browsable(url):
                 yield (url, False)
 
+    @with_mirror_support()
     def _process_index_page(self, name):
         """Find and process a PyPI page for the given project name.
 
         :param name: the name of the project to find the page
         """
-        try:
-            # Browse and index the content of the given PyPI page.
-            url = self.index_url + name + "/"
-            self._process_url(url, name)
-        except DownloadError:
-            # if an error occurs, try with the next index_url
-            if self._mirrors_tries >= self._mirrors_max_tries:
-                try:
-                    self._switch_to_next_mirror()
-                except KeyError:
-                   raise UnableToDownload("Tried all mirrors") 
-            else:
-                self._mirrors_tries += 1
-            self._releases.clear()
-            self._process_index_page(name)
+        # Browse and index the content of the given PyPI page.
+        url = self.index_url + name + "/"
+        self._process_url(url, name)
 
     @socket_timeout()
     def _open_url(self, url):
