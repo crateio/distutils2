@@ -162,7 +162,7 @@ class SetupClass(object):
         if not valuesDifferent:
             return
 
-        self.config.write(open(os.path.expanduser('~/.pygiver'), 'w'))
+        self.config.write(open(os.path.expanduser('~/.mkpkgpy'), 'w'))
 
     def loadExistingSetup(self):
         raise NotImplementedError
