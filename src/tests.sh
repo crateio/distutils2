@@ -1,8 +1,9 @@
 #!/bin/sh
 echo -n "Running tests for Python 2.4... "
-rm -rf _hashlib.so
+rm -rf *.so
 python2.4 setup.py build_ext -i -q 2> /dev/null > /dev/null
 python2.4 -Wd runtests.py -q 2> /dev/null
+rm -rf *.so
 if [ $? -ne 0 ];then
     echo "Failed"
     exit 1
@@ -11,9 +12,9 @@ else
 fi
 
 echo -n "Running tests for Python 2.5... "
-rm -rf _hashlib.so
 python2.5 setup.py build_ext -i -q 2> /dev/null > /dev/null
 python2.5 -Wd runtests.py -q 2> /dev/null
+rm -rf *.so
 if [ $? -ne 0 ];then
     echo "Failed"
     exit 1
