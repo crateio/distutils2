@@ -15,7 +15,7 @@ except ImportError:
 
 from distutils2.errors import DistutilsOptionError
 from distutils2.core import PyPIRCCommand
-from distutils2.spawn import spawn
+from distutils2.util import spawn
 from distutils2 import log
 
 class upload(PyPIRCCommand):

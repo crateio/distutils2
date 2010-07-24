@@ -7,15 +7,18 @@ import subprocess
 import tempfile
 import time
 
+from distutils2.tests import captured_stdout
+from distutils2.tests.support import unittest
 from distutils2.errors import (DistutilsPlatformError,
                                DistutilsByteCompileError,
-                               DistutilsFileError)
-
+                               DistutilsFileError,
+                               DistutilsExecError)
 from distutils2.util import (convert_path, change_root,
-                            check_environ, split_quoted, strtobool,
-                            rfc822_escape, get_compiler_versions,
-                            _find_exe_version, _MAC_OS_X_LD_VERSION,
-                            byte_compile, find_packages)
+                             check_environ, split_quoted, strtobool,
+                             rfc822_escape, get_compiler_versions,
+                             _find_exe_version, _MAC_OS_X_LD_VERSION,
+                             byte_compile, find_packages, spawn, find_executable,
+                             _nt_quote_args)
 from distutils2 import util
 from distutils2.tests import support
 from distutils2.tests.support import unittest
@@ -331,6 +334,46 @@ class UtilTestCase(support.EnvironGuard,
         new_content = "".join(file_handle.readlines())
         file_handle.close()
         self.assertEquals(new_content, converted_content)
+
+    def test_nt_quote_args(self):
+
+        for (args, wanted) in ((['with space', 'nospace'],
+                                ['"with space"', 'nospace']),
+                               (['nochange', 'nospace'],
+                                ['nochange', 'nospace'])):
+            res = _nt_quote_args(args)
+            self.assertEqual(res, wanted)
+
+
+    @unittest.skipUnless(os.name in ('nt', 'posix'),
+                         'Runs only under posix or nt')
+    def test_spawn(self):
+        tmpdir = self.mkdtemp()
+
+        # creating something executable
+        # through the shell that returns 1
+        if os.name == 'posix':
+            exe = os.path.join(tmpdir, 'foo.sh')
+            self.write_file(exe, '#!/bin/sh\nexit 1')
+            os.chmod(exe, 0777)
+        else:
+            exe = os.path.join(tmpdir, 'foo.bat')
+            self.write_file(exe, 'exit 1')
+
+        os.chmod(exe, 0777)
+        self.assertRaises(DistutilsExecError, spawn, [exe])
+
+        # now something that works
+        if os.name == 'posix':
+            exe = os.path.join(tmpdir, 'foo.sh')
+            self.write_file(exe, '#!/bin/sh\nexit 0')
+            os.chmod(exe, 0777)
+        else:
+            exe = os.path.join(tmpdir, 'foo.bat')
+            self.write_file(exe, 'exit 0')
+
+        os.chmod(exe, 0777)
+        spawn([exe])  # should work without any error
 
 
 def test_suite():

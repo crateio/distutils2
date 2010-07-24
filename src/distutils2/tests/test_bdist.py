@@ -8,8 +8,7 @@ from distutils2.core import Distribution
 from distutils2.command.bdist import bdist
 from distutils2.tests import support
 from distutils2.tests.support import unittest
-from distutils2.spawn import find_executable
-from distutils2 import spawn
+from distutils2.util import find_executable
 from distutils2.errors import DistutilsExecError
 
 class BuildTestCase(support.TempdirManager,

@@ -5,7 +5,7 @@ import sys
 from distutils2.command.build_clib import build_clib
 from distutils2.errors import DistutilsSetupError
 from distutils2.tests import support
-from distutils2.spawn import find_executable
+from distutils2.util import find_executable
 from distutils2.tests.support import unittest
 
 class BuildCLibTestCase(support.TempdirManager,
