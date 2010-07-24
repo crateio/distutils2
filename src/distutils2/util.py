@@ -690,7 +690,7 @@ class Mixin2to3:
 
 
 def spawn(cmd, search_path=1, verbose=0, dry_run=0, env=None):
-    """Run another program, specified as a command list 'cmd', in a new process.
+    """Run another program specified as a command list 'cmd' in a new process.
 
     'cmd' is just the argument list for the new process, ie.
     cmd[0] is the program to run and cmd[1:] are the rest of its arguments.
@@ -715,8 +715,9 @@ def spawn(cmd, search_path=1, verbose=0, dry_run=0, env=None):
     elif os.name == 'os2':
         _spawn_os2(cmd, search_path, dry_run=dry_run, env=env)
     else:
-        raise DistutilsPlatformError, \
-              "don't know how to spawn programs on platform '%s'" % os.name
+        raise DistutilsPlatformError(
+              "don't know how to spawn programs on platform '%s'" % os.name)
+
 
 def _nt_quote_args(args):
     """Quote command-line arguments for DOS/Windows conventions.
@@ -733,6 +734,7 @@ def _nt_quote_args(args):
         if ' ' in arg:
             args[i] = '"%s"' % arg
     return args
+
 
 def _spawn_nt(cmd, search_path=1, verbose=0, dry_run=0, env=None):
     executable = cmd[0]
@@ -751,12 +753,13 @@ def _spawn_nt(cmd, search_path=1, verbose=0, dry_run=0, env=None):
 
         except OSError, exc:
             # this seems to happen when the command isn't found
-            raise DistutilsExecError, \
-                  "command '%s' failed: %s" % (cmd[0], exc[-1])
+            raise DistutilsExecError(
+                  "command '%s' failed: %s" % (cmd[0], exc[-1]))
         if rc != 0:
             # and this reflects the command running but failing
-            raise DistutilsExecError, \
-                  "command '%s' failed with exit status %d" % (cmd[0], rc)
+            raise DistutilsExecError(
+                  "command '%s' failed with exit status %d" % (cmd[0], rc))
+
 
 def _spawn_os2(cmd, search_path=1, verbose=0, dry_run=0, env=None):
     executable = cmd[0]
@@ -774,13 +777,13 @@ def _spawn_os2(cmd, search_path=1, verbose=0, dry_run=0, env=None):
 
         except OSError, exc:
             # this seems to happen when the command isn't found
-            raise DistutilsExecError, \
-                  "command '%s' failed: %s" % (cmd[0], exc[-1])
+            raise DistutilsExecError(
+                  "command '%s' failed: %s" % (cmd[0], exc[-1]))
         if rc != 0:
             # and this reflects the command running but failing
             log.debug("command '%s' failed with exit status %d" % (cmd[0], rc))
-            raise DistutilsExecError, \
-                  "command '%s' failed with exit status %d" % (cmd[0], rc)
+            raise DistutilsExecError(
+                  "command '%s' failed with exit status %d" % (cmd[0], rc))
 
 
 def _spawn_posix(cmd, search_path=1, verbose=0, dry_run=0, env=None):
@@ -818,29 +821,30 @@ def _spawn_posix(cmd, search_path=1, verbose=0, dry_run=0, env=None):
                 import errno
                 if exc.errno == errno.EINTR:
                     continue
-                raise DistutilsExecError, \
-                      "command '%s' failed: %s" % (cmd[0], exc[-1])
+                raise DistutilsExecError(
+                      "command '%s' failed: %s" % (cmd[0], exc[-1]))
             if os.WIFSIGNALED(status):
-                raise DistutilsExecError, \
+                raise DistutilsExecError(
                       "command '%s' terminated by signal %d" % \
-                      (cmd[0], os.WTERMSIG(status))
+                      (cmd[0], os.WTERMSIG(status)))
 
             elif os.WIFEXITED(status):
                 exit_status = os.WEXITSTATUS(status)
                 if exit_status == 0:
                     return   # hey, it succeeded!
                 else:
-                    raise DistutilsExecError, \
+                    raise DistutilsExecError(
                           "command '%s' failed with exit status %d" % \
-                          (cmd[0], exit_status)
+                          (cmd[0], exit_status))
 
             elif os.WIFSTOPPED(status):
                 continue
 
             else:
-                raise DistutilsExecError, \
+                raise DistutilsExecError(
                       "unknown error executing '%s': termination status %d" % \
-                      (cmd[0], status)
+                      (cmd[0], status))
+
 
 def find_executable(executable, path=None):
     """Tries to find 'executable' in the directories listed in 'path'.
