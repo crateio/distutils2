@@ -11,22 +11,22 @@ class TestXMLRPCClient(unittest.TestCase):
         return Client(server.full_address, *args, **kwargs)
 
     @use_xmlrpc_server()
-    def test_search(self, server):
-        # test that the find method return a list of ReleasesList
+    def test_search_projects(self, server):
         client = self._get_client(server)
         server.xmlrpc.set_search_result(['FooBar', 'Foo', 'FooFoo'])
-        results = [r.name for r in client.search(name='Foo')]
+        results = [r.name for r in client.search_projects(name='Foo')]
         self.assertEqual(3, len(results))
         self.assertIn('FooBar', results)
         self.assertIn('Foo', results)
         self.assertIn('FooFoo', results)
 
-    def test_search_bad_fields(self):
+    def test_search_projects_bad_fields(self):
         client = Client()
-        self.assertRaises(InvalidSearchField, client.search, invalid="test")
+        self.assertRaises(InvalidSearchField, client.search_projects, 
+                          invalid="test")
 
     @use_xmlrpc_server()
-    def test_find(self, server):
+    def test_get_releases(self, server):
         client = self._get_client(server)
         server.xmlrpc.set_distributions([
             {'name': 'FooBar', 'version': '1.1'},
@@ -37,7 +37,7 @@ class TestXMLRPCClient(unittest.TestCase):
         # use a lambda here to avoid an useless mock call
         server.xmlrpc.list_releases = lambda *a, **k: ['1.1', '1.2', '1.3']
 
-        releases = client.find('FooBar (<=1.2)')
+        releases = client.get_releases('FooBar (<=1.2)')
         # dont call release_data and release_url; just return name and version.
         self.assertEqual(2, len(releases))
         versions = releases.get_versions()
@@ -45,30 +45,7 @@ class TestXMLRPCClient(unittest.TestCase):
         self.assertIn('1.2', versions)
         self.assertNotIn('1.3', versions)
 
-        self.assertRaises(ProjectNotFound, client.find,'Foo')
-
-    @use_xmlrpc_server()
-    def test_get_releases(self, server):
-        client = self._get_client(server)
-        server.xmlrpc.set_distributions([
-            {'name':'FooBar', 'version': '0.8', 'hidden': True},
-            {'name':'FooBar', 'version': '0.9', 'hidden': True},
-            {'name':'FooBar', 'version': '1.1'},
-            {'name':'FooBar', 'version': '1.2'},
-        ])
-        releases = client.get_releases('FooBar', False)
-        versions = releases.get_versions()
-        self.assertEqual(2, len(versions))
-        self.assertIn('1.1', versions)
-        self.assertIn('1.2', versions)
-
-        releases2 = client.get_releases('FooBar', True)
-        versions = releases2.get_versions()
-        self.assertEqual(4, len(versions))
-        self.assertIn('0.8', versions)
-        self.assertIn('0.9', versions)
-        self.assertIn('1.1', versions)
-        self.assertIn('1.2', versions)
+        self.assertRaises(ProjectNotFound, client.get_releases,'Foo')
 
     @use_xmlrpc_server()
     def test_get_distributions(self, server):

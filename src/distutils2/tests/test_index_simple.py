@@ -85,14 +85,14 @@ class SimpleCrawlerTestCase(support.TempdirManager, unittest.TestCase):
         # Browse the index, asking for a specified release version
         # The PyPI index contains links for version 1.0, 1.1, 2.0 and 2.0.1
         crawler = self._get_simple_crawler(server)
-        last_release = crawler.get("foobar")
+        last_release = crawler.get_release("foobar")
 
         # we have scanned the index page
         self.assertIn(server.full_address + "/simple/foobar/",
             crawler._processed_urls)
 
         # we have found 4 releases in this page
-        self.assertEqual(len(crawler._releases["foobar"]), 4)
+        self.assertEqual(len(crawler._projects["foobar"]), 4)
 
         # and returned the most recent one
         self.assertEqual("%s" % last_release.version, '2.0.1')
@@ -140,7 +140,7 @@ class SimpleCrawlerTestCase(support.TempdirManager, unittest.TestCase):
         # Try to request the package index, wich contains links to "externals"
         # resources. They have to  be scanned too.
         crawler = self._get_simple_crawler(server, follow_externals=True)
-        crawler.get("foobar")
+        crawler.get_release("foobar")
         self.assertIn(server.full_address + "/external/external.html",
             crawler._processed_urls)
 
@@ -150,7 +150,7 @@ class SimpleCrawlerTestCase(support.TempdirManager, unittest.TestCase):
         # Test that telling the simple pyPI client to not retrieve external
         # works
         crawler = self._get_simple_crawler(server, follow_externals=False)
-        crawler.get("foobar")
+        crawler.get_release("foobar")
         self.assertNotIn(server.full_address + "/external/external.html",
             crawler._processed_urls)
 
@@ -175,7 +175,7 @@ class SimpleCrawlerTestCase(support.TempdirManager, unittest.TestCase):
 
         # scan a test index
         crawler = Crawler(index_url, follow_externals=True)
-        releases = crawler.find("foobar")
+        releases = crawler.get_releases("foobar")
         server.stop()
 
         # we have only one link, because links are compared without md5
@@ -196,7 +196,7 @@ class SimpleCrawlerTestCase(support.TempdirManager, unittest.TestCase):
 
         # process the pages
         crawler = self._get_simple_crawler(server, follow_externals=True)
-        crawler.find("foobar")
+        crawler.get_releases("foobar")
         # now it should have processed only pages with links rel="download"
         # and rel="homepage"
         self.assertIn("%s/simple/foobar/" % server.full_address,
@@ -225,7 +225,7 @@ class SimpleCrawlerTestCase(support.TempdirManager, unittest.TestCase):
                 mirrors=[mirror.full_address, ])
 
             # this should not raise a timeout
-            self.assertEqual(4, len(crawler.find("foo")))
+            self.assertEqual(4, len(crawler.get_releases("foo")))
         finally:
             mirror.stop()
 
@@ -274,7 +274,7 @@ class SimpleCrawlerTestCase(support.TempdirManager, unittest.TestCase):
         index_path = os.sep.join(["file://" + PYPI_DEFAULT_STATIC_PATH,
                                   "test_found_links", "simple"])
         crawler = Crawler(index_path)
-        dists = crawler.find("foobar")
+        dists = crawler.get_releases("foobar")
         self.assertEqual(4, len(dists))
 
     def test_get_link_matcher(self):
@@ -301,11 +301,11 @@ class SimpleCrawlerTestCase(support.TempdirManager, unittest.TestCase):
         self.assertIn('http://example.org/some/download', found_links)
 
     @use_pypi_server("project_list")
-    def test_search(self, server):
+    def test_search_projects(self, server):
         # we can search the index for some projects, on their names
         # the case used no matters here
         crawler = self._get_simple_crawler(server)
-        projects = crawler.search("Foobar")
+        projects = crawler.search_projects("Foobar")
         self.assertListEqual(['FooBar-bar', 'Foobar-baz', 'Baz-FooBar'], 
                              projects)
 

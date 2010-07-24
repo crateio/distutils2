@@ -13,11 +13,12 @@ import urllib2
 import urlparse
 import logging
 
-from distutils2.index.base import IndexClient
+from distutils2.index.base import BaseClient
 from distutils2.index.dist import (ReleasesList, EXTENSIONS,
                                    get_infos_from_url, MD5_HASH)
-from distutils2.index.errors import (IndexError, DownloadError,
-                                     UnableToDownload, CantParseArchiveName)
+from distutils2.index.errors import (IndexesError, DownloadError,
+                                     UnableToDownload, CantParseArchiveName,
+                                     ReleaseNotFound)
 from distutils2.index.mirrors import get_mirrors
 from distutils2 import __version__ as __distutils2_version__
 
@@ -55,6 +56,7 @@ def socket_timeout(timeout=SOCKET_TIMEOUT):
         return _socket_timeout
     return _socket_timeout
 
+
 def with_mirror_support():
     """Decorator that makes the mirroring support easier"""
     def wrapper(func):
@@ -67,21 +69,27 @@ def with_mirror_support():
                     try:
                         self._switch_to_next_mirror()
                     except KeyError:
-                       raise UnableToDownload("Tried all mirrors") 
+                        raise UnableToDownload("Tried all mirrors")
                 else:
                     self._mirrors_tries += 1
-                self._releases.clear()
+                self._projects.clear()
                 return wrapped(self, *args, **kwargs)
         return wrapped
     return wrapper
 
-class Crawler(IndexClient):
+
+class Crawler(BaseClient):
     """Provides useful tools to request the Python Package Index simple API.
 
     You can specify both mirrors and mirrors_url, but mirrors_url will only be
     used if mirrors is set to None.
 
     :param index_url: the url of the simple index to search on.
+    :param prefer_final: if the version is not mentioned, and the last
+                         version is not a "final" one (alpha, beta, etc.),
+                         pick up the last final version.
+    :param prefer_source: if the distribution type is not mentioned, pick up
+                          the source one if available.
     :param follow_externals: tell if following external links is needed or
                              not. Default is False.
     :param hosts: a list of hosts allowed to be processed while using
@@ -89,9 +97,6 @@ class Crawler(IndexClient):
                   hosts.
     :param follow_externals: tell if following external links is needed or
                              not. Default is False.
-    :param prefer_final: if the version is not mentioned, and the last
-                         version is not a "final" one (alpha, beta, etc.),
-                         pick up the last final version.
     :param mirrors_url: the url to look on for DNS records giving mirror
                         adresses.
     :param mirrors: a list of mirrors (see PEP 381).
@@ -100,12 +105,13 @@ class Crawler(IndexClient):
                                on mirrors before switching.
     """
 
-    def __init__(self, index_url=DEFAULT_INDEX_URL, hosts=DEFAULT_HOSTS,
-                 follow_externals=False, prefer_final=False,
-                 mirrors_url=None, mirrors=None,
+    def __init__(self, index_url=DEFAULT_INDEX_URL, prefer_final=False,
+                 prefer_source=True, hosts=DEFAULT_HOSTS,
+                 follow_externals=False, mirrors_url=None, mirrors=None,
                  timeout=SOCKET_TIMEOUT, mirrors_max_tries=0):
+        super(Crawler, self).__init__(prefer_final, prefer_source)
         self.follow_externals = follow_externals
-        
+
         # mirroring attributes.
         if not index_url.endswith("/"):
             index_url += "/"
@@ -114,12 +120,10 @@ class Crawler(IndexClient):
             mirrors = get_mirrors(mirrors_url)
         self._mirrors = set(mirrors)
         self._mirrors_used = set()
-        self.index_url = index_url 
+        self.index_url = index_url
         self._mirrors_max_tries = mirrors_max_tries
         self._mirrors_tries = 0
-
         self._timeout = timeout
-        self._prefer_final = prefer_final
 
         # create a regexp to match all given hosts
         self._allowed_hosts = re.compile('|'.join(map(translate, hosts))).match
@@ -128,34 +132,44 @@ class Crawler(IndexClient):
         # scanning them multple time (eg. if there is multiple pages pointing
         # on one)
         self._processed_urls = []
-        self._releases = {}
-    
+        self._projects = {}
+
     @with_mirror_support()
-    def search(self, name=None, **kwargs):
-        """Search the index for projects containing the given name"""
+    def search_projects(self, name=None, **kwargs):
+        """Search the index for projects containing the given name.
+
+        Return a list of names.
+        """
         index = self._open_url(self.index_url)
-        
         projectname = re.compile("""<a[^>]*>(.?[^<]*%s.?[^<]*)</a>""" % name,
                                  flags=re.I)
         matching_projects = []
         for match in projectname.finditer(index.read()):
-           matching_projects.append(match.group(1))
-        
+            matching_projects.append(match.group(1))
         return matching_projects
 
-    def _search_for_releases(self, requirements):
-        """Search for distributions and return a ReleaseList object containing
-        the results
+    def get_releases(self, requirements, prefer_final=None):
+        """Search for releases and return a ReleaseList object containing
+        the results.
         """
-        # process the index page for the project name, searching for
-        # distributions.
-        self._process_index_page(requirements.name)
-        return self._releases.setdefault(requirements.name,
-                                         ReleasesList(requirements.name))
-    
-    def _get_release(self, requirements, prefer_final):
+        predicate = self._get_version_predicate(requirements)
+        prefer_final = self._get_prefer_final(prefer_final)
+        self._process_index_page(predicate.name)
+        releases = self._projects.setdefault(predicate.name,
+                                             ReleasesList(predicate.name))
+        if releases:
+            releases = releases.filter(predicate)
+            releases.sort_releases(prefer_final=prefer_final)
+        return releases
+
+    def get_release(self, requirements, prefer_final=None):
         """Return only one release that fulfill the given requirements"""
-        return self.find(requirements, prefer_final).get_last(requirements)
+        predicate = self._get_version_predicate(requirements)
+        release = self.get_releases(predicate, prefer_final)\
+                      .get_last(predicate)
+        if not release:
+            raise ReleaseNotFound("No release matches the given criterias")
+        return release
 
     def _switch_to_next_mirror(self):
         """Switch to the next mirror (eg. point self.index_url to the next
@@ -216,18 +230,18 @@ class Crawler(IndexClient):
             name = release.name
         else:
             name = release_info['name']
-        if not name in self._releases:
-            self._releases[name] = ReleasesList(name)
+        if not name in self._projects:
+            self._projects[name] = ReleasesList(name)
 
         if release:
-            self._releases[name].add_release(release=release)
+            self._projects[name].add_release(release=release)
         else:
             name = release_info.pop('name')
             version = release_info.pop('version')
             dist_type = release_info.pop('dist_type')
-            self._releases[name].add_release(version, dist_type,
+            self._projects[name].add_release(version, dist_type,
                                              **release_info)
-        return self._releases[name]
+        return self._projects[name]
 
     def _process_url(self, url, project_name=None, follow_links=True):
         """Process an url and search for distributions packages.
@@ -256,7 +270,7 @@ class Crawler(IndexClient):
                             infos = get_infos_from_url(link, project_name,
                                         is_external=not self.index_url in url)
                         except CantParseArchiveName, e:
-                            logging.warning("version has not been parsed: %s" 
+                            logging.warning("version has not been parsed: %s"
                                             % e)
                         else:
                             self._register_release(release_info=infos)
@@ -324,7 +338,7 @@ class Crawler(IndexClient):
 
         """
         scheme, netloc, path, params, query, frag = urlparse.urlparse(url)
-        
+
         # authentication stuff
         if scheme in ('http', 'https'):
             auth, host = urllib2.splituser(netloc)
@@ -335,7 +349,7 @@ class Crawler(IndexClient):
         if scheme == 'file':
             if url.endswith('/'):
                 url += "index.html"
-        
+
         # add authorization headers if auth is provided
         if auth:
             auth = "Basic " + \
@@ -351,7 +365,7 @@ class Crawler(IndexClient):
             fp = urllib2.urlopen(request)
         except (ValueError, httplib.InvalidURL), v:
             msg = ' '.join([str(arg) for arg in v.args])
-            raise IndexError('%s %s' % (url, msg))
+            raise IndexesError('%s %s' % (url, msg))
         except urllib2.HTTPError, v:
             return v
         except urllib2.URLError, v:
@@ -372,7 +386,6 @@ class Crawler(IndexClient):
             if s2 == scheme and h2 == host:
                 fp.url = urlparse.urlunparse(
                     (s2, netloc, path2, param2, query2, frag2))
-
         return fp
 
     def _decode_entity(self, match):

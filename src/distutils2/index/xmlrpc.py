@@ -2,9 +2,9 @@ import logging
 import xmlrpclib
 
 from distutils2.errors import IrrationalVersionError
-from distutils2.index.base import IndexClient
+from distutils2.index.base import BaseClient
 from distutils2.index.errors import ProjectNotFound, InvalidSearchField
-from distutils2.index.dist import ReleaseInfo, ReleasesList
+from distutils2.index.dist import ReleaseInfo
 
 
 PYPI_XML_RPC_URL = 'http://python.org/pypi'
@@ -14,9 +14,9 @@ _SEARCH_FIELDS = ['name', 'version', 'author', 'author_email', 'maintainer',
                   'description', 'keywords', 'platform', 'download_url']
 
 
-class Client(IndexClient):
+class Client(BaseClient):
     """Client to query indexes using XML-RPC method calls.
-    
+
     If no server_url is specified, use the default PyPI XML-RPC URL,
     defined in the PYPI_XML_RPC_URL constant::
 
@@ -29,43 +29,26 @@ class Client(IndexClient):
         'http://someurl/'
     """
 
-    def __init__(self, server_url=PYPI_XML_RPC_URL, prefer_final=False):
+    def __init__(self, server_url=PYPI_XML_RPC_URL, prefer_final=False,
+                 prefer_source=True):
+        super(Client, self).__init__(prefer_final, prefer_source)
         self.server_url = server_url
         self._projects = {}
-        self._prefer_final = prefer_final
 
-    def _search_for_releases(self, requirements):
-        return self.get_releases(requirements.name)
-    
-    def _get_release(self, requirements, prefer_final=False):
-        releases = self.get_releases(requirements.name)
-        release = releases.get_last(requirements, prefer_final)
+    def get_release(self, requirements, prefer_final=False):
+        """Return a release with all complete metadata and distribution
+        related informations.
+        """
+        prefer_final = self._get_prefer_final(prefer_final)
+        predicate = self._get_version_predicate(requirements)
+        releases = self.get_releases(predicate.name)
+        release = releases.get_last(predicate, prefer_final)
         self.get_metadata(release.name, "%s" % release.version)
         self.get_distributions(release.name, "%s" % release.version)
         return release
 
-    @property
-    def proxy(self):
-        """Property used to return the XMLRPC server proxy.
-
-        If no server proxy is defined yet, creates a new one::
-
-            >>> client = XmlRpcClient()
-            >>> client.proxy()
-            <ServerProxy for python.org/pypi>
-
-        """
-        if not hasattr(self, '_server_proxy'):
-            self._server_proxy = xmlrpclib.ServerProxy(self.server_url)
-
-        return self._server_proxy
-
-    def _get_project(self, project_name):
-        """Return an project instance, create it if necessary"""
-        return self._projects.setdefault(project_name,
-                                         ReleasesList(project_name))
-
-    def get_releases(self, project_name, show_hidden=True, force_update=False):
+    def get_releases(self, requirements, prefer_final=None, show_hidden=True,
+                     force_update=False):
         """Return the list of existing releases for a specific project.
 
         Cache the results from one call to another.
@@ -88,6 +71,9 @@ class Client(IndexClient):
         def get_versions(project_name, show_hidden):
             return self.proxy.package_releases(project_name, show_hidden)
 
+        predicate = self._get_version_predicate(requirements)
+        prefer_final = self._get_prefer_final(prefer_final)
+        project_name = predicate.name
         if not force_update and (project_name in self._projects):
             project = self._projects[project_name]
             if not project.contains_hidden and show_hidden:
@@ -100,15 +86,17 @@ class Client(IndexClient):
                 for version in hidden_versions:
                     project.add_release(release=ReleaseInfo(project_name,
                                                             version))
-            return project
         else:
             versions = get_versions(project_name, show_hidden)
             if not versions:
                 raise ProjectNotFound(project_name)
             project = self._get_project(project_name)
-            project.add_releases([ReleaseInfo(project_name, version) 
+            project.add_releases([ReleaseInfo(project_name, version)
                                   for version in versions])
-            return project
+        project = project.filter(predicate)
+        project.sort_releases(prefer_final)
+        return project
+        
 
     def get_distributions(self, project_name, version):
         """Grab informations about distributions from XML-RPC.
@@ -143,9 +131,9 @@ class Client(IndexClient):
         release.set_metadata(metadata)
         return release
 
-    def search(self, name=None, operator="or", **kwargs):
+    def search_projects(self, name=None, operator="or", **kwargs):
         """Find using the keys provided in kwargs.
-        
+
         You can set operator to "and" or "or".
         """
         for key in kwargs:
@@ -157,9 +145,25 @@ class Client(IndexClient):
         for p in projects:
             project = self._get_project(p['name'])
             try:
-                project.add_release(release=ReleaseInfo(p['name'], 
-                    p['version'], metadata={'summary':p['summary']}))
+                project.add_release(release=ReleaseInfo(p['name'],
+                    p['version'], metadata={'summary': p['summary']}))
             except IrrationalVersionError, e:
                 logging.warn("Irrational version error found: %s" % e)
-        
+
         return [self._projects[p['name']] for p in projects]
+
+    @property
+    def proxy(self):
+        """Property used to return the XMLRPC server proxy.
+
+        If no server proxy is defined yet, creates a new one::
+
+            >>> client = XmlRpcClient()
+            >>> client.proxy()
+            <ServerProxy for python.org/pypi>
+
+        """
+        if not hasattr(self, '_server_proxy'):
+            self._server_proxy = xmlrpclib.ServerProxy(self.server_url)
+
+        return self._server_proxy

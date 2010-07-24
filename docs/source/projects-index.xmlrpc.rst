@@ -49,19 +49,19 @@ We can basically search for projects by their name, which is the
 most used way for users (eg. "give me the last version of the FooBar project").
 This can be accomplished using the following syntax::
 
-    >>> client = XMLRPCClient()
-    >>> client.get("Foobar (<= 1.3))
+    >>> client = xmlrpc.Client()
+    >>> client.get_release("Foobar (<= 1.3))
     <FooBar 1.2.1>
-    >>> client.find("FooBar (<= 1.3)")
+    >>> client.get_releases("FooBar (<= 1.3)")
     [FooBar 1.1, FooBar 1.1.1, FooBar 1.2, FooBar 1.2.1]
 
 And we also can find for specific fields::
 
-    >>> client.find_by(field=value)
+    >>> client.search_projects(field=value)
 
 You could specify the operator to use, default is "or"::
 
-    >>> client.find_by(field=value, operator="and")
+    >>> client.search_projects(field=value, operator="and")
 
 The specific fields you can search are:
 
@@ -85,7 +85,7 @@ Getting metadata informations
 XML-RPC is a prefered way to retrieve metadata informations from indexes.
 It's really simple to do so::
 
-    >>> client = XMLRPCClient()
+    >>> client = xmlrpc.Client()
     >>> client.get_metadata("FooBar", "1.1")
     <ReleaseInfo FooBar 1.1>
 
@@ -94,7 +94,7 @@ it's possible to pass it ot the xmlrpc client to retrieve and complete it's
 metadata::
 
     >>> foobar11 = ReleaseInfo("FooBar", "1.1")
-    >>> client = XMLRPCClient()
+    >>> client = xmlrpc.Client()
     >>> returned_release = client.get_metadata(release=foobar11)
     >>> returned_release
     <ReleaseInfo FooBar 1.1>
@@ -105,7 +105,7 @@ Get all the releases of a project
 To retrieve all the releases for a project, you can build them using
 `get_releases`::
 
-    >>> client = XMLRPCClient()
+    >>> client = xmlrpc.Client()
     >>> client.get_releases("FooBar")
     [<ReleaseInfo FooBar 0.9>, <ReleaseInfo FooBar 1.0>, <ReleaseInfo 1.1>]
 
@@ -119,7 +119,7 @@ If you're not familiar with those, please refer to the documentation of
 It's possible to retrive informations about distributions, e.g "what are the
 existing distributions for this release ? How to retrieve them ?"::
 
-    >>> client = XMLRPCClient()
+    >>> client = xmlrpc.Client()
     >>> release = client.get_distributions("FooBar", "1.1")
     >>> release.dists
     {'sdist': <FooBar 1.1 sdist>, 'bdist': <FooBar 1.1 bdist>}
@@ -140,7 +140,7 @@ directly the metadata of each release, without making
 :class:`distutils2.index.xmlrpc.Client` directly (they will be made, but they're
 invisible to the you)::
 
-    >>> client = XMLRPCClient()
+    >>> client = xmlrpc.Client()
     >>> releases = client.get_releases("FooBar")
     >>> releases.get_release("1.1").metadata
     <Metadata for FooBar 1.1>

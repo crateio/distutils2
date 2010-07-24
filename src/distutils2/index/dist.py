@@ -53,17 +53,17 @@ class ReleaseInfo(object):
         self.metadata = DistributionMetadata(mapping=metadata)
         self.dists = {}
         self.hidden = hidden
-        
+
         if 'dist_type' in kwargs:
             dist_type = kwargs.pop('dist_type')
             self.add_distribution(dist_type, **kwargs)
-    
+
     def set_version(self, version):
         try:
             self._version = NormalizedVersion(version)
         except IrrationalVersionError:
             suggestion = suggest_normalized_version(version)
-            if suggestion: 
+            if suggestion:
                 self.version = suggestion
             else:
                 raise IrrationalVersionError(version)
@@ -94,7 +94,7 @@ class ReleaseInfo(object):
             self.dists[dist_type].add_url(**params)
         else:
             self.dists[dist_type] = DistInfo(self, dist_type, **params)
-    
+
     def get_distribution(self, dist_type=None, prefer_source=True):
         """Return a distribution.
 
@@ -144,7 +144,7 @@ class ReleaseInfo(object):
                 % (self.name, other.name))
 
     def __repr__(self):
-        return "<%s %s>" %(self.name, self.version)
+        return "<%s %s>" % (self.name, self.version)
 
     def __eq__(self, other):
         self._check_is_comparable(other)
@@ -307,7 +307,7 @@ class ReleasesList(list):
 
     def add_releases(self, releases):
         """Add releases in the release list.
-        
+
         :param: releases is a list of ReleaseInfo objects.
         """
         for r in releases:
@@ -367,7 +367,7 @@ class ReleasesList(list):
         super(ReleasesList, self).sort(
             key=lambda i: [getattr(i, arg) for arg in sort_by],
             reverse=reverse, *args, **kwargs)
-        
+
     def get_release(self, version):
         """Return a release from it's version.
         """
@@ -384,7 +384,7 @@ class ReleasesList(list):
         string = 'Project "%s"' % self.name
         if self.get_versions():
             string += ' versions: %s' % ', '.join(self.get_versions())
-        return '<%s>' % string 
+        return '<%s>' % string
 
 
 def get_infos_from_url(url, probable_dist_name=None, is_external=True):
@@ -454,7 +454,7 @@ def split_archive_name(archive_name, probable_name=None):
         version = archive_name.lstrip(name)
     else:
         name, version = eager_split(archive_name)
-    
+
     version = suggest_normalized_version(version)
     if version is not None and name != "":
         return (name.lower(), version)

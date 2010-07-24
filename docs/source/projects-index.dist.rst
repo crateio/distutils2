@@ -5,13 +5,12 @@ Representation of informations coming from indexes
 Informations coming from indexes are represented by the classes present in the
 `dist` module.
 
-.. note:: Keep in mind that each project (eg. FooBar) can have several
-          releases (eg. 1.1, 1.2, 1.3), and each of these releases can be 
-          provided in multiple distributions (eg. a source distribution, 
-          a binary one, etc).
-
 APIs
 ====
+
+Keep in mind that each project (eg. FooBar) can have several releases 
+(eg. 1.1, 1.2, 1.3), and each of these releases can be provided in multiple 
+distributions (eg. a source distribution, a binary one, etc).
 
 ReleaseInfo
 ------------
