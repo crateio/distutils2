@@ -5,10 +5,14 @@ Miscellaneous utility functions.
 
 __revision__ = "$Id: util.py 77761 2010-01-26 22:46:15Z tarek.ziade $"
 
-import sys
 import os
-import string
+import posixpath
 import re
+import string
+import sys
+import shutil
+import tarfile
+import zipfile
 from copy import copy
 from fnmatch import fnmatchcase
 
@@ -688,3 +692,116 @@ class Mixin2to3:
         """ Issues a call to util.run_2to3. """
         return run_2to3(files, doctests_only, self.fixer_names,
                         self.options, self.explicit)
+
+
+def splitext(path):
+    """Like os.path.splitext, but take off .tar too"""
+    base, ext = posixpath.splitext(path)
+    if base.lower().endswith('.tar'):
+        ext = base[-4:] + ext
+        base = base[:-4]
+    return base, ext
+
+
+def unzip_file(filename, location, flatten=True):
+    """Unzip the file (zip file located at filename) to the destination
+    location"""
+    if not os.path.exists(location):
+        os.makedirs(location)
+    zipfp = open(filename, 'rb')
+    try:
+        zip = zipfile.ZipFile(zipfp)
+        leading = has_leading_dir(zip.namelist()) and flatten
+        for name in zip.namelist():
+            data = zip.read(name)
+            fn = name
+            if leading:
+                fn = split_leading_dir(name)[1]
+            fn = os.path.join(location, fn)
+            dir = os.path.dirname(fn)
+            if not os.path.exists(dir):
+                os.makedirs(dir)
+            if fn.endswith('/') or fn.endswith('\\'):
+                # A directory
+                if not os.path.exists(fn):
+                    os.makedirs(fn)
+            else:
+                fp = open(fn, 'wb')
+                try:
+                    fp.write(data)
+                finally:
+                    fp.close()
+    finally:
+        zipfp.close()
+
+
+def untar_file(filename, location):
+    """Untar the file (tar file located at filename) to the destination
+    location
+    """
+    if not os.path.exists(location):
+        os.makedirs(location)
+    if filename.lower().endswith('.gz') or filename.lower().endswith('.tgz'):
+        mode = 'r:gz'
+    elif (filename.lower().endswith('.bz2') 
+          or filename.lower().endswith('.tbz')):
+        mode = 'r:bz2'
+    elif filename.lower().endswith('.tar'):
+        mode = 'r'
+    else:
+        mode = 'r:*'
+    tar = tarfile.open(filename, mode)
+    try:
+        leading = has_leading_dir([member.name for member in tar.getmembers()])
+        for member in tar.getmembers():
+            fn = member.name
+            if leading:
+                fn = split_leading_dir(fn)[1]
+            path = os.path.join(location, fn)
+            if member.isdir():
+                if not os.path.exists(path):
+                    os.makedirs(path)
+            else:
+                try:
+                    fp = tar.extractfile(member)
+                except (KeyError, AttributeError), e:
+                    # Some corrupt tar files seem to produce this
+                    # (specifically bad symlinks)
+                    continue
+                if not os.path.exists(os.path.dirname(path)):
+                    os.makedirs(os.path.dirname(path))
+                destfp = open(path, 'wb')
+                try:
+                    shutil.copyfileobj(fp, destfp)
+                finally:
+                    destfp.close()
+                fp.close()
+    finally:
+        tar.close()
+
+
+def has_leading_dir(paths):
+    """Returns true if all the paths have the same leading path name
+    (i.e., everything is in one subdirectory in an archive)"""
+    common_prefix = None
+    for path in paths:
+        prefix, rest = split_leading_dir(path)
+        if not prefix:
+            return False
+        elif common_prefix is None:
+            common_prefix = prefix
+        elif prefix != common_prefix:
+            return False
+    return True
+
+
+def split_leading_dir(path):
+    path = str(path)
+    path = path.lstrip('/').lstrip('\\')
+    if '/' in path and (('\\' in path and path.find('/') < path.find('\\'))
+                        or '\\' not in path):
+        return path.split('/', 1)
+    elif '\\' in path:
+        return path.split('\\', 1)
+    else:
+        return path, ''

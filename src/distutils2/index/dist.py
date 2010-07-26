@@ -10,10 +10,13 @@ The release contains the metadata related informations (see PEP 384), and the
 distributions contains download related informations.
 
 """
+import mimetypes
 import re
+import tarfile
 import tempfile
 import urllib
 import urlparse
+import zipfile
 
 try:
     import hashlib
@@ -25,6 +28,7 @@ from distutils2.index.errors import (HashDoesNotMatch, UnsupportedHashName,
                                      CantParseArchiveName)
 from distutils2.version import suggest_normalized_version, NormalizedVersion
 from distutils2.metadata import DistributionMetadata
+from distutils2.util import untar_file, unzip_file, splitext
 
 __all__ = ['ReleaseInfo', 'DistInfo', 'ReleasesList', 'get_infos_from_url']
 
@@ -247,6 +251,7 @@ class DistInfo(object):
         """Download the distribution to a path, and return it.
 
         If the path is given in path, use this, otherwise, generates a new one
+        Return the download location.
         """
         if path is None:
             path = tempfile.mkdtemp()
@@ -260,6 +265,30 @@ class DistInfo(object):
             self.downloaded_location = filename
             self._check_md5(filename)
         return self.downloaded_location
+
+    def unpack(self, path=None):
+        """Unpack the distribution to the given path.
+        
+        If not destination is given, creates a temporary location.
+
+        Returns the location of the extracted files (root).
+        """
+        if path is None:
+            path = tempfile.mkdtemp()
+        
+        filename = self.download()
+        content_type = mimetypes.guess_type(filename)[0]
+ 
+        if (content_type == 'application/zip'
+            or filename.endswith('.zip')
+            or filename.endswith('.pybundle')
+            or zipfile.is_zipfile(filename)):
+            unzip_file(filename, path, flatten=not filename.endswith('.pybundle'))
+        elif (content_type == 'application/x-gzip'
+              or tarfile.is_tarfile(filename)
+              or splitext(filename)[1].lower() in ('.tar', '.tar.gz', '.tar.bz2', '.tgz', '.tbz')):
+            untar_file(filename, path)
+        return path
 
     def _check_md5(self, filename):
         """Check that the md5 checksum of the given file matches the one in
@@ -275,7 +304,7 @@ class DistInfo(object):
                     % (hashval.hexdigest(), expected_hashval))
 
     def __repr__(self):
-        return "%s %s %s" % (
+        return "<%s %s %s>" % (
             self.release.name, self.release.version, self.dist_type or "")
 
 
