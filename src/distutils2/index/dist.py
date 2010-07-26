@@ -26,6 +26,8 @@ from distutils2.index.errors import (HashDoesNotMatch, UnsupportedHashName,
 from distutils2.version import suggest_normalized_version, NormalizedVersion
 from distutils2.metadata import DistributionMetadata
 
+__all__ = ['ReleaseInfo', 'DistInfo', 'ReleasesList', 'get_infos_from_url']
+
 EXTENSIONS = ".tar.gz .tar.bz2 .tar .zip .tgz .egg".split()
 MD5_HASH = re.compile(r'^.*#md5=([a-f0-9]+)$')
 DIST_TYPES = ['bdist', 'sdist']

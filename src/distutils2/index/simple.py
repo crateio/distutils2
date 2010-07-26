@@ -22,8 +22,10 @@ from distutils2.index.errors import (IndexesError, DownloadError,
 from distutils2.index.mirrors import get_mirrors
 from distutils2 import __version__ as __distutils2_version__
 
+__all__ = ['Crawler', 'DEFAULT_SIMPLE_INDEX_URL'] 
+
 # -- Constants -----------------------------------------------
-DEFAULT_INDEX_URL = "http://a.pypi.python.org/simple/"
+DEFAULT_SIMPLE_INDEX_URL = "http://a.pypi.python.org/simple/"
 DEFAULT_HOSTS = ("*",)
 SOCKET_TIMEOUT = 15
 USER_AGENT = "Python-urllib/%s distutils2/%s" % (
@@ -105,7 +107,7 @@ class Crawler(BaseClient):
                                on mirrors before switching.
     """
 
-    def __init__(self, index_url=DEFAULT_INDEX_URL, prefer_final=False,
+    def __init__(self, index_url=DEFAULT_SIMPLE_INDEX_URL, prefer_final=False,
                  prefer_source=True, hosts=DEFAULT_HOSTS,
                  follow_externals=False, mirrors_url=None, mirrors=None,
                  timeout=SOCKET_TIMEOUT, mirrors_max_tries=0):

@@ -6,8 +6,9 @@ from distutils2.index.base import BaseClient
 from distutils2.index.errors import ProjectNotFound, InvalidSearchField
 from distutils2.index.dist import ReleaseInfo
 
+__all__ = ['Client', 'DEFAULT_XMLRPC_INDEX_URL']
 
-PYPI_XML_RPC_URL = 'http://python.org/pypi'
+DEFAULT_XMLRPC_INDEX_URL = 'http://python.org/pypi'
 
 _SEARCH_FIELDS = ['name', 'version', 'author', 'author_email', 'maintainer',
                   'maintainer_email', 'home_page', 'license', 'summary',
@@ -18,10 +19,10 @@ class Client(BaseClient):
     """Client to query indexes using XML-RPC method calls.
 
     If no server_url is specified, use the default PyPI XML-RPC URL,
-    defined in the PYPI_XML_RPC_URL constant::
+    defined in the DEFAULT_XMLRPC_INDEX_URL constant::
 
         >>> client = XMLRPCClient()
-        >>> client.server_url == PYPI_XML_RPC_URL
+        >>> client.server_url == DEFAULT_XMLRPC_INDEX_URL
         True
 
         >>> client = XMLRPCClient("http://someurl/")
@@ -29,7 +30,7 @@ class Client(BaseClient):
         'http://someurl/'
     """
 
-    def __init__(self, server_url=PYPI_XML_RPC_URL, prefer_final=False,
+    def __init__(self, server_url=DEFAULT_XMLRPC_INDEX_URL, prefer_final=False,
                  prefer_source=True):
         super(Client, self).__init__(prefer_final, prefer_source)
         self.server_url = server_url
