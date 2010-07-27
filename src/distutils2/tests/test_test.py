@@ -19,6 +19,7 @@ from distutils2.core import setup
 setup(name='somedist',
       version='0.1',
       py_modules=['myowntestmodule', 'somemod'],
+      test_suite='myowntestmodule',
 )
 '''
 
@@ -59,7 +60,6 @@ class TestTest(TempdirManager, unittest.TestCase):
 
     def test_runs_simple_tests(self):
         command = [sys.executable, "setup.py", "test"]
-        command += ['--test-suite', 'myowntestmodule']
         test_proc = subprocess.Popen(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
         _, errors = test_proc.communicate()
 
