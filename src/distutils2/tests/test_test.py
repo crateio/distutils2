@@ -11,28 +11,29 @@ try:
 except NameError:
     from distutils2._backport import any
 
-EXPECTED_OUTPUT_RE = '''\
-FAIL: test_blah \\(myowntestmodule.SomeTest\\)
+EXPECTED_OUTPUT_RE = r'''FAIL: test_blah \(myowntestmodule.SomeTest\)
 ----------------------------------------------------------------------
-Traceback \\(most recent call last\\):
-  File ".+/myowntestmodule.py", line \\d+, in test_blah
-    self.fail\\("horribly"\\)
+Traceback \(most recent call last\):
+  File ".+/myowntestmodule.py", line \d+, in test_blah
+    self.fail\("horribly"\)
 AssertionError: horribly
 '''
+
+here = os.path.dirname(os.path.abspath(__file__))
+
 
 class TestTest(TempdirManager, unittest.TestCase):
 
     def setUp(self):
         super(TestTest, self).setUp()
 
-        distutils2path = join(__file__, '..', '..', '..')
-        distutils2path = os.path.abspath(distutils2path)
+        distutils2path = os.path.dirname(os.path.dirname(here))
         self.old_pythonpath = os.environ.get('PYTHONPATH', '')
-        os.environ['PYTHONPATH'] = distutils2path + ":" + self.old_pythonpath
+        os.environ['PYTHONPATH'] = distutils2path + os.pathsep + self.old_pythonpath
 
     def tearDown(self):
-        super(TestTest, self).tearDown()
         os.environ['PYTHONPATH'] = self.old_pythonpath
+        super(TestTest, self).tearDown()
 
     def assert_re_match(self, pattern, string):
         def quote(s):
@@ -86,5 +87,4 @@ class TestTest(TempdirManager, unittest.TestCase):
         pass
 
 def test_suite():
-    suite = [unittest.makeSuite(TestTest)]
-    return unittest.TestSuite(suite)
+    return unittest.makeSuite(TestTest)
