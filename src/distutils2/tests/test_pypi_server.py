@@ -10,7 +10,7 @@ from distutils2.tests.support import unittest
 class PyPIServerTest(unittest.TestCase):
 
     def test_records_requests(self):
-        """We expect that PyPIServer can log our requests"""
+        # We expect that PyPIServer can log our requests
         server = PyPIServer()
         server.start()
         self.assertEqual(len(server.requests), 0)
@@ -23,14 +23,13 @@ class PyPIServerTest(unittest.TestCase):
         self.assertEqual(len(server.requests), 1)
         handler, request_data = server.requests[-1]
         self.assertIn("Rock Around The Bunker", request_data)
-        self.assertTrue(handler.headers.dict.has_key("x-test-header"))
-        self.assertEqual(handler.headers.dict["x-test-header"], 
-            "Mister Iceberg")
+        self.assertIn("x-test-header", handler.headers.dict)
+        self.assertEqual(handler.headers.dict["x-test-header"],
+                         "Mister Iceberg")
         server.stop()
 
     def test_serve_static_content(self):
-        """PYPI Mocked server can serve static content from disk.
-        """
+        # PYPI Mocked server can serve static content from disk.
 
         def uses_local_files_for(server, url_path):
             """Test that files are served statically (eg. the output from the

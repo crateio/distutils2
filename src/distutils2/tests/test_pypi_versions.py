@@ -19,6 +19,7 @@ import xmlrpclib
 import os.path
 
 from distutils2.version import suggest_normalized_version
+from distutils2.tests import run_unittest
 from distutils2.tests.support import unittest
 
 def test_pypi():
@@ -52,7 +53,7 @@ def test_pypi():
         print "Saving package info..."
         f = open(INDEX_PICKLE_FILE, 'wb')
         try:
-            pickle.dump(package_info, o)
+            pickle.dump(package_info, f)
         finally:
             f.close()
 

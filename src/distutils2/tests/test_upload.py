@@ -1,12 +1,13 @@
 """Tests for distutils.command.upload."""
 # -*- encoding: utf8 -*-
-import os, sys
+import os
+import sys
 
 from distutils2.command.upload import upload
 from distutils2.core import Distribution
 
-from distutils2.tests.pypi_server import PyPIServer, PyPIServerTestCase
 from distutils2.tests import support
+from distutils2.tests.pypi_server import PyPIServer, PyPIServerTestCase
 from distutils2.tests.support import unittest
 from distutils2.tests.test_config import PYPIRC, PyPIRCCommandTestCase
 
@@ -29,10 +30,10 @@ class UploadTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
         dist = Distribution()
         cmd = upload(dist)
         cmd.finalize_options()
-        for attr, waited in (('username', 'me'), ('password', 'secret'),
-                             ('realm', 'pypi'),
-                             ('repository', 'http://pypi.python.org/pypi')):
-            self.assertEqual(getattr(cmd, attr), waited)
+        for attr, expected in (('username', 'me'), ('password', 'secret'),
+                               ('realm', 'pypi'),
+                               ('repository', 'http://pypi.python.org/pypi')):
+            self.assertEqual(getattr(cmd, attr), expected)
 
     def test_saved_password(self):
         # file with no password

@@ -26,10 +26,12 @@ def use_pypi_server(*server_args, **server_kwargs):
         def wrapped(*args, **kwargs):
             server = PyPIServer(*server_args, **server_kwargs)
             server.start()
-            func(server=server, *args, **kwargs)
-            server.stop()
+            try:
+                func(server=server, *args, **kwargs)
+            finally:
+                server.stop()
         return wrapped
-    return wrapper 
+    return wrapper
 
 class PyPIServerTestCase(unittest.TestCase):
 
@@ -50,7 +52,7 @@ class PyPIServer(threading.Thread):
     """
 
     def __init__(self, test_static_path=None,
-            static_filesystem_paths=["default"], static_uri_paths=["simple"]):
+                 static_filesystem_paths=["default"], static_uri_paths=["simple"]):
         """Initialize the server.
 
         static_uri_paths and static_base_path are parameters used to provides
@@ -59,7 +61,7 @@ class PyPIServer(threading.Thread):
         """
         threading.Thread.__init__(self)
         self._run = True
-        self.httpd = HTTPServer(('', 0), PyPIRequestHandler) 
+        self.httpd = HTTPServer(('', 0), PyPIRequestHandler)
         self.httpd.RequestHandlerClass.log_request = lambda *_: None
         self.httpd.RequestHandlerClass.pypi_server = self
         self.address = (self.httpd.server_name, self.httpd.server_port)
@@ -131,7 +133,7 @@ class PyPIRequestHandler(SimpleHTTPRequestHandler):
         """
         # record the request. Read the input only on PUT or POST requests
         if self.command in ("PUT", "POST"):
-            if self.headers.dict.has_key("content-length"):
+            if 'content-length' in self.headers.dict:
                 request_data = self.rfile.read(
                     int(self.headers['content-length']))
             else:
@@ -158,7 +160,11 @@ class PyPIRequestHandler(SimpleHTTPRequestHandler):
                         relative_path += "index.html"
                     file = open(fs_path + relative_path)
                     data = file.read()
-                    self.make_response(data)
+                    if relative_path.endswith('.tar.gz'):
+                        headers=[('Content-type', 'application/x-gtar')]
+                    else:
+                        headers=[('Content-type', 'text/html')]
+                    self.make_response(data, headers=headers)
                 except IOError:
                     pass
 
@@ -171,8 +177,8 @@ class PyPIRequestHandler(SimpleHTTPRequestHandler):
             status, headers, data = self.pypi_server.get_next_response()
             self.make_response(data, status, headers)
 
-    def make_response(self, data, status=200, 
-            headers=[('Content-type', 'text/html')]):
+    def make_response(self, data, status=200,
+                      headers=[('Content-type', 'text/html')]):
         """Send the response to the HTTP client"""
         if not isinstance(status, int):
             try:
@@ -180,7 +186,7 @@ class PyPIRequestHandler(SimpleHTTPRequestHandler):
             except ValueError:
                 # we probably got something like YYY Codename. 
                 # Just get the first 3 digits
-                status = int(status[:3]) 
+                status = int(status[:3])
 
         self.send_response(status)
         for header, value in headers:

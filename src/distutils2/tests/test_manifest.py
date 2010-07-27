@@ -3,6 +3,7 @@ import os
 import sys
 import logging
 
+from distutils2.tests import run_unittest
 from distutils2.tests import support
 from distutils2.tests.support import unittest
 from distutils2.manifest import Manifest
@@ -44,7 +45,7 @@ class ManifestTestCase(support.TempdirManager,
 
         # the manifest should have been read
         # and 3 warnings issued (we ddidn't provided the files)
-        self.assertEquals(len(warns), 3)
+        self.assertEqual(len(warns), 3)
         for warn in warns:
             self.assertIn('warning: no files found matching', warn)
 

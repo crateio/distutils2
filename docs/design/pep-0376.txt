@@ -402,7 +402,7 @@ The new functions added in the ``pkgutil`` are :
   ``.egg-info`` directory that contains a PKG-INFO that matches `name` 
   for the `name` metadata.
 
-  Notice that there should be at most one result. The first result founded
+  Notice that there should be at most one result. The first result found
   is returned. If the directory is not found, returns None.
 
 - ``get_file_users(path)`` -> iterator of ``Distribution`` instances.

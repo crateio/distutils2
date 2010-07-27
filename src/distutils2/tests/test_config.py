@@ -1,7 +1,6 @@
 """Tests for distutils.pypirc.pypirc."""
 import sys
 import os
-import tempfile
 import shutil
 
 from distutils2.core import PyPIRCCommand
@@ -87,20 +86,20 @@ class PyPIRCCommandTestCase(support.TempdirManager,
 
         config = config.items()
         config.sort()
-        waited = [('password', 'secret'), ('realm', 'pypi'),
-                  ('repository', 'http://pypi.python.org/pypi'),
-                  ('server', 'server1'), ('username', 'me')]
-        self.assertEquals(config, waited)
+        expected = [('password', 'secret'), ('realm', 'pypi'),
+                    ('repository', 'http://pypi.python.org/pypi'),
+                    ('server', 'server1'), ('username', 'me')]
+        self.assertEqual(config, expected)
 
         # old format
         self.write_file(self.rc, PYPIRC_OLD)
         config = cmd._read_pypirc()
         config = config.items()
         config.sort()
-        waited = [('password', 'secret'), ('realm', 'pypi'),
-                  ('repository', 'http://pypi.python.org/pypi'),
-                  ('server', 'server-login'), ('username', 'tarek')]
-        self.assertEquals(config, waited)
+        expected = [('password', 'secret'), ('realm', 'pypi'),
+                    ('repository', 'http://pypi.python.org/pypi'),
+                    ('server', 'server-login'), ('username', 'tarek')]
+        self.assertEqual(config, expected)
 
     def test_server_empty_registration(self):
         cmd = self._cmd(self.dist)
@@ -109,7 +108,7 @@ class PyPIRCCommandTestCase(support.TempdirManager,
         cmd._store_pypirc('tarek', 'xxx')
         self.assertTrue(os.path.exists(rc))
         content = open(rc).read()
-        self.assertEquals(content, WANTED)
+        self.assertEqual(content, WANTED)
 
 def test_suite():
     return unittest.makeSuite(PyPIRCCommandTestCase)

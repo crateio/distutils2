@@ -1,8 +1,6 @@
 """Tests for distutils.command.bdist."""
 import sys
 import os
-import tempfile
-import shutil
 
 from distutils2.tests import run_unittest
 
@@ -10,8 +8,7 @@ from distutils2.core import Distribution
 from distutils2.command.bdist import bdist
 from distutils2.tests import support
 from distutils2.tests.support import unittest
-from distutils2.spawn import find_executable
-from distutils2 import spawn
+from distutils2.util import find_executable
 from distutils2.errors import DistutilsExecError
 
 class BuildTestCase(support.TempdirManager,
@@ -25,7 +22,7 @@ class BuildTestCase(support.TempdirManager,
         cmd = bdist(dist)
         cmd.formats = ['msi']
         cmd.ensure_finalized()
-        self.assertEquals(cmd.formats, ['msi'])
+        self.assertEqual(cmd.formats, ['msi'])
 
         # what format bdist offers ?
         # XXX an explicit list in bdist is
@@ -33,9 +30,9 @@ class BuildTestCase(support.TempdirManager,
         # we should add a registry
         formats = ['zip', 'gztar', 'bztar', 'ztar', 'tar', 'wininst', 'msi']
         formats.sort()
-        founded = cmd.format_command.keys()
-        founded.sort()
-        self.assertEquals(founded, formats)
+        found = cmd.format_command.keys()
+        found.sort()
+        self.assertEqual(found, formats)
 
 def test_suite():
     return unittest.makeSuite(BuildTestCase)

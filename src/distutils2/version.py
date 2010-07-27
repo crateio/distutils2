@@ -1,7 +1,10 @@
-import sys
 import re
 
 from distutils2.errors import IrrationalVersionError, HugeMajorVersionNumError
+
+__all__ = ['NormalizedVersion', 'suggest_normalized_version',
+           'VersionPredicate', 'is_valid_version', 'is_valid_versions',
+           'is_valid_predicate']
 
 # A marker used in the second and third parts of the `parts` tuple, for
 # versions that don't have those segments, to sort properly. An example
@@ -18,9 +21,9 @@ from distutils2.errors import IrrationalVersionError, HugeMajorVersionNumError
 #                                                              |
 #   'dev' < 'f' ----------------------------------------------/
 # Other letters would do, but 'f' for 'final' is kind of nice.
-FINAL_MARKER = ('f',)
+_FINAL_MARKER = ('f',)
 
-VERSION_RE = re.compile(r'''
+_VERSION_RE = re.compile(r'''
     ^
     (?P<version>\d+\.\d+)          # minimum 'N.N'
     (?P<extraversion>(?:\.\d+)*)   # any number of extra '.N' segments
@@ -31,6 +34,7 @@ VERSION_RE = re.compile(r'''
     )?
     (?P<postdev>(\.post(?P<post>\d+))?(\.dev(?P<dev>\d+))?)?
     $''', re.VERBOSE)
+
 
 class NormalizedVersion(object):
     """A rational version.
@@ -57,7 +61,8 @@ class NormalizedVersion(object):
         @param error_on_huge_major_num {bool} Whether to consider an
             apparent use of a year or full date as the major version number
             an error. Default True. One of the observed patterns on PyPI before
-            the introduction of `NormalizedVersion` was version numbers like this:
+            the introduction of `NormalizedVersion` was version numbers like
+            this:
                 2009.01.03
                 20040603
                 2005.01
@@ -67,16 +72,17 @@ class NormalizedVersion(object):
             the possibility of using a version number like "1.0" (i.e.
             where the major number is less than that huge major number).
         """
+        self.is_final = True  # by default, consider a version as final.
         self._parse(s, error_on_huge_major_num)
 
     @classmethod
-    def from_parts(cls, version, prerelease=FINAL_MARKER,
-                   devpost=FINAL_MARKER):
+    def from_parts(cls, version, prerelease=_FINAL_MARKER,
+                   devpost=_FINAL_MARKER):
         return cls(cls.parts_to_str((version, prerelease, devpost)))
 
     def _parse(self, s, error_on_huge_major_num=True):
         """Parses a string version into parts."""
-        match = VERSION_RE.search(s)
+        match = _VERSION_RE.search(s)
         if not match:
             raise IrrationalVersionError(s)
 
@@ -97,8 +103,9 @@ class NormalizedVersion(object):
             block += self._parse_numdots(groups.get('prerelversion'), s,
                                          pad_zeros_length=1)
             parts.append(tuple(block))
+            self.is_final = False
         else:
-            parts.append(FINAL_MARKER)
+            parts.append(_FINAL_MARKER)
 
         # postdev
         if groups.get('postdev'):
@@ -106,14 +113,15 @@ class NormalizedVersion(object):
             dev = groups.get('dev')
             postdev = []
             if post is not None:
-                postdev.extend([FINAL_MARKER[0], 'post', int(post)])
+                postdev.extend([_FINAL_MARKER[0], 'post', int(post)])
                 if dev is None:
-                    postdev.append(FINAL_MARKER[0])
+                    postdev.append(_FINAL_MARKER[0])
             if dev is not None:
                 postdev.extend(['dev', int(dev)])
+                self.is_final = False
             parts.append(tuple(postdev))
         else:
-            parts.append(FINAL_MARKER)
+            parts.append(_FINAL_MARKER)
         self.parts = tuple(parts)
         if error_on_huge_major_num and self.parts[0][0] > 1980:
             raise HugeMajorVersionNumError("huge major version number, %r, "
@@ -154,10 +162,10 @@ class NormalizedVersion(object):
         # XXX This doesn't check for invalid tuples
         main, prerel, postdev = parts
         s = '.'.join(str(v) for v in main)
-        if prerel is not FINAL_MARKER:
+        if prerel is not _FINAL_MARKER:
             s += prerel[0]
             s += '.'.join(str(v) for v in prerel[1:])
-        if postdev and postdev is not FINAL_MARKER:
+        if postdev and postdev is not _FINAL_MARKER:
             if postdev[0] == 'f':
                 postdev = postdev[1:]
             i = 0
@@ -200,6 +208,7 @@ class NormalizedVersion(object):
     # See http://docs.python.org/reference/datamodel#object.__hash__
     __hash__ = object.__hash__
 
+
 def suggest_normalized_version(s):
     """Suggest a normalized version close to the given version string.
 
@@ -211,7 +220,7 @@ def suggest_normalized_version(s):
     on observation of versions currently in use on PyPI. Given a dump of
     those version during PyCon 2009, 4287 of them:
     - 2312 (53.93%) match NormalizedVersion without change
-    - with the automatic suggestion
+      with the automatic suggestion
     - 3474 (81.04%) match when using this suggestion method
 
     @param s {str} An irrational version string.
@@ -301,7 +310,6 @@ def suggest_normalized_version(s):
     # PyPI stats: ~21 (0.62%) better
     rs = re.sub(r"\.?(pre|preview|-c)(\d+)$", r"c\g<2>", rs)
 
-
     # Tcl/Tk uses "px" for their post release markers
     rs = re.sub(r"p(\d+)$", r".post\1", rs)
 
@@ -317,6 +325,7 @@ _PREDICATE = re.compile(r"(?i)^\s*([a-z_]\w*(?:\.[a-z_]\w*)*)(.*)")
 _VERSIONS = re.compile(r"^\s*\((.*)\)\s*$")
 _PLAIN_VERSIONS = re.compile(r"^\s*(.*)\s*$")
 _SPLIT_CMP = re.compile(r"^\s*(<=|>=|<|>|!=|==)\s*([^\s,]+)\s*$")
+
 
 def _split_predicate(predicate):
     match = _SPLIT_CMP.match(predicate)
@@ -364,25 +373,24 @@ class VersionPredicate(object):
                 return False
         return True
 
-class Versions(VersionPredicate):
+
+class _Versions(VersionPredicate):
     def __init__(self, predicate):
         predicate = predicate.strip()
         match = _PLAIN_VERSIONS.match(predicate)
-        if match is None:
-            raise ValueError('Bad predicate "%s"' % predicate)
         self.name = None
         predicates = match.groups()[0]
         self.predicates = [_split_predicate(pred.strip())
                            for pred in predicates.split(',')]
 
-class Version(VersionPredicate):
+
+class _Version(VersionPredicate):
     def __init__(self, predicate):
         predicate = predicate.strip()
         match = _PLAIN_VERSIONS.match(predicate)
-        if match is None:
-            raise ValueError('Bad predicate "%s"' % predicate)
         self.name = None
         self.predicates = _split_predicate(match.groups()[0])
+
 
 def is_valid_predicate(predicate):
     try:
@@ -392,19 +400,20 @@ def is_valid_predicate(predicate):
     else:
         return True
 
+
 def is_valid_versions(predicate):
     try:
-        Versions(predicate)
+        _Versions(predicate)
     except (ValueError, IrrationalVersionError):
         return False
     else:
         return True
+
 
 def is_valid_version(predicate):
     try:
-        Version(predicate)
+        _Version(predicate)
     except (ValueError, IrrationalVersionError):
         return False
     else:
         return True
-
