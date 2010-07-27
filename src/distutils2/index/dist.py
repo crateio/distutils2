@@ -153,6 +153,8 @@ class ReleaseInfo(object):
                    .download(path=temp_path)
 
     def set_metadata(self, metadata):
+        if not self._metadata:
+            self._metadata = DistributionMetadata()
         self._metadata.update(metadata)
 
     def __getitem__(self, item):
