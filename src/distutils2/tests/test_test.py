@@ -82,9 +82,6 @@ class TestTest(TempdirManager, unittest.TestCase):
     def _test_works_with_2to3(self):
         pass
 
-    def _test_prepares_egg_info(self):
-        pass
-
     def _test_downloads_test_requires(self):
         pass
 
