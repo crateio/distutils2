@@ -115,7 +115,8 @@ class Client(BaseClient):
             dist_infos = {'url': info['url'],
                           'hashval': info['md5_digest'],
                           'hashname': 'md5',
-                          'is_external': False}
+                          'is_external': False, 
+                          'python_version': info['python_version']}
             release.add_distribution(packagetype, **dist_infos)
         return release
 

@@ -84,7 +84,7 @@ class ReleaseInfo(object):
         """proxy to version.is_final"""
         return self.version.is_final
 
-    def add_distribution(self, dist_type='sdist', **params):
+    def add_distribution(self, dist_type='sdist', python_version=None, **params):
         """Add distribution informations to this release.
         If distribution information is already set for this distribution type,
         add the given url paths to the distribution. This can be useful while
@@ -100,6 +100,8 @@ class ReleaseInfo(object):
             self.dists[dist_type].add_url(**params)
         else:
             self.dists[dist_type] = DistInfo(self, dist_type, **params)
+        if python_version:
+            self.dists[dist_type].python_version = python_version 
 
     def get_distribution(self, dist_type=None, prefer_source=True):
         """Return a distribution.
@@ -181,7 +183,7 @@ class DistInfo(object):
     """
 
     def __init__(self, release, dist_type=None, url=None, hashname=None,
-                 hashval=None, is_external=True):
+                 hashval=None, is_external=True, python_version=None):
         """Create a new instance of DistInfo.
 
         :param release: a DistInfo class is relative to a release.
@@ -196,6 +198,7 @@ class DistInfo(object):
         """
         self.release = release
         self.dist_type = dist_type
+        self.python_version = python_version
         # set the downloaded path to None by default. The goal here
         # is to not download distributions multiple times
         self.downloaded_location = None

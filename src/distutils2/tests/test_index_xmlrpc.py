@@ -53,7 +53,7 @@ class TestXMLRPCClient(unittest.TestCase):
         server.xmlrpc.set_distributions([
             {'name':'FooBar', 'version': '1.1', 'url':
              'http://example.org/foobar-1.1-sdist.tar.gz',
-             'digest': '1234567', 'type': 'sdist'},
+             'digest': '1234567', 'type': 'sdist', 'python_version':'source'},
             {'name':'FooBar', 'version': '1.1', 'url':
              'http://example.org/foobar-1.1-bdist.tar.gz',
              'digest': '8912345', 'type': 'bdist'},
@@ -66,6 +66,7 @@ class TestXMLRPCClient(unittest.TestCase):
                         release['sdist'].url['url'])
         self.assertTrue('http://example.org/foobar-1.1-bdist.tar.gz',
                 release['bdist'].url['url'])
+        self.assertEqual(release['sdist'].python_version, 'source')
     
     @use_xmlrpc_server()
     def test_get_metadata(self, server):
