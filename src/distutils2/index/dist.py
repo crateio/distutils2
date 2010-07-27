@@ -357,7 +357,7 @@ class ReleasesList(list):
         distribution creation (eg. the arguments of the DistInfo constructor).
         """
         if release:
-            if release.name != self.name:
+            if release.name.lower() != self.name.lower():
                 raise ValueError(release.name)
             version = '%s' % release.version
             if not version in self.get_versions():

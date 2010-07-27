@@ -158,10 +158,10 @@ class Crawler(BaseClient):
         prefer_final = self._get_prefer_final(prefer_final)
         self._process_index_page(predicate.name)
 
-        if not self._projects.has_key(predicate.name):
+        if not self._projects.has_key(predicate.name.lower()):
             raise ProjectNotFound()
 
-        releases = self._projects.get(predicate)
+        releases = self._projects.get(predicate.name.lower())
         releases.sort_releases(prefer_final=prefer_final)
         return releases
 
@@ -233,18 +233,18 @@ class Crawler(BaseClient):
             name = release.name
         else:
             name = release_info['name']
-        if not name in self._projects:
-            self._projects[name] = ReleasesList(name)
+        if not name.lower() in self._projects:
+            self._projects[name.lower()] = ReleasesList(name)
 
         if release:
-            self._projects[name].add_release(release=release)
+            self._projects[name.lower()].add_release(release=release)
         else:
             name = release_info.pop('name')
             version = release_info.pop('version')
             dist_type = release_info.pop('dist_type')
-            self._projects[name].add_release(version, dist_type,
-                                             **release_info)
-        return self._projects[name]
+            self._projects[name.lower()].add_release(version, dist_type,
+                                                     **release_info)
+        return self._projects[name.lower()]
 
     def _process_url(self, url, project_name=None, follow_links=True):
         """Process an url and search for distributions packages.

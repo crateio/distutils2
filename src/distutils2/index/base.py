@@ -35,7 +35,7 @@ class BaseClient(object):
 
     def _get_project(self, project_name):
         """Return an project instance, create it if necessary"""
-        return self._projects.setdefault(project_name,
+        return self._projects.setdefault(project_name.lower(),
                                          ReleasesList(project_name))
 
     def download_distribution(self, requirements, temp_path=None,

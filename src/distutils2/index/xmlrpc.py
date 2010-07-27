@@ -75,8 +75,8 @@ class Client(BaseClient):
         predicate = self._get_version_predicate(requirements)
         prefer_final = self._get_prefer_final(prefer_final)
         project_name = predicate.name
-        if not force_update and (project_name in self._projects):
-            project = self._projects[project_name]
+        if not force_update and (project_name.lower() in self._projects):
+            project = self._projects[project_name.lower()]
             if not project.contains_hidden and show_hidden:
                 # if hidden releases are requested, and have an existing
                 # list of releases that does not contains hidden ones
@@ -151,7 +151,7 @@ class Client(BaseClient):
             except IrrationalVersionError, e:
                 logging.warn("Irrational version error found: %s" % e)
 
-        return [self._projects[p['name']] for p in projects]
+        return [self._projects[p['name'].lower()] for p in projects]
 
     @property
     def proxy(self):
