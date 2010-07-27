@@ -14,7 +14,7 @@ class test(Command):
         self.test_suite = None
     
     def finalize_options(self):
-        pass
+        self.test_suite = self.distribution.test_suite
 
     def distpath(self):
         self.run_command('build')

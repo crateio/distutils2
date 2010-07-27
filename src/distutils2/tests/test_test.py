@@ -64,7 +64,17 @@ class TestTest(TempdirManager, unittest.TestCase):
         _, errors = test_proc.communicate()
 
         # ensure right output
-        self.assertIn(EXPECTED_OUTPUT, errors)
+        self.assert_multiline_substring(EXPECTED_OUTPUT, errors)
+
+    def assert_multiline_substring(self, a, b):
+        def quote(s):
+            lines = ['##  ' + line for line in s.split('\n')]
+            sep = ["#" * 60]
+            return [''] + sep + lines + sep
+        msg = quote(a) + ['not found in:'] + quote(b)
+        msg = "\n".join(msg)
+        if a not in b:
+            self.fail(msg)
 
     def _test_setup_py_accepts_options(self):
         pass
