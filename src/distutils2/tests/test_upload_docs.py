@@ -107,12 +107,13 @@ class UploadDocsTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
         self.assertTrue(handler.headers.dict['content-type']
             .startswith('multipart/form-data;'))
 
-        action, name, content =\
-            request_data.split("----------------GHSKFJDLGDS7543FJKLFHRE75642756743254")[1:4]
+        action, name, version, content =\
+            request_data.split("----------------GHSKFJDLGDS7543FJKLFHRE75642756743254")[1:5]
 
         # check that we picked the right chunks
         self.assertIn('name=":action"', action)
         self.assertIn('name="name"', name)
+        self.assertIn('name="version"', version)
         self.assertIn('name="content"', content)
 
         # check their contents

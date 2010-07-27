@@ -83,9 +83,10 @@ class upload_docs(PyPIRCCommand):
     def run(self):
         tmp_dir = tempfile.mkdtemp()
         name = self.distribution.metadata['Name']
+        version = self.distribution.metadata['Version']
         zip_file = zip_dir(self.upload_dir)
 
-        fields = {':action': 'doc_upload', 'name': name}.items()
+        fields = [(':action', 'doc_upload'), ('name', name), ('version', version)]
         files = [('content', name, zip_file.getvalue())]
         content_type, body = encode_multipart(fields, files)
 
