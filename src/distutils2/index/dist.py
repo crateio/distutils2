@@ -17,6 +17,7 @@ import tempfile
 import urllib
 import urlparse
 import zipfile
+import os
 
 try:
     import hashlib
@@ -39,7 +40,7 @@ DIST_TYPES = ['bdist', 'sdist']
 
 class ReleaseInfo(object):
     """Represent a release of a project (a project with a specific version).
-    The release contain the metadata informations related to this specific
+    The release contain the _metadata informations related to this specific
     version, and is also a container for distribution related informations.
 
     See the DistInfo class for more information about distributions.
@@ -56,7 +57,10 @@ class ReleaseInfo(object):
         self.name = name
         self._version = None
         self.version = version
-        self.metadata = DistributionMetadata(mapping=metadata)
+        if metadata:
+            self._metadata = DistributionMetadata(mapping=metadata)
+        else:
+            self._metadata = None
         self.dists = {}
         self.hidden = hidden
 
@@ -78,6 +82,18 @@ class ReleaseInfo(object):
         return self._version
 
     version = property(get_version, set_version)
+
+    def _set_metadata(self, unpack=True):
+        """Set the metadatas, using the archive if needed"""
+        location = self.get_distribution().unpack()
+        pkg_info = os.path.join(location, 'PKG-INFO')
+        self._metadata = DistributionMetadata(pkg_info)
+
+    @property
+    def metadata(self):
+        if not self._metadata:
+            self._set_metadata()
+        return self._metadata
 
     @property
     def is_final(self):
@@ -137,7 +153,7 @@ class ReleaseInfo(object):
                    .download(path=temp_path)
 
     def set_metadata(self, metadata):
-        self.metadata.update(metadata)
+        self._metadata.update(metadata)
 
     def __getitem__(self, item):
         """distributions are available using release["sdist"]"""
@@ -326,8 +342,7 @@ class ReleasesList(list):
         """Filter and return a subset of releases matching the given predicate.
         """
         return ReleasesList(self.name, [release for release in self
-                                        if release.name == predicate.name
-                                        and predicate.match(release.version)])
+                                        if predicate.match(release.version)])
 
     def get_last(self, predicate, prefer_final=None):
         """Return the "last" release, that satisfy the given predicates.

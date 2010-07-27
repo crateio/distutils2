@@ -160,7 +160,7 @@ class Crawler(BaseClient):
 
         if not self._projects.has_key(predicate.name.lower()):
             raise ProjectNotFound()
-
+        
         releases = self._projects.get(predicate.name.lower())
         releases.sort_releases(prefer_final=prefer_final)
         return releases
