@@ -18,7 +18,7 @@ from distutils2.index.dist import (ReleasesList, EXTENSIONS,
                                    get_infos_from_url, MD5_HASH)
 from distutils2.index.errors import (IndexesError, DownloadError,
                                      UnableToDownload, CantParseArchiveName,
-                                     ReleaseNotFound)
+                                     ReleaseNotFound, ProjectNotFound)
 from distutils2.index.mirrors import get_mirrors
 from distutils2 import __version__ as __distutils2_version__
 
@@ -157,11 +157,12 @@ class Crawler(BaseClient):
         predicate = self._get_version_predicate(requirements)
         prefer_final = self._get_prefer_final(prefer_final)
         self._process_index_page(predicate.name)
-        releases = self._projects.setdefault(predicate.name,
-                                             ReleasesList(predicate.name))
-        if releases:
-            releases = releases.filter(predicate)
-            releases.sort_releases(prefer_final=prefer_final)
+
+        if not self._projects.has_key(predicate.name):
+            raise ProjectNotFound()
+
+        releases = self._projects.get(predicate)
+        releases.sort_releases(prefer_final=prefer_final)
         return releases
 
     def get_release(self, requirements, prefer_final=None):
