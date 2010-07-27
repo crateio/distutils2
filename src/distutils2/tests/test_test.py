@@ -74,7 +74,13 @@ class TestTest(TempdirManager, unittest.TestCase):
         self.assertTrue(os.path.exists(join(self.pkg_dir, 'build')))
         self.assertTrue(any(x.startswith('lib') for x in os.listdir(join(self.pkg_dir, 'build'))))
 
-    def _test_custom_test_loader(self):
+    def test_custom_test_loader(self):
+        pass
+
+    def _test_works_with_2to3(self):
+        pass
+
+    def _test_prepares_egg_info(self):
         pass
 
     def _test_downloads_test_requires(self):
