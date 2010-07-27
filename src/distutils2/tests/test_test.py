@@ -4,6 +4,7 @@ from os.path import join
 from StringIO import StringIO
 from distutils2.tests.support import unittest, TempdirManager
 from distutils2.command.test import test
+from distutils2.dist import Distribution
 import subprocess
 
 try:
@@ -83,8 +84,19 @@ class TestTest(TempdirManager, unittest.TestCase):
     def _test_works_with_2to3(self):
         pass
 
-    def _test_downloads_test_requires(self):
-        pass
+    @unittest.skipUnless(sys.version > '2.6', 'Need >= 2.6')
+    def test_checks_requires(self):
+        from distutils2.tests.with_support import examine_warnings
+        dist = Distribution()
+        dist.tests_require = ['ohno_ohno-impossible_1234-name_stop-that!']
+        cmd = test(dist)
+        def examinator(ws):
+            cmd.ensure_finalized()
+            self.assertEqual(1, len(ws))
+            warning = ws[0]
+            self.assertIs(warning.category, RuntimeWarning)
+
+        examine_warnings(examinator)
 
 def test_suite():
     return unittest.makeSuite(TestTest)

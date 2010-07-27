@@ -1,6 +1,8 @@
 import os, sys
 from distutils2.core import Command 
+from distutils2._backport.pkgutil import get_distribution
 import unittest
+import warnings
 
 def get_loader_instance(dotted_path):
     if dotted_path is None:
@@ -38,6 +40,11 @@ class test(Command):
     
     def finalize_options(self):
         self.build_lib = self.get_finalized_command("build").build_lib
+        if self.distribution.tests_require:
+            for requirement in self.distribution.tests_require:
+                if get_distribution(requirement) is None:
+                    warnings.warn("The test dependency %s is not installed which may couse the tests to fail.",
+                                  RuntimeWarning)
 
     def run(self):
         prev_cwd = os.getcwd()

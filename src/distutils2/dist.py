@@ -109,6 +109,8 @@ Common commands: (see '--help-commands' for more)
          "print the list of packages/modules provided"),
         ('requires', None,
          "print the list of packages/modules required"),
+        ('tests-require', None,
+         "print the list of packages/modules required to run the test suite"),
         ('obsoletes', None,
          "print the list of packages/modules made obsolete")
         ]
