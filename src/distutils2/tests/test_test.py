@@ -75,7 +75,9 @@ class TestTest(TempdirManager, unittest.TestCase):
         self.assertTrue(any(x.startswith('lib') for x in os.listdir(join(self.pkg_dir, 'build'))))
 
     def test_custom_test_loader(self):
-        pass
+        self.pkg_dir = self.prepare_dist("custom_loader")
+        output = self.run_with_dist_cwd(self.pkg_dir)
+        self.assert_re_match(EXPECTED_OUTPUT_RE, output)
 
     def _test_works_with_2to3(self):
         pass
