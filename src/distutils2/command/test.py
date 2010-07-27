@@ -14,17 +14,16 @@ class test(Command):
         self.test_suite = None
     
     def finalize_options(self):
-        pass
-
-    def distpath(self):
-        self.run_command('build')
-        build_cmd = self.get_finalized_command("build")
-        return os.path.join(build_cmd.build_base, "lib")
+        self.build_lib = self.get_finalized_command("build").build_lib
 
     def run(self):
-        orig_path = sys.path[:]
+        prev_cwd = os.getcwd()
         try:
-            sys.path.insert(0, self.distpath())
+            if self.distribution.has_ext_modules():
+                build = self.get_reinitialized_command('build')
+                build.inplace = 1
+                self.run_command('build')
+                os.chdir(self.build_lib)
             unittest.main(module=self.test_suite, argv=sys.argv[:1])
         finally:
-            sys.path[:] = orig_path
+            os.chdir(prev_cwd)
