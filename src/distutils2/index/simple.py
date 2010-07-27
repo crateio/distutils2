@@ -151,11 +151,14 @@ class Crawler(BaseClient):
             matching_projects.append(self._get_project(project_name))
         return matching_projects
 
-    def get_releases(self, requirements, prefer_final=None):
+    def get_releases(self, requirements, prefer_final=None, 
+                     force_update=False):
         """Search for releases and return a ReleaseList object containing
         the results.
         """
         predicate = self._get_version_predicate(requirements)
+        if self._projects.has_key(predicate.name.lower()) and not force_update:
+            return self._projects.get(predicate.name.lower())
         prefer_final = self._get_prefer_final(prefer_final)
         self._process_index_page(predicate.name)
 
