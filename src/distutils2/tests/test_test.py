@@ -19,8 +19,12 @@ from distutils2.core import setup
 setup(name='somedist',
       version='0.1',
       py_modules=['myowntestmodule', 'somemod'],
-      test_suite='myowntestmodule',
 )
+'''
+
+SETUP_CFG = '''\
+[test]
+test-suite = myowntestmodule
 '''
 
 EXPECTED_OUTPUT = '''\
@@ -54,6 +58,7 @@ class TestTest(TempdirManager, unittest.TestCase):
         # prepare distribution
         pkg_dir = self.mkdtemp()
         self.write_file(join(pkg_dir, "setup.py"), SETUP_PY)
+        self.write_file(join(pkg_dir, "setup.cfg"), SETUP_CFG)
         self.write_file(join(pkg_dir, "somemod.py"), "")
         self.write_file(join(pkg_dir, "myowntestmodule.py"), TEST_BODY)
         return pkg_dir

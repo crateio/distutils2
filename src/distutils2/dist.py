@@ -204,7 +204,6 @@ Common commands: (see '--help-commands' for more)
         self.scripts = None
         self.data_files = None
         self.password = ''
-        self.test_suite = None
 
         # And now initialize bookkeeping stuff that can't be supplied by
         # the caller at all.  'command_obj' maps command names to
