@@ -147,7 +147,8 @@ class Crawler(BaseClient):
                                  flags=re.I)
         matching_projects = []
         for match in projectname.finditer(index.read()):
-            matching_projects.append(match.group(1))
+            project_name = match.group(1)
+            matching_projects.append(self._get_project(project_name))
         return matching_projects
 
     def get_releases(self, requirements, prefer_final=None):

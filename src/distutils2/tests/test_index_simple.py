@@ -305,7 +305,7 @@ class SimpleCrawlerTestCase(support.TempdirManager, unittest.TestCase):
         # we can search the index for some projects, on their names
         # the case used no matters here
         crawler = self._get_simple_crawler(server)
-        projects = crawler.search_projects("Foobar")
+        projects = [p.name for p in crawler.search_projects("Foobar")]
         self.assertListEqual(['FooBar-bar', 'Foobar-baz', 'Baz-FooBar'], 
                              projects)
 
