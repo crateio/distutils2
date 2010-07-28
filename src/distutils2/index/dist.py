@@ -17,7 +17,6 @@ import tempfile
 import urllib
 import urlparse
 import zipfile
-import os
 
 try:
     import hashlib
@@ -38,7 +37,12 @@ MD5_HASH = re.compile(r'^.*#md5=([a-f0-9]+)$')
 DIST_TYPES = ['bdist', 'sdist']
 
 
-class ReleaseInfo(object):
+class IndexReference(object):
+    def set_index(self, index=None):
+        self._index = index
+
+
+class ReleaseInfo(IndexReference):
     """Represent a release of a project (a project with a specific version).
     The release contain the _metadata informations related to this specific
     version, and is also a container for distribution related informations.
@@ -46,7 +50,8 @@ class ReleaseInfo(object):
     See the DistInfo class for more information about distributions.
     """
 
-    def __init__(self, name, version, metadata=None, hidden=False, **kwargs):
+    def __init__(self, name, version, metadata=None, hidden=False,
+                 index=None, **kwargs):
         """
         :param name: the name of the distribution
         :param version: the version of the distribution
@@ -54,6 +59,7 @@ class ReleaseInfo(object):
         :type metadata: dict
         :param kwargs: optional arguments for a new distribution.
         """
+        self.set_index(index)
         self.name = name
         self._version = None
         self.version = version
@@ -61,7 +67,7 @@ class ReleaseInfo(object):
             self._metadata = DistributionMetadata(mapping=metadata)
         else:
             self._metadata = None
-        self.dists = {}
+        self._dists = {}
         self.hidden = hidden
 
         if 'dist_type' in kwargs:
@@ -83,22 +89,25 @@ class ReleaseInfo(object):
 
     version = property(get_version, set_version)
 
-    def _set_metadata(self, unpack=True):
-        """Set the metadatas, using the archive if needed"""
-        location = self.get_distribution().unpack()
-        pkg_info = os.path.join(location, 'PKG-INFO')
-        self._metadata = DistributionMetadata(pkg_info)
-
     @property
     def metadata(self):
+        """If the metadata is not set, use the indexes to get it"""
         if not self._metadata:
-            self._set_metadata()
+            self._index.get_metadata(self.name, '%s' % self.version)
         return self._metadata
 
     @property
     def is_final(self):
         """proxy to version.is_final"""
         return self.version.is_final
+    
+    @property
+    def dists(self):
+        if self._dists is None:
+            self._index.get_distributions(self.name, '%s' % self.version)
+            if self._dists is None:
+                self._dists = {}
+        return self._dists
 
     def add_distribution(self, dist_type='sdist', python_version=None, **params):
         """Add distribution informations to this release.
@@ -113,11 +122,12 @@ class ReleaseInfo(object):
         if dist_type not in DIST_TYPES:
             raise ValueError(dist_type)
         if dist_type in self.dists:
-            self.dists[dist_type].add_url(**params)
+            self._dists[dist_type].add_url(**params)
         else:
-            self.dists[dist_type] = DistInfo(self, dist_type, **params)
+            self._dists[dist_type] = DistInfo(self, dist_type,
+                                             index=self._index, **params)
         if python_version:
-            self.dists[dist_type].python_version = python_version 
+            self._dists[dist_type].python_version = python_version 
 
     def get_distribution(self, dist_type=None, prefer_source=True):
         """Return a distribution.
@@ -196,12 +206,13 @@ class ReleaseInfo(object):
     __hash__ = object.__hash__
 
 
-class DistInfo(object):
+class DistInfo(IndexReference):
     """Represents a distribution retrieved from an index (sdist, bdist, ...)
     """
 
     def __init__(self, release, dist_type=None, url=None, hashname=None,
-                 hashval=None, is_external=True, python_version=None):
+                 hashval=None, is_external=True, python_version=None,
+                 index=None):
         """Create a new instance of DistInfo.
 
         :param release: a DistInfo class is relative to a release.
@@ -214,6 +225,7 @@ class DistInfo(object):
                             an index browsing, or from an external resource.
 
         """
+        self.set_index(index)
         self.release = release
         self.dist_type = dist_type
         self.python_version = python_version
@@ -329,22 +341,35 @@ class DistInfo(object):
             self.release.name, self.release.version, self.dist_type or "")
 
 
-class ReleasesList(list):
+class ReleasesList(IndexReference):
     """A container of Release.
 
     Provides useful methods and facilities to sort and filter releases.
     """
-    def __init__(self, name, releases=[], contains_hidden=False):
-        super(ReleasesList, self).__init__()
+    def __init__(self, name, releases=None, contains_hidden=False, index=None):
+        self.set_index(index)
+        self._releases = [] 
         self.name = name
         self.contains_hidden = contains_hidden
-        self.add_releases(releases)
+        if releases:
+            self.add_releases(releases)
+
+    @property
+    def releases(self):
+        if not self._releases:
+            self.fetch_releases() 
+        return self._releases
+    
+    def fetch_releases(self):
+        self._index.get_releases(self.name)
+        return self.releases
 
     def filter(self, predicate):
         """Filter and return a subset of releases matching the given predicate.
         """
-        return ReleasesList(self.name, [release for release in self
-                                        if predicate.match(release.version)])
+        return ReleasesList(self.name, [release for release in self.releases
+                                        if predicate.match(release.version)],
+                                        index=self._index)
 
     def get_last(self, predicate, prefer_final=None):
         """Return the "last" release, that satisfy the given predicates.
@@ -378,20 +403,22 @@ class ReleasesList(list):
         """
         if release:
             if release.name.lower() != self.name.lower():
-                raise ValueError(release.name)
+                raise ValueError("%s is not the same project than %s" %
+                                 (release.name, self.name))
             version = '%s' % release.version
+                
             if not version in self.get_versions():
                 # append only if not already exists
-                self.append(release)
+                self._releases.append(release)
             for dist in release.dists.values():
                 for url in dist.urls:
                     self.add_release(version, dist.dist_type, **url)
         else:
-            matches = [r for r in self if '%s' % r.version == version
-                                       and r.name == self.name]
+            matches = [r for r in self._releases if '%s' % r.version == version
+                                                 and r.name == self.name]
             if not matches:
-                release = ReleaseInfo(self.name, version)
-                self.append(release)
+                release = ReleaseInfo(self.name, version, index=self._index)
+                self._releases.append(release)
             else:
                 release = matches[0]
 
@@ -415,21 +442,27 @@ class ReleasesList(list):
             sort_by.append("is_final")
         sort_by.append("version")
 
-        super(ReleasesList, self).sort(
+        self.releases.sort(
             key=lambda i: [getattr(i, arg) for arg in sort_by],
             reverse=reverse, *args, **kwargs)
 
     def get_release(self, version):
         """Return a release from it's version.
         """
-        matches = [r for r in self if "%s" % r.version == version]
+        matches = [r for r in self.releases if "%s" % r.version == version]
         if len(matches) != 1:
             raise KeyError(version)
         return matches[0]
 
     def get_versions(self):
         """Return a list of releases versions contained"""
-        return ["%s" % r.version for r in self]
+        return ["%s" % r.version for r in self._releases]
+
+    def __getitem__(self, key):
+        return self.releases[key]
+
+    def __len__(self):
+        return len(self.releases)
 
     def __repr__(self):
         string = 'Project "%s"' % self.name

@@ -12,6 +12,7 @@ import sys
 import urllib2
 import urlparse
 import logging
+import os
 
 from distutils2.index.base import BaseClient
 from distutils2.index.dist import (ReleasesList, EXTENSIONS,
@@ -20,6 +21,7 @@ from distutils2.index.errors import (IndexesError, DownloadError,
                                      UnableToDownload, CantParseArchiveName,
                                      ReleaseNotFound, ProjectNotFound)
 from distutils2.index.mirrors import get_mirrors
+from distutils2.metadata import DistributionMetadata
 from distutils2 import __version__ as __distutils2_version__
 
 __all__ = ['Crawler', 'DEFAULT_SIMPLE_INDEX_URL'] 
@@ -178,6 +180,25 @@ class Crawler(BaseClient):
             raise ReleaseNotFound("No release matches the given criterias")
         return release
 
+    def get_distributions(self, project_name, version):
+        """Return the distributions found on the index for the specific given
+        release"""
+        # as the default behavior of get_release is to return a release
+        # containing the distributions, just alias it.
+        return self.get_release("%s (%s)" % (project_name, version))
+
+    def get_metadata(self, project_name, version):
+        """Return the metadatas from the simple index.
+
+        Currently, download one archive, extract it and use the PKG-INFO file.
+        """
+        release = self.get_distributions(project_name, version)
+        if not release._metadata:
+            location = release.get_distribution().unpack()
+            pkg_info = os.path.join(location, 'PKG-INFO')
+            release._metadata = DistributionMetadata(pkg_info)
+        return release
+
     def _switch_to_next_mirror(self):
         """Switch to the next mirror (eg. point self.index_url to the next
         mirror url.
@@ -238,7 +259,8 @@ class Crawler(BaseClient):
         else:
             name = release_info['name']
         if not name.lower() in self._projects:
-            self._projects[name.lower()] = ReleasesList(name)
+            self._projects[name.lower()] = ReleasesList(name, 
+                                                        index=self._index)
 
         if release:
             self._projects[name.lower()].add_release(release=release)

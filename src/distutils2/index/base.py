@@ -8,6 +8,7 @@ class BaseClient(object):
     def __init__(self, prefer_final, prefer_source):
         self._prefer_final = prefer_final
         self._prefer_source = prefer_source
+        self._index = self
 
     def _get_version_predicate(self, requirements):
         """Return a VersionPredicate object, from a string or an already
@@ -36,7 +37,7 @@ class BaseClient(object):
     def _get_project(self, project_name):
         """Return an project instance, create it if necessary"""
         return self._projects.setdefault(project_name.lower(),
-                                         ReleasesList(project_name))
+                    ReleasesList(project_name, index=self._index))
 
     def download_distribution(self, requirements, temp_path=None,
                               prefer_source=None, prefer_final=None):

@@ -3,7 +3,9 @@ import simple
 
 _WRAPPER_MAPPINGS = {'get_release': 'simple',
                      'get_releases': 'simple',
-                     'search_projects': 'simple', }
+                     'search_projects': 'simple', 
+                     'get_metadata': 'xmlrpc',
+                     'get_distributions': 'simple'}
 
 _WRAPPER_INDEXES = {'xmlrpc': xmlrpc.Client,
                     'simple': simple.Crawler}
@@ -58,6 +60,7 @@ class ClientWrapper(object):
         for name, cls in index_classes.items():
             obj = self._indexes.setdefault(name, cls())
             obj._projects = self._projects
+            obj._index = self
 
     def __getattr__(self, method_name):
         """When asking for methods of the wrapper, return the implementation of

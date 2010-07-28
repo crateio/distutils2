@@ -86,13 +86,14 @@ class Client(BaseClient):
                                        set(existing_versions))
                 for version in hidden_versions:
                     project.add_release(release=ReleaseInfo(project_name,
-                                                            version))
+                                            version, index=self._index))
         else:
             versions = get_versions(project_name, show_hidden)
             if not versions:
                 raise ProjectNotFound(project_name)
             project = self._get_project(project_name)
-            project.add_releases([ReleaseInfo(project_name, version)
+            project.add_releases([ReleaseInfo(project_name, version, 
+                                              index=self._index)
                                   for version in versions])
         project = project.filter(predicate)
         project.sort_releases(prefer_final)
@@ -108,7 +109,8 @@ class Client(BaseClient):
         url_infos = self.proxy.release_urls(project_name, version)
         project = self._get_project(project_name)
         if version not in project.get_versions():
-            project.add_release(release=ReleaseInfo(project_name, version))
+            project.add_release(release=ReleaseInfo(project_name, version,
+                                                    index=self._index))
         release = project.get_release(version)
         for info in url_infos:
             packagetype = info['packagetype']
@@ -128,7 +130,8 @@ class Client(BaseClient):
         metadata = self.proxy.release_data(project_name, version)
         project = self._get_project(project_name)
         if version not in project.get_versions():
-            project.add_release(release=ReleaseInfo(project_name, version))
+            project.add_release(release=ReleaseInfo(project_name, version,
+                                                    index=self._index))
         release = project.get_release(version)
         release.set_metadata(metadata)
         return release
@@ -148,7 +151,8 @@ class Client(BaseClient):
             project = self._get_project(p['name'])
             try:
                 project.add_release(release=ReleaseInfo(p['name'],
-                    p['version'], metadata={'summary': p['summary']}))
+                    p['version'], metadata={'summary': p['summary']},
+                    index=self._index))
             except IrrationalVersionError, e:
                 logging.warn("Irrational version error found: %s" % e)
 
