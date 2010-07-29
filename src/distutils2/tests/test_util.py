@@ -7,18 +7,57 @@ import subprocess
 import tempfile
 import time
 
+from distutils2.tests import captured_stdout
+from distutils2.tests.support import unittest
 from distutils2.errors import (DistutilsPlatformError,
                                DistutilsByteCompileError,
-                               DistutilsFileError)
-
+                               DistutilsFileError,
+                               DistutilsExecError)
 from distutils2.util import (convert_path, change_root,
-                            check_environ, split_quoted, strtobool,
-                            rfc822_escape, get_compiler_versions,
-                            _find_exe_version, _MAC_OS_X_LD_VERSION,
-                            byte_compile, find_packages)
+                             check_environ, split_quoted, strtobool,
+                             rfc822_escape, get_compiler_versions,
+                             _find_exe_version, _MAC_OS_X_LD_VERSION,
+                             byte_compile, find_packages, spawn, find_executable,
+                             _nt_quote_args, get_pypirc_path, generate_pypirc,
+                             read_pypirc)
+
 from distutils2 import util
 from distutils2.tests import support
 from distutils2.tests.support import unittest
+
+
+PYPIRC = """\
+[distutils]
+index-servers =
+    pypi
+    server1
+
+[pypi]
+username:me
+password:xxxx
+
+[server1]
+repository:http://example.com
+username:tarek
+password:secret
+"""
+
+PYPIRC_OLD = """\
+[server-login]
+username:tarek
+password:secret
+"""
+
+WANTED = """\
+[distutils]
+index-servers =
+    pypi
+
+[pypi]
+username:tarek
+password:xxx
+"""
+
 
 class FakePopen(object):
     test_class = None
@@ -40,6 +79,9 @@ class UtilTestCase(support.EnvironGuard,
 
     def setUp(self):
         super(UtilTestCase, self).setUp()
+        self.tmp_dir = self.mkdtemp()
+        self.rc = os.path.join(self.tmp_dir, '.pypirc')
+        os.environ['HOME'] = self.tmp_dir
         # saving the environment
         self.name = os.name
         self.platform = sys.platform
@@ -331,6 +373,80 @@ class UtilTestCase(support.EnvironGuard,
         new_content = "".join(file_handle.readlines())
         file_handle.close()
         self.assertEquals(new_content, converted_content)
+
+    def test_nt_quote_args(self):
+
+        for (args, wanted) in ((['with space', 'nospace'],
+                                ['"with space"', 'nospace']),
+                               (['nochange', 'nospace'],
+                                ['nochange', 'nospace'])):
+            res = _nt_quote_args(args)
+            self.assertEqual(res, wanted)
+
+
+    @unittest.skipUnless(os.name in ('nt', 'posix'),
+                         'Runs only under posix or nt')
+    def test_spawn(self):
+        tmpdir = self.mkdtemp()
+
+        # creating something executable
+        # through the shell that returns 1
+        if os.name == 'posix':
+            exe = os.path.join(tmpdir, 'foo.sh')
+            self.write_file(exe, '#!/bin/sh\nexit 1')
+            os.chmod(exe, 0777)
+        else:
+            exe = os.path.join(tmpdir, 'foo.bat')
+            self.write_file(exe, 'exit 1')
+
+        os.chmod(exe, 0777)
+        self.assertRaises(DistutilsExecError, spawn, [exe])
+
+        # now something that works
+        if os.name == 'posix':
+            exe = os.path.join(tmpdir, 'foo.sh')
+            self.write_file(exe, '#!/bin/sh\nexit 0')
+            os.chmod(exe, 0777)
+        else:
+            exe = os.path.join(tmpdir, 'foo.bat')
+            self.write_file(exe, 'exit 0')
+
+        os.chmod(exe, 0777)
+        spawn([exe])  # should work without any error
+
+    def test_server_registration(self):
+        # This test makes sure we know how to:
+        # 1. handle several sections in .pypirc
+        # 2. handle the old format
+
+        # new format
+        self.write_file(self.rc, PYPIRC)
+        config = read_pypirc()
+
+        config = config.items()
+        config.sort()
+        expected = [('password', 'xxxx'), ('realm', 'pypi'),
+                    ('repository', 'http://pypi.python.org/pypi'),
+                    ('server', 'pypi'), ('username', 'me')]
+        self.assertEqual(config, expected)
+
+        # old format
+        self.write_file(self.rc, PYPIRC_OLD)
+        config = read_pypirc()
+        config = config.items()
+        config.sort()
+        expected = [('password', 'secret'), ('realm', 'pypi'),
+                    ('repository', 'http://pypi.python.org/pypi'),
+                    ('server', 'server-login'), ('username', 'tarek')]
+        self.assertEqual(config, expected)
+
+    def test_server_empty_registration(self):
+        rc = get_pypirc_path()
+        self.assertTrue(not os.path.exists(rc))
+        generate_pypirc('tarek', 'xxx')
+        self.assertTrue(os.path.exists(rc))
+        content = open(rc).read()
+        self.assertEqual(content, WANTED)
 
 
 def test_suite():

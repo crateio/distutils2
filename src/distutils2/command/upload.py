@@ -14,24 +14,34 @@ except ImportError:
     from md5 import md5
 
 from distutils2.errors import DistutilsOptionError
-from distutils2.core import PyPIRCCommand
-from distutils2.spawn import spawn
+from distutils2.util import spawn
 from distutils2 import log
+from distutils2.command.cmd import Command
+from distutils2 import log
+from distutils2.util import (metadata_to_dict, read_pypirc,
+                             DEFAULT_REPOSITORY, DEFAULT_REALM)
 
-class upload(PyPIRCCommand):
+
+class upload(Command):
 
     description = "upload binary package to PyPI"
 
-    user_options = PyPIRCCommand.user_options + [
+    user_options = [('repository=', 'r',
+         "url of repository [default: %s]" % \
+            DEFAULT_REPOSITORY),
+        ('show-response', None,
+         'display full response text from server'),
         ('sign', 's',
          'sign files to upload using gpg'),
         ('identity=', 'i', 'GPG identity used to sign files'),
         ]
 
-    boolean_options = PyPIRCCommand.boolean_options + ['sign']
+    boolean_options = ['show-response', 'sign']
 
     def initialize_options(self):
-        PyPIRCCommand.initialize_options(self)
+        self.repository = None
+        self.realm = None
+        self.show_response = 0
         self.username = ''
         self.password = ''
         self.show_response = 0
@@ -39,12 +49,15 @@ class upload(PyPIRCCommand):
         self.identity = None
 
     def finalize_options(self):
-        PyPIRCCommand.finalize_options(self)
+        if self.repository is None:
+            self.repository = DEFAULT_REPOSITORY
+        if self.realm is None:
+            self.realm = DEFAULT_REALM
         if self.identity and not self.sign:
             raise DistutilsOptionError(
                 "Must use --sign for --identity to have meaning"
             )
-        config = self._read_pypirc()
+        config = read_pypirc(self.repository, self.realm)
         if config != {}:
             self.username = config['username']
             self.password = config['password']
@@ -85,7 +98,7 @@ class upload(PyPIRCCommand):
         # register a new release
         content = open(filename,'rb').read()
 
-        data = self._metadata_to_pypy_dict()
+        data = metadata_to_dict(self.distribution.metadata)
 
         # extra upload infos
         data[':action'] = 'file_upload'

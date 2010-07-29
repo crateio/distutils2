@@ -13,28 +13,40 @@ import urlparse
 import StringIO
 from warnings import warn
 
-from distutils2.core import PyPIRCCommand
+from distutils2.command.cmd import Command
 from distutils2 import log
+from distutils2.util import (metadata_to_dict, read_pypirc, generate_pypirc,
+                             DEFAULT_REPOSITORY, DEFAULT_REALM,
+                             get_pypirc_path)
 
-class register(PyPIRCCommand):
+class register(Command):
 
     description = ("register the distribution with the Python package index")
-    user_options = PyPIRCCommand.user_options + [
+    user_options = [('repository=', 'r',
+         "url of repository [default: %s]" % DEFAULT_REPOSITORY),
+        ('show-response', None,
+         'display full response text from server'),
         ('list-classifiers', None,
          'list the valid Trove classifiers'),
         ('strict', None ,
          'Will stop the registering if the meta-data are not fully compliant')
         ]
-    boolean_options = PyPIRCCommand.boolean_options + [
-        'verify', 'list-classifiers', 'strict']
+
+    boolean_options = ['show-response', 'verify', 'list-classifiers',
+                       'strict']
 
     def initialize_options(self):
-        PyPIRCCommand.initialize_options(self)
+        self.repository = None
+        self.realm = None
+        self.show_response = 0
         self.list_classifiers = 0
         self.strict = 0
 
     def finalize_options(self):
-        PyPIRCCommand.finalize_options(self)
+        if self.repository is None:
+            self.repository = DEFAULT_REPOSITORY
+        if self.realm is None:
+            self.realm = DEFAULT_REALM
         # setting options for the `check` subcommand
         check_options = {'strict': ('register', self.strict),
                          'restructuredtext': ('register', 1)}
@@ -67,7 +79,7 @@ class register(PyPIRCCommand):
     def _set_config(self):
         ''' Reads the configuration file and set attributes.
         '''
-        config = self._read_pypirc()
+        config = read_pypirc(self.repository, self.realm)
         if config != {}:
             self.username = config['username']
             self.password = config['password']
@@ -75,10 +87,10 @@ class register(PyPIRCCommand):
             self.realm = config['realm']
             self.has_config = True
         else:
-            if self.repository not in ('pypi', self.DEFAULT_REPOSITORY):
+            if self.repository not in ('pypi', DEFAULT_REPOSITORY):
                 raise ValueError('%s not found in .pypirc' % self.repository)
             if self.repository == 'pypi':
-                self.repository = self.DEFAULT_REPOSITORY
+                self.repository = DEFAULT_REPOSITORY
             self.has_config = False
 
     def classifiers(self):
@@ -177,14 +189,14 @@ Your selection [default 1]: ''', log.INFO)
                     self.announce(('I can store your PyPI login so future '
                                    'submissions will be faster.'), log.INFO)
                     self.announce('(the login will be stored in %s)' % \
-                                  self._get_rc_file(), log.INFO)
+                                  get_pypirc_path(), log.INFO)
                     choice = 'X'
                     while choice.lower() not in 'yn':
                         choice = raw_input('Save your login (y/N)?')
                         if not choice:
                             choice = 'n'
                     if choice.lower() == 'y':
-                        self._store_pypirc(username, password)
+                        generate_pypirc(username, password)
 
         elif choice == '2':
             data = {':action': 'user'}
@@ -221,7 +233,7 @@ Your selection [default 1]: ''', log.INFO)
     def build_post_data(self, action):
         # figure the data to send - the metadata plus some additional
         # information used by the package server
-        data = self._metadata_to_pypy_dict()
+        data = metadata_to_dict(self.distribution.metadata)
         data[':action'] = action
         return data
 

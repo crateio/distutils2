@@ -1,9 +1,11 @@
 import base64, httplib, os.path, socket, urlparse, zipfile
 from cStringIO import StringIO
+
 from distutils2 import log
 from distutils2.command.upload import upload
-from distutils2.core import PyPIRCCommand
+from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsFileError
+from distutils2.util import read_pypirc, DEFAULT_REPOSITORY, DEFAULT_REALM
 
 def zip_dir(directory):
     """Compresses recursively contents of directory into a StringIO object"""
@@ -47,26 +49,33 @@ def encode_multipart(fields, files, boundary=None):
     content_type = 'multipart/form-data; boundary=%s' % boundary
     return content_type, body
 
-class upload_docs(PyPIRCCommand):
+class upload_docs(Command):
 
     user_options = [
-        ('repository=', 'r', "url of repository [default: %s]" % upload.DEFAULT_REPOSITORY),
+        ('repository=', 'r', "url of repository [default: %s]" % DEFAULT_REPOSITORY),
         ('show-response', None, 'display full response text from server'),
         ('upload-dir=', None, 'directory to upload'),
         ]
 
     def initialize_options(self):
-        PyPIRCCommand.initialize_options(self)
+        self.repository = None
+        self.realm = None
+        self.show_response = 0
         self.upload_dir = "build/docs"
+        self.username = ''
+        self.password = ''
 
     def finalize_options(self):
-        PyPIRCCommand.finalize_options(self)
+        if self.repository is None:
+            self.repository = DEFAULT_REPOSITORY
+        if self.realm is None:
+            self.realm = DEFAULT_REALM
         if self.upload_dir == None:
             build = self.get_finalized_command('build')
             self.upload_dir = os.path.join(build.build_base, "docs")
         self.announce('Using upload directory %s' % self.upload_dir)
         self.verify_upload_dir(self.upload_dir)
-        config = self._read_pypirc()
+        config = read_pypirc(self.repository, self.realm)
         if config != {}:
             self.username = config['username']
             self.password = config['password']

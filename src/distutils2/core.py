@@ -19,7 +19,6 @@ from distutils2.util import grok_environment_error
 # Mainly import these so setup scripts can "from distutils2.core import" them.
 from distutils2.dist import Distribution
 from distutils2.command.cmd import Command
-from distutils2.config import PyPIRCCommand
 from distutils2.extension import Extension
 from distutils2.util import find_packages
 

@@ -15,10 +15,10 @@ import tarfile
 import zipfile
 from copy import copy
 from fnmatch import fnmatchcase
+from ConfigParser import RawConfigParser
 
 from distutils2.errors import (DistutilsPlatformError, DistutilsFileError,
-                               DistutilsByteCompileError)
-from distutils2.spawn import spawn, find_executable
+                               DistutilsByteCompileError, DistutilsExecError)
 from distutils2 import log
 from distutils2._backport import sysconfig as _sysconfig
 
@@ -805,3 +805,306 @@ def split_leading_dir(path):
         return path.split('\\', 1)
     else:
         return path, ''
+
+
+def spawn(cmd, search_path=1, verbose=0, dry_run=0, env=None):
+    """Run another program specified as a command list 'cmd' in a new process.
+
+    'cmd' is just the argument list for the new process, ie.
+    cmd[0] is the program to run and cmd[1:] are the rest of its arguments.
+    There is no way to run a program with a name different from that of its
+    executable.
+
+    If 'search_path' is true (the default), the system's executable
+    search path will be used to find the program; otherwise, cmd[0]
+    must be the exact path to the executable.  If 'dry_run' is true,
+    the command will not actually be run.
+
+    If 'env' is given, it's a environment dictionary used for the execution
+    environment.
+
+    Raise DistutilsExecError if running the program fails in any way; just
+    return on success.
+    """
+    if os.name == 'posix':
+        _spawn_posix(cmd, search_path, dry_run=dry_run, env=env)
+    elif os.name == 'nt':
+        _spawn_nt(cmd, search_path, dry_run=dry_run, env=env)
+    elif os.name == 'os2':
+        _spawn_os2(cmd, search_path, dry_run=dry_run, env=env)
+    else:
+        raise DistutilsPlatformError(
+              "don't know how to spawn programs on platform '%s'" % os.name)
+
+
+def _nt_quote_args(args):
+    """Quote command-line arguments for DOS/Windows conventions.
+
+    Just wraps every argument which contains blanks in double quotes, and
+    returns a new argument list.
+    """
+    # XXX this doesn't seem very robust to me -- but if the Windows guys
+    # say it'll work, I guess I'll have to accept it.  (What if an arg
+    # contains quotes?  What other magic characters, other than spaces,
+    # have to be escaped?  Is there an escaping mechanism other than
+    # quoting?)
+    for i, arg in enumerate(args):
+        if ' ' in arg:
+            args[i] = '"%s"' % arg
+    return args
+
+
+def _spawn_nt(cmd, search_path=1, verbose=0, dry_run=0, env=None):
+    executable = cmd[0]
+    cmd = _nt_quote_args(cmd)
+    if search_path:
+        # either we find one or it stays the same
+        executable = find_executable(executable) or executable
+    log.info(' '.join([executable] + cmd[1:]))
+    if not dry_run:
+        # spawn for NT requires a full path to the .exe
+        try:
+            if env is None:
+                rc = os.spawnv(os.P_WAIT, executable, cmd)
+            else:
+                rc = os.spawnve(os.P_WAIT, executable, cmd, env)
+
+        except OSError, exc:
+            # this seems to happen when the command isn't found
+            raise DistutilsExecError(
+                  "command '%s' failed: %s" % (cmd[0], exc[-1]))
+        if rc != 0:
+            # and this reflects the command running but failing
+            raise DistutilsExecError(
+                  "command '%s' failed with exit status %d" % (cmd[0], rc))
+
+
+def _spawn_os2(cmd, search_path=1, verbose=0, dry_run=0, env=None):
+    executable = cmd[0]
+    if search_path:
+        # either we find one or it stays the same
+        executable = find_executable(executable) or executable
+    log.info(' '.join([executable] + cmd[1:]))
+    if not dry_run:
+        # spawnv for OS/2 EMX requires a full path to the .exe
+        try:
+            if env is None:
+                rc = os.spawnv(os.P_WAIT, executable, cmd)
+            else:
+                rc = os.spawnve(os.P_WAIT, executable, cmd, env)
+
+        except OSError, exc:
+            # this seems to happen when the command isn't found
+            raise DistutilsExecError(
+                  "command '%s' failed: %s" % (cmd[0], exc[-1]))
+        if rc != 0:
+            # and this reflects the command running but failing
+            log.debug("command '%s' failed with exit status %d" % (cmd[0], rc))
+            raise DistutilsExecError(
+                  "command '%s' failed with exit status %d" % (cmd[0], rc))
+
+
+def _spawn_posix(cmd, search_path=1, verbose=0, dry_run=0, env=None):
+    log.info(' '.join(cmd))
+    if dry_run:
+        return
+
+    if env is None:
+        exec_fn = search_path and os.execvp or os.execv
+    else:
+        exec_fn = search_path and os.execvpe or os.execve
+
+    pid = os.fork()
+
+    if pid == 0:  # in the child
+        try:
+            if env is None:
+                exec_fn(cmd[0], cmd)
+            else:
+                exec_fn(cmd[0], cmd, env)
+        except OSError, e:
+            sys.stderr.write("unable to execute %s: %s\n" %
+                             (cmd[0], e.strerror))
+            os._exit(1)
+
+        sys.stderr.write("unable to execute %s for unknown reasons" % cmd[0])
+        os._exit(1)
+    else:   # in the parent
+        # Loop until the child either exits or is terminated by a signal
+        # (ie. keep waiting if it's merely stopped)
+        while 1:
+            try:
+                pid, status = os.waitpid(pid, 0)
+            except OSError, exc:
+                import errno
+                if exc.errno == errno.EINTR:
+                    continue
+                raise DistutilsExecError(
+                      "command '%s' failed: %s" % (cmd[0], exc[-1]))
+            if os.WIFSIGNALED(status):
+                raise DistutilsExecError(
+                      "command '%s' terminated by signal %d" % \
+                      (cmd[0], os.WTERMSIG(status)))
+
+            elif os.WIFEXITED(status):
+                exit_status = os.WEXITSTATUS(status)
+                if exit_status == 0:
+                    return   # hey, it succeeded!
+                else:
+                    raise DistutilsExecError(
+                          "command '%s' failed with exit status %d" % \
+                          (cmd[0], exit_status))
+
+            elif os.WIFSTOPPED(status):
+                continue
+
+            else:
+                raise DistutilsExecError(
+                      "unknown error executing '%s': termination status %d" % \
+                      (cmd[0], status))
+
+
+def find_executable(executable, path=None):
+    """Tries to find 'executable' in the directories listed in 'path'.
+
+    A string listing directories separated by 'os.pathsep'; defaults to
+    os.environ['PATH'].  Returns the complete filename or None if not found.
+    """
+    if path is None:
+        path = os.environ['PATH']
+    paths = path.split(os.pathsep)
+    base, ext = os.path.splitext(executable)
+
+    if (sys.platform == 'win32' or os.name == 'os2') and (ext != '.exe'):
+        executable = executable + '.exe'
+
+    if not os.path.isfile(executable):
+        for p in paths:
+            f = os.path.join(p, executable)
+            if os.path.isfile(f):
+                # the file exists, we have a shot at spawn working
+                return f
+        return None
+    else:
+        return executable
+
+
+DEFAULT_REPOSITORY = 'http://pypi.python.org/pypi'
+DEFAULT_REALM = 'pypi'
+DEFAULT_PYPIRC = """\
+[distutils]
+index-servers =
+    pypi
+
+[pypi]
+username:%s
+password:%s
+"""
+
+def get_pypirc_path():
+    """Returns rc file path."""
+    return os.path.join(os.path.expanduser('~'), '.pypirc')
+
+
+def generate_pypirc(username, password):
+    """Creates a default .pypirc file."""
+    rc = get_pypirc_path()
+    f = open(rc, 'w')
+    try:
+        f.write(DEFAULT_PYPIRC % (username, password))
+    finally:
+        f.close()
+    try:
+        os.chmod(rc, 0600)
+    except OSError:
+        # should do something better here
+        pass
+
+
+def read_pypirc(repository=DEFAULT_REPOSITORY, realm=DEFAULT_REALM):
+    """Reads the .pypirc file."""
+    rc = get_pypirc_path()
+    if os.path.exists(rc):
+        config = RawConfigParser()
+        config.read(rc)
+        sections = config.sections()
+        if 'distutils' in sections:
+            # let's get the list of servers
+            index_servers = config.get('distutils', 'index-servers')
+            _servers = [server.strip() for server in
+                        index_servers.split('\n')
+                        if server.strip() != '']
+            if _servers == []:
+                # nothing set, let's try to get the default pypi
+                if 'pypi' in sections:
+                    _servers = ['pypi']
+                else:
+                    # the file is not properly defined, returning
+                    # an empty dict
+                    return {}
+            for server in _servers:
+                current = {'server': server}
+                current['username'] = config.get(server, 'username')
+
+                # optional params
+                for key, default in (('repository',
+                                       DEFAULT_REPOSITORY),
+                                     ('realm', DEFAULT_REALM),
+                                     ('password', None)):
+                    if config.has_option(server, key):
+                        current[key] = config.get(server, key)
+                    else:
+                        current[key] = default
+                if (current['server'] == repository or
+                    current['repository'] == repository):
+                    return current
+        elif 'server-login' in sections:
+            # old format
+            server = 'server-login'
+            if config.has_option(server, 'repository'):
+                repository = config.get(server, 'repository')
+            else:
+                repository = DEFAULT_REPOSITORY
+
+            return {'username': config.get(server, 'username'),
+                    'password': config.get(server, 'password'),
+                    'repository': repository,
+                    'server': server,
+                    'realm': DEFAULT_REALM}
+
+    return {}
+
+
+def metadata_to_dict(meta):
+    """XXX might want to move it to the Metadata class."""
+    data = {
+        'metadata_version' : meta.version,
+        'name': meta['Name'],
+        'version': meta['Version'],
+        'summary': meta['Summary'],
+        'home_page': meta['Home-page'],
+        'author': meta['Author'],
+        'author_email': meta['Author-email'],
+        'license': meta['License'],
+        'description': meta['Description'],
+        'keywords': meta['Keywords'],
+        'platform': meta['Platform'],
+        'classifier': meta['Classifier'],
+        'download_url': meta['Download-URL'],
+    }
+
+    if meta.version == '1.2':
+        data['requires_dist'] = meta['Requires-Dist']
+        data['requires_python'] = meta['Requires-Python']
+        data['requires_external'] = meta['Requires-External']
+        data['provides_dist'] = meta['Provides-Dist']
+        data['obsoletes_dist'] = meta['Obsoletes-Dist']
+        data['project_url'] = [','.join(url) for url in
+                                meta['Project-URL']]
+
+    elif meta.version == '1.1':
+        data['provides'] = meta['Provides']
+        data['requires'] = meta['Requires']
+        data['obsoletes'] = meta['Obsoletes']
+
+    return data

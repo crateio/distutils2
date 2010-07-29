@@ -19,7 +19,7 @@ from distutils2.errors import DistutilsSetupError
 
 from distutils2.tests import support
 from distutils2.tests.support import unittest
-from distutils2.tests.test_config import PYPIRC, PyPIRCCommandTestCase
+
 
 PYPIRC_NOPASSWORD = """\
 [distutils]
@@ -68,10 +68,15 @@ class FakeOpener(object):
     def read(self):
         return 'xxx'
 
-class RegisterTestCase(PyPIRCCommandTestCase):
+class RegisterTestCase(support.TempdirManager, support.EnvironGuard,
+                       unittest.TestCase):
 
     def setUp(self):
         super(RegisterTestCase, self).setUp()
+        self.tmp_dir = self.mkdtemp()
+        self.rc = os.path.join(self.tmp_dir, '.pypirc')
+        os.environ['HOME'] = self.tmp_dir
+
         # patching the password prompt
         self._old_getpass = getpass.getpass
         def _getpass(prompt):
@@ -148,8 +153,8 @@ class RegisterTestCase(PyPIRCCommandTestCase):
 
         self.write_file(self.rc, PYPIRC_NOPASSWORD)
         cmd = self._get_cmd()
-        cmd._set_config()
         cmd.finalize_options()
+        cmd._set_config()
         cmd.send_metadata()
 
         # dist.password should be set
