@@ -9,7 +9,6 @@ from distutils2.core import Distribution
 from distutils2.tests import support
 from distutils2.tests.pypi_server import PyPIServer, PyPIServerTestCase
 from distutils2.tests.support import unittest
-from distutils2.tests.test_config import PYPIRC, PyPIRCCommandTestCase
 
 
 PYPIRC_NOPASSWORD = """\
@@ -22,7 +21,33 @@ index-servers =
 username:me
 """
 
-class UploadTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
+PYPIRC = """\
+[distutils]
+
+index-servers =
+    server1
+    server2
+
+[server1]
+username:me
+password:secret
+
+[server2]
+username:meagain
+password: secret
+realm:acme
+repository:http://another.pypi/
+"""
+
+
+class UploadTestCase(support.TempdirManager, support.EnvironGuard,
+                     PyPIServerTestCase):
+
+    def setUp(self):
+        super(UploadTestCase, self).setUp()
+        self.tmp_dir = self.mkdtemp()
+        self.rc = os.path.join(self.tmp_dir, '.pypirc')
+        os.environ['HOME'] = self.tmp_dir
 
     def test_finalize_options(self):
         # new format

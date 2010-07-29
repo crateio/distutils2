@@ -18,10 +18,46 @@ from distutils2.util import (convert_path, change_root,
                              rfc822_escape, get_compiler_versions,
                              _find_exe_version, _MAC_OS_X_LD_VERSION,
                              byte_compile, find_packages, spawn, find_executable,
-                             _nt_quote_args)
+                             _nt_quote_args, get_pypirc_path, generate_pypirc,
+                             read_pypirc)
+
 from distutils2 import util
 from distutils2.tests import support
 from distutils2.tests.support import unittest
+
+
+PYPIRC = """\
+[distutils]
+index-servers =
+    pypi
+    server1
+
+[pypi]
+username:me
+password:xxxx
+
+[server1]
+repository:http://example.com
+username:tarek
+password:secret
+"""
+
+PYPIRC_OLD = """\
+[server-login]
+username:tarek
+password:secret
+"""
+
+WANTED = """\
+[distutils]
+index-servers =
+    pypi
+
+[pypi]
+username:tarek
+password:xxx
+"""
+
 
 class FakePopen(object):
     test_class = None
@@ -43,6 +79,9 @@ class UtilTestCase(support.EnvironGuard,
 
     def setUp(self):
         super(UtilTestCase, self).setUp()
+        self.tmp_dir = self.mkdtemp()
+        self.rc = os.path.join(self.tmp_dir, '.pypirc')
+        os.environ['HOME'] = self.tmp_dir
         # saving the environment
         self.name = os.name
         self.platform = sys.platform
@@ -374,6 +413,40 @@ class UtilTestCase(support.EnvironGuard,
 
         os.chmod(exe, 0777)
         spawn([exe])  # should work without any error
+
+    def test_server_registration(self):
+        # This test makes sure we know how to:
+        # 1. handle several sections in .pypirc
+        # 2. handle the old format
+
+        # new format
+        self.write_file(self.rc, PYPIRC)
+        config = read_pypirc()
+
+        config = config.items()
+        config.sort()
+        expected = [('password', 'xxxx'), ('realm', 'pypi'),
+                    ('repository', 'http://pypi.python.org/pypi'),
+                    ('server', 'pypi'), ('username', 'me')]
+        self.assertEqual(config, expected)
+
+        # old format
+        self.write_file(self.rc, PYPIRC_OLD)
+        config = read_pypirc()
+        config = config.items()
+        config.sort()
+        expected = [('password', 'secret'), ('realm', 'pypi'),
+                    ('repository', 'http://pypi.python.org/pypi'),
+                    ('server', 'server-login'), ('username', 'tarek')]
+        self.assertEqual(config, expected)
+
+    def test_server_empty_registration(self):
+        rc = get_pypirc_path()
+        self.assertTrue(not os.path.exists(rc))
+        generate_pypirc('tarek', 'xxx')
+        self.assertTrue(os.path.exists(rc))
+        content = open(rc).read()
+        self.assertEqual(content, WANTED)
 
 
 def test_suite():

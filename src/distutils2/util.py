@@ -11,6 +11,7 @@ import string
 import re
 from copy import copy
 from fnmatch import fnmatchcase
+from ConfigParser import RawConfigParser
 
 from distutils2.errors import (DistutilsPlatformError, DistutilsFileError,
                                DistutilsByteCompileError, DistutilsExecError)
@@ -869,3 +870,124 @@ def find_executable(executable, path=None):
         return None
     else:
         return executable
+
+
+DEFAULT_REPOSITORY = 'http://pypi.python.org/pypi'
+DEFAULT_REALM = 'pypi'
+DEFAULT_PYPIRC = """\
+[distutils]
+index-servers =
+    pypi
+
+[pypi]
+username:%s
+password:%s
+"""
+
+def get_pypirc_path():
+    """Returns rc file path."""
+    return os.path.join(os.path.expanduser('~'), '.pypirc')
+
+
+def generate_pypirc(username, password):
+    """Creates a default .pypirc file."""
+    rc = get_pypirc_path()
+    f = open(rc, 'w')
+    try:
+        f.write(DEFAULT_PYPIRC % (username, password))
+    finally:
+        f.close()
+    try:
+        os.chmod(rc, 0600)
+    except OSError:
+        # should do something better here
+        pass
+
+
+def read_pypirc(repository=DEFAULT_REPOSITORY, realm=DEFAULT_REALM):
+    """Reads the .pypirc file."""
+    rc = get_pypirc_path()
+    if os.path.exists(rc):
+        config = RawConfigParser()
+        config.read(rc)
+        sections = config.sections()
+        if 'distutils' in sections:
+            # let's get the list of servers
+            index_servers = config.get('distutils', 'index-servers')
+            _servers = [server.strip() for server in
+                        index_servers.split('\n')
+                        if server.strip() != '']
+            if _servers == []:
+                # nothing set, let's try to get the default pypi
+                if 'pypi' in sections:
+                    _servers = ['pypi']
+                else:
+                    # the file is not properly defined, returning
+                    # an empty dict
+                    return {}
+            for server in _servers:
+                current = {'server': server}
+                current['username'] = config.get(server, 'username')
+
+                # optional params
+                for key, default in (('repository',
+                                       DEFAULT_REPOSITORY),
+                                     ('realm', DEFAULT_REALM),
+                                     ('password', None)):
+                    if config.has_option(server, key):
+                        current[key] = config.get(server, key)
+                    else:
+                        current[key] = default
+                if (current['server'] == repository or
+                    current['repository'] == repository):
+                    return current
+        elif 'server-login' in sections:
+            # old format
+            server = 'server-login'
+            if config.has_option(server, 'repository'):
+                repository = config.get(server, 'repository')
+            else:
+                repository = DEFAULT_REPOSITORY
+
+            return {'username': config.get(server, 'username'),
+                    'password': config.get(server, 'password'),
+                    'repository': repository,
+                    'server': server,
+                    'realm': DEFAULT_REALM}
+
+    return {}
+
+
+def metadata_to_dict(meta):
+    """XXX might want to move it to the Metadata class."""
+    data = {
+        'metadata_version' : meta.version,
+        'name': meta['Name'],
+        'version': meta['Version'],
+        'summary': meta['Summary'],
+        'home_page': meta['Home-page'],
+        'author': meta['Author'],
+        'author_email': meta['Author-email'],
+        'license': meta['License'],
+        'description': meta['Description'],
+        'keywords': meta['Keywords'],
+        'platform': meta['Platform'],
+        'classifier': meta['Classifier'],
+        'download_url': meta['Download-URL'],
+    }
+
+    if meta.version == '1.2':
+        data['requires_dist'] = meta['Requires-Dist']
+        data['requires_python'] = meta['Requires-Python']
+        data['requires_external'] = meta['Requires-External']
+        data['provides_dist'] = meta['Provides-Dist']
+        data['obsoletes_dist'] = meta['Obsoletes-Dist']
+        data['project_url'] = [','.join(url) for url in
+                                meta['Project-URL']]
+
+    elif meta.version == '1.1':
+        data['provides'] = meta['Provides']
+        data['requires'] = meta['Requires']
+        data['obsoletes'] = meta['Obsoletes']
+
+    return data
