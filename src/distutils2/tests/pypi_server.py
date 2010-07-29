@@ -235,7 +235,7 @@ class PyPIXMLRPCServer(SimpleXMLRPCServer):
 class MockDist(object):
     """Fake distribution, used in the Mock PyPI Server""" 
     def __init__(self, name, version="1.0", hidden=False, url="http://url/",
-             type="source", filename="", size=10000,
+             type="sdist", filename="", size=10000,
              digest="123456", downloads=7, has_sig=False,
              python_version="source", comment="comment", 
              author="John Doe", author_email="john@doe.name", 
