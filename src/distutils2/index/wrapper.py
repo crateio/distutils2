@@ -39,8 +39,9 @@ def switch_index_if_fails(func, wrapper):
 class ClientWrapper(object):
     """Wrapper around simple and xmlrpc clients,
 
-    Choose the best implementation to use depending the needs.
-    If one of the indexes returns an error, try to use others indexes.
+    Choose the best implementation to use depending the needs, using the given
+    mappings.
+    If one of the indexes returns an error, tries to use others indexes.
 
     :param index: tell wich index to rely on by default.
     :param index_classes: a dict of name:class to use as indexes.

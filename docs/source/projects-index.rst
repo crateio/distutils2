@@ -14,7 +14,7 @@ and using *XML-RPC*. The first one is a set of HTML pages avalaibles at
 methods.
 
 If you dont care about which API to use, the best thing to do is to let
-distutils2 decide this for you, by using :class:`distutils2.index.Client`.
+distutils2 decide this for you, by using :class:`distutils2.index.ClientWrapper`.
 
 Of course, you can rely too on :class:`distutils2.index.simple.Crawler` and
 :class:`distutils.index.xmlrpc.Client` if you need to use these specific APIs.

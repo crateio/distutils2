@@ -87,9 +87,6 @@ It's easy to add distribution informatons to releases::
 Attributes Lazy loading
 -----------------------
 
-.. note:: This is not currently available. So you have to rely on the indexes by
-   yourself to fill in the fields !
-
 To abstract a maximum the way of querying informations to the indexes,
 attributes and releases informations can be retrieved "on demand", in a "lazy"
 way.
@@ -98,8 +95,8 @@ For instance, if you have a release instance that does not contain the metadata
 attribute, it can be build directly when accedded::
 
     >>> r = Release("FooBar", "1.1")
-    >>> r.has_metadata()
-    False # metadata field is actually set to "None"
+    >>> print r._metadata 
+    None # metadata field is actually set to "None"
     >>> r.metadata
     <Metadata for FooBar 1.1>
 
