@@ -80,6 +80,12 @@ class build_py(Command, Mixin2to3):
          "also compile with optimization: -O1 for \"python -O\", "
          "-O2 for \"python -OO\", and -O0 to disable [default: -O0]"),
         ('force', 'f', "forcibly build everything (ignore file timestamps)"),
+        ('use-2to3', None,
+         "use 2to3 to make source python 3.x compatible"),
+        ('convert-2to3-doctests', None,
+         "use 2to3 to convert doctests in seperate text files"),
+        ('use-2to3-fixers', None,
+         "list additional fixers opted for during 2to3 conversion"),
         ]
 
     boolean_options = ['compile', 'force']
@@ -96,7 +102,10 @@ class build_py(Command, Mixin2to3):
         self.force = None
         self._updated_files = []
         self._doctests_2to3 = []
-
+        self.use_2to3 = False
+        self.convert_2to3_doctests = []
+        self.use_2to3_fixers = []
+        
     def finalize_options(self):
         self.set_undefined_options('build',
                                    ('build_lib', 'build_lib'),
@@ -150,7 +159,7 @@ class build_py(Command, Mixin2to3):
             self.build_packages()
             self.build_package_data()
 
-        if self.distribution.use_2to3 and self._updated_files:
+        if self.use_2to3 and self._updated_files:
             self.run_2to3(self._updated_files, self._doctests_2to3,
                                             self.distribution.use_2to3_fixers)
 
