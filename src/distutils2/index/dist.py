@@ -229,6 +229,7 @@ class DistInfo(IndexReference):
         self.release = release
         self.dist_type = dist_type
         self.python_version = python_version
+        self._unpacked_dir = None
         # set the downloaded path to None by default. The goal here
         # is to not download distributions multiple times
         self.downloaded_location = None
@@ -306,22 +307,24 @@ class DistInfo(IndexReference):
 
         Returns the location of the extracted files (root).
         """
-        if path is None:
-            path = tempfile.mkdtemp()
-        
-        filename = self.download()
-        content_type = mimetypes.guess_type(filename)[0]
- 
-        if (content_type == 'application/zip'
-            or filename.endswith('.zip')
-            or filename.endswith('.pybundle')
-            or zipfile.is_zipfile(filename)):
-            unzip_file(filename, path, flatten=not filename.endswith('.pybundle'))
-        elif (content_type == 'application/x-gzip'
-              or tarfile.is_tarfile(filename)
-              or splitext(filename)[1].lower() in ('.tar', '.tar.gz', '.tar.bz2', '.tgz', '.tbz')):
-            untar_file(filename, path)
-        return path
+        if not self._unpacked_dir:
+            if path is None:
+                path = tempfile.mkdtemp()
+            
+            filename = self.download()
+            content_type = mimetypes.guess_type(filename)[0]
+     
+            if (content_type == 'application/zip'
+                or filename.endswith('.zip')
+                or filename.endswith('.pybundle')
+                or zipfile.is_zipfile(filename)):
+                unzip_file(filename, path, flatten=not filename.endswith('.pybundle'))
+            elif (content_type == 'application/x-gzip'
+                  or tarfile.is_tarfile(filename)
+                  or splitext(filename)[1].lower() in ('.tar', '.tar.gz', '.tar.bz2', '.tgz', '.tbz')):
+                untar_file(filename, path)
+            self._unpacked_dir = path
+        return self._unpacked_dir
 
     def _check_md5(self, filename):
         """Check that the md5 checksum of the given file matches the one in
