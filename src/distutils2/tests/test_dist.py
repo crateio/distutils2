@@ -153,6 +153,27 @@ class DistributionTestCase(support.TempdirManager,
         my_file2 = os.path.join(tmp_dir, 'f2')
         dist.metadata.write_file(open(my_file, 'w'))
 
+    def test_bad_attr(self):
+        cls = Distribution
+
+        # catching warnings
+        warns = []
+        def _warn(msg):
+            warns.append(msg)
+
+        old_warn = warnings.warn
+        warnings.warn = _warn
+        try:
+            dist = cls(attrs={'author': 'xxx',
+                              'name': 'xxx',
+                              'version': 'xxx',
+                              'url': 'xxxx',
+                              'badoptname': 'xxx'})
+        finally:
+            warnings.warn = old_warn
+
+        self.assertTrue(len(warns)==1 and "Unknown distribution" in warns[0])
+
     def test_empty_options(self):
         # an empty options dictionary should not stay in the
         # list of attributes
