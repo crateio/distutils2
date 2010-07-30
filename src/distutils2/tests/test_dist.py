@@ -176,6 +176,21 @@ class DistributionTestCase(support.TempdirManager,
 
         self.assertEqual(len(warns), 0)
 
+    def test_non_empty_options(self):
+        # TODO: how to actually use options is not documented except
+        # for a few cryptic comments in dist.py.  If this is to stay
+        # in the public API, it deserves some better documentation.
+
+        # Here is an example of how it's used out there: 
+        # http://svn.pythonmac.org/py2app/py2app/trunk/doc/index.html#specifying-customizations
+        cls = Distribution
+        dist = cls(attrs={'author': 'xxx',
+                          'name': 'xxx',
+                          'version': 'xxx',
+                          'url': 'xxxx',
+                          'options': dict(sdist=dict(owner="root"))})
+        self.assertTrue("owner" in dist.get_option_dict("sdist"))
+
     def test_finalize_options(self):
 
         attrs = {'keywords': 'one,two',
