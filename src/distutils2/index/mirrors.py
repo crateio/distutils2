@@ -22,13 +22,10 @@ def get_mirrors(hostname=None):
     
     # return the last mirror registered on PyPI.
     try:
-        unused, aliaslist, ipaddr = socket.gethostbyname_ex(hostname)
+        hostname = socket.gethostbyname_ex(hostname)[0]
     except socket.gaierror:
         return []
-    if len(aliaslist) < 2:
-        return []
-    index_adress = aliaslist[-1]
-    end_letter = index_adress.split(".", 1)
+    end_letter = hostname.split(".", 1)
 
     # determine the list from the last one.
     return ["%s.%s" % (s, end_letter[1]) for s in string_range(end_letter[0])]
