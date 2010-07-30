@@ -148,8 +148,7 @@ Common commands: (see '--help-commands' for more)
         # Store the distribution meta-data (name, version, author, and so
         # forth) in a separate object -- we're getting to have enough
         # information here (and enough command-line options) that it's
-        # worth it.  Also delegate 'get_XXX()' methods to the 'metadata'
-        # object in a sneaky and underhanded (but efficient!) way.
+        # worth it.
         self.metadata = DistributionMetadata()
 
         # 'cmdclass' maps command names to class objects, so we
