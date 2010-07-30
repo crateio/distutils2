@@ -1,5 +1,5 @@
+# -*- encoding: utf-8 -*-
 """Tests for distutils.command.register."""
-# -*- encoding: utf8 -*-
 import sys
 import os
 import getpass

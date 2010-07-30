@@ -1,5 +1,5 @@
+# -*- encoding: utf-8 -*-
 """Tests for distutils.command.upload."""
-# -*- encoding: utf8 -*-
 import os
 import sys
 
