@@ -203,10 +203,6 @@ class DistributionMetadata(object):
     def _write_field(self, file, name, value):
         file.write('%s: %s\n' % (name, value))
 
-    def _write_list(self, file, name, values):
-        for value in values:
-            self._write_field(file, name, value)
-
     def _encode_field(self, value):
         if isinstance(value, unicode):
             return value.encode(PKG_INFO_ENCODING)
