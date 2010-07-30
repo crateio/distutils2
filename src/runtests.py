@@ -1,8 +1,11 @@
+#!/usr/bin/env python
 """Tests for distutils2.
 
 The tests for distutils2 are defined in the distutils2.tests package.
 """
+
 import sys
+
 
 def test_main():
     import distutils2.tests
@@ -23,12 +26,11 @@ def test_main():
     finally:
         reap_children()
 
+
 if __name__ == "__main__":
     try:
         from distutils2.tests.support import unittest
     except ImportError:
         sys.stderr.write('Error: You have to install unittest2')
         sys.exit(1)
-
     sys.exit(test_main())
-
