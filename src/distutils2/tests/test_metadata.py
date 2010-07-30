@@ -1,7 +1,6 @@
 """Tests for distutils.command.bdist."""
 import os
 import sys
-import tempfile
 from StringIO import StringIO
 
 from distutils2.metadata import (DistributionMetadata, _interpret,
@@ -63,10 +62,11 @@ class DistributionMetadataTestCase(LoggingSilencer, unittest.TestCase):
 
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
         metadata = DistributionMetadata(PKG_INFO)
-        res = tempfile.NamedTemporaryFile()
-        metadata.write_file(res)
-        res.flush()
-        res = DistributionMetadata(res.name)
+        out = StringIO()
+        metadata.write_file(out)
+        out.seek(0)
+        res = DistributionMetadata()
+        res.read_file(out)
         for k in metadata.keys():
             self.assertTrue(metadata[k] == res[k])
 
