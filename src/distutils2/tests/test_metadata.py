@@ -78,6 +78,8 @@ class DistributionMetadataTestCase(LoggingSilencer, unittest.TestCase):
         metadata = DistributionMetadata(platform_dependent=True)
         metadata.read_file(StringIO(content))
         self.assertEqual(metadata['Requires-Dist'], ['bar'])
+        metadata['Name'] = "baz; sys.platform == 'blah'"
+        self.assertEquals(metadata['Name'], None)
 
         # test with context
         context = {'sys.platform': 'okook'}
@@ -207,6 +209,10 @@ class DistributionMetadataTestCase(LoggingSilencer, unittest.TestCase):
         metadata = DistributionMetadata()
         metadata['Version'] = 'rr'
         metadata['Requires-dist'] = ['Foo (a)']
+        if metadata.docutils_support:
+            missing, warnings = metadata.check()
+            self.assertEqual(len(warnings), 2)
+            metadata.docutils_support = False
         missing, warnings = metadata.check()
         self.assertEqual(missing, ['Name', 'Home-page'])
         self.assertEqual(len(warnings), 2)
