@@ -8,6 +8,7 @@ import sys
 from os.path import dirname, islink, realpath
 from optparse import OptionParser
 
+
 def ignore_prefixes(module):
     """ Return a list of prefixes to ignore in the coverage report if
     we want to completely skip `module`.
@@ -16,16 +17,17 @@ def ignore_prefixes(module):
     # distributions, such a Ubuntu, really like to build link farm in
     # /usr/lib in order to save a few bytes on the disk.
     dirnames = [dirname(module.__file__)]
-    
+
     pymod = module.__file__.rstrip("c")
     if islink(pymod):
         dirnames.append(dirname(realpath(pymod)))
     return dirnames
 
+
 def parse_opts():
     parser = OptionParser(usage="%prog [OPTIONS]",
                           description="run the distutils2 unittests")
-    
+
     parser.add_option("-q", "--quiet", help="do not print verbose messages",
                       action="store_true", default=False)
     parser.add_option("-c", "--coverage", action="store_true", default=False,
@@ -36,9 +38,10 @@ def parse_opts():
                       default=False,
                       help=("Show line numbers of statements in each module "
                             "that weren't executed."))
-    
+
     opts, args = parser.parse_args()
     return opts, args
+
 
 def coverage_report(opts):
     import coverage
@@ -89,6 +92,7 @@ def test_main():
 
     return ret
 
+
 def run_tests(verbose):
     import distutils2.tests
     from distutils2.tests import run_unittest, reap_children, TestFailed
@@ -108,12 +112,11 @@ def run_tests(verbose):
     finally:
         reap_children()
 
+
 if __name__ == "__main__":
     try:
         from distutils2.tests.support import unittest
     except ImportError:
         sys.stderr.write('Error: You have to install unittest2')
         sys.exit(1)
-
     sys.exit(test_main())
-
