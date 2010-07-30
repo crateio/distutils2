@@ -152,10 +152,6 @@ Common commands: (see '--help-commands' for more)
         # object in a sneaky and underhanded (but efficient!) way.
         self.metadata = DistributionMetadata()
 
-        #for basename in self.metadata._METHOD_BASENAMES:
-        #    method_name = "get_" + basename
-        #    setattr(self, method_name, getattr(self.metadata, method_name))
-
         # 'cmdclass' maps command names to class objects, so we
         # can 1) quickly figure out which class to instantiate when
         # we need to create a new command object, and 2) have a way
