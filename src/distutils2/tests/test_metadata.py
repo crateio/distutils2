@@ -79,6 +79,8 @@ class DistributionMetadataTestCase(LoggingSilencer, unittest.TestCase):
         metadata.read_file(StringIO(content))
         self.assertEqual(metadata['Requires-Dist'], ['bar'])
         metadata['Name'] = "baz; sys.platform == 'blah'"
+        # FIXME is None or 'UNKNOWN' correct here?
+        # where is that documented?
         self.assertEquals(metadata['Name'], None)
 
         # test with context
