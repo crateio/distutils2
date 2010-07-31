@@ -205,8 +205,6 @@ def run_setup(script_name, script_args=None, stop_after="run"):
         # Hmm, should we do something if exiting with a non-zero code
         # (ie. error)?
         pass
-    except:
-        raise
 
     if _setup_distribution is None:
         raise RuntimeError, \

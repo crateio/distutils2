@@ -77,12 +77,11 @@ _345_MARKERS = ('Provides-Dist', 'Requires-Dist', 'Requires-Python',
                 'Obsoletes-Dist', 'Requires-External', 'Maintainer',
                 'Maintainer-email', 'Project-URL')
 
-_ALL_FIELDS = []
+_ALL_FIELDS = set()
+_ALL_FIELDS.update(_241_FIELDS)
+_ALL_FIELDS.update(_314_FIELDS)
+_ALL_FIELDS.update(_345_FIELDS)
 
-for field in _241_FIELDS + _314_FIELDS + _345_FIELDS:
-    if field in _ALL_FIELDS:
-        continue
-    _ALL_FIELDS.append(field)
 
 def _version2fieldlist(version):
     if version == '1.0':
@@ -223,12 +222,10 @@ class DistributionMetadata(object):
         if name in _ALL_FIELDS:
             return name
         name = name.replace('-', '_').lower()
-        if name in _ATTR2FIELD:
-            return _ATTR2FIELD[name]
-        return name
+        return _ATTR2FIELD.get(name, name)
 
     def _default_value(self, name):
-        if name in _LISTFIELDS + _ELEMENTSFIELD:
+        if name in _LISTFIELDS or name in _ELEMENTSFIELD:
             return []
         return 'UNKNOWN'
 
@@ -329,14 +326,14 @@ class DistributionMetadata(object):
         """Control then set a metadata field."""
         name = self._convert_name(name)
 
-        if (name in _ELEMENTSFIELD + ('Platform',) and
+        if ((name in _ELEMENTSFIELD or name == 'Platform') and
             not isinstance(value, (list, tuple))):
             if isinstance(value, str):
                 value = value.split(',')
             else:
                 value = []
         elif (name in _LISTFIELDS and
-            not isinstance(value, (list, tuple))):
+              not isinstance(value, (list, tuple))):
             if isinstance(value, str):
                 value = [value]
             else:
@@ -400,7 +397,7 @@ class DistributionMetadata(object):
     def check(self):
         """Check if the metadata is compliant."""
         # XXX should check the versions (if the file was loaded)
-        missing = []
+        missing, warnings = [], []
         for attr in ('Name', 'Version', 'Home-page'):
             value = self[attr]
             if value == 'UNKNOWN':
@@ -408,13 +405,10 @@ class DistributionMetadata(object):
 
         if _HAS_DOCUTILS:
             warnings = self._check_rst_data(self['Description'])
-        else:
-            warnings = []
 
         # checking metadata 1.2 (XXX needs to check 1.1, 1.0)
         if self['Metadata-Version'] != '1.2':
             return missing, warnings
-
 
         def is_valid_predicates(value):
             for v in value:
@@ -423,16 +417,15 @@ class DistributionMetadata(object):
             return True
 
         for fields, controller in ((_PREDICATE_FIELDS, is_valid_predicates),
-                                  (_VERSIONS_FIELDS, is_valid_versions),
-                                  (_VERSION_FIELDS, is_valid_version)):
+                                   (_VERSIONS_FIELDS, is_valid_versions),
+                                   (_VERSION_FIELDS, is_valid_version)):
             for field in fields:
                 value = self[field]
                 if value == 'UNKNOWN':
                     continue
 
                 if not controller(value):
-                    warnings.append('Wrong value for "%s": %s' \
-                            % (field, value))
+                    warnings.append('Wrong value for %r: %s' % (field, value))
 
         return missing, warnings
 
@@ -449,7 +442,6 @@ class DistributionMetadata(object):
 #
 # micro-language for PEP 345 environment markers
 #
-_STR_LIMIT = "'\""
 
 # allowed operators
 _OPERATORS = {'==': lambda x, y: x == y,
@@ -466,9 +458,8 @@ def _operate(operation, x, y):
 
 # restricted set of variables
 _VARS = {'sys.platform': sys.platform,
-         'python_version': '%s.%s' % (sys.version_info[0],
-                                      sys.version_info[1]),
-         'python_full_version': sys.version.split()[0],
+         'python_version': sys.version[:3],
+         'python_full_version': sys.version.split(' ', 1)[0],
          'os.name': os.name,
          'platform.version': platform.version(),
          'platform.machine': platform.machine()}
@@ -494,7 +485,7 @@ class _Operation(object):
     def _is_string(self, value):
         if value is None or len(value) < 2:
             return False
-        for delimiter in _STR_LIMIT:
+        for delimiter in '"\'':
             if value[0] == value[-1] == delimiter:
                 return True
         return False
@@ -505,7 +496,7 @@ class _Operation(object):
     def _convert(self, value):
         if value in _VARS:
             return self._get_var(value)
-        return value.strip(_STR_LIMIT)
+        return value.strip('"\'')
 
     def _check_name(self, value):
         if value not in _VARS:
@@ -542,7 +533,7 @@ class _OR(object):
         return self.right is not None
 
     def __repr__(self):
-        return 'OR(%s, %s)' % (repr(self.left), repr(self.right))
+        return 'OR(%r, %r)' % (self.left, self.right)
 
     def __call__(self):
         return self.left() or self.right()
@@ -557,7 +548,7 @@ class _AND(object):
         return self.right is not None
 
     def __repr__(self):
-        return 'AND(%s, %s)' % (repr(self.left), repr(self.right))
+        return 'AND(%r, %r)' % (self.left, self.right)
 
     def __call__(self):
         return self.left() and self.right()

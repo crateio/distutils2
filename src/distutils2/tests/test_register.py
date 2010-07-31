@@ -161,7 +161,7 @@ class RegisterTestCase(support.TempdirManager, support.EnvironGuard,
         # therefore used afterwards by other commands
         self.assertEqual(cmd.distribution.password, 'password')
 
-    def test_registering(self):
+    def test_registration(self):
         # this test runs choice 2
         cmd = self._get_cmd()
         inputs = RawInputs('2', 'tarek', 'tarek@ziade.org')
