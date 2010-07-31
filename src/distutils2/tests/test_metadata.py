@@ -1,6 +1,7 @@
 """Tests for distutils.command.bdist."""
 import os
 import sys
+import platform
 from StringIO import StringIO
 
 from distutils2.metadata import (DistributionMetadata, _interpret,
@@ -14,19 +15,23 @@ class DistributionMetadataTestCase(LoggingSilencer, unittest.TestCase):
 
 
     def test_interpret(self):
-        platform = sys.platform
+        sys_platform = sys.platform
         version = sys.version.split()[0]
         os_name = os.name
+        platform_version = platform.version()
+        platform_machine = platform.machine()
 
-        self.assertTrue(_interpret("sys.platform == '%s'" % platform))
+        self.assertTrue(_interpret("sys.platform == '%s'" % sys_platform))
         self.assertTrue(_interpret(
-            "sys.platform == '%s' or python_version == '2.4'" % platform))
+            "sys.platform == '%s' or python_version == '2.4'" % sys_platform))
         self.assertTrue(_interpret(
             "sys.platform == '%s' and python_full_version == '%s'" %
-            (platform, version)))
-        self.assertTrue(_interpret("'%s' == sys.platform" % platform))
-
+            (sys_platform, version)))
+        self.assertTrue(_interpret("'%s' == sys.platform" % sys_platform))
         self.assertTrue(_interpret('os.name == "%s"' % os_name))
+        self.assertTrue(_interpret(
+            'platform.version == "%s" and platform.machine == "%s"' %
+            (platform_version, platform_machine)))
 
         # stuff that need to raise a syntax error
         ops = ('os.name == os.name', 'os.name == 2', "'2' == '2'",

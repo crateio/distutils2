@@ -470,8 +470,8 @@ _VARS = {'sys.platform': sys.platform,
                                       sys.version_info[1]),
          'python_full_version': sys.version.split()[0],
          'os.name': os.name,
-         'platform.version': platform.version,
-         'platform.machine': platform.machine}
+         'platform.version': platform.version(),
+         'platform.machine': platform.machine()}
 
 class _Operation(object):
 
