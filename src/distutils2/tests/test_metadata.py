@@ -30,7 +30,7 @@ class DistributionMetadataTestCase(LoggingSilencer, unittest.TestCase):
 
         # stuff that need to raise a syntax error
         ops = ('os.name == os.name', 'os.name == 2', "'2' == '2'",
-               'okpjonon', '', 'os.name ==')
+               'okpjonon', '', 'os.name ==', 'python_version == 2.4')
         for op in ops:
             self.assertRaises(SyntaxError, _interpret, op)
 
