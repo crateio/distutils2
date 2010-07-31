@@ -3,6 +3,27 @@
 Always import unittest from this module, it will be the right version
 (standard library unittest for 2.7 and higher, third-party unittest2
 release for older versions).
+
+Three helper classes are provided: LoggingSilencer, TempdirManager and
+EnvironGuard. They are written to be used as mixins, e.g. ::
+
+    from distutils2.tests.support import unittest
+    from distutils2.tests.support import LoggingSilencer
+
+    class SomeTestCase(LoggingSilencer, unittest.TestCase):
+
+If you need to define a setUp method on your test class, you have to
+call the mixin class' setUp method or it won't work (same thing for
+tearDown):
+
+        def setUp(self):
+            super(self.__class__, self).setUp()
+            ... # other setup code
+
+Read each class' docstring to see their purpose and usage.
+
+Also provided is a DummyCommand class, useful to mock commands in the
+tests of another command that needs them (see docstring).
 """
 
 import os
@@ -10,7 +31,6 @@ import sys
 import shutil
 import tempfile
 from copy import deepcopy
-import warnings
 
 from distutils2 import log
 from distutils2.log import DEBUG, INFO, WARN, ERROR, FATAL
@@ -22,14 +42,25 @@ else:
     # external release of same package for older versions
     import unittest2 as unittest
 
+__all__ = ['LoggingSilencer', 'TempdirManager', 'EnvironGuard',
+           'DummyCommand', 'unittest']
+
+
 class LoggingSilencer(object):
+    """TestCase-compatible mixin to catch logging calls.
+
+    Every log message that goes through distutils2.log will get appended to
+    self.logs instead of being printed. You can check that your code logs
+    warnings and errors as documented by inspecting that list; helper methods
+    get_logs and clear_logs are also provided.
+    """
 
     def setUp(self):
         super(LoggingSilencer, self).setUp()
-        self.threshold = log.set_threshold(log.FATAL)
+        self.threshold = log.set_threshold(FATAL)
         # catching warnings
-        # when log will be replaced by logging
-        # we won't need such monkey-patch anymore
+        # when log is replaced by logging we won't need
+        # such monkey-patching anymore
         self._old_log = log.Log._log
         log.Log._log = self._log
         self.logs = []
@@ -45,6 +76,10 @@ class LoggingSilencer(object):
         self.logs.append((level, msg, args))
 
     def get_logs(self, *levels):
+        """Return a list of caught messages with level in `levels`.
+
+        Example: self.get_logs(log.WARN, log.DEBUG) -> list
+        """
         def _format(msg, args):
             if len(args) == 0:
                 return msg
@@ -53,13 +88,12 @@ class LoggingSilencer(object):
                 in self.logs if level in levels]
 
     def clear_logs(self):
-        self.logs = []
+        """Empty the internal list of caught messages."""
+        del self.logs[:]
+
 
 class TempdirManager(object):
-    """Mix-in class that handles temporary directories for test cases.
-
-    This is intended to be used with unittest.TestCase.
-    """
+    """TestCase-compatible mixin to handle temporary directories."""
 
     def setUp(self):
         super(TempdirManager, self).setUp()
@@ -82,19 +116,19 @@ class TempdirManager(object):
         return tempfile_
 
     def mkdtemp(self):
-        """Create a temporary directory that will be cleaned up.
+        """Create a temporary directory that will be removed on exit.
 
-        Returns the path of the directory.
+        Return the path of the directory.
         """
         d = tempfile.mkdtemp()
         self.tempdirs.append(d)
         return d
 
     def write_file(self, path, content='xxx'):
-        """Writes a file in the given path.
+        """Write a file at the given path.
 
-
-        path can be a string or a sequence.
+        path can be a string, a tuple or a list; if it's a tuple or list,
+        os.path.join will be used to produce a path.
         """
         if isinstance(path, (list, tuple)):
             path = os.path.join(*path)
@@ -105,41 +139,50 @@ class TempdirManager(object):
             f.close()
 
     def create_dist(self, pkg_name='foo', **kw):
-        """Will generate a test environment.
+        """Create a stub distribution object and files.
 
-        This function creates:
-         - a Distribution instance using keywords
-         - a temporary directory with a package structure
+        This function creates a Distribution instance (use keyword arguments
+        to customize it) and a temporary directory with a project structure
+        (currently an empty directory).
 
-        It returns the package directory and the distribution
-        instance.
+        It returns the path to the directory and the Distribution instance.
+        You can use TempdirManager.write_file to write any file in that
+        directory, e.g. setup scripts or Python modules.
         """
+        # Late import so that third parties can import support without
+        # loading a ton of distutils2 modules in memory.
         from distutils2.dist import Distribution
         tmp_dir = self.mkdtemp()
         pkg_dir = os.path.join(tmp_dir, pkg_name)
         os.mkdir(pkg_dir)
         dist = Distribution(attrs=kw)
-
         return pkg_dir, dist
 
-class DummyCommand:
-    """Class to store options for retrieval via set_undefined_options()."""
+
+class DummyCommand(object):
+    """Class to store options for retrieval via set_undefined_options().
+
+    Useful for mocking one dependency command in the tests for another
+    command, see e.g. the dummy build command in test_build_scripts.
+    """
 
     def __init__(self, **kwargs):
-        for kw, val in kwargs.items():
+        for kw, val in kwargs.iteritems():
             setattr(self, kw, val)
 
     def ensure_finalized(self):
         pass
 
+
 class EnvironGuard(object):
+    """TestCase-compatible mixin to save and restore the environment."""
 
     def setUp(self):
         super(EnvironGuard, self).setUp()
         self.old_environ = deepcopy(os.environ)
 
     def tearDown(self):
-        for key, value in self.old_environ.items():
+        for key, value in self.old_environ.iteritems():
             if os.environ.get(key) != value:
                 os.environ[key] = value
 
