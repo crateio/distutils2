@@ -1,6 +1,5 @@
 """Tests for distutils.command.build_py."""
 import sys
-import tempfile
 
 import distutils2
 from distutils2.tests import support

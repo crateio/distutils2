@@ -4,7 +4,6 @@
 import sys
 import os
 import shutil
-import tempfile
 import urllib2
 
 from distutils2.pypi import simple

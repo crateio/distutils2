@@ -4,7 +4,6 @@ import sys
 from copy import copy
 from StringIO import StringIO
 import subprocess
-import tempfile
 import time
 
 from distutils2.tests import captured_stdout
@@ -301,9 +300,9 @@ class UtilTestCase(support.EnvironGuard,
 
     def test_newer(self):
         self.assertRaises(DistutilsFileError, util.newer, 'xxx', 'xxx')
-        self.newer_f1 = tempfile.NamedTemporaryFile()
+        self.newer_f1 = self.mktempfile()
         time.sleep(1)
-        self.newer_f2 = tempfile.NamedTemporaryFile()
+        self.newer_f2 = self.mktempfile()
         self.assertTrue(util.newer(self.newer_f2.name, self.newer_f1.name))
 
     def test_find_packages(self):

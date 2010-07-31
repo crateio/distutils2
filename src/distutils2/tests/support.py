@@ -93,35 +93,29 @@ class LoggingSilencer(object):
 
 
 class TempdirManager(object):
-    """TestCase-compatible mixin to handle temporary directories."""
+    """TestCase-compatible mixin to create temporary directories and files.
+
+    Directories and files created in a test_* method will be removed after it
+    has run.
+    """
 
     def setUp(self):
         super(TempdirManager, self).setUp()
-        self.tempdirs = []
-        self.tempfiles = []
+        self._basetempdir = tempfile.mkdtemp()
 
     def tearDown(self):
         super(TempdirManager, self).tearDown()
-        while self.tempdirs:
-            d = self.tempdirs.pop()
-            shutil.rmtree(d, os.name in ('nt', 'cygwin'))
-        for file_ in self.tempfiles:
-            if os.path.exists(file_):
-                os.remove(file_)
+        shutil.rmtree(self._basetempdir, os.name in ('nt', 'cygwin'))
 
     def mktempfile(self):
-        """Create a temporary file that will be cleaned up."""
-        tempfile_ = tempfile.NamedTemporaryFile()
-        self.tempfiles.append(tempfile_.name)
-        return tempfile_
+        """Create a read-write temporary file and return it."""
+        fd, fn = tempfile.mkstemp(dir=self._basetempdir)
+        os.close(fd)
+        return open(fn, 'w+')
 
     def mkdtemp(self):
-        """Create a temporary directory that will be removed on exit.
-
-        Return the path of the directory.
-        """
-        d = tempfile.mkdtemp()
-        self.tempdirs.append(d)
+        """Create a temporary directory and return its path."""
+        d = tempfile.mkdtemp(dir=self._basetempdir)
         return d
 
     def write_file(self, path, content='xxx'):

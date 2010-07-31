@@ -112,24 +112,21 @@ class TestPyPIDistribution(TempdirManager,
     def test_download(self, server):
         # Download is possible, and the md5 is checked if given
 
-        add_to_tmpdirs = lambda x: self.tempdirs.append(os.path.dirname(x))
-
         url = "%s/simple/foobar/foobar-0.1.tar.gz" % server.full_address
         # check md5 if given
-        add_to_tmpdirs(dist.download())
         dist = Dist("FooBar", "0.1", url=url, url_hashname="md5",
                     url_hashval="d41d8cd98f00b204e9800998ecf8427e")
+        dist.download(self.mkdtemp())
 
         # a wrong md5 fails
         dist2 = Dist("FooBar", "0.1", url=url,
                      url_hashname="md5", url_hashval="wrongmd5")
 
-        self.assertRaises(HashDoesNotMatch, dist2.download)
-        add_to_tmpdirs(dist2.downloaded_location)
+        self.assertRaises(HashDoesNotMatch, dist2.download, self.mkdtemp())
 
         # we can omit the md5 hash
         dist3 = Dist("FooBar", "0.1", url=url)
-        add_to_tmpdirs(dist3.download())
+        dist3.download(self.mkdtemp())
 
         # and specify a temporary location
         # for an already downloaded dist
