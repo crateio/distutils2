@@ -145,7 +145,7 @@ Common commands: (see '--help-commands' for more)
         for attr in self.display_option_names:
             setattr(self, attr, 0)
 
-        # Store the distribution meta-data (name, version, author, and so
+        # Store the distribution metadata (name, version, author, and so
         # forth) in a separate object -- we're getting to have enough
         # information here (and enough command-line options) that it's
         # worth it.

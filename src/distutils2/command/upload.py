@@ -94,7 +94,7 @@ class upload(Command):
             spawn(gpg_args,
                   dry_run=self.dry_run)
 
-        # Fill in the data - send all the meta-data in case we need to
+        # Fill in the data - send all the metadata in case we need to
         # register a new release
         content = open(filename,'rb').read()
 

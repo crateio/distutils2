@@ -29,7 +29,7 @@ class register(Command):
         ('list-classifiers', None,
          'list the valid Trove classifiers'),
         ('strict', None ,
-         'Will stop the registering if the meta-data are not fully compliant')
+         'Will stop the registering if the metadata is not fully compliant')
         ]
 
     boolean_options = ['show-response', 'verify', 'list-classifiers',

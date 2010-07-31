@@ -210,7 +210,7 @@ class RegisterTestCase(support.TempdirManager, support.EnvironGuard,
         cmd.strict = 1
         self.assertRaises(DistutilsSetupError, cmd.run)
 
-        # metadata are OK but long_description is broken
+        # metadata is OK but long_description is broken
         metadata = {'home_page': 'xxx', 'author': 'xxx',
                     'author_email': u'éxéxé',
                     'name': 'xxx', 'version': 'xxx',

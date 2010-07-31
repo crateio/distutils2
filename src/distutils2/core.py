@@ -155,7 +155,7 @@ def setup(**attrs):
 def run_setup(script_name, script_args=None, stop_after="run"):
     """Run a setup script in a somewhat controlled environment, and
     return the Distribution instance that drives things.  This is useful
-    if you need to find out the distribution meta-data (passed as
+    if you need to find out the distribution metadata (passed as
     keyword args from 'script' to 'setup()', or the contents of the
     config files or command-line.
 

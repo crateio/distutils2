@@ -182,7 +182,7 @@ _UNICODEFIELDS = ('Author', 'Maintainer', 'Summary', 'Description')
 
 
 class DistributionMetadata(object):
-    """Distribution meta-data class (1.0 or 1.2).
+    """Distribution metadata class (versions 1.0, 1.1 and 1.2 supported).
     """
     def __init__(self, path=None, platform_dependent=False,
                  execution_context=None, fileobj=None):
@@ -399,7 +399,7 @@ class DistributionMetadata(object):
         return value
 
     def check(self):
-        """Checks if the metadata are compliant."""
+        """Checks if the metadata is compliant."""
         # XXX should check the versions (if the file was loaded)
         missing = []
         for attr in ('Name', 'Version', 'Home-page'):

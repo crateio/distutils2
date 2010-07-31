@@ -71,7 +71,7 @@ class sdist(Command):
          "directory to put the source distribution archive(s) in "
          "[default: dist]"),
         ('check-metadata', None,
-         "Ensure that all required elements of meta-data "
+         "Ensure that all required elements of metadata "
          "are supplied. Warn if any missing. [default]"),
         ('owner=', 'u',
          "Owner name used when creating a tar file [default: current user]"),
@@ -362,7 +362,7 @@ class sdist(Command):
         'self.keep_temp' is true).  The list of archive files created is
         stored so it can be retrieved later by 'get_archive_files()'.
         """
-        # Don't warn about missing meta-data here -- should be (and is!)
+        # Don't warn about missing metadata here -- should be (and is!)
         # done elsewhere.
         base_dir = self.distribution.get_fullname()
         base_name = os.path.join(self.dist_dir, base_dir)
