@@ -1,7 +1,6 @@
-"""
-Implementation of the Metadata for Python packages
+"""Implementation of the Metadata for Python packages PEPs.
 
-Supports all Metadata formats (1.0, 1.1, 1.2).
+Supports all metadata formats (1.0, 1.1, 1.2).
 """
 
 import re
@@ -95,7 +94,7 @@ def _version2fieldlist(version):
     raise MetadataUnrecognizedVersionError(version)
 
 def _best_version(fields):
-    """Will detect the best version depending on the fields used."""
+    """Detect the best version depending on the fields used."""
     def _has_marker(keys, markers):
         for marker in markers:
             if marker in keys:
@@ -182,7 +181,9 @@ _UNICODEFIELDS = ('Author', 'Maintainer', 'Summary', 'Description')
 
 
 class DistributionMetadata(object):
-    """Distribution metadata class (versions 1.0, 1.1 and 1.2 supported).
+    """The metadata of a release.
+
+    Supports versions 1.0, 1.1 and 1.2 (auto-detected).
     """
     def __init__(self, path=None, platform_dependent=False,
                  execution_context=None, fileobj=None):
@@ -232,7 +233,7 @@ class DistributionMetadata(object):
         return 'UNKNOWN'
 
     def _check_rst_data(self, data):
-        """Returns warnings when the provided data doesn't compile."""
+        """Return warnings when the provided data has syntax errors."""
         source_path = StringIO()
         parser = Parser()
         settings = frontend.OptionParser().get_default_values()
@@ -267,7 +268,7 @@ class DistributionMetadata(object):
         return _LINE_PREFIX.sub('\n', value)
 
     #
-    # Public APIs
+    # Public API
     #
     def get_fullname(self):
         return '%s-%s' % (self['Name'], self['Version'])
@@ -280,7 +281,7 @@ class DistributionMetadata(object):
         self.read_file(open(filepath))
 
     def read_file(self, fileob):
-        """Reads the metadata values from a file object."""
+        """Read the metadata values from a file object."""
         msg = message_from_file(fileob)
         self.version = msg['metadata-version']
 
@@ -298,8 +299,7 @@ class DistributionMetadata(object):
                     self.set(field, value)
 
     def write(self, filepath):
-        """Write the metadata fields into path.
-        """
+        """Write the metadata fields to filepath."""
         pkg_info = open(filepath, 'w')
         try:
             self.write_file(pkg_info)
@@ -307,8 +307,7 @@ class DistributionMetadata(object):
             pkg_info.close()
 
     def write_file(self, fileobject):
-        """Write the PKG-INFO format data to a file object.
-        """
+        """Write the PKG-INFO format data to a file object."""
         self._set_best_version()
         for field in _version2fieldlist(self.version):
             values = self.get(field)
@@ -327,7 +326,7 @@ class DistributionMetadata(object):
                 self._write_field(fileobject, field, value)
 
     def set(self, name, value):
-        """Controls then sets a metadata field"""
+        """Control then set a metadata field."""
         name = self._convert_name(name)
 
         if (name in _ELEMENTSFIELD + ('Platform',) and
@@ -364,7 +363,7 @@ class DistributionMetadata(object):
         self._set_best_version()
 
     def get(self, name):
-        """Gets a metadata field."""
+        """Get a metadata field."""
         name = self._convert_name(name)
         if name not in self._fields:
             return self._default_value(name)
@@ -399,7 +398,7 @@ class DistributionMetadata(object):
         return value
 
     def check(self):
-        """Checks if the metadata is compliant."""
+        """Check if the metadata is compliant."""
         # XXX should check the versions (if the file was loaded)
         missing = []
         for attr in ('Name', 'Version', 'Home-page'):
@@ -625,7 +624,7 @@ class _CHAIN(object):
         return True
 
 def _interpret(marker, execution_context=None):
-    """Interprets a marker and return a result given the environment."""
+    """Interpret a marker and return a result depending on environment."""
     marker = marker.strip()
     operations = _CHAIN(execution_context)
     tokenize(StringIO(marker).readline, operations.eat)
