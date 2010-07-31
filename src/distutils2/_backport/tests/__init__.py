@@ -4,7 +4,7 @@ import sys
 from distutils2.tests.support import unittest
 
 
-here = os.path.dirname(__file__)
+here = os.path.dirname(__file__) or '.'
 
 def test_suite():
     suite = unittest.TestSuite()
@@ -16,4 +16,5 @@ def test_suite():
             suite.addTest(module.test_suite())
     return suite
 
-
+if __name__ == '__main__':
+    unittest.main(defaultTest='test_suite')

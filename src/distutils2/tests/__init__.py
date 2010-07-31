@@ -23,7 +23,7 @@ from distutils2.tests.support import unittest
 
 from test.test_support import TESTFN    # use TESTFN from stdlib/test_support.
 
-here = os.path.dirname(__file__)
+here = os.path.dirname(__file__) or '.'
 
 verbose = 1
 
