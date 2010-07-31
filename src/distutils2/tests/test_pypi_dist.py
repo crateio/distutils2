@@ -1,9 +1,5 @@
 """Tests for the distutils2.pypi.dist module."""
 
-import os
-import shutil
-import tempfile
-
 from distutils2.tests.pypi_server import use_pypi_server
 from distutils2.tests import run_unittest
 from distutils2.tests.support import unittest, TempdirManager
@@ -18,7 +14,7 @@ class TestPyPIDistribution(TempdirManager,
                            unittest.TestCase):
     """Tests the pypi.dist.PyPIDistribution class"""
 
-    def test_instanciation(self):
+    def test_instantiation(self):
         # Test the Distribution class provides us the good attributes when
         # given on construction
         dist = Dist("FooBar", "1.1")
@@ -63,7 +59,7 @@ class TestPyPIDistribution(TempdirManager,
                         self.assertEqual(value[val], mylist[val])
                 else:
                     if attribute == "version":
-                        self.assertEqual("%s" % getattr(dist, "version"), value)
+                        self.assertEqual(str(getattr(dist, "version")), value)
                     else:
                         self.assertEqual(getattr(dist, attribute), value)
 
@@ -120,13 +116,13 @@ class TestPyPIDistribution(TempdirManager,
 
         url = "%s/simple/foobar/foobar-0.1.tar.gz" % server.full_address
         # check md5 if given
-        dist = Dist("FooBar", "0.1", url=url,
-            url_hashname="md5", url_hashval="d41d8cd98f00b204e9800998ecf8427e")
         add_to_tmpdirs(dist.download())
+        dist = Dist("FooBar", "0.1", url=url, url_hashname="md5",
+                    url_hashval="d41d8cd98f00b204e9800998ecf8427e")
 
         # a wrong md5 fails
         dist2 = Dist("FooBar", "0.1", url=url,
-            url_hashname="md5", url_hashval="wrongmd5")
+                     url_hashname="md5", url_hashval="wrongmd5")
 
         self.assertRaises(HashDoesNotMatch, dist2.download)
         add_to_tmpdirs(dist2.downloaded_location)
