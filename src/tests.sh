@@ -23,7 +23,7 @@ else
 fi
 
 echo -n "Running tests for Python 2.6... "
-python2.6 -Wd -bb -3 runtests.py -q 2> /dev/null
+python2.6 -Wd runtests.py -q 2> /dev/null
 if [ $? -ne 0 ];then
     echo "Failed"
     exit 1
