@@ -159,21 +159,6 @@ class TempdirManager(object):
         return pkg_dir, dist
 
 
-class DummyCommand(object):
-    """Class to store options for retrieval via set_undefined_options().
-
-    Useful for mocking one dependency command in the tests for another
-    command, see e.g. the dummy build command in test_build_scripts.
-    """
-
-    def __init__(self, **kwargs):
-        for kw, val in kwargs.iteritems():
-            setattr(self, kw, val)
-
-    def ensure_finalized(self):
-        pass
-
-
 class EnvironGuard(object):
     """TestCase-compatible mixin to save and restore the environment."""
 
@@ -191,3 +176,18 @@ class EnvironGuard(object):
                 del os.environ[key]
 
         super(EnvironGuard, self).tearDown()
+
+
+class DummyCommand(object):
+    """Class to store options for retrieval via set_undefined_options().
+
+    Useful for mocking one dependency command in the tests for another
+    command, see e.g. the dummy build command in test_build_scripts.
+    """
+
+    def __init__(self, **kwargs):
+        for kw, val in kwargs.iteritems():
+            setattr(self, kw, val)
+
+    def ensure_finalized(self):
+        pass
