@@ -10,7 +10,7 @@ import zipfile
 try:
     from hashlib import md5
 except ImportError:
-    from md5 import md5
+    from distutils2._backport.hashlib import md5
 
 from test.test_support import run_unittest, TESTFN
 from distutils2.tests.support import unittest

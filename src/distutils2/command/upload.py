@@ -11,7 +11,7 @@ import StringIO as StringIO
 try:
     from hashlib import md5
 except ImportError:
-    from md5 import md5
+    from distutils2._backport.hashlib import md5
 
 from distutils2.errors import DistutilsOptionError
 from distutils2.util import spawn
