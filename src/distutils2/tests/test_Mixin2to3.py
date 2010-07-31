@@ -10,7 +10,7 @@ from distutils2.command.build_py import Mixin2to3
 
 class Mixin2to3TestCase(support.TempdirManager, unittest.TestCase):
 
-    @unittest.skipUnless(sys.version > '2.6', 'Need >= 2.6')
+    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_convert_code_only(self):
         # used to check if code gets converted properly.
         code_content = "print 'test'\n"
@@ -27,7 +27,7 @@ class Mixin2to3TestCase(support.TempdirManager, unittest.TestCase):
 
         self.assertEquals(new_code_content, converted_code_content)
 
-    @unittest.skipUnless(sys.version > '2.6', 'Need >= 2.6')
+    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_doctests_only(self):
         # used to check if doctests gets converted properly.
         doctest_content = '"""\n>>> print test\ntest\n"""\nprint test\n\n'

@@ -10,8 +10,8 @@ class BDistMSITestCase(support.TempdirManager,
                        support.LoggingSilencer,
                        unittest.TestCase):
 
-    @unittest.skipUnless(sys.platform=="win32", "These tests are only for win32")
-    def test_minial(self):
+    @unittest.skipUnless(sys.platform == "win32", "runs only on win32")
+    def test_minimal(self):
         # minimal test XXX need more tests
         from distutils2.command.bdist_msi import bdist_msi
         pkg_pth, dist = self.create_dist()

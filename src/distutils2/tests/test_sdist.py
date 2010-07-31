@@ -295,7 +295,7 @@ class SDistTestCase(support.TempdirManager, support.LoggingSilencer,
         self.assertRaises(DistutilsOptionError, cmd.finalize_options)
 
     @unittest.skipUnless(zlib, "requires zlib")
-    @unittest.skipUnless(UID_GID_SUPPORT, "Requires grp and pwd support")
+    @unittest.skipUnless(UID_GID_SUPPORT, "requires grp and pwd support")
     def test_make_distribution_owner_group(self):
 
         # check if tar and gzip are installed

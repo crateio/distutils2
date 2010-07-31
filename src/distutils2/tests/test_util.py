@@ -288,7 +288,7 @@ class UtilTestCase(support.EnvironGuard,
         self.assertEqual(res[2], None)
 
     @unittest.skipUnless(hasattr(sys, 'dont_write_bytecode'),
-                          'no dont_write_bytecode support')
+                         'sys.dont_write_bytecode not supported')
     def test_dont_write_bytecode(self):
         # makes sure byte_compile raise a DistutilsError
         # if sys.dont_write_bytecode is True
@@ -343,7 +343,7 @@ class UtilTestCase(support.EnvironGuard,
         res = find_packages([root], ['pkg1.pkg2'])
         self.assertEqual(set(res), set(['pkg1', 'pkg5', 'pkg1.pkg3', 'pkg1.pkg3.pkg6']))
 
-    @unittest.skipUnless(sys.version > '2.6', 'Need Python 2.6 or more')
+    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_run_2to3_on_code(self):
         content = "print 'test'"
         converted_content = "print('test')"
@@ -358,7 +358,7 @@ class UtilTestCase(support.EnvironGuard,
         file_handle.close()
         self.assertEquals(new_content, converted_content)
 
-    @unittest.skipUnless(sys.version > '2.6', 'Need Python 2.6 or more')
+    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_run_2to3_on_doctests(self):
         # to check if text files containing doctests only get converted.
         content = ">>> print 'test'\ntest\n"
@@ -385,7 +385,7 @@ class UtilTestCase(support.EnvironGuard,
 
 
     @unittest.skipUnless(os.name in ('nt', 'posix'),
-                         'Runs only under posix or nt')
+                         'runs only under posix or nt')
     def test_spawn(self):
         tmpdir = self.mkdtemp()
 

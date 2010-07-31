@@ -45,7 +45,7 @@ class BuildExtTestCase(support.TempdirManager,
             build_ext.USER_BASE = site.USER_BASE
 
     # XXX only works with 2.6 > -- dunno why yet
-    @unittest.skipUnless(sys.version_info >= (2, 6,), 'works for >= 2.6')
+    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_build_ext(self):
         global ALREADY_TESTED
         xx_c = os.path.join(self.tmp_dir, 'xxmodule.c')
