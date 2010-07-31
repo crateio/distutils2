@@ -52,9 +52,12 @@ def encode_multipart(fields, files, boundary=None):
 class upload_docs(Command):
 
     user_options = [
-        ('repository=', 'r', "url of repository [default: %s]" % DEFAULT_REPOSITORY),
-        ('show-response', None, 'display full response text from server'),
-        ('upload-dir=', None, 'directory to upload'),
+        ('repository=', 'r',
+         "repository URL [default: %s]" % DEFAULT_REPOSITORY),
+        ('show-response', None,
+         "display full response text from server"),
+        ('upload-dir=', None,
+         "directory to upload"),
         ]
 
     def initialize_options(self):

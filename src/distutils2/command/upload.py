@@ -24,16 +24,17 @@ from distutils2.util import (metadata_to_dict, read_pypirc,
 
 class upload(Command):
 
-    description = "upload binary package to PyPI"
+    description = "upload distribution to PyPI"
 
-    user_options = [('repository=', 'r',
-         "url of repository [default: %s]" % \
-            DEFAULT_REPOSITORY),
+    user_options = [
+        ('repository=', 'r',
+         "repository URL [default: %s]" % DEFAULT_REPOSITORY),
         ('show-response', None,
-         'display full response text from server'),
+         "display full response text from server"),
         ('sign', 's',
-         'sign files to upload using gpg'),
-        ('identity=', 'i', 'GPG identity used to sign files'),
+         "sign files to upload using gpg"),
+        ('identity=', 'i',
+         "GPG identity used to sign files"),
         ]
 
     boolean_options = ['show-response', 'sign']
