@@ -177,8 +177,8 @@ class bdist_wininst (Command):
 
         # And make an archive relative to the root of the
         # pseudo-installation tree.
-        from tempfile import mktemp
-        archive_basename = mktemp()
+        from tempfile import NamedTemporaryFile
+        archive_basename = NamedTemporaryFile().name
         fullname = self.distribution.get_fullname()
         arcname = self.make_archive(archive_basename, "zip",
                                     root_dir=self.bdist_dir)
