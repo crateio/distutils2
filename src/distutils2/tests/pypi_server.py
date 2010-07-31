@@ -7,8 +7,6 @@ before any use.
 
 import Queue
 import threading
-import time
-import urllib2
 from BaseHTTPServer import HTTPServer
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 import os.path
@@ -41,8 +39,8 @@ class PyPIServerTestCase(unittest.TestCase):
         self.pypi.start()
 
     def tearDown(self):
-        super(PyPIServerTestCase, self).tearDown()
         self.pypi.stop()
+        super(PyPIServerTestCase, self).tearDown()
 
 class PyPIServer(threading.Thread):
     """PyPI Mocked server.
