@@ -321,7 +321,7 @@ def suggest_normalized_version(s):
     return None
 
 
-_PREDICATE = re.compile(r"(?i)^\s*([a-z_]\w*(?:\.[a-z_]\w*)*)(.*)")
+_PREDICATE = re.compile(r"(?i)^\s*([a-z_][\sa-zA-Z_-]*(?:\.[a-z_]\w*)*)(.*)")
 _VERSIONS = re.compile(r"^\s*\((.*)\)\s*$")
 _PLAIN_VERSIONS = re.compile(r"^\s*(.*)\s*$")
 _SPLIT_CMP = re.compile(r"^\s*(<=|>=|<|>|!=|==)\s*([^\s,]+)\s*$")
@@ -354,7 +354,8 @@ class VersionPredicate(object):
         if match is None:
             raise ValueError('Bad predicate "%s"' % predicate)
 
-        self.name, predicates = match.groups()
+        name, predicates = match.groups()
+        self.name = name.strip()
         predicates = predicates.strip()
         predicates = _VERSIONS.match(predicates)
         if predicates is not None:
