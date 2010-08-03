@@ -4,7 +4,7 @@ import sys
 from distutils2.tests.support import unittest
 
 
-here = os.path.dirname(__file__) or '.'
+here = os.path.dirname(__file__) or os.curdir
 
 def test_suite():
     suite = unittest.TestSuite()

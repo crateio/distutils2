@@ -737,14 +737,14 @@ class SetupClass(object):
             self.setupData['name'] = m.group(1)
             self.setupData['version'] = m.group(2)
 
-        for root, dirs, files in os.walk('.'):
+        for root, dirs, files in os.walk(os.curdir):
             for file in files:
-                if root == '.' and file == 'setup.py': continue
+                if root == os.curdir and file == 'setup.py': continue
                 fileName = os.path.join(root, file)
                 self.inspectFile(fileName)
 
                 if file == '__init__.py':
-                    trySrc = os.path.join('.', 'src')
+                    trySrc = os.path.join(os.curdir, 'src')
                     tmpRoot = root
                     if tmpRoot.startswith(trySrc):
                         tmpRoot = tmpRoot[len(trySrc):]

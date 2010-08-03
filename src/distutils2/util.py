@@ -84,8 +84,8 @@ def convert_path(pathname):
         raise ValueError("path '%s' cannot end with '/'" % pathname)
 
     paths = pathname.split('/')
-    while '.' in paths:
-        paths.remove('.')
+    while os.curdir in paths:
+        paths.remove(os.curdir)
     if not paths:
         return os.curdir
     return os.path.join(*paths)
@@ -586,7 +586,7 @@ def _package_name(root_path, path):
     return path[len(root_path) + 1:].replace(os.sep, '.')
 
 
-def find_packages(paths=('.',), exclude=()):
+def find_packages(paths=(os.curdir,), exclude=()):
     """Return a list all Python packages found recursively within
     directories 'paths'
 
