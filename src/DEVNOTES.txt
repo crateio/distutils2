@@ -9,7 +9,7 @@ Notes for developers
   that you have all Python versions installed from 2.4 to 2.7.
 
 - With Python 2.4, if you want to run tests with runtests.py, or run
-  ust one test directly, be sure to run python2.4 setup.py build_ext
+  just one test directly, be sure to run python2.4 setup.py build_ext
   first, else tests won't find _hashlib or _md5. When using tests.sh,
   build_ext is automatically done.
 
@@ -18,3 +18,5 @@ Notes for developers
   - DistributionMetadata > Metadata or ReleaseMetadata
   - pkgutil > pkgutil.__init__ + new pkgutil.database (or better name)
   - pypi > index
+  - RationalizedVersion > Version
+  - suggest_rationalized_version > suggest
