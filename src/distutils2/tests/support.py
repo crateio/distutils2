@@ -35,8 +35,8 @@ from copy import deepcopy
 from distutils2 import log
 from distutils2.log import DEBUG, INFO, WARN, ERROR, FATAL
 
-if sys.version_info >= (2, 7):
-    # improved unittest package from 2.7's standard library
+if sys.version_info >= (3, 2):
+    # improved unittest package from 3.2's standard library
     import unittest
 else:
     # external release of same package for older versions
