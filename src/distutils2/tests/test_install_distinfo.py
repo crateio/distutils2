@@ -4,12 +4,16 @@ import os
 import sys
 import csv
 
-from distutils2._backport import hashlib
 from distutils2.command.install_distinfo import install_distinfo
 from distutils2.core import Command
 from distutils2.metadata import DistributionMetadata
 from distutils2.tests import support
 from distutils2.tests.support import unittest
+
+try:
+    import hashlib
+except ImportError:
+    from distutils2._backport import hashlib
 
 
 class DummyInstallCmd(Command):
@@ -143,9 +147,9 @@ class InstallDistinfoTestCase(support.TempdirManager,
         dirs = []
         for dir in os.listdir(fake_dists):
                 full_path = os.path.join(fake_dists, dir)
-                if not dir.endswith(('.egg', '.egg-info', '.dist-info')) \
-                   and os.path.isdir(full_path):
-                        dirs.append(full_path)
+                if (not dir.endswith('.egg') or dir.endswith('.egg-info') or
+                    dir.endswith('.dist-info')) and os.path.isdir(full_path):
+                    dirs.append(full_path)
 
         for dir in dirs:
             for (path, subdirs, files) in os.walk(dir):

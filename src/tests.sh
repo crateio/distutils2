@@ -1,7 +1,7 @@
 #!/bin/sh
 echo -n "Running tests for Python 2.4... "
 rm -f distutils2/_backport/_hashlib.so
-python2.4 setup.py build_ext -q 2> /dev/null > /dev/null
+python2.4 setup.py build_ext -f -q 2> /dev/null > /dev/null
 python2.4 -Wd runtests.py -q 2> /dev/null
 if [ $? -ne 0 ];then
     echo "Failed"

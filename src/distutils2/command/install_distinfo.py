@@ -10,15 +10,16 @@ Usually, you do not have to call this command directly, it gets called
 automatically by the ``install`` command.
 """
 
+import os
+import csv
+import re
 from distutils2.command.cmd import Command
 from distutils2 import log
 from distutils2._backport.shutil import rmtree
-
-
-import csv
-import hashlib
-import os
-import re
+try:
+    import hashlib
+except ImportError:
+    from distutils2._backport import hashlib
 
 
 class install_distinfo(Command):
