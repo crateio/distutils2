@@ -119,7 +119,7 @@ class InstallDistinfoTestCase(support.TempdirManager,
 
         cmd.initialize_options()
         cmd.distinfo_dir = install_dir
-        cmd.no_distinfo_record = True
+        cmd.no_record = True
         cmd.ensure_finalized()
         cmd.run()
 

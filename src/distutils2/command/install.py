@@ -82,13 +82,10 @@ class install(Command):
 
         # .dist-info related arguments, read by install_dist_info
         ('no-distinfo', None, 'do not create a .dist-info directory'),
-        ('distinfo-dir=', None,
-                           'directory where the the .dist-info directory will '
-                           'be installed'),
         ('installer=', None, 'the name of the installer'),
         ('requested', None, 'generate a REQUESTED file'),
         ('no-requested', None, 'do not generate a REQUESTED file'),
-        ('no-distinfo-record', None, 'do not generate a RECORD file'),
+        ('no-record', None, 'do not generate a RECORD file'),
         ]
 
     boolean_options = ['compile', 'force', 'skip-build', 'no-dist-info',
@@ -173,10 +170,9 @@ class install(Command):
 
         # .dist-info related options
         self.no_distinfo = None
-        self.distinfo_dir = None
         self.installer = None
         self.requested = None
-        self.no_distinfo_record = None
+        self.no_record = None
 
 
     # -- Option finalizing methods -------------------------------------
