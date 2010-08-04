@@ -64,7 +64,7 @@ class upload_docs(Command):
         self.repository = None
         self.realm = None
         self.show_response = 0
-        self.upload_dir = "build/docs"
+        self.upload_dir = None
         self.username = ''
         self.password = ''
 
@@ -73,7 +73,7 @@ class upload_docs(Command):
             self.repository = DEFAULT_REPOSITORY
         if self.realm is None:
             self.realm = DEFAULT_REALM
-        if self.upload_dir == None:
+        if self.upload_dir is None:
             build = self.get_finalized_command('build')
             self.upload_dir = os.path.join(build.build_base, "docs")
         self.announce('Using upload directory %s' % self.upload_dir)

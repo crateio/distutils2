@@ -35,6 +35,8 @@ class upload(Command):
          "sign files to upload using gpg"),
         ('identity=', 'i',
          "GPG identity used to sign files"),
+        ('upload-docs', None,
+         "upload documentation too"),
         ]
 
     boolean_options = ['show-response', 'sign']
@@ -48,6 +50,7 @@ class upload(Command):
         self.show_response = 0
         self.sign = False
         self.identity = None
+        self.upload_docs = False
 
     def finalize_options(self):
         if self.repository is None:
@@ -75,6 +78,12 @@ class upload(Command):
             raise DistutilsOptionError("No dist file created in earlier command")
         for command, pyversion, filename in self.distribution.dist_files:
             self.upload_file(command, pyversion, filename)
+        if self.upload_docs:
+            upload_docs = self.get_finalized_command("upload_docs")
+            upload_docs.repository = self.repository
+            upload_docs.username = self.username
+            upload_docs.password = self.password
+            upload_docs.run()
 
     # XXX to be refactored with register.post_to_server
     def upload_file(self, command, pyversion, filename):

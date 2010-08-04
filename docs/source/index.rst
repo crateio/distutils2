@@ -14,7 +14,7 @@ Contents:
    metadata
    pkgutil
    depgraph
-   new_commands
+   commands
    test_framework
    pypi
    version
