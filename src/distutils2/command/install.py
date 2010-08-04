@@ -317,9 +317,7 @@ class install(Command):
         self.dump_dirs("after prepending root")
 
         # Find out the build directories, ie. where to install from.
-        self.set_undefined_options('build',
-                                   ('build_base', 'build_base'),
-                                   ('build_lib', 'build_lib'))
+        self.set_undefined_options('build', 'build_base', 'build_lib')
 
         # Punt on doc directories for now -- after all, we're punting on
         # documentation completely!

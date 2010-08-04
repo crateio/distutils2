@@ -177,13 +177,8 @@ class build_ext(Command):
 
     def finalize_options(self):
         self.set_undefined_options('build',
-                                   ('build_lib', 'build_lib'),
-                                   ('build_temp', 'build_temp'),
-                                   ('compiler', 'compiler'),
-                                   ('debug', 'debug'),
-                                   ('force', 'force'),
-                                   ('plat_name', 'plat_name'),
-                                   )
+                                   'build_lib', 'build_temp', 'compiler',
+                                   'debug', 'force', 'plat_name')
 
         if self.package is None:
             self.package = self.distribution.ext_package

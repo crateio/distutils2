@@ -95,9 +95,7 @@ class build_py(Command, Mixin2to3):
         self._doctests_2to3 = []
 
     def finalize_options(self):
-        self.set_undefined_options('build',
-                                   ('build_lib', 'build_lib'),
-                                   ('force', 'force'))
+        self.set_undefined_options('build', 'build_lib', 'force')
 
         # Get the distribution options that are aliases for build_py
         # options -- list of packages and list of modules.

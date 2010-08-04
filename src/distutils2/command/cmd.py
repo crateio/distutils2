@@ -297,26 +297,30 @@ class Command(object):
         else:
             return self.__class__.__name__
 
-    def set_undefined_options(self, src_cmd, *option_pairs):
-        """Set the values of any "undefined" options from corresponding
-        option values in some other command object.  "Undefined" here means
-        "is None", which is the convention used to indicate that an option
-        has not been changed between 'initialize_options()' and
-        'finalize_options()'.  Usually called from 'finalize_options()' for
-        options that depend on some other command rather than another
-        option of the same command.  'src_cmd' is the other command from
-        which option values will be taken (a command object will be created
-        for it if necessary); the remaining arguments are
-        '(src_option,dst_option)' tuples which mean "take the value of
-        'src_option' in the 'src_cmd' command object, and copy it to
-        'dst_option' in the current command object".
+    def set_undefined_options(self, src_cmd, *options):
+        """Set values of undefined options from another command.
+
+        Undefined options are options set to None, which is the convention
+        used to indicate that an option has not been changed between
+        'initialize_options()' and 'finalize_options()'.  This method is
+        usually called from 'finalize_options()' for options that depend on
+        some other command rather than another option of the same command,
+        typically subcommands.
+
+        The 'src_cmd' argument is the other command from which option values
+        will be taken (a command object will be created for it if necessary);
+        the remaining positional arguments are strings that give the name of
+        the option to set. If the name is different on the source and target
+        command, you can pass a tuple with '(name_on_source, name_on_dest)' so
+        that 'self.name_on_dest' will be set from 'src_cmd.name_on_source'.
         """
-
-        # Option_pairs: list of (src_option, dst_option) tuples
-
         src_cmd_obj = self.distribution.get_command_obj(src_cmd)
         src_cmd_obj.ensure_finalized()
-        for (src_option, dst_option) in option_pairs:
+        for obj in options:
+            if isinstance(obj, tuple):
+                src_option, dst_option = obj
+            else:
+                src_option, dst_option = obj, obj
             if getattr(self, dst_option) is None:
                 setattr(self, dst_option,
                         getattr(src_cmd_obj, src_option))

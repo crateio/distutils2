@@ -29,8 +29,7 @@ class install_headers(Command):
     def finalize_options(self):
         self.set_undefined_options('install',
                                    ('install_headers', 'install_dir'),
-                                   ('force', 'force'))
-
+                                   'force')
 
     def run(self):
         headers = self.distribution.headers

@@ -100,10 +100,7 @@ class bdist_wininst (Command):
                       " option must be specified" % (short_version,)
             self.target_version = short_version
 
-        self.set_undefined_options('bdist',
-                                   ('dist_dir', 'dist_dir'),
-                                   ('plat_name', 'plat_name'),
-                                  )
+        self.set_undefined_options('bdist', 'dist_dir', 'plat_name')
 
         if self.install_script:
             for script in self.distribution.scripts:

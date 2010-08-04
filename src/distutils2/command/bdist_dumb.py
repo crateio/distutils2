@@ -77,9 +77,7 @@ class bdist_dumb (Command):
                       ("don't know how to create dumb built distributions " +
                        "on platform %s") % os.name
 
-        self.set_undefined_options('bdist',
-                                   ('dist_dir', 'dist_dir'),
-                                   ('plat_name', 'plat_name'))
+        self.set_undefined_options('bdist', 'dist_dir', 'plat_name')
 
     def run(self):
         if not self.skip_build:
