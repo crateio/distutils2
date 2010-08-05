@@ -94,9 +94,10 @@ class upload_docs(Command):
 
     def run(self):
         name = self.distribution.metadata['Name']
+        version = self.distribution.metadata['Version']
         zip_file = zip_dir(self.upload_dir)
 
-        fields = {':action': 'doc_upload', 'name': name}.items()
+        fields = [(':action', 'doc_upload'), ('name', name), ('version', version)]
         files = [('content', name, zip_file.getvalue())]
         content_type, body = encode_multipart(fields, files)
 
