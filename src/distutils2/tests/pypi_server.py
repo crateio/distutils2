@@ -9,6 +9,7 @@ import os
 import Queue
 import SocketServer
 import select
+import socket
 import threading
 
 from BaseHTTPServer import HTTPServer
