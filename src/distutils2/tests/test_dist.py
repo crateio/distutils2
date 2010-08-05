@@ -153,6 +153,27 @@ class DistributionTestCase(support.TempdirManager,
         my_file2 = os.path.join(tmp_dir, 'f2')
         dist.metadata.write_file(open(my_file, 'w'))
 
+    def test_bad_attr(self):
+        cls = Distribution
+
+        # catching warnings
+        warns = []
+        def _warn(msg):
+            warns.append(msg)
+
+        old_warn = warnings.warn
+        warnings.warn = _warn
+        try:
+            dist = cls(attrs={'author': 'xxx',
+                              'name': 'xxx',
+                              'version': 'xxx',
+                              'url': 'xxxx',
+                              'badoptname': 'xxx'})
+        finally:
+            warnings.warn = old_warn
+
+        self.assertTrue(len(warns)==1 and "Unknown distribution" in warns[0])
+
     def test_empty_options(self):
         # an empty options dictionary should not stay in the
         # list of attributes
@@ -175,6 +196,21 @@ class DistributionTestCase(support.TempdirManager,
             warnings.warn = old_warn
 
         self.assertEqual(len(warns), 0)
+
+    def test_non_empty_options(self):
+        # TODO: how to actually use options is not documented except
+        # for a few cryptic comments in dist.py.  If this is to stay
+        # in the public API, it deserves some better documentation.
+
+        # Here is an example of how it's used out there: 
+        # http://svn.pythonmac.org/py2app/py2app/trunk/doc/index.html#specifying-customizations
+        cls = Distribution
+        dist = cls(attrs={'author': 'xxx',
+                          'name': 'xxx',
+                          'version': 'xxx',
+                          'url': 'xxxx',
+                          'options': dict(sdist=dict(owner="root"))})
+        self.assertTrue("owner" in dist.get_option_dict("sdist"))
 
     def test_finalize_options(self):
 
