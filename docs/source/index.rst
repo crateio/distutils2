@@ -15,6 +15,7 @@ Contents:
    pkgutil
    depgraph
    commands
+   command_hooks
    test_framework
    pypi
    version

@@ -51,6 +51,12 @@ class Command(object):
     # defined.  The canonical example is the "install" command.
     sub_commands = []
 
+    # Pre and post command hooks are run just before or just after the command
+    # itself. They are simple functions that receive the command instance. They
+    # should be specified as dotted strings.
+    pre_hook = None
+    post_hook = None
+
 
     # -- Creation/initialization methods -------------------------------
 

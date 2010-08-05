@@ -18,7 +18,7 @@ from ConfigParser import RawConfigParser
 from distutils2.errors import (DistutilsOptionError, DistutilsArgError,
                                DistutilsModuleError, DistutilsClassError)
 from distutils2.fancy_getopt import FancyGetopt, translate_longopt
-from distutils2.util import check_environ, strtobool
+from distutils2.util import check_environ, strtobool, resolve_dotted_name
 from distutils2 import log
 from distutils2.metadata import DistributionMetadata
 
@@ -27,7 +27,6 @@ from distutils2.metadata import DistributionMetadata
 # that they're very similar is no coincidence; the default naming scheme is
 # to look for a Python module named after the command.
 command_re = re.compile (r'^[a-zA-Z]([a-zA-Z0-9_]*)$')
-
 
 class Distribution(object):
     """The core of the Distutils.  Most of the work hiding behind 'setup'
@@ -116,7 +115,7 @@ Common commands: (see '--help-commands' for more)
         ('use-2to3', None,
          "use 2to3 to make source python 3.x compatible"),
         ('convert-2to3-doctests', None,
-         "use 2to3 to convert doctests in seperate text files"), 
+         "use 2to3 to convert doctests in seperate text files"),
         ]
     display_option_names = map(lambda x: translate_longopt(x[0]),
                                display_options)
@@ -382,7 +381,19 @@ Common commands: (see '--help-commands' for more)
                     if opt != '__name__':
                         val = parser.get(section,opt)
                         opt = opt.replace('-', '_')
-                        opt_dict[opt] = (filename, val)
+
+                        # ... although practicality beats purity :(
+                        if opt.startswith("pre_hook.") or opt.startswith("post_hook."):
+                            hook_type, alias = opt.split(".")
+                            # Hooks are somewhat exceptional, as they are
+                            # gathered from many config files (not overriden as
+                            # other options).
+                            # The option_dict expects {"command": ("filename", # "value")}
+                            # so for hooks, we store only the last config file processed
+                            hook_dict = opt_dict.setdefault(hook_type, (filename, {}))[1]
+                            hook_dict[alias] = val
+                        else:
+                            opt_dict[opt] = (filename, val)
 
             # Make the RawConfigParser forget everything (so we retain
             # the original filenames that options come from)
@@ -583,7 +594,7 @@ Common commands: (see '--help-commands' for more)
         objects.
         """
         if getattr(self, 'convert_2to3_doctests', None):
-            self.convert_2to3_doctests = [os.path.join(p) 
+            self.convert_2to3_doctests = [os.path.join(p)
                                 for p in self.convert_2to3_doctests]
         else:
             self.convert_2to3_doctests = []
@@ -948,12 +959,22 @@ Common commands: (see '--help-commands' for more)
         if self.have_run.get(command):
             return
 
-        log.info("running %s", command)
         cmd_obj = self.get_command_obj(command)
         cmd_obj.ensure_finalized()
+        self.run_command_hooks(cmd_obj, 'pre_hook')
+        log.info("running %s", command)
         cmd_obj.run()
+        self.run_command_hooks(cmd_obj, 'post_hook')
         self.have_run[command] = 1
 
+
+    def run_command_hooks(self, cmd_obj, hook_kind):
+        hooks = getattr(cmd_obj, hook_kind)
+        if hooks is None:
+            return
+        for hook in hooks.values():
+            hook_func = resolve_dotted_name(hook)
+            hook_func(cmd_obj)
 
     # -- Distribution query methods ------------------------------------
 

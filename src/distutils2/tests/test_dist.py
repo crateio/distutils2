@@ -240,6 +240,49 @@ class DistributionTestCase(support.TempdirManager,
         # make sure --no-user-cfg disables the user cfg file
         self.assertEqual(len(all_files)-1, len(files))
 
+    def test_special_hooks_parsing(self):
+        temp_home = self.mkdtemp()
+        config_files = [os.path.join(temp_home, "config1.cfg"),
+                        os.path.join(temp_home, "config2.cfg")]
+
+        # Store two aliased hooks in config files
+        self.write_file((temp_home, "config1.cfg"), '[test_dist]\npre-hook.a = type')
+        self.write_file((temp_home, "config2.cfg"), '[test_dist]\npre-hook.b = type')
+
+        sys.argv.extend(["--command-packages",
+                         "distutils2.tests",
+                         "test_dist"])
+        cmd = self.create_distribution(config_files).get_command_obj("test_dist")
+        self.assertEqual(cmd.pre_hook, {"a": 'type', "b": 'type'})
+
+
+    def test_hooks_get_run(self):
+        temp_home = self.mkdtemp()
+        config_file = os.path.join(temp_home, "config1.cfg")
+
+        self.write_file((temp_home, "config1.cfg"), textwrap.dedent('''
+            [test_dist]
+            pre-hook.test = distutils2.tests.test_dist.DistributionTestCase.log_pre_call
+            post-hook.test = distutils2.tests.test_dist.DistributionTestCase.log_post_call'''))
+
+        sys.argv.extend(["--command-packages",
+                         "distutils2.tests",
+                         "test_dist"])
+        d = self.create_distribution([config_file])
+        cmd = d.get_command_obj("test_dist")
+
+        # prepare the call recorders
+        record = []
+        DistributionTestCase.log_pre_call = staticmethod(lambda _cmd: record.append(('pre', _cmd)))
+        DistributionTestCase.log_post_call = staticmethod(lambda _cmd: record.append(('post', _cmd)))
+        test_dist.run = lambda _cmd: record.append(('run', _cmd))
+        test_dist.finalize_options = lambda _cmd: record.append(('finalize_options', _cmd))
+
+        d.run_command('test_dist')
+        self.assertEqual(record, [('finalize_options', cmd),
+                                  ('pre', cmd),
+                                  ('run', cmd),
+                                  ('post', cmd)])
 
 class MetadataTestCase(support.TempdirManager, support.EnvironGuard,
                        unittest.TestCase):
