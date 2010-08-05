@@ -75,11 +75,9 @@ class InstallTestCase(support.TempdirManager,
         check_path(cmd.install_scripts, os.path.join(destination, "bin"))
         check_path(cmd.install_data, destination)
 
+    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_user_site(self):
-        # site.USER_SITE was introduced in 2.6
-        if sys.version < '2.6':
-            return
-
+        # test install with --user
         # preparing the environment for the test
         self.old_user_base = get_config_var('userbase')
         self.old_user_site = get_path('purelib', '%s_user' % os.name)
