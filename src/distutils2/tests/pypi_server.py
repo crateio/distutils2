@@ -330,7 +330,7 @@ class MockDist(object):
             'licence': self.licence,
             'summary': self.summary,
             'home_page': self.homepage,
-            'stable_version': self.stale_version,
+            'stable_version': self.stable_version,
             'provides_dist': self.provides_dist,
             'requires': self.requires,
             'cheesecake_installability_id': self.cheesecake_installability_id,
