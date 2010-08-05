@@ -17,7 +17,7 @@ Contents:
    commands
    command_hooks
    test_framework
-   pypi
+   projects-index
    version
 
 Indices and tables

@@ -183,9 +183,12 @@ class DistributionMetadata(object):
     """The metadata of a release.
 
     Supports versions 1.0, 1.1 and 1.2 (auto-detected).
+
+    if from_dict attribute is set, all key/values pairs will be sent to the
+    "set" method, building the metadata from the dict.
     """
     def __init__(self, path=None, platform_dependent=False,
-                 execution_context=None, fileobj=None):
+                 execution_context=None, fileobj=None, mapping=None):
         self._fields = {}
         self.version = None
         self.docutils_support = _HAS_DOCUTILS
@@ -195,6 +198,8 @@ class DistributionMetadata(object):
         elif fileobj is not None:
             self.read_file(fileobj)
         self.execution_context = execution_context
+        if mapping:
+            self.update(mapping)
 
     def _set_best_version(self):
         self.version = _best_version(self._fields)
@@ -321,6 +326,38 @@ class DistributionMetadata(object):
 
             for value in values:
                 self._write_field(fileobject, field, value)
+
+    def update(self, other=None, **kwargs):
+        """Set metadata values from the given mapping
+        
+        Convert the keys to Metadata fields. Given keys that don't match a
+        metadata argument will not be used.
+
+        If overwrite is set to False, just add metadata values that are
+        actually not defined.
+
+        If there is existing values in conflict with the dictionary ones, the
+        new values prevails.
+
+        Empty values (e.g. None and []) are not setted this way.
+        """
+        def _set(key, value):
+            if value not in ([], None) and key in _ATTR2FIELD:
+                self.set(self._convert_name(key), value)
+
+        if other is None:
+            pass
+        elif hasattr(other, 'iteritems'):  # iteritems saves memory and lookups
+            for k, v in other.iteritems():
+                _set(k, v)
+        elif hasattr(other, 'keys'):
+            for k in other.keys():
+                _set(k, v)
+        else:
+            for k, v in other:
+                _set(k, v)
+        if kwargs:
+            self.update(kwargs)
 
     def set(self, name, value):
         """Control then set a metadata field."""
