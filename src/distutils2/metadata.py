@@ -182,23 +182,30 @@ _UNICODEFIELDS = ('Author', 'Maintainer', 'Summary', 'Description')
 class DistributionMetadata(object):
     """The metadata of a release.
 
-    Supports versions 1.0, 1.1 and 1.2 (auto-detected).
-
-    if from_dict attribute is set, all key/values pairs will be sent to the
-    "set" method, building the metadata from the dict.
+    Supports versions 1.0, 1.1 and 1.2 (auto-detected). You can
+    instantiate the class with one of these arguments (or none):
+    - *path*, the path to a METADATA file
+    - *fileobj* give a file-like object with METADATA as content
+    - *mapping* is a dict-like object
     """
+    # TODO document that execution_context and platform_dependent are used
+    # to filter on query, not when setting a key
+    # also document the mapping API and UNKNOWN default key
+
     def __init__(self, path=None, platform_dependent=False,
                  execution_context=None, fileobj=None, mapping=None):
         self._fields = {}
         self.version = None
         self.docutils_support = _HAS_DOCUTILS
         self.platform_dependent = platform_dependent
+        self.execution_context = execution_context
+        if [path, fileobj, mapping].count(None) < 2:
+            raise TypeError('path, fileobj and mapping are exclusive')
         if path is not None:
             self.read(path)
         elif fileobj is not None:
             self.read_file(fileobj)
-        self.execution_context = execution_context
-        if mapping:
+        elif mapping is not None:
             self.update(mapping)
 
     def _set_best_version(self):
@@ -329,7 +336,7 @@ class DistributionMetadata(object):
 
     def update(self, other=None, **kwargs):
         """Set metadata values from the given mapping
-        
+
         Convert the keys to Metadata fields. Given keys that don't match a
         metadata argument will not be used.
 

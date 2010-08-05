@@ -13,6 +13,36 @@ from distutils2.errors import (MetadataConflictError,
 
 class DistributionMetadataTestCase(LoggingSilencer, unittest.TestCase):
 
+    def test_instantiation(self):
+        PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
+        fp = open(PKG_INFO)
+        try:
+            contents = fp.read()
+        finally:
+            fp.close()
+        fp = StringIO(contents)
+
+        m = DistributionMetadata()
+        self.assertRaises(MetadataUnrecognizedVersionError, m.items)
+
+        m = DistributionMetadata(PKG_INFO)
+        self.assertEqual(len(m.items()), 22)
+
+        m = DistributionMetadata(fileobj=fp)
+        self.assertEqual(len(m.items()), 22)
+
+        m = DistributionMetadata(mapping=dict(name='Test', version='1.0'))
+        self.assertEqual(len(m.items()), 11)
+
+        d = dict(m.items())
+        self.assertRaises(TypeError, DistributionMetadata,
+                          PKG_INFO, fileobj=fp)
+        self.assertRaises(TypeError, DistributionMetadata,
+                          PKG_INFO, mapping=d)
+        self.assertRaises(TypeError, DistributionMetadata,
+                          fileobj=fp, mapping=d)
+        self.assertRaises(TypeError, DistributionMetadata,
+                          PKG_INFO, mapping=m, fileobj=fp)
 
     def test_interpret(self):
         sys_platform = sys.platform
@@ -114,15 +144,15 @@ class DistributionMetadataTestCase(LoggingSilencer, unittest.TestCase):
         metadata.read_file(out)
         self.assertEqual(wanted, metadata['Description'])
 
-    def test_mapper_apis(self):
+    def test_mapping_api(self):
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
         content = open(PKG_INFO).read()
         content = content % sys.platform
-        metadata = DistributionMetadata()
-        metadata.read_file(StringIO(content))
+        metadata = DistributionMetadata(fileobj=StringIO(content))
         self.assertIn('Version', metadata.keys())
         self.assertIn('0.5', metadata.values())
         self.assertIn(('Version', '0.5'), metadata.items())
+        #TODO test update
 
     def test_versions(self):
         metadata = DistributionMetadata()
