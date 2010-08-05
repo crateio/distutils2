@@ -17,6 +17,5 @@ Notes for developers
 
   - DistributionMetadata > Metadata or ReleaseMetadata
   - pkgutil > pkgutil.__init__ + new pkgutil.database (or better name)
-  - pypi > index
   - RationalizedVersion > Version
   - suggest_rationalized_version > suggest
