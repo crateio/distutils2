@@ -10,6 +10,8 @@ Usually, you do not have to call this command directly, it gets called
 automatically by the ``install`` command.
 """
 
+# This file was created from the code for the former command install_egg_info
+
 import os
 import csv
 import re
@@ -34,12 +36,12 @@ class install_distinfo(Command):
         ('installer=', None, 'the name of the installer'),
         ('requested', None, 'generate a REQUESTED file'),
         ('no-requested', None, 'do not generate a REQUESTED file'),
-        ('no-distinfo-record', None, 'do not generate a RECORD file'),
+        ('no-record', None, 'do not generate a RECORD file'),
     ]
 
     boolean_options = [
         'requested',
-        'no-dist-record',
+        'no-record',
     ]
 
     negative_opt = {'no-requested': 'requested'}
@@ -48,15 +50,13 @@ class install_distinfo(Command):
         self.distinfo_dir = None
         self.installer = None
         self.requested = None
-        self.no_distinfo_record = None
+        self.no_record = None
 
     def finalize_options(self):
         self.set_undefined_options('install',
-                                   ('distinfo_dir', 'distinfo_dir'),
                                    ('installer', 'installer'),
                                    ('requested', 'requested'),
-                                   ('no_distinfo_record',
-                                        'no_distinfo_record'))
+                                   ('no_record', 'no_record'))
 
         self.set_undefined_options('install_lib',
                                    ('install_dir', 'distinfo_dir'))
@@ -65,8 +65,8 @@ class install_distinfo(Command):
             self.installer = 'distutils'
         if self.requested is None:
             self.requested = True
-        if self.no_distinfo_record is None:
-            self.no_distinfo_record = False
+        if self.no_record is None:
+            self.no_record = False
 
         metadata = self.distribution.metadata
 
@@ -111,7 +111,7 @@ class install_distinfo(Command):
                 f.close()
                 self.outputs.append(requested_path)
 
-            if not self.no_distinfo_record:
+            if not self.no_record:
                 record_path = os.path.join(self.distinfo_dir, 'RECORD')
                 log.info('Creating %s' % (record_path,))
                 f = open(record_path, 'wb')
