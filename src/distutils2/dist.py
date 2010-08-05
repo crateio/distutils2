@@ -7,11 +7,7 @@ being built/installed/distributed.
 __revision__ = "$Id: dist.py 77717 2010-01-24 00:33:32Z tarek.ziade $"
 
 import sys, os, re
-
-try:
-    import warnings
-except ImportError:
-    warnings = None
+import warnings
 
 from ConfigParser import RawConfigParser
 
@@ -251,10 +247,7 @@ Common commands: (see '--help-commands' for more)
                     setattr(self, key, val)
                 else:
                     msg = "Unknown distribution option: %r" % key
-                    if warnings is not None:
-                        warnings.warn(msg)
-                    else:
-                        sys.stderr.write(msg + "\n")
+                    warnings.warn(msg)
 
         # no-user-cfg is handled before other command line args
         # because other args override the config files, and this
