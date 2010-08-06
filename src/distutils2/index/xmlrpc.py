@@ -94,7 +94,7 @@ class Client(BaseClient):
             if not versions:
                 raise ProjectNotFound(project_name)
             project = self._get_project(project_name)
-            project.add_releases([ReleaseInfo(project_name, version, 
+            project.add_releases([ReleaseInfo(project_name, version,
                                               index=self._index)
                                   for version in versions])
         project = project.filter(predicate)
@@ -102,7 +102,7 @@ class Client(BaseClient):
             raise ReleaseNotFound("%s" % predicate)
         project.sort_releases(prefer_final)
         return project
-        
+
 
     def get_distributions(self, project_name, version):
         """Grab informations about distributions from XML-RPC.
@@ -121,7 +121,7 @@ class Client(BaseClient):
             dist_infos = {'url': info['url'],
                           'hashval': info['md5_digest'],
                           'hashname': 'md5',
-                          'is_external': False, 
+                          'is_external': False,
                           'python_version': info['python_version']}
             release.add_distribution(packagetype, **dist_infos)
         return release

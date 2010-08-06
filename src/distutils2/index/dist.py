@@ -39,6 +39,7 @@ DIST_TYPES = ['bdist', 'sdist']
 
 
 class IndexReference(object):
+    """Mixin used to store the index reference"""
     def set_index(self, index=None):
         self._index = index
 
@@ -367,7 +368,7 @@ class ReleasesList(IndexReference):
                                         if predicate.match(release.version)],
                                         index=self._index)
 
-    def get_last(self, predicate, prefer_final=None):
+    def get_last(self, requirements, prefer_final=None):
         """Return the "last" release, that satisfy the given predicates.
 
         "last" is defined by the version number of the releases, you also could
