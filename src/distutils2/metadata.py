@@ -3,10 +3,10 @@
 Supports all metadata formats (1.0, 1.1, 1.2).
 """
 
-import re
 import os
 import sys
 import platform
+import re
 from StringIO import StringIO
 from email import message_from_file
 from tokenize import tokenize, NAME, OP, STRING, ENDMARKER
@@ -91,6 +91,7 @@ def _version2fieldlist(version):
     elif version == '1.2':
         return _345_FIELDS
     raise MetadataUnrecognizedVersionError(version)
+
 
 def _best_version(fields):
     """Detect the best version depending on the fields used."""
@@ -448,7 +449,7 @@ class DistributionMetadata(object):
                 missing.append(attr)
 
         if _HAS_DOCUTILS:
-            warnings = self._check_rst_data(self['Description'])
+            warnings.extend(self._check_rst_data(self['Description']))
 
         # checking metadata 1.2 (XXX needs to check 1.1, 1.0)
         if self['Metadata-Version'] != '1.2':
@@ -497,6 +498,7 @@ _OPERATORS = {'==': lambda x, y: x == y,
               'in': lambda x, y: x in y,
               'not in': lambda x, y: x not in y}
 
+
 def _operate(operation, x, y):
     return _OPERATORS[operation](x, y)
 
@@ -507,6 +509,7 @@ _VARS = {'sys.platform': sys.platform,
          'os.name': os.name,
          'platform.version': platform.version(),
          'platform.machine': platform.machine()}
+
 
 class _Operation(object):
 
@@ -568,6 +571,7 @@ class _Operation(object):
         right = self._convert(self.right)
         return _operate(self.op, left, right)
 
+
 class _OR(object):
     def __init__(self, left, right=None):
         self.left = left
@@ -596,6 +600,7 @@ class _AND(object):
 
     def __call__(self):
         return self.left() and self.right()
+
 
 class _CHAIN(object):
 
@@ -657,6 +662,7 @@ class _CHAIN(object):
             if not op():
                 return False
         return True
+
 
 def _interpret(marker, execution_context=None):
     """Interpret a marker and return a result depending on environment."""

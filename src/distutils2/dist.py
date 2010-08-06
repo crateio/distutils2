@@ -41,7 +41,6 @@ class Distribution(object):
     See the code for 'setup()', in core.py, for details.
     """
 
-
     # 'global_options' describes the command-line options that may be
     # supplied to the setup script prior to any actual commands.
     # Eg. "./setup.py -n" or "./setup.py --quiet" both take advantage of
@@ -274,10 +273,10 @@ Common commands: (see '--help-commands' for more)
         and return the new dictionary; otherwise, return the existing
         option dictionary.
         """
-        dict = self.command_options.get(command)
-        if dict is None:
-            dict = self.command_options[command] = {}
-        return dict
+        d = self.command_options.get(command)
+        if d is None:
+            d = self.command_options[command] = {}
+        return d
 
     def get_fullname(self):
         return self.metadata.get_fullname()
@@ -373,7 +372,7 @@ Common commands: (see '--help-commands' for more)
 
                 for opt in options:
                     if opt != '__name__':
-                        val = parser.get(section,opt)
+                        val = parser.get(section, opt)
                         opt = opt.replace('-', '_')
 
                         # ... although practicality beats purity :(
@@ -402,12 +401,12 @@ Common commands: (see '--help-commands' for more)
                 try:
                     if alias:
                         setattr(self, alias, not strtobool(val))
-                    elif opt in ('verbose', 'dry_run'): # ugh!
+                    elif opt in ('verbose', 'dry_run'):  # ugh!
                         setattr(self, opt, strtobool(val))
                     else:
                         setattr(self, opt, val)
                 except ValueError, msg:
-                    raise DistutilsOptionError, msg
+                    raise DistutilsOptionError(msg)
 
     # -- Command-line parsing methods ----------------------------------
 
@@ -473,7 +472,7 @@ Common commands: (see '--help-commands' for more)
 
         # Oops, no commands found -- an end-user error
         if not self.commands:
-            raise DistutilsArgError, "no commands supplied"
+            raise DistutilsArgError("no commands supplied")
 
         # All is well: return true
         return 1
@@ -504,7 +503,7 @@ Common commands: (see '--help-commands' for more)
         # Pull the current command from the head of the command line
         command = args[0]
         if not command_re.match(command):
-            raise SystemExit, "invalid command name '%s'" % command
+            raise SystemExit("invalid command name '%s'" % command)
         self.commands.append(command)
 
         # Dig up the command class that implements this command, so we
@@ -513,22 +512,21 @@ Common commands: (see '--help-commands' for more)
         try:
             cmd_class = self.get_command_class(command)
         except DistutilsModuleError, msg:
-            raise DistutilsArgError, msg
+            raise DistutilsArgError(msg)
 
         # Require that the command class be derived from Command -- want
         # to be sure that the basic "command" interface is implemented.
         if not issubclass(cmd_class, Command):
-            raise DistutilsClassError, \
-                  "command class %s must subclass Command" % cmd_class
+            raise DistutilsClassError(
+                  "command class %s must subclass Command" % cmd_class)
 
         # Also make sure that the command object provides a list of its
         # known options.
         if not (hasattr(cmd_class, 'user_options') and
                 isinstance(cmd_class.user_options, list)):
-            raise DistutilsClassError, \
-                  ("command class %s must provide " +
-                   "'user_options' attribute (a list of tuples)") % \
-                  cmd_class
+            raise DistutilsClassError(
+                  ("command class %s must provide "
+                   "'user_options' attribute (a list of tuples)") % cmd_class)
 
         # If the command class has a list of negative alias options,
         # merge it in with the global negative aliases.
@@ -544,7 +542,6 @@ Common commands: (see '--help-commands' for more)
             help_options = fix_help_options(cmd_class.help_options)
         else:
             help_options = []
-
 
         # All commands support the global options too, just by adding
         # in 'global_options'.
@@ -809,9 +806,9 @@ Common commands: (see '--help-commands' for more)
             try:
                 cls = getattr(module, class_name)
             except AttributeError:
-                raise DistutilsModuleError, \
-                      "invalid command '%s' (no class '%s' in module '%s')" \
-                      % (command, class_name, module_name)
+                raise DistutilsModuleError(
+                      "invalid command '%s' (no class '%s' in module '%s')" %
+                      (command, class_name, module_name))
 
             self.cmdclass[command] = cls
             return cls
@@ -880,11 +877,11 @@ Common commands: (see '--help-commands' for more)
                 elif hasattr(command_obj, option):
                     setattr(command_obj, option, value)
                 else:
-                    raise DistutilsOptionError, \
-                          ("error in %s: command '%s' has no such option '%s'"
-                           % (source, command_name, option))
+                    raise DistutilsOptionError(
+                        "error in %s: command '%s' has no such option '%s'" %
+                        (source, command_name, option))
             except ValueError, msg:
-                raise DistutilsOptionError, msg
+                raise DistutilsOptionError(msg)
 
     def get_reinitialized_command(self, command, reinit_subcommands=0):
         """Reinitializes a command to the state it was in when first
