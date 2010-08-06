@@ -3,6 +3,30 @@
 This module also provides a simple test case to extend if you need to use
 the PyPIServer all along your test case. Be sure to read the documentation 
 before any use.
+
+XXX TODO:
+
+The mock server can handle simple HTTP request (to simulate a simple index) or
+XMLRPC requests, over HTTP. Both does not have the same intergface to deal
+with, and I think it's a pain. 
+
+A good idea could be to re-think a bit the way dstributions are handled in the
+mock server. As it should return malformed HTML pages, we need to keep the
+static behavior.
+
+I think of something like that:
+
+    >>> server = PyPIMockServer()
+    >>> server.startHTTP()
+    >>> server.startXMLRPC()
+
+Then, the server must have only one port to rely on, eg.
+    
+    >>> server.fulladress()
+    "http://ip:port/"
+
+It could be simple to have one HTTP server, relaying the requests to the two
+implementations (static HTTP and XMLRPC over HTTP). 
 """
 
 import Queue
@@ -79,7 +103,8 @@ class PyPIServer(threading.Thread):
         threading.Thread.__init__(self)
         self._run = True
         self._serve_xmlrpc = serve_xmlrpc
-
+        
+        #TODO allow to serve XMLRPC and HTTP static files at the same time.
         if not self._serve_xmlrpc: 
             self.server = HTTPServer(('', 0), PyPIRequestHandler)
             self.server.RequestHandlerClass.pypi_server = self
@@ -97,7 +122,7 @@ class PyPIServer(threading.Thread):
             self.static_filesystem_paths = [PYPI_DEFAULT_STATIC_PATH + "/" + path
                 for path in static_filesystem_paths]
         else:
-            # xmlrpc server
+            # XMLRPC server
             self.server = PyPIXMLRPCServer(('', 0))
             self.xmlrpc = XMLRPCMockIndex()
             # register the xmlrpc methods
@@ -331,7 +356,8 @@ class MockDist(object):
             'summary': self.summary, 
             'home_page': self.homepage, 
             'stable_version': self.stable_version, 
-            'provides_dist': self.provides_dist, 
+            'provides_dist': self.provides_dist or "%s (%s)" % (self.name,
+                                                              self.version),
             'requires': self.requires, 
             'cheesecake_installability_id': self.cheesecake_installability_id,
         }
