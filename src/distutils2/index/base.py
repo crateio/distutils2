@@ -1,4 +1,3 @@
-from distutils2.version import VersionPredicate
 from distutils2.index.dist import ReleasesList
 
 
@@ -9,14 +8,6 @@ class BaseClient(object):
         self._prefer_final = prefer_final
         self._prefer_source = prefer_source
         self._index = self
-
-    def _get_version_predicate(self, requirements):
-        """Return a VersionPredicate object, from a string or an already
-        existing object.
-        """
-        if isinstance(requirements, str):
-            requirements = VersionPredicate(requirements)
-        return requirements
 
     def _get_prefer_final(self, prefer_final=None):
         """Return the prefer_final internal parameter or the specified one if

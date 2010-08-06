@@ -418,3 +418,12 @@ def is_valid_version(predicate):
         return False
     else:
         return True
+
+
+def get_version_predicate(requirements):
+    """Return a VersionPredicate object, from a string or an already
+    existing object.
+    """
+    if isinstance(requirements, str):
+        requirements = VersionPredicate(requirements)
+    return requirements

@@ -26,7 +26,8 @@ except ImportError:
 from distutils2.errors import IrrationalVersionError
 from distutils2.index.errors import (HashDoesNotMatch, UnsupportedHashName,
                                      CantParseArchiveName)
-from distutils2.version import suggest_normalized_version, NormalizedVersion
+from distutils2.version import (suggest_normalized_version, NormalizedVersion,
+                                get_version_predicate)
 from distutils2.metadata import DistributionMetadata
 from distutils2.util import untar_file, unzip_file, splitext
 
@@ -380,6 +381,7 @@ class ReleasesList(IndexReference):
         "last" is defined by the version number of the releases, you also could
         set prefer_final parameter to True or False to change the order results
         """
+        predicate = get_version_predicate(requirements)
         releases = self.filter(predicate)
         releases.sort_releases(prefer_final, reverse=True)
         return releases[0]
