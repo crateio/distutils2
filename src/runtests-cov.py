@@ -5,8 +5,10 @@ The tests for distutils2 are defined in the distutils2.tests package.
 """
 
 import sys
-from os.path import dirname, islink, realpath
+from os.path import dirname, islink, realpath, join, abspath
 from optparse import OptionParser
+
+COVERAGE_FILE = join(dirname(abspath(__file__)), '.coverage')
 
 def get_coverage():
     """ Return a usable coverage object. """
@@ -14,7 +16,7 @@ def get_coverage():
     import coverage
     cov = getattr(coverage, "the_coverage", None)
     if not cov:
-        cov = coverage.coverage()
+        cov = coverage.coverage(COVERAGE_FILE)
     return cov
 
 def ignore_prefixes(module):
@@ -61,6 +63,7 @@ def coverage_report(opts):
     else:
         morfs = "distutils2/*"
         # running coverage 2.x
+        cov.cache = COVERAGE_FILE
         cov.restore()
 
     prefixes = ["runtests", "distutils2/tests", "distutils2/_backport"]
