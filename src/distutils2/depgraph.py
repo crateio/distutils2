@@ -135,8 +135,7 @@ def generate_graph(dists):
         requires = dist.metadata['Requires-Dist'] + dist.metadata['Requires']
         for req in requires:
             predicate = VersionPredicate(req)
-            comps = req.strip().rsplit(" ", 1)
-            name = comps[0]
+            name = predicate.name
 
             if not name in provided:
                 graph.add_missing(dist, req)
