@@ -126,24 +126,3 @@ existing distributions for this release ? How to retrieve them ?"::
 
 As you see, this does not return a list of distributions, but a release, 
 because a release can be used like a list of distributions. 
-
-Lazy load information from project, releases and distributions.
-----------------------------------------------------------------
-
-.. note:: The lazy loading feature is not currently available !
-
-As :mod:`distutils2.index.dist` classes support "lazy" loading of 
-informations, you can use it while retrieving informations from XML-RPC.
-
-For instance, it's possible to get all the releases for a project, and to access
-directly the metadata of each release, without making
-:class:`distutils2.index.xmlrpc.Client` directly (they will be made, but they're
-invisible to the you)::
-
-    >>> client = xmlrpc.Client()
-    >>> releases = client.get_releases("FooBar")
-    >>> releases.get_release("1.1").metadata
-    <Metadata for FooBar 1.1>
-
-Refer to the :mod:`distutils2.index.dist` documentation for more information
-about attributes lazy loading.

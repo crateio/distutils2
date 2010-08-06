@@ -84,26 +84,27 @@ It's easy to add distribution informatons to releases::
     {'url': 'http://example.org/foobar-1.0.tar.gz', 'hashname': None, 'hashval':
     None, 'is_external': True}
  
-Attributes Lazy loading
------------------------
+Getting attributes from the dist objects 
+-----------------------------------------
 
 To abstract a maximum the way of querying informations to the indexes,
-attributes and releases informations can be retrieved "on demand", in a "lazy"
-way.
+attributes and releases informations can be retrieved directly from the objects
+returned by the indexes. 
 
 For instance, if you have a release instance that does not contain the metadata
-attribute, it can be build directly when accedded::
+attribute, it can be fetched by using the "fetch_metadata" method::
 
     >>> r = Release("FooBar", "1.1")
-    >>> print r._metadata 
+    >>> print r.metadata 
     None # metadata field is actually set to "None"
-    >>> r.metadata
+    >>> r.fetch_metadata()
     <Metadata for FooBar 1.1>
 
-Like this, it's possible to retrieve project's releases, releases metadata and 
-releases distributions informations. 
+Like this, it's possible to retrieve project's releases (`fetch_releases`), 
+releases metadata (`fetch_metadata` and releases distributions
+(`fetch_distributions` informations). 
 
 Internally, this is possible because while retrieving for the first time
 informations about projects, releases or distributions, a reference to the
-client used is stored in the objects. Then, while trying to access undefined
-fields, it will be used if necessary.
+client used is stored in the objects (can be accessed using the object 
+`_index` attribute. 

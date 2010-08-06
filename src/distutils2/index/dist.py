@@ -65,10 +65,10 @@ class ReleaseInfo(IndexReference):
         self._version = None
         self.version = version
         if metadata:
-            self._metadata = DistributionMetadata(mapping=metadata)
+            self.metadata = DistributionMetadata(mapping=metadata)
         else:
-            self._metadata = None
-        self._dists = {}
+            self.metadata = None
+        self.dists = {}
         self.hidden = hidden
 
         if 'dist_type' in kwargs:
@@ -90,25 +90,23 @@ class ReleaseInfo(IndexReference):
 
     version = property(get_version, set_version)
 
-    @property
-    def metadata(self):
+    def fetch_metadata(self):
         """If the metadata is not set, use the indexes to get it"""
-        if not self._metadata:
+        if not self.metadata:
             self._index.get_metadata(self.name, '%s' % self.version)
-        return self._metadata
+        return self.metadata
 
     @property
     def is_final(self):
         """proxy to version.is_final"""
         return self.version.is_final
     
-    @property
-    def dists(self):
-        if self._dists is None:
+    def fetch_distributions(self):
+        if self.dists is None:
             self._index.get_distributions(self.name, '%s' % self.version)
-            if self._dists is None:
-                self._dists = {}
-        return self._dists
+            if self.dists is None:
+                self.dists = {}
+        return self.dists
 
     def add_distribution(self, dist_type='sdist', python_version=None, **params):
         """Add distribution informations to this release.
@@ -123,12 +121,12 @@ class ReleaseInfo(IndexReference):
         if dist_type not in DIST_TYPES:
             raise ValueError(dist_type)
         if dist_type in self.dists:
-            self._dists[dist_type].add_url(**params)
+            self.dists[dist_type].add_url(**params)
         else:
-            self._dists[dist_type] = DistInfo(self, dist_type,
+            self.dists[dist_type] = DistInfo(self, dist_type,
                                              index=self._index, **params)
         if python_version:
-            self._dists[dist_type].python_version = python_version 
+            self.dists[dist_type].python_version = python_version 
 
     def get_distribution(self, dist_type=None, prefer_source=True):
         """Return a distribution.
@@ -164,9 +162,9 @@ class ReleaseInfo(IndexReference):
                    .download(path=temp_path)
 
     def set_metadata(self, metadata):
-        if not self._metadata:
-            self._metadata = DistributionMetadata()
-        self._metadata.update(metadata)
+        if not self.metadata:
+            self.metadata = DistributionMetadata()
+        self.metadata.update(metadata)
 
     def __getitem__(self, item):
         """distributions are available using release["sdist"]"""
@@ -352,18 +350,12 @@ class ReleasesList(IndexReference):
     """
     def __init__(self, name, releases=None, contains_hidden=False, index=None):
         self.set_index(index)
-        self._releases = [] 
+        self.releases = [] 
         self.name = name
         self.contains_hidden = contains_hidden
         if releases:
             self.add_releases(releases)
 
-    @property
-    def releases(self):
-        if not self._releases:
-            self.fetch_releases() 
-        return self._releases
-    
     def fetch_releases(self):
         self._index.get_releases(self.name)
         return self.releases
@@ -414,16 +406,16 @@ class ReleasesList(IndexReference):
                 
             if not version in self.get_versions():
                 # append only if not already exists
-                self._releases.append(release)
+                self.releases.append(release)
             for dist in release.dists.values():
                 for url in dist.urls:
                     self.add_release(version, dist.dist_type, **url)
         else:
-            matches = [r for r in self._releases if '%s' % r.version == version
+            matches = [r for r in self.releases if '%s' % r.version == version
                                                  and r.name == self.name]
             if not matches:
                 release = ReleaseInfo(self.name, version, index=self._index)
-                self._releases.append(release)
+                self.releases.append(release)
             else:
                 release = matches[0]
 
@@ -461,7 +453,7 @@ class ReleasesList(IndexReference):
 
     def get_versions(self):
         """Return a list of releases versions contained"""
-        return ["%s" % r.version for r in self._releases]
+        return ["%s" % r.version for r in self.releases]
 
     def __getitem__(self, key):
         return self.releases[key]
