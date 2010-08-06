@@ -337,7 +337,7 @@ class DistributionMetadata(object):
 
     def update(self, other=None, **kwargs):
         """Set metadata values from the given mapping
-        
+
         Convert the keys to Metadata fields. Given keys that don't match a
         metadata argument will not be used.
 
@@ -350,7 +350,7 @@ class DistributionMetadata(object):
         Empty values (e.g. None and []) are not setted this way.
         """
         def _set(key, value):
-            if value not in ([], None) and key in _ATTR2FIELD:
+            if value not in ([], None, '') and key in _ATTR2FIELD:
                 self.set(self._convert_name(key), value)
 
         if other is None:
@@ -388,13 +388,16 @@ class DistributionMetadata(object):
             for v in value:
                 # check that the values are valid predicates
                 if not is_valid_predicate(v.split(';')[0]):
-                    warn('"%s" is not a valid predicate' % v)
+                    warn('"%s" is not a valid predicate (field "%s")' %
+                         (v, name))
         elif name in _VERSIONS_FIELDS and value is not None:
             if not is_valid_versions(value):
-                warn('"%s" is not a valid predicate' % value)
+                warn('"%s" is not a valid version (field "%s")' %
+                     (value, name))
         elif name in _VERSION_FIELDS and value is not None:
             if not is_valid_version(value):
-                warn('"%s" is not a valid version' % value)
+                warn('"%s" is not a valid version (field "%s")' %
+                     (value, name))
 
         if name in _UNICODEFIELDS:
             value = self._encode_field(value)
