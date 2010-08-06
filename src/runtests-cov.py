@@ -8,6 +8,14 @@ import sys
 from os.path import dirname, islink, realpath
 from optparse import OptionParser
 
+def get_coverage():
+    """ Return a usable coverage object. """
+    # deferred import because coverage is optional
+    import coverage
+    cov = getattr(coverage, "the_coverage", None)
+    if not cov:
+        cov = coverage.coverage()
+    return cov
 
 def ignore_prefixes(module):
     """ Return a list of prefixes to ignore in the coverage report if
@@ -44,10 +52,16 @@ def parse_opts():
 
 
 def coverage_report(opts):
-    import coverage
     from distutils2.tests.support import unittest
-    cov = coverage.coverage()
-    cov.load()
+    cov = get_coverage()
+    if hasattr(cov, "load"):
+        # running coverage 3.x
+        cov.load()
+        morfs = None
+    else:
+        morfs = "distutils2/*"
+        # running coverage 2.x
+        cov.restore()
 
     prefixes = ["runtests", "distutils2/tests", "distutils2/_backport"]
     prefixes += ignore_prefixes(unittest)
@@ -66,7 +80,7 @@ def coverage_report(opts):
         # that module is also completely optional
         pass
 
-    cov.report(omit_prefixes=prefixes, show_missing=opts.show_missing)
+    cov.report(morfs, omit_prefixes=prefixes, show_missing=opts.show_missing)
 
 
 def test_main():
@@ -74,11 +88,8 @@ def test_main():
     verbose = not opts.quiet
     ret = 0
 
-    if opts.coverage or opts.report:
-        import coverage
-
     if opts.coverage:
-        cov = coverage.coverage()
+        cov = get_coverage()
         cov.erase()
         cov.start()
     if not opts.report:
