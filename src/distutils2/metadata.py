@@ -53,12 +53,12 @@ PKG_INFO_ENCODING = 'utf-8'
 PKG_INFO_PREFERRED_VERSION = '1.0'
 
 _LINE_PREFIX = re.compile('\n       \|')
-_241_FIELDS = ('Metadata-Version',  'Name', 'Version', 'Platform',
+_241_FIELDS = ('Metadata-Version', 'Name', 'Version', 'Platform',
                'Summary', 'Description',
                'Keywords', 'Home-page', 'Author', 'Author-email',
                'License')
 
-_314_FIELDS = ('Metadata-Version',  'Name', 'Version', 'Platform',
+_314_FIELDS = ('Metadata-Version', 'Name', 'Version', 'Platform',
                'Supported-Platform', 'Summary', 'Description',
                'Keywords', 'Home-page', 'Author', 'Author-email',
                'License', 'Classifier', 'Download-URL', 'Obsoletes',
@@ -66,7 +66,7 @@ _314_FIELDS = ('Metadata-Version',  'Name', 'Version', 'Platform',
 
 _314_MARKERS = ('Obsoletes', 'Provides', 'Requires')
 
-_345_FIELDS = ('Metadata-Version',  'Name', 'Version', 'Platform',
+_345_FIELDS = ('Metadata-Version', 'Name', 'Version', 'Platform',
                'Supported-Platform', 'Summary', 'Description',
                'Keywords', 'Home-page', 'Author', 'Author-email',
                'Maintainer', 'Maintainer-email', 'License',
