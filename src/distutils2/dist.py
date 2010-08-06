@@ -6,7 +6,9 @@ being built/installed/distributed.
 
 __revision__ = "$Id: dist.py 77717 2010-01-24 00:33:32Z tarek.ziade $"
 
-import sys, os, re
+import sys
+import os
+import re
 import warnings
 
 from ConfigParser import RawConfigParser
@@ -22,7 +24,8 @@ from distutils2.metadata import DistributionMetadata
 # the same as a Python NAME -- I don't allow leading underscores.  The fact
 # that they're very similar is no coincidence; the default naming scheme is
 # to look for a Python module named after the command.
-command_re = re.compile (r'^[a-zA-Z]([a-zA-Z0-9_]*)$')
+command_re = re.compile(r'^[a-zA-Z]([a-zA-Z0-9_]*)$')
+
 
 class Distribution(object):
     """The core of the Distutils.  Most of the work hiding behind 'setup'
@@ -119,10 +122,8 @@ Common commands: (see '--help-commands' for more)
     # negative options are options that exclude other options
     negative_opt = {'quiet': 'verbose'}
 
-
     # -- Creation/initialization methods -------------------------------
-
-    def __init__ (self, attrs=None):
+    def __init__(self, attrs=None):
         """Construct a new Distribution instance: initialize all the
         attributes of a Distribution, and then use 'attrs' (a dictionary
         mapping attribute names to values) to assign some of those
@@ -558,10 +559,10 @@ Common commands: (see '--help-commands' for more)
 
         if (hasattr(cmd_class, 'help_options') and
             isinstance(cmd_class.help_options, list)):
-            help_option_found=0
+            help_option_found = 0
             for (help_option, short, desc, func) in cmd_class.help_options:
                 if hasattr(opts, parser.get_attr_name(help_option)):
-                    help_option_found=1
+                    help_option_found = 1
                     if hasattr(func, '__call__'):
                         func()
                     else:
@@ -800,7 +801,7 @@ Common commands: (see '--help-commands' for more)
             class_name = command
 
             try:
-                __import__ (module_name)
+                __import__(module_name)
                 module = sys.modules[module_name]
             except ImportError:
                 continue
@@ -816,7 +817,6 @@ Common commands: (see '--help-commands' for more)
             return cls
 
         raise DistutilsModuleError("invalid command '%s'" % command)
-
 
     def get_command_obj(self, command, create=1):
         """Return the command object for 'command'.  Normally this object
@@ -960,7 +960,6 @@ Common commands: (see '--help-commands' for more)
         self.run_command_hooks(cmd_obj, 'post_hook')
         self.have_run[command] = 1
 
-
     def run_command_hooks(self, cmd_obj, hook_kind):
         hooks = getattr(cmd_obj, hook_kind)
         if hooks is None:
@@ -970,7 +969,6 @@ Common commands: (see '--help-commands' for more)
             hook_func(cmd_obj)
 
     # -- Distribution query methods ------------------------------------
-
     def has_pure_modules(self):
         return len(self.packages or self.py_modules or []) > 0
 
