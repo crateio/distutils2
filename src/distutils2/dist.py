@@ -1004,13 +1004,8 @@ Common commands: (see '--help-commands' for more)
                 not self.has_ext_modules() and
                 not self.has_c_libraries())
 
-    # -- Metadata query methods ----------------------------------------
 
-    # If you're looking for 'get_name()', 'get_version()', and so forth,
-    # they are defined in a sneaky way: the constructor binds self.get_XXX
-    # to self.metadata.get_XXX.  The actual code is in the
-    # DistributionMetadata class, below.
-
+# XXX keep for compat or remove?
 
 def fix_help_options(options):
     """Convert a 4-tuple 'help_options' list as found in various command
