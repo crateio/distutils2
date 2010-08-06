@@ -1,13 +1,19 @@
-"""Tests for distutils.command.upload_docs."""
 # -*- encoding: utf8 -*-
-import httplib, os, os.path, shutil, sys, tempfile, zipfile
-from cStringIO import StringIO
+"""Tests for distutils.command.upload_docs."""
+import os
+import sys
+import httplib
+import shutil
+import zipfile
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 from distutils2.command import upload_docs as upload_docs_mod
 from distutils2.command.upload_docs import (upload_docs, zip_dir,
-                                    encode_multipart)
+                                            encode_multipart)
 from distutils2.core import Distribution
-
 from distutils2.errors import DistutilsFileError, DistutilsOptionError
 
 from distutils2.tests import support
@@ -59,7 +65,7 @@ class UploadDocsTestCase(support.TempdirManager, support.EnvironGuard,
         self.cmd = upload_docs(self.dist)
 
     def test_default_uploaddir(self):
-        sandbox = tempfile.mkdtemp()
+        sandbox = self.mkdtemp()
         previous = os.getcwd()
         os.chdir(sandbox)
         try:
@@ -72,7 +78,7 @@ class UploadDocsTestCase(support.TempdirManager, support.EnvironGuard,
 
     def prepare_sample_dir(self, sample_dir=None):
         if sample_dir is None:
-            sample_dir = tempfile.mkdtemp()
+            sample_dir = self.mkdtemp()
         os.mkdir(os.path.join(sample_dir, "docs"))
         self.write_file(os.path.join(sample_dir, "docs", "index.html"), "Ce mortel ennui")
         self.write_file(os.path.join(sample_dir, "index.html"), "Oh la la")

@@ -1,14 +1,14 @@
 """Mock PyPI Server implementation, to use in tests.
 
 This module also provides a simple test case to extend if you need to use
-the PyPIServer all along your test case. Be sure to read the documentation 
+the PyPIServer all along your test case. Be sure to read the documentation
 before any use.
 
 XXX TODO:
 
 The mock server can handle simple HTTP request (to simulate a simple index) or
 XMLRPC requests, over HTTP. Both does not have the same intergface to deal
-with, and I think it's a pain. 
+with, and I think it's a pain.
 
 A good idea could be to re-think a bit the way dstributions are handled in the
 mock server. As it should return malformed HTML pages, we need to keep the
@@ -21,12 +21,12 @@ I think of something like that:
     >>> server.startXMLRPC()
 
 Then, the server must have only one port to rely on, eg.
-    
+
     >>> server.fulladress()
     "http://ip:port/"
 
 It could be simple to have one HTTP server, relaying the requests to the two
-implementations (static HTTP and XMLRPC over HTTP). 
+implementations (static HTTP and XMLRPC over HTTP).
 """
 
 import Queue
@@ -53,7 +53,7 @@ def use_http_server(*server_args, **server_kwargs):
     return use_pypi_server(*server_args, **server_kwargs)
 
 def use_pypi_server(*server_args, **server_kwargs):
-    """Decorator to make use of the PyPIServer for test methods, 
+    """Decorator to make use of the PyPIServer for test methods,
     just when needed, and not for the entire duration of the testcase.
     """
     def wrapper(func):
@@ -79,18 +79,18 @@ class PyPIServerTestCase(unittest.TestCase):
         self.pypi.stop()
 
 class PyPIServer(threading.Thread):
-    """PyPI Mock server.
+    """PyPI Mocked server.
     Provides a mocked version of the PyPI API's, to ease tests.
 
     Support serving static content and serving previously given text.
     """
 
     def __init__(self, test_static_path=None,
-                 static_filesystem_paths=["default"], 
+                 static_filesystem_paths=["default"],
                  static_uri_paths=["simple"], serve_xmlrpc=False) :
         """Initialize the server.
-        
-        Default behavior is to start the HTTP server. You can either start the 
+
+        Default behavior is to start the HTTP server. You can either start the
         xmlrpc server by setting xmlrpc to True. Caution: Only one server will
         be started.
 
@@ -103,9 +103,9 @@ class PyPIServer(threading.Thread):
         threading.Thread.__init__(self)
         self._run = True
         self._serve_xmlrpc = serve_xmlrpc
-        
+
         #TODO allow to serve XMLRPC and HTTP static files at the same time.
-        if not self._serve_xmlrpc: 
+        if not self._serve_xmlrpc:
             self.server = HTTPServer(('', 0), PyPIRequestHandler)
             self.server.RequestHandlerClass.pypi_server = self
 
@@ -114,7 +114,7 @@ class PyPIServer(threading.Thread):
             self.default_response_status = 200
             self.default_response_headers = [('Content-type', 'text/plain')]
             self.default_response_data = "hello"
-            
+
             # initialize static paths / filesystems
             self.static_uri_paths = static_uri_paths
             if test_static_path is not None:
@@ -201,7 +201,7 @@ class PyPIRequestHandler(SimpleHTTPRequestHandler):
         # serve the content from local disc if we request an URL beginning
         # by a pattern defined in `static_paths`
         url_parts = self.path.split("/")
-        if (len(url_parts) > 1 and 
+        if (len(url_parts) > 1 and
                 url_parts[1] in self.pypi_server.static_uri_paths):
             data = None
             # always take the last first.
@@ -239,7 +239,7 @@ class PyPIRequestHandler(SimpleHTTPRequestHandler):
             try:
                 status = int(status)
             except ValueError:
-                # we probably got something like YYY Codename. 
+                # we probably got something like YYY Codename.
                 # Just get the first 3 digits
                 status = int(status[:3])
 
@@ -258,15 +258,15 @@ class PyPIXMLRPCServer(SimpleXMLRPCServer):
         self.server_port = port
 
 class MockDist(object):
-    """Fake distribution, used in the Mock PyPI Server""" 
+    """Fake distribution, used in the Mock PyPI Server"""
     def __init__(self, name, version="1.0", hidden=False, url="http://url/",
              type="sdist", filename="", size=10000,
              digest="123456", downloads=7, has_sig=False,
-             python_version="source", comment="comment", 
-             author="John Doe", author_email="john@doe.name", 
+             python_version="source", comment="comment",
+             author="John Doe", author_email="john@doe.name",
              maintainer="Main Tayner", maintainer_email="maintainer_mail",
              project_url="http://project_url/", homepage="http://homepage/",
-             keywords="", platform="UNKNOWN", classifiers=[], licence="", 
+             keywords="", platform="UNKNOWN", classifiers=[], licence="",
              description="Description", summary="Summary", stable_version="",
              ordering="", documentation_id="", code_kwalitee_id="",
              installability_id="", obsoletes=[], obsoletes_dist=[],
@@ -277,7 +277,7 @@ class MockDist(object):
         self.name = name
         self.version = version
         self.hidden = hidden
-        
+
         # URL infos
         self.url = url
         self.digest = digest
@@ -286,7 +286,7 @@ class MockDist(object):
         self.python_version = python_version
         self.comment = comment
         self.type = type
-        
+
         # metadata
         self.author = author
         self.author_email = author_email
@@ -305,7 +305,7 @@ class MockDist(object):
         self.cheesecake_documentation_id = documentation_id
         self.cheesecake_code_kwalitee_id = code_kwalitee_id
         self.cheesecake_installability_id = installability_id
-        
+
         self.obsoletes = obsoletes
         self.obsoletes_dist = obsoletes_dist
         self.provides = provides
@@ -314,7 +314,7 @@ class MockDist(object):
         self.requires_dist = requires_dist
         self.requires_external = requires_external
         self.requires_python = requires_python
-        
+
     def url_infos(self):
         return {
             'url': self.url,
@@ -330,38 +330,38 @@ class MockDist(object):
 
     def metadata(self):
         return {
-            'maintainer': self.maintainer, 
-            'project_url': [self.project_url], 
-            'maintainer_email': self.maintainer_email, 
-            'cheesecake_code_kwalitee_id': self.cheesecake_code_kwalitee_id, 
-            'keywords': self.keywords, 
-            'obsoletes_dist': self.obsoletes_dist, 
-            'requires_external': self.requires_external, 
-            'author': self.author, 
+            'maintainer': self.maintainer,
+            'project_url': [self.project_url],
+            'maintainer_email': self.maintainer_email,
+            'cheesecake_code_kwalitee_id': self.cheesecake_code_kwalitee_id,
+            'keywords': self.keywords,
+            'obsoletes_dist': self.obsoletes_dist,
+            'requires_external': self.requires_external,
+            'author': self.author,
             'author_email': self.author_email,
-            'download_url': self.url, 
-            'platform': self.platform, 
-            'version': self.version, 
-            'obsoletes': self.obsoletes, 
-            'provides': self.provides, 
-            'cheesecake_documentation_id': self.cheesecake_documentation_id, 
-            '_pypi_hidden': self.hidden, 
-            'description': self.description, 
-            '_pypi_ordering': 19, 
-            'requires_dist': self.requires_dist, 
-            'requires_python': self.requires_python, 
-            'classifiers': [], 
-            'name': self.name, 
-            'licence': self.licence, 
-            'summary': self.summary, 
-            'home_page': self.homepage, 
-            'stable_version': self.stable_version, 
+            'download_url': self.url,
+            'platform': self.platform,
+            'version': self.version,
+            'obsoletes': self.obsoletes,
+            'provides': self.provides,
+            'cheesecake_documentation_id': self.cheesecake_documentation_id,
+            '_pypi_hidden': self.hidden,
+            'description': self.description,
+            '_pypi_ordering': 19,
+            'requires_dist': self.requires_dist,
+            'requires_python': self.requires_python,
+            'classifiers': [],
+            'name': self.name,
+            'licence': self.licence,
+            'summary': self.summary,
+            'home_page': self.homepage,
+            'stable_version': self.stable_version,
             'provides_dist': self.provides_dist or "%s (%s)" % (self.name,
                                                               self.version),
-            'requires': self.requires, 
+            'requires': self.requires,
             'cheesecake_installability_id': self.cheesecake_installability_id,
         }
-    
+
     def search_result(self):
         return {
             '_pypi_ordering': 0,
@@ -372,7 +372,7 @@ class MockDist(object):
 
 class XMLRPCMockIndex(object):
     """Mock XMLRPC server"""
-    
+
     def __init__(self, dists=[]):
         self._dists = dists
 
@@ -386,7 +386,7 @@ class XMLRPCMockIndex(object):
 
     def set_search_result(self, result):
         """set a predefined search result"""
-        self._search_result = result 
+        self._search_result = result
 
     def _get_search_results(self):
         results = []
@@ -401,7 +401,7 @@ class XMLRPCMockIndex(object):
         return [r.search_result() for r in results]
 
     def list_package(self):
-        return [d.name for d in self._dists] 
+        return [d.name for d in self._dists]
 
     def package_releases(self, package_name, show_hidden=False):
         if show_hidden:
@@ -411,14 +411,14 @@ class XMLRPCMockIndex(object):
             # return only un-hidden
             return [d.version for d in self._dists if d.name == package_name
                     and not d.hidden]
-    
+
     def release_urls(self, package_name, version):
-        return [d.url_infos() for d in self._dists 
+        return [d.url_infos() for d in self._dists
                 if d.name == package_name and d.version == version]
 
     def release_data(self, package_name, version):
-        release = [d for d in self._dists 
-                   if d.name == package_name and d.version == version] 
+        release = [d for d in self._dists
+                   if d.name == package_name and d.version == version]
         if release:
             return release[0].metadata()
         else:

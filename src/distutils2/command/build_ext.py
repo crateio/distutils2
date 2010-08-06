@@ -177,13 +177,8 @@ class build_ext(Command):
 
     def finalize_options(self):
         self.set_undefined_options('build',
-                                   ('build_lib', 'build_lib'),
-                                   ('build_temp', 'build_temp'),
-                                   ('compiler', 'compiler'),
-                                   ('debug', 'debug'),
-                                   ('force', 'force'),
-                                   ('plat_name', 'plat_name'),
-                                   )
+                                   'build_lib', 'build_temp', 'compiler',
+                                   'debug', 'force', 'plat_name')
 
         if self.package is None:
             self.package = self.distribution.ext_package
@@ -292,7 +287,7 @@ class build_ext(Command):
                                                       "config"))
             else:
                 # building python standard extensions
-                self.library_dirs.append('.')
+                self.library_dirs.append(os.curdir)
 
         # for extensions under Linux or Solaris with a shared Python library,
         # Python's library directory must be appended to library_dirs
@@ -305,7 +300,7 @@ class build_ext(Command):
                 self.library_dirs.append(sysconfig.get_config_var('LIBDIR'))
             else:
                 # building python standard extensions
-                self.library_dirs.append('.')
+                self.library_dirs.append(os.curdir)
 
         # The argument parsing will result in self.define being a string, but
         # it has to be a list of 2-tuples.  All the preprocessor symbols

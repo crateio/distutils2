@@ -30,7 +30,11 @@
 #
 #    Detect scripts (not sure how.  #! outside of package?)
 
-import sys, os, re, shutil, ConfigParser
+import sys
+import os
+import re
+import shutil
+import ConfigParser
 
 
 helpText = {
@@ -629,19 +633,20 @@ def askYn(question, default = None, helptext = None):
         print '\nERROR: You must select "Y" or "N".\n'
 
 
-def ask(question, default = None, helptext = None, required = True,
-        lengthy = False, multiline = False):
-    prompt = '%s: ' % ( question, )
+def ask(question, default=None, helptext=None, required=True,
+        lengthy=False, multiline=False):
+    prompt = '%s: ' % (question,)
     if default:
-        prompt = '%s [%s]: ' % ( question, default )
+        prompt = '%s [%s]: ' % (question, default)
         if default and len(question) + len(default) > 70:
-            prompt = '%s\n    [%s]: ' % ( question, default )
+            prompt = '%s\n    [%s]: ' % (question, default)
     if lengthy or multiline:
         prompt += '\n   >'
 
-    if not helptext: helptext = 'No additional help available.'
-    if helptext[0] == '\n': helptext = helptext[1:]
-    if helptext[-1] == '\n': helptext = helptext[:-1]
+    if not helptext:
+        helptext = 'No additional help available.'
+
+    helptext = helptext.strip("\n")
 
     while True:
         sys.stdout.write(prompt)
@@ -653,12 +658,14 @@ def ask(question, default = None, helptext = None, required = True,
             print helptext
             print '=' * 70
             continue
-        if default and not line: return(default)
+        if default and not line:
+            return(default)
         if not line and required:
             print '*' * 70
             print 'This value cannot be empty.'
             print '==========================='
-            if helptext: print helptext
+            if helptext:
+                print helptext
             print '*' * 70
             continue
         return(line)
@@ -669,7 +676,8 @@ def buildTroveDict(troveList):
     for key in troveList:
         subDict = dict
         for subkey in key.split(' :: '):
-            if not subkey in subDict: subDict[subkey] = {}
+            if not subkey in subDict:
+                subDict[subkey] = {}
             subDict = subDict[subkey]
     return(dict)
 troveDict = buildTroveDict(troveList)
@@ -687,7 +695,8 @@ class SetupClass(object):
 
 
     def lookupOption(self, key):
-        if not self.config.has_option('DEFAULT', key): return(None)
+        if not self.config.has_option('DEFAULT', key):
+            return(None)
         return(self.config.get('DEFAULT', key))
 
 
@@ -706,7 +715,8 @@ class SetupClass(object):
                 self.config.set('DEFAULT', compareKey,
                     self.setupData[compareKey])
 
-        if not valuesDifferent: return
+        if not valuesDifferent:
+            return
 
         self.config.write(open(os.path.expanduser('~/.pygiver'), 'w'))
 
@@ -718,7 +728,7 @@ class SetupClass(object):
     def inspectFile(self, path):
         fp = open(path, 'r')
         try:
-            for line in [ fp.readline() for x in range(10) ]:
+            for line in [fp.readline() for x in range(10)]:
                 m = re.match(r'^#!.*python((?P<major>\d)(\.\d+)?)?$', line)
                 if m:
                     if m.group('major') == '3':
@@ -737,14 +747,14 @@ class SetupClass(object):
             self.setupData['name'] = m.group(1)
             self.setupData['version'] = m.group(2)
 
-        for root, dirs, files in os.walk('.'):
+        for root, dirs, files in os.walk(os.curdir):
             for file in files:
-                if root == '.' and file == 'setup.py': continue
+                if root == os.curdir and file == 'setup.py': continue
                 fileName = os.path.join(root, file)
                 self.inspectFile(fileName)
 
                 if file == '__init__.py':
-                    trySrc = os.path.join('.', 'src')
+                    trySrc = os.path.join(os.curdir, 'src')
                     tmpRoot = root
                     if tmpRoot.startswith(trySrc):
                         tmpRoot = tmpRoot[len(trySrc):]
@@ -761,16 +771,16 @@ class SetupClass(object):
               self.setupData.get('version'), helpText['version'])
         self.setupData['description'] = ask('Package description',
               self.setupData.get('description'), helpText['description'],
-              lengthy = True)
+              lengthy=True)
         self.setupData['author'] = ask('Author name',
               self.setupData.get('author'), helpText['author'])
         self.setupData['author_email'] = ask('Author e-mail address',
               self.setupData.get('author_email'), helpText['author_email'])
         self.setupData['url'] = ask('Project URL',
-              self.setupData.get('url'), helpText['url'], required = False)
+              self.setupData.get('url'), helpText['url'], required=False)
 
         if (askYn('Do you want to set Trove classifiers?',
-                helptext = helpText['do_classifier']) == 'y'):
+                helptext=helpText['do_classifier']) == 'y'):
             self.setTroveClassifier()
 
 
@@ -781,8 +791,10 @@ class SetupClass(object):
 
 
     def setTroveOther(self, classifierDict):
-        if askYn('Do you want to set other trove identifiers', 'n',
-                helpText['trove_generic']) != 'y': return
+        if askYn('Do you want to set other trove identifiers',
+                'n',
+                helpText['trove_generic']) != 'y':
+            return
 
         self.walkTrove(classifierDict, [troveDict], '')
 
@@ -799,7 +811,7 @@ class SetupClass(object):
                 continue
 
             if askYn('Do you want to set items under\n   "%s" (%d sub-items)'
-                    % ( key, len(trove[key]) ), 'n',
+                    % (key, len(trove[key])), 'n',
                     helpText['trove_generic']) == 'y':
                 self.walkTrove(classifierDict, trovePath + [trove[key]],
                         desc + ' :: ' + key)
@@ -808,15 +820,18 @@ class SetupClass(object):
     def setTroveLicense(self, classifierDict):
         while True:
             license = ask('What license do you use',
-                  helptext = helpText['trove_license'], required = False)
-            if not license: return
+                        helptext=helpText['trove_license'],
+                        required=False)
+            if not license:
+                return
 
             licenseWords = license.lower().split(' ')
 
             foundList = []
             for index in range(len(troveList)):
                 troveItem = troveList[index]
-                if not troveItem.startswith('License :: '): continue
+                if not troveItem.startswith('License :: '):
+                    continue
                 troveItem = troveItem[11:].lower()
 
                 allMatch = True
@@ -824,17 +839,20 @@ class SetupClass(object):
                     if not word in troveItem:
                         allMatch = False
                         break
-                if allMatch: foundList.append(index)
+                if allMatch:
+                    foundList.append(index)
 
             question = 'Matching licenses:\n\n'
             for i in xrange(1, len(foundList) + 1):
-                question += '   %s) %s\n' % ( i, troveList[foundList[i - 1]] )
+                question += '   %s) %s\n' % (i, troveList[foundList[i - 1]])
             question += ('\nType the number of the license you wish to use or '
                      '? to try again:')
-            troveLicense = ask(question, required = False)
+            troveLicense = ask(question, required=False)
 
-            if troveLicense == '?': continue
-            if troveLicense == '': return
+            if troveLicense == '?':
+                continue
+            if troveLicense == '':
+                return
             foundIndex = foundList[int(troveLicense) - 1]
             classifierDict[troveList[foundIndex]] = 1
             try:
@@ -856,7 +874,7 @@ class SetupClass(object):
 6 - Mature
 7 - Inactive
 
-Status''', required = False)
+Status''', required=False)
             if devStatus:
                 try:
                     key = {
@@ -884,7 +902,8 @@ Status''', required = False)
         return modified_pkgs
 
     def writeSetup(self):
-        if os.path.exists('setup.py'): shutil.move('setup.py', 'setup.py.old')
+        if os.path.exists('setup.py'):
+            shutil.move('setup.py', 'setup.py.old')
 
         fp = open('setup.py', 'w')
         try:

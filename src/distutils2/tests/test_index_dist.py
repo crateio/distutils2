@@ -18,7 +18,7 @@ def Dist(*args, **kwargs):
 
 class TestReleaseInfo(unittest.TestCase):
 
-    def test_instanciation(self):
+    def test_instantiation(self):
         # Test the DistInfo class provides us the good attributes when
         # given on construction
         release = ReleaseInfo("FooBar", "1.1")
@@ -106,7 +106,7 @@ class TestDistInfo(TempdirManager, unittest.TestCase):
         })
         self.assertEqual(2, len(d.urls))
 
-    def test_comparaison(self):
+    def test_comparison(self):
         # Test that we can compare DistInfoributionInfoList
         foo1 = ReleaseInfo("foo", "1.0")
         foo2 = ReleaseInfo("foo", "2.0")
@@ -123,23 +123,20 @@ class TestDistInfo(TempdirManager, unittest.TestCase):
     def test_download(self, server):
         # Download is possible, and the md5 is checked if given
 
-        add_to_tmpdirs = lambda x: self.tempdirs.append(os.path.dirname(x))
-
         url = "%s/simple/foobar/foobar-0.1.tar.gz" % server.full_address
         # check md5 if given
         dist = Dist(url=url, hashname="md5",
                     hashval="d41d8cd98f00b204e9800998ecf8427e")
-        add_to_tmpdirs(dist.download())
+        dist.download(self.mkdtemp())
 
         # a wrong md5 fails
         dist2 = Dist(url=url, hashname="md5", hashval="wrongmd5")
 
-        self.assertRaises(HashDoesNotMatch, dist2.download)
-        add_to_tmpdirs(dist2.downloaded_location)
+        self.assertRaises(HashDoesNotMatch, dist2.download, self.mkdtemp())
 
         # we can omit the md5 hash
         dist3 = Dist(url=url)
-        add_to_tmpdirs(dist3.download())
+        dist3.download(self.mkdtemp())
 
         # and specify a temporary location
         # for an already downloaded dist
@@ -177,7 +174,7 @@ class TestReleasesList(unittest.TestCase):
         self.assertIn(releases[0], filtered)
         self.assertIn(releases[1], filtered)
 
-    def test_add_release(self):
+    def test_append(self):
         # When adding a new item to the list, the behavior is to test if
         # a release with the same name and version number already exists,
         # and if so, to add a new distribution for it. If the distribution type

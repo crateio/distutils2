@@ -88,8 +88,8 @@ def convert_path(pathname):
         raise ValueError("path '%s' cannot end with '/'" % pathname)
 
     paths = pathname.split('/')
-    while '.' in paths:
-        paths.remove('.')
+    while os.curdir in paths:
+        paths.remove(os.curdir)
     if not paths:
         return os.curdir
     return os.path.join(*paths)
@@ -120,15 +120,6 @@ def change_root(new_root, pathname):
         if path[0] == os.sep:
             path = path[1:]
         return os.path.join(new_root, path)
-
-    elif os.name == 'mac':
-        if not os.path.isabs(pathname):
-            return os.path.join(new_root, pathname)
-        else:
-            # Chop off volume name from start of path
-            elements = pathname.split(":", 1)
-            pathname = ":" + elements[1]
-            return os.path.join(new_root, pathname)
 
     else:
         raise DistutilsPlatformError("nothing known about "
@@ -599,7 +590,7 @@ def _package_name(root_path, path):
     return path[len(root_path) + 1:].replace(os.sep, '.')
 
 
-def find_packages(paths=('.',), exclude=()):
+def find_packages(paths=(os.curdir,), exclude=()):
     """Return a list all Python packages found recursively within
     directories 'paths'
 
@@ -645,6 +636,24 @@ def find_packages(paths=('.',), exclude=()):
                 packages.append(package_name)
     return packages
 
+
+def resolve_dotted_name(dotted_name):
+    module_name, rest = dotted_name.split('.')[0], dotted_name.split('.')[1:]
+    while len(rest) > 0:
+        try:
+            ret = __import__(module_name)
+            break
+        except ImportError:
+            if rest == []:
+                raise
+            module_name += ('.' + rest[0])
+            rest = rest[1:]
+    while len(rest) > 0:
+        try:
+            ret = getattr(ret, rest.pop(0))
+        except AttributeError:
+            raise ImportError
+    return ret
 
 # utility functions for 2to3 support
 

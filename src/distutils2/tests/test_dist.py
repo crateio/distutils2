@@ -1,4 +1,4 @@
-# -*- coding: utf8 -*-
+# -*- coding: utf-8 -*-
 
 """Tests for distutils2.dist."""
 import os
@@ -153,6 +153,27 @@ class DistributionTestCase(support.TempdirManager,
         my_file2 = os.path.join(tmp_dir, 'f2')
         dist.metadata.write_file(open(my_file, 'w'))
 
+    def test_bad_attr(self):
+        cls = Distribution
+
+        # catching warnings
+        warns = []
+        def _warn(msg):
+            warns.append(msg)
+
+        old_warn = warnings.warn
+        warnings.warn = _warn
+        try:
+            dist = cls(attrs={'author': 'xxx',
+                              'name': 'xxx',
+                              'version': 'xxx',
+                              'url': 'xxxx',
+                              'badoptname': 'xxx'})
+        finally:
+            warnings.warn = old_warn
+
+        self.assertTrue(len(warns)==1 and "Unknown distribution" in warns[0])
+
     def test_empty_options(self):
         # an empty options dictionary should not stay in the
         # list of attributes
@@ -175,6 +196,21 @@ class DistributionTestCase(support.TempdirManager,
             warnings.warn = old_warn
 
         self.assertEqual(len(warns), 0)
+
+    def test_non_empty_options(self):
+        # TODO: how to actually use options is not documented except
+        # for a few cryptic comments in dist.py.  If this is to stay
+        # in the public API, it deserves some better documentation.
+
+        # Here is an example of how it's used out there: 
+        # http://svn.pythonmac.org/py2app/py2app/trunk/doc/index.html#specifying-customizations
+        cls = Distribution
+        dist = cls(attrs={'author': 'xxx',
+                          'name': 'xxx',
+                          'version': 'xxx',
+                          'url': 'xxxx',
+                          'options': dict(sdist=dict(owner="root"))})
+        self.assertTrue("owner" in dist.get_option_dict("sdist"))
 
     def test_finalize_options(self):
 
@@ -240,6 +276,49 @@ class DistributionTestCase(support.TempdirManager,
         # make sure --no-user-cfg disables the user cfg file
         self.assertEqual(len(all_files)-1, len(files))
 
+    def test_special_hooks_parsing(self):
+        temp_home = self.mkdtemp()
+        config_files = [os.path.join(temp_home, "config1.cfg"),
+                        os.path.join(temp_home, "config2.cfg")]
+
+        # Store two aliased hooks in config files
+        self.write_file((temp_home, "config1.cfg"), '[test_dist]\npre-hook.a = type')
+        self.write_file((temp_home, "config2.cfg"), '[test_dist]\npre-hook.b = type')
+
+        sys.argv.extend(["--command-packages",
+                         "distutils2.tests",
+                         "test_dist"])
+        cmd = self.create_distribution(config_files).get_command_obj("test_dist")
+        self.assertEqual(cmd.pre_hook, {"a": 'type', "b": 'type'})
+
+
+    def test_hooks_get_run(self):
+        temp_home = self.mkdtemp()
+        config_file = os.path.join(temp_home, "config1.cfg")
+
+        self.write_file((temp_home, "config1.cfg"), textwrap.dedent('''
+            [test_dist]
+            pre-hook.test = distutils2.tests.test_dist.DistributionTestCase.log_pre_call
+            post-hook.test = distutils2.tests.test_dist.DistributionTestCase.log_post_call'''))
+
+        sys.argv.extend(["--command-packages",
+                         "distutils2.tests",
+                         "test_dist"])
+        d = self.create_distribution([config_file])
+        cmd = d.get_command_obj("test_dist")
+
+        # prepare the call recorders
+        record = []
+        DistributionTestCase.log_pre_call = staticmethod(lambda _cmd: record.append(('pre', _cmd)))
+        DistributionTestCase.log_post_call = staticmethod(lambda _cmd: record.append(('post', _cmd)))
+        test_dist.run = lambda _cmd: record.append(('run', _cmd))
+        test_dist.finalize_options = lambda _cmd: record.append(('finalize_options', _cmd))
+
+        d.run_command('test_dist')
+        self.assertEqual(record, [('finalize_options', cmd),
+                                  ('pre', cmd),
+                                  ('run', cmd),
+                                  ('post', cmd)])
 
 class MetadataTestCase(support.TempdirManager, support.EnvironGuard,
                        unittest.TestCase):

@@ -21,15 +21,16 @@ from distutils2.util import (metadata_to_dict, read_pypirc, generate_pypirc,
 
 class register(Command):
 
-    description = ("register the distribution with the Python package index")
-    user_options = [('repository=', 'r',
-         "url of repository [default: %s]" % DEFAULT_REPOSITORY),
+    description = "register the distribution with the Python package index"
+    user_options = [
+        ('repository=', 'r',
+         "repository URL [default: %s]" % DEFAULT_REPOSITORY),
         ('show-response', None,
-         'display full response text from server'),
+         "display full response text from server"),
         ('list-classifiers', None,
-         'list the valid Trove classifiers'),
+         "list valid Trove classifiers"),
         ('strict', None ,
-         'Will stop the registering if the meta-data are not fully compliant')
+         "stop the registration if the metadata is not fully compliant")
         ]
 
     boolean_options = ['show-response', 'verify', 'list-classifiers',

@@ -241,7 +241,7 @@ class SDistTestCase(support.TempdirManager, support.LoggingSilencer,
 
     @unittest.skipUnless(zlib, "requires zlib")
     def test_metadata_check_option(self):
-        # testing the `medata-check` option
+        # testing the `check-metadata` option
         dist, cmd = self.get_cmd(metadata={})
 
         # this should raise some warnings !
@@ -295,7 +295,7 @@ class SDistTestCase(support.TempdirManager, support.LoggingSilencer,
         self.assertRaises(DistutilsOptionError, cmd.finalize_options)
 
     @unittest.skipUnless(zlib, "requires zlib")
-    @unittest.skipUnless(UID_GID_SUPPORT, "Requires grp and pwd support")
+    @unittest.skipUnless(UID_GID_SUPPORT, "requires grp and pwd support")
     def test_make_distribution_owner_group(self):
 
         # check if tar and gzip are installed

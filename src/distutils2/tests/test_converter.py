@@ -17,7 +17,7 @@ def _read_file(path):
 
 class ConverterTestCase(unittest.TestCase):
 
-    @unittest.skipUnless(not sys.version < '2.6', 'Needs Python >=2.6')
+    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_conversions(self):
         # for all XX_before in the conversions/ dir
         # we run the refactoring tool

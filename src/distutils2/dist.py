@@ -6,19 +6,17 @@ being built/installed/distributed.
 
 __revision__ = "$Id: dist.py 77717 2010-01-24 00:33:32Z tarek.ziade $"
 
-import sys, os, re
-
-try:
-    import warnings
-except ImportError:
-    warnings = None
+import sys
+import os
+import re
+import warnings
 
 from ConfigParser import RawConfigParser
 
 from distutils2.errors import (DistutilsOptionError, DistutilsArgError,
                                DistutilsModuleError, DistutilsClassError)
 from distutils2.fancy_getopt import FancyGetopt, translate_longopt
-from distutils2.util import check_environ, strtobool
+from distutils2.util import check_environ, strtobool, resolve_dotted_name
 from distutils2 import log
 from distutils2.metadata import DistributionMetadata
 
@@ -26,7 +24,7 @@ from distutils2.metadata import DistributionMetadata
 # the same as a Python NAME -- I don't allow leading underscores.  The fact
 # that they're very similar is no coincidence; the default naming scheme is
 # to look for a Python module named after the command.
-command_re = re.compile (r'^[a-zA-Z]([a-zA-Z0-9_]*)$')
+command_re = re.compile(r'^[a-zA-Z]([a-zA-Z0-9_]*)$')
 
 
 class Distribution(object):
@@ -42,7 +40,6 @@ class Distribution(object):
     necessary to respect the expectations that 'setup' has of Distribution.
     See the code for 'setup()', in core.py, for details.
     """
-
 
     # 'global_options' describes the command-line options that may be
     # supplied to the setup script prior to any actual commands.
@@ -116,7 +113,7 @@ Common commands: (see '--help-commands' for more)
         ('use-2to3', None,
          "use 2to3 to make source python 3.x compatible"),
         ('convert-2to3-doctests', None,
-         "use 2to3 to convert doctests in seperate text files"), 
+         "use 2to3 to convert doctests in seperate text files"),
         ]
     display_option_names = map(lambda x: translate_longopt(x[0]),
                                display_options)
@@ -124,10 +121,8 @@ Common commands: (see '--help-commands' for more)
     # negative options are options that exclude other options
     negative_opt = {'quiet': 'verbose'}
 
-
     # -- Creation/initialization methods -------------------------------
-
-    def __init__ (self, attrs=None):
+    def __init__(self, attrs=None):
         """Construct a new Distribution instance: initialize all the
         attributes of a Distribution, and then use 'attrs' (a dictionary
         mapping attribute names to values) to assign some of those
@@ -145,16 +140,11 @@ Common commands: (see '--help-commands' for more)
         for attr in self.display_option_names:
             setattr(self, attr, 0)
 
-        # Store the distribution meta-data (name, version, author, and so
+        # Store the distribution metadata (name, version, author, and so
         # forth) in a separate object -- we're getting to have enough
         # information here (and enough command-line options) that it's
-        # worth it.  Also delegate 'get_XXX()' methods to the 'metadata'
-        # object in a sneaky and underhanded (but efficient!) way.
+        # worth it.
         self.metadata = DistributionMetadata()
-
-        #for basename in self.metadata._METHOD_BASENAMES:
-        #    method_name = "get_" + basename
-        #    setattr(self, method_name, getattr(self.metadata, method_name))
 
         # 'cmdclass' maps command names to class objects, so we
         # can 1) quickly figure out which class to instantiate when
@@ -257,10 +247,7 @@ Common commands: (see '--help-commands' for more)
                     setattr(self, key, val)
                 else:
                     msg = "Unknown distribution option: %r" % key
-                    if warnings is not None:
-                        warnings.warn(msg)
-                    else:
-                        sys.stderr.write(msg + "\n")
+                    warnings.warn(msg)
 
         # no-user-cfg is handled before other command line args
         # because other args override the config files, and this
@@ -286,10 +273,10 @@ Common commands: (see '--help-commands' for more)
         and return the new dictionary; otherwise, return the existing
         option dictionary.
         """
-        dict = self.command_options.get(command)
-        if dict is None:
-            dict = self.command_options[command] = {}
-        return dict
+        d = self.command_options.get(command)
+        if d is None:
+            d = self.command_options[command] = {}
+        return d
 
     def get_fullname(self):
         return self.metadata.get_fullname()
@@ -385,9 +372,21 @@ Common commands: (see '--help-commands' for more)
 
                 for opt in options:
                     if opt != '__name__':
-                        val = parser.get(section,opt)
+                        val = parser.get(section, opt)
                         opt = opt.replace('-', '_')
-                        opt_dict[opt] = (filename, val)
+
+                        # ... although practicality beats purity :(
+                        if opt.startswith("pre_hook.") or opt.startswith("post_hook."):
+                            hook_type, alias = opt.split(".")
+                            # Hooks are somewhat exceptional, as they are
+                            # gathered from many config files (not overriden as
+                            # other options).
+                            # The option_dict expects {"command": ("filename", # "value")}
+                            # so for hooks, we store only the last config file processed
+                            hook_dict = opt_dict.setdefault(hook_type, (filename, {}))[1]
+                            hook_dict[alias] = val
+                        else:
+                            opt_dict[opt] = (filename, val)
 
             # Make the RawConfigParser forget everything (so we retain
             # the original filenames that options come from)
@@ -402,12 +401,12 @@ Common commands: (see '--help-commands' for more)
                 try:
                     if alias:
                         setattr(self, alias, not strtobool(val))
-                    elif opt in ('verbose', 'dry_run'): # ugh!
+                    elif opt in ('verbose', 'dry_run'):  # ugh!
                         setattr(self, opt, strtobool(val))
                     else:
                         setattr(self, opt, val)
                 except ValueError, msg:
-                    raise DistutilsOptionError, msg
+                    raise DistutilsOptionError(msg)
 
     # -- Command-line parsing methods ----------------------------------
 
@@ -473,7 +472,7 @@ Common commands: (see '--help-commands' for more)
 
         # Oops, no commands found -- an end-user error
         if not self.commands:
-            raise DistutilsArgError, "no commands supplied"
+            raise DistutilsArgError("no commands supplied")
 
         # All is well: return true
         return 1
@@ -504,7 +503,7 @@ Common commands: (see '--help-commands' for more)
         # Pull the current command from the head of the command line
         command = args[0]
         if not command_re.match(command):
-            raise SystemExit, "invalid command name '%s'" % command
+            raise SystemExit("invalid command name '%s'" % command)
         self.commands.append(command)
 
         # Dig up the command class that implements this command, so we
@@ -513,22 +512,21 @@ Common commands: (see '--help-commands' for more)
         try:
             cmd_class = self.get_command_class(command)
         except DistutilsModuleError, msg:
-            raise DistutilsArgError, msg
+            raise DistutilsArgError(msg)
 
         # Require that the command class be derived from Command -- want
         # to be sure that the basic "command" interface is implemented.
         if not issubclass(cmd_class, Command):
-            raise DistutilsClassError, \
-                  "command class %s must subclass Command" % cmd_class
+            raise DistutilsClassError(
+                  "command class %s must subclass Command" % cmd_class)
 
         # Also make sure that the command object provides a list of its
         # known options.
         if not (hasattr(cmd_class, 'user_options') and
                 isinstance(cmd_class.user_options, list)):
-            raise DistutilsClassError, \
-                  ("command class %s must provide " +
-                   "'user_options' attribute (a list of tuples)") % \
-                  cmd_class
+            raise DistutilsClassError(
+                  ("command class %s must provide "
+                   "'user_options' attribute (a list of tuples)") % cmd_class)
 
         # If the command class has a list of negative alias options,
         # merge it in with the global negative aliases.
@@ -545,7 +543,6 @@ Common commands: (see '--help-commands' for more)
         else:
             help_options = []
 
-
         # All commands support the global options too, just by adding
         # in 'global_options'.
         parser.set_option_table(self.global_options +
@@ -559,10 +556,10 @@ Common commands: (see '--help-commands' for more)
 
         if (hasattr(cmd_class, 'help_options') and
             isinstance(cmd_class.help_options, list)):
-            help_option_found=0
+            help_option_found = 0
             for (help_option, short, desc, func) in cmd_class.help_options:
                 if hasattr(opts, parser.get_attr_name(help_option)):
-                    help_option_found=1
+                    help_option_found = 1
                     if hasattr(func, '__call__'):
                         func()
                     else:
@@ -588,7 +585,7 @@ Common commands: (see '--help-commands' for more)
         objects.
         """
         if getattr(self, 'convert_2to3_doctests', None):
-            self.convert_2to3_doctests = [os.path.join(p) 
+            self.convert_2to3_doctests = [os.path.join(p)
                                 for p in self.convert_2to3_doctests]
         else:
             self.convert_2to3_doctests = []
@@ -801,7 +798,7 @@ Common commands: (see '--help-commands' for more)
             class_name = command
 
             try:
-                __import__ (module_name)
+                __import__(module_name)
                 module = sys.modules[module_name]
             except ImportError:
                 continue
@@ -809,15 +806,14 @@ Common commands: (see '--help-commands' for more)
             try:
                 cls = getattr(module, class_name)
             except AttributeError:
-                raise DistutilsModuleError, \
-                      "invalid command '%s' (no class '%s' in module '%s')" \
-                      % (command, class_name, module_name)
+                raise DistutilsModuleError(
+                      "invalid command '%s' (no class '%s' in module '%s')" %
+                      (command, class_name, module_name))
 
             self.cmdclass[command] = cls
             return cls
 
         raise DistutilsModuleError("invalid command '%s'" % command)
-
 
     def get_command_obj(self, command, create=1):
         """Return the command object for 'command'.  Normally this object
@@ -881,11 +877,11 @@ Common commands: (see '--help-commands' for more)
                 elif hasattr(command_obj, option):
                     setattr(command_obj, option, value)
                 else:
-                    raise DistutilsOptionError, \
-                          ("error in %s: command '%s' has no such option '%s'"
-                           % (source, command_name, option))
+                    raise DistutilsOptionError(
+                        "error in %s: command '%s' has no such option '%s'" %
+                        (source, command_name, option))
             except ValueError, msg:
-                raise DistutilsOptionError, msg
+                raise DistutilsOptionError(msg)
 
     def get_reinitialized_command(self, command, reinit_subcommands=0):
         """Reinitializes a command to the state it was in when first
@@ -953,15 +949,23 @@ Common commands: (see '--help-commands' for more)
         if self.have_run.get(command):
             return
 
-        log.info("running %s", command)
         cmd_obj = self.get_command_obj(command)
         cmd_obj.ensure_finalized()
+        self.run_command_hooks(cmd_obj, 'pre_hook')
+        log.info("running %s", command)
         cmd_obj.run()
+        self.run_command_hooks(cmd_obj, 'post_hook')
         self.have_run[command] = 1
 
+    def run_command_hooks(self, cmd_obj, hook_kind):
+        hooks = getattr(cmd_obj, hook_kind)
+        if hooks is None:
+            return
+        for hook in hooks.values():
+            hook_func = resolve_dotted_name(hook)
+            hook_func(cmd_obj)
 
     # -- Distribution query methods ------------------------------------
-
     def has_pure_modules(self):
         return len(self.packages or self.py_modules or []) > 0
 
@@ -988,13 +992,8 @@ Common commands: (see '--help-commands' for more)
                 not self.has_ext_modules() and
                 not self.has_c_libraries())
 
-    # -- Metadata query methods ----------------------------------------
 
-    # If you're looking for 'get_name()', 'get_version()', and so forth,
-    # they are defined in a sneaky way: the constructor binds self.get_XXX
-    # to self.metadata.get_XXX.  The actual code is in the
-    # DistributionMetadata class, below.
-
+# XXX keep for compat or remove?
 
 def fix_help_options(options):
     """Convert a 4-tuple 'help_options' list as found in various command

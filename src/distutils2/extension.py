@@ -17,6 +17,7 @@ import warnings
 # import that large-ish module (indirectly, through distutils.core) in
 # order to do anything.
 
+
 class Extension(object):
     """Just a collection of attributes that describes an extension
     module and everything needed to build it (hopefully in a portable
@@ -84,7 +85,7 @@ class Extension(object):
 
     # When adding arguments to this constructor, be sure to update
     # setup_keywords in core.py.
-    def __init__ (self, name, sources,
+    def __init__(self, name, sources,
                   include_dirs=None,
                   define_macros=None,
                   undef_macros=None,
@@ -95,11 +96,11 @@ class Extension(object):
                   extra_compile_args=None,
                   extra_link_args=None,
                   export_symbols=None,
-                  swig_opts = None,
+                  swig_opts=None,
                   depends=None,
                   language=None,
                   optional=None,
-                  **kw                      # To catch unknown keywords
+                  **kw # To catch unknown keywords
                  ):
         if not isinstance(name, str):
             raise AssertionError("'name' must be a string")
@@ -134,4 +135,3 @@ class Extension(object):
             options = ', '.join(sorted(options))
             msg = "Unknown Extension options: %s" % options
             warnings.warn(msg)
-

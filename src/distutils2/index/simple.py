@@ -25,7 +25,7 @@ from distutils2.metadata import DistributionMetadata
 from distutils2.version import get_version_predicate
 from distutils2 import __version__ as __distutils2_version__
 
-__all__ = ['Crawler', 'DEFAULT_SIMPLE_INDEX_URL'] 
+__all__ = ['Crawler', 'DEFAULT_SIMPLE_INDEX_URL']
 
 # -- Constants -----------------------------------------------
 DEFAULT_SIMPLE_INDEX_URL = "http://a.pypi.python.org/simple/"
@@ -154,7 +154,7 @@ class Crawler(BaseClient):
             matching_projects.append(self._get_project(project_name))
         return matching_projects
 
-    def get_releases(self, requirements, prefer_final=None, 
+    def get_releases(self, requirements, prefer_final=None,
                      force_update=False):
         """Search for releases and return a ReleaseList object containing
         the results.
@@ -167,7 +167,7 @@ class Crawler(BaseClient):
 
         if not self._projects.has_key(predicate.name.lower()):
             raise ProjectNotFound()
-        
+
         releases = self._projects.get(predicate.name.lower())
         releases.sort_releases(prefer_final=prefer_final)
         return releases
@@ -260,7 +260,7 @@ class Crawler(BaseClient):
         else:
             name = release_info['name']
         if not name.lower() in self._projects:
-            self._projects[name.lower()] = ReleasesList(name, 
+            self._projects[name.lower()] = ReleasesList(name,
                                                         index=self._index)
 
         if release:

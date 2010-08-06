@@ -153,10 +153,7 @@ class bdist_msi (Command):
         else:
             self.versions = list(self.all_versions)
 
-        self.set_undefined_options('bdist',
-                                   ('dist_dir', 'dist_dir'),
-                                   ('plat_name', 'plat_name'),
-                                   )
+        self.set_undefined_options('bdist', 'dist_dir', 'plat_name')
 
         if self.pre_install_script:
             raise DistutilsOptionError, "the pre-install-script feature is not yet implemented"

@@ -43,7 +43,7 @@ class CheckTestCase(support.LoggingSilencer,
         # get an error if there are missing metadata
         self.assertRaises(DistutilsSetupError, self._run, {}, **{'strict': 1})
 
-        # and of course, no error when all metadata are present
+        # and of course, no error when all metadata fields are present
         cmd = self._run(metadata, strict=1)
         self.assertEqual(len(cmd._warnings), 0)
 

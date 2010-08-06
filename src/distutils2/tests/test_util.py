@@ -4,7 +4,6 @@ import sys
 from copy import copy
 from StringIO import StringIO
 import subprocess
-import tempfile
 import time
 
 from distutils2.tests import captured_stdout
@@ -19,7 +18,7 @@ from distutils2.util import (convert_path, change_root,
                              _find_exe_version, _MAC_OS_X_LD_VERSION,
                              byte_compile, find_packages, spawn, find_executable,
                              _nt_quote_args, get_pypirc_path, generate_pypirc,
-                             read_pypirc)
+                             read_pypirc, resolve_dotted_name)
 
 from distutils2 import util
 from distutils2.tests import support
@@ -288,7 +287,7 @@ class UtilTestCase(support.EnvironGuard,
         self.assertEqual(res[2], None)
 
     @unittest.skipUnless(hasattr(sys, 'dont_write_bytecode'),
-                          'no dont_write_bytecode support')
+                         'sys.dont_write_bytecode not supported')
     def test_dont_write_bytecode(self):
         # makes sure byte_compile raise a DistutilsError
         # if sys.dont_write_bytecode is True
@@ -301,9 +300,9 @@ class UtilTestCase(support.EnvironGuard,
 
     def test_newer(self):
         self.assertRaises(DistutilsFileError, util.newer, 'xxx', 'xxx')
-        self.newer_f1 = tempfile.NamedTemporaryFile()
+        self.newer_f1 = self.mktempfile()
         time.sleep(1)
-        self.newer_f2 = tempfile.NamedTemporaryFile()
+        self.newer_f2 = self.mktempfile()
         self.assertTrue(util.newer(self.newer_f2.name, self.newer_f1.name))
 
     def test_find_packages(self):
@@ -343,7 +342,17 @@ class UtilTestCase(support.EnvironGuard,
         res = find_packages([root], ['pkg1.pkg2'])
         self.assertEqual(set(res), set(['pkg1', 'pkg5', 'pkg1.pkg3', 'pkg1.pkg3.pkg6']))
 
-    @unittest.skipUnless(sys.version > '2.6', 'Need Python 2.6 or more')
+    def test_resolve_dotted_name(self):
+        self.assertEqual(UtilTestCase, resolve_dotted_name("distutils2.tests.test_util.UtilTestCase"))
+        self.assertEqual(UtilTestCase.test_resolve_dotted_name,
+                         resolve_dotted_name("distutils2.tests.test_util.UtilTestCase.test_resolve_dotted_name"))
+
+        self.assertRaises(ImportError, resolve_dotted_name,
+                          "distutils2.tests.test_util.UtilTestCaseNot")
+        self.assertRaises(ImportError, resolve_dotted_name,
+                          "distutils2.tests.test_util.UtilTestCase.nonexistent_attribute")
+
+    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_run_2to3_on_code(self):
         content = "print 'test'"
         converted_content = "print('test')"
@@ -358,7 +367,7 @@ class UtilTestCase(support.EnvironGuard,
         file_handle.close()
         self.assertEquals(new_content, converted_content)
 
-    @unittest.skipUnless(sys.version > '2.6', 'Need Python 2.6 or more')
+    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_run_2to3_on_doctests(self):
         # to check if text files containing doctests only get converted.
         content = ">>> print 'test'\ntest\n"
@@ -385,7 +394,7 @@ class UtilTestCase(support.EnvironGuard,
 
 
     @unittest.skipUnless(os.name in ('nt', 'posix'),
-                         'Runs only under posix or nt')
+                         'runs only under posix or nt')
     def test_spawn(self):
         tmpdir = self.mkdtemp()
 

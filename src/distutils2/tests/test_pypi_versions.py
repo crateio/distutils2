@@ -1,43 +1,39 @@
-#
-## test_pypi_versions.py
-##
-##  A very simple test to see what percentage of the current pypi packages
-##  have versions that can be converted automatically by distutils' new
-##  suggest_normalized_version() into PEP-386 compatible versions.
-##
-##  Requires : Python 2.5+
-##
-##  Written by: ssteinerX@gmail.com
-#
+"""PEP 386 compatibility test with current distributions on PyPI.
+
+A very simple test to see what percentage of the current PyPI packages
+have versions that can be converted automatically by distutils2's new
+suggest_normalized_version into PEP 386-compatible versions.
+"""
+
+# XXX This file does not actually run tests, move it to a script
+
+# Written by ssteinerX@gmail.com
+
+import os
+import xmlrpclib
 
 try:
    import cPickle as pickle
-except:
+except ImportError:
    import pickle
-
-import xmlrpclib
-import os.path
 
 from distutils2.version import suggest_normalized_version
 from distutils2.tests import run_unittest
 from distutils2.tests.support import unittest
 
 def test_pypi():
-    #
-    ## To re-run from scratch, just delete these two .pkl files
-    #
+    # FIXME need a better way to do that
+    # To re-run from scratch, just delete these two .pkl files
     INDEX_PICKLE_FILE = 'pypi-index.pkl'
     VERSION_PICKLE_FILE = 'pypi-version.pkl'
 
     package_info = version_info = []
 
-    #
-    ## if there's a saved version of the package list
-    ##      restore it
-    ## else:
-    ##      pull the list down from pypi
-    ##      save a pickled version of it
-    #
+    # if there's a saved version of the package list
+    #      restore it
+    # else:
+    #      pull the list down from pypi
+    #      save a pickled version of it
     if os.path.exists(INDEX_PICKLE_FILE):
         print "Loading saved pypi data..."
         f = open(INDEX_PICKLE_FILE, 'rb')
@@ -57,13 +53,11 @@ def test_pypi():
         finally:
             f.close()
 
-    #
-    ## If there's a saved list of the versions from the packages
-    ##      restore it
-    ## else
-    ##     extract versions from the package list
-    ##     save a pickled version of it
-    #
+    # If there's a saved list of the versions from the packages
+    #      restore it
+    # else
+    #     extract versions from the package list
+    #     save a pickled version of it
     versions = []
     if os.path.exists(VERSION_PICKLE_FILE):
         print "Loading saved version info..."

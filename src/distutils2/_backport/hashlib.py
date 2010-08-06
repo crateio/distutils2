@@ -65,20 +65,20 @@ __all__ = __always_supported + ('new', 'algorithms')
 
 def __get_builtin_constructor(name):
     if name in ('SHA1', 'sha1'):
-        import _sha
+        from distutils2._backport import _sha
         return _sha.new
     elif name in ('MD5', 'md5'):
-        import _md5
+        from distutils2._backport import _md5
         return _md5.new
     elif name in ('SHA256', 'sha256', 'SHA224', 'sha224'):
-        import _sha256
+        from distutils2._backport import _sha256
         bs = name[3:]
         if bs == '256':
             return _sha256.sha256
         elif bs == '224':
             return _sha256.sha224
     elif name in ('SHA512', 'sha512', 'SHA384', 'sha384'):
-        import _sha512
+        from distutils2._backport import _sha512
         bs = name[3:]
         if bs == '512':
             return _sha512.sha512
@@ -122,7 +122,7 @@ def __hash_new(name, string=''):
 
 
 try:
-    import _hashlib
+    from distutils2._backport import _hashlib
     new = __hash_new
     __get_hash = __get_openssl_constructor
 except ImportError:

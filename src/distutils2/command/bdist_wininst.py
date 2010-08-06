@@ -100,10 +100,7 @@ class bdist_wininst (Command):
                       " option must be specified" % (short_version,)
             self.target_version = short_version
 
-        self.set_undefined_options('bdist',
-                                   ('dist_dir', 'dist_dir'),
-                                   ('plat_name', 'plat_name'),
-                                  )
+        self.set_undefined_options('bdist', 'dist_dir', 'plat_name')
 
         if self.install_script:
             for script in self.distribution.scripts:
@@ -177,8 +174,8 @@ class bdist_wininst (Command):
 
         # And make an archive relative to the root of the
         # pseudo-installation tree.
-        from tempfile import mktemp
-        archive_basename = mktemp()
+        from tempfile import NamedTemporaryFile
+        archive_basename = NamedTemporaryFile().name
         fullname = self.distribution.get_fullname()
         arcname = self.make_archive(archive_basename, "zip",
                                     root_dir=self.bdist_dir)

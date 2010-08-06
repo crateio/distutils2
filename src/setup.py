@@ -168,29 +168,25 @@ def prepare_hashlib_extensions():
 
         # The _hashlib module wraps optimized implementations
         # of hash functions from the OpenSSL library.
-        exts.append(Extension('_hashlib', ['_hashopenssl.c'],
+        exts.append(Extension('distutils2._backport._hashlib',
+                              ['distutils2/_backport/_hashopenssl.c'],
                               include_dirs = [ssl_inc_dir],
                               library_dirs = [os.path.dirname(ssl_lib)],
                               libraries = oslibs[os.name]))
     else:
-        exts.append(Extension('_sha', ['shamodule.c']) )
-        exts.append(Extension('_md5',
-                              sources=['md5module.c', 'md5.c'],
-                              depends=['md5.h']) )
+        exts.append(Extension('distutils2._backport._sha',
+                              ['distutils2/_backport/shamodule.c']))
+        exts.append(Extension('distutils2._backport._md5',
+                              sources=['distutils2/_backport/md5module.c',
+                                       'distutils2/_backport/md5.c'],
+                              depends=['distutils2/_backport/md5.h']) )
 
     if (not ssl_lib or openssl_ver < 0x00908000):
         # OpenSSL doesn't do these until 0.9.8 so we'll bring our own
-        exts.append(Extension('_sha256', ['sha256module.c']))
-        exts.append(Extension('_sha512', ['sha512module.c']))
-
-    def prepend_modules(filename):
-        return os.path.join('Modules', filename)
-
-    # all the C code is in the Modules subdirectory, prepend the path
-    for ext in exts:
-        ext.sources = [prepend_modules(fn) for fn in ext.sources]
-        if hasattr(ext, 'depends') and ext.depends is not None:
-            ext.depends = [prepend_modules(fn) for fn in ext.depends]
+        exts.append(Extension('distutils2._backport._sha256',
+                              ['distutils2/_backport/sha256module.c']))
+        exts.append(Extension('distutils2._backport._sha512',
+                              ['distutils2/_backport/sha512module.c']))
 
     return exts
 

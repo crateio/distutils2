@@ -17,6 +17,17 @@ they should consider these old styled distributions. In this document,
 first a complete documentation of the functions and classes
 is provided and then several use cases are presented.
 
+Caching
++++++++
+
+For performance purposes, the list of distributions is being internally
+cached. It is enabled by default, but you can turn it off or clear
+it using
+:func:`distutils2._backport.pkgutil.enable_cache`,
+:func:`distutils2._backport.pkgutil.disable_cache` and
+:func:`distutils2._backport.pkgutil.clear_cache`.
+
+
 API Reference
 =============
 
@@ -48,7 +59,7 @@ information that can be obtained using functions provided in this module::
   print('=====')
   for (path, md5, size) in dist.get_installed_files():
       print('* Path: %s' % path)
-      print('  Hash %s, Size: %s bytes' % (md5, size)) 
+      print('  Hash %s, Size: %s bytes' % (md5, size))
   print('Metadata')
   print('========')
   for key, value in dist.metadata.items():

@@ -222,7 +222,7 @@ class SimpleCrawlerTestCase(support.TempdirManager, unittest.TestCase):
             # create the index using both servers
             crawler = Crawler(server.full_address + "/simple/",
                 hosts=('*',), timeout=1,  # set the timeout to 1s for the tests
-                mirrors=[mirror.full_address, ])
+                mirrors=[mirror.full_address])
 
             # this should not raise a timeout
             self.assertEqual(4, len(crawler.get_releases("foo")))

@@ -1,5 +1,5 @@
+# -*- encoding: utf-8 -*-
 """Tests for distutils.command.register."""
-# -*- encoding: utf8 -*-
 import sys
 import os
 import getpass
@@ -161,7 +161,7 @@ class RegisterTestCase(support.TempdirManager, support.EnvironGuard,
         # therefore used afterwards by other commands
         self.assertEqual(cmd.distribution.password, 'password')
 
-    def test_registering(self):
+    def test_registration(self):
         # this test runs choice 2
         cmd = self._get_cmd()
         inputs = RawInputs('2', 'tarek', 'tarek@ziade.org')
@@ -210,7 +210,7 @@ class RegisterTestCase(support.TempdirManager, support.EnvironGuard,
         cmd.strict = 1
         self.assertRaises(DistutilsSetupError, cmd.run)
 
-        # metadata are OK but long_description is broken
+        # metadata is OK but long_description is broken
         metadata = {'home_page': 'xxx', 'author': 'xxx',
                     'author_email': u'éxéxé',
                     'name': 'xxx', 'version': 'xxx',

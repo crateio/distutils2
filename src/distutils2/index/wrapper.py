@@ -3,7 +3,7 @@ import simple
 
 _WRAPPER_MAPPINGS = {'get_release': 'simple',
                      'get_releases': 'simple',
-                     'search_projects': 'simple', 
+                     'search_projects': 'simple',
                      'get_metadata': 'xmlrpc',
                      'get_distributions': 'simple'}
 
@@ -45,7 +45,7 @@ class ClientWrapper(object):
 
     :param index: tell wich index to rely on by default.
     :param index_classes: a dict of name:class to use as indexes.
-    :param indexes: a dict of name:index already instanciated
+    :param indexes: a dict of name:index already instantiated
     :param mappings: the mappings to use for this wrapper
     """
 
@@ -56,7 +56,7 @@ class ClientWrapper(object):
         self._indexes = indexes
         self._default_index = default_index
 
-        # instanciate the classes and set their _project attribute to the one
+        # instantiate the classes and set their _project attribute to the one
         # of the wrapper.
         for name, cls in index_classes.items():
             obj = self._indexes.setdefault(name, cls())
@@ -77,10 +77,10 @@ class ClientWrapper(object):
             # the method is not defined in the mappings, so we try first to get
             # it via the default index, and rely on others if needed.
             try:
-                real_method = getattr(self._indexes[self._default_index], 
+                real_method = getattr(self._indexes[self._default_index],
                                       method_name)
             except AttributeError:
-                other_indexes = [i for i in self._indexes 
+                other_indexes = [i for i in self._indexes
                                  if i != self._default_index]
                 for index in other_indexes:
                     real_method = getattr(self._indexes[index], method_name, None)
@@ -90,4 +90,4 @@ class ClientWrapper(object):
             return switch_index_if_fails(real_method, self)
         else:
             raise AttributeError("No index have attribute '%s'" % method_name)
-        
+

@@ -5,8 +5,19 @@ The tests for distutils2 are defined in the distutils2.tests package.
 """
 
 import sys
-from os.path import dirname, islink, realpath
+from os.path import dirname, islink, realpath, join, abspath
 from optparse import OptionParser
+
+COVERAGE_FILE = join(dirname(abspath(__file__)), '.coverage')
+
+def get_coverage():
+    """ Return a usable coverage object. """
+    # deferred import because coverage is optional
+    import coverage
+    cov = getattr(coverage, "the_coverage", None)
+    if not cov:
+        cov = coverage.coverage(COVERAGE_FILE)
+    return cov
 
 def ignore_prefixes(module):
     """ Return a list of prefixes to ignore in the coverage report if
@@ -16,16 +27,17 @@ def ignore_prefixes(module):
     # distributions, such a Ubuntu, really like to build link farm in
     # /usr/lib in order to save a few bytes on the disk.
     dirnames = [dirname(module.__file__)]
-    
+
     pymod = module.__file__.rstrip("c")
     if islink(pymod):
         dirnames.append(dirname(realpath(pymod)))
     return dirnames
 
+
 def parse_opts():
     parser = OptionParser(usage="%prog [OPTIONS]",
                           description="run the distutils2 unittests")
-    
+
     parser.add_option("-q", "--quiet", help="do not print verbose messages",
                       action="store_true", default=False)
     parser.add_option("-c", "--coverage", action="store_true", default=False,
@@ -36,15 +48,23 @@ def parse_opts():
                       default=False,
                       help=("Show line numbers of statements in each module "
                             "that weren't executed."))
-    
+
     opts, args = parser.parse_args()
     return opts, args
 
+
 def coverage_report(opts):
-    import coverage
     from distutils2.tests.support import unittest
-    cov = coverage.coverage()
-    cov.load()
+    cov = get_coverage()
+    if hasattr(cov, "load"):
+        # running coverage 3.x
+        cov.load()
+        morfs = None
+    else:
+        # running coverage 2.x
+        cov.cache = COVERAGE_FILE
+        cov.restore()
+        morfs = [m for m in cov.cexecuted.keys() if "distutils2" in m]
 
     prefixes = ["runtests", "distutils2/tests", "distutils2/_backport"]
     prefixes += ignore_prefixes(unittest)
@@ -63,7 +83,7 @@ def coverage_report(opts):
         # that module is also completely optional
         pass
 
-    cov.report(omit_prefixes=prefixes, show_missing=opts.show_missing)
+    cov.report(morfs, omit_prefixes=prefixes, show_missing=opts.show_missing)
 
 
 def test_main():
@@ -71,11 +91,8 @@ def test_main():
     verbose = not opts.quiet
     ret = 0
 
-    if opts.coverage or opts.report:
-        import coverage
-
     if opts.coverage:
-        cov = coverage.coverage()
+        cov = get_coverage()
         cov.erase()
         cov.start()
     if not opts.report:
@@ -88,6 +105,7 @@ def test_main():
         coverage_report(opts)
 
     return ret
+
 
 def run_tests(verbose):
     import distutils2.tests
@@ -108,12 +126,11 @@ def run_tests(verbose):
     finally:
         reap_children()
 
+
 if __name__ == "__main__":
     try:
         from distutils2.tests.support import unittest
     except ImportError:
         sys.stderr.write('Error: You have to install unittest2')
         sys.exit(1)
-
     sys.exit(test_main())
-

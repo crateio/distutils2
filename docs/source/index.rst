@@ -14,7 +14,8 @@ Contents:
    metadata
    pkgutil
    depgraph
-   new_commands
+   commands
+   command_hooks
    test_framework
    projects-index
    version

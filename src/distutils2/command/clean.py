@@ -40,13 +40,9 @@ class clean(Command):
         self.all = None
 
     def finalize_options(self):
-        self.set_undefined_options('build',
-                                   ('build_base', 'build_base'),
-                                   ('build_lib', 'build_lib'),
-                                   ('build_scripts', 'build_scripts'),
-                                   ('build_temp', 'build_temp'))
-        self.set_undefined_options('bdist',
-                                   ('bdist_base', 'bdist_base'))
+        self.set_undefined_options('build', 'build_base', 'build_lib',
+                                   'build_scripts', 'build_temp')
+        self.set_undefined_options('bdist', 'bdist_base')
 
     def run(self):
         # remove the build/temp.<plat> directory (unless it's already
