@@ -62,6 +62,8 @@ class install_distinfo(Command):
                                    ('install_dir', 'distinfo_dir'))
 
         if self.installer is None:
+            # FIXME distutils or distutils2?
+            # + document default in the option help text above and in install
             self.installer = 'distutils'
         if self.requested is None:
             self.requested = True
@@ -144,10 +146,7 @@ class install_distinfo(Command):
         return self.outputs
 
 
-# The following routines are taken from setuptools' pkg_resources module and
-# can be replaced by importing them from pkg_resources once it is included
-# in the stdlib.
-
+# The following functions are taken from setuptools' pkg_resources module.
 
 def safe_name(name):
     """Convert an arbitrary string to a standard distribution name
