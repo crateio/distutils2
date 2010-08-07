@@ -98,11 +98,14 @@ class install(Command):
     boolean_options = ['compile', 'force', 'skip-build', 'no-distinfo',
                        'requested', 'no-record']
 
-    user_options.append(('user', None,
-                        "install in user site-package '%s'" % \
-                            get_path('purelib', '%s_user' % os.name)))
-    boolean_options.append('user')
     negative_opt = {'no-compile' : 'compile', 'no-requested': 'requested'}
+    if sys.version >= '2.6':
+        user_options.append(
+            ('user', None,
+             "install in user site-package [%s]" %
+             get_path('purelib', '%s_user' % os.name)))
+
+        boolean_options.append('user')
 
 
     def initialize_options(self):
@@ -112,6 +115,8 @@ class install(Command):
         self.prefix = None
         self.exec_prefix = None
         self.home = None
+        # This attribute is used all over the place, so it's best to
+        # define it even in < 2.6
         self.user = 0
 
         # These select only the installation base; it's up to the user to
