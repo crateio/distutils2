@@ -333,23 +333,6 @@ class install(Command):
         if self.no_distinfo is None:
             self.no_distinfo = False
 
-    def dump_dirs(self, msg):
-        """Dumps the list of user options."""
-        from distutils2.fancy_getopt import longopt_xlate
-        log.debug(msg + ":")
-        for opt in self.user_options:
-            opt_name = opt[0]
-            if opt_name[-1] == "=":
-                opt_name = opt_name[0:-1]
-            if opt_name in self.negative_opt:
-                opt_name = self.negative_opt[opt_name]
-                opt_name = opt_name.translate(longopt_xlate)
-                val = not getattr(self, opt_name)
-            else:
-                opt_name = opt_name.translate(longopt_xlate)
-                val = getattr(self, opt_name)
-            log.debug("  %s: %s" % (opt_name, val))
-
     def finalize_unix(self):
         """Finalizes options for posix platforms."""
         if self.install_base is not None or self.install_platbase is not None:
@@ -411,6 +394,22 @@ class install(Command):
             except KeyError:
                 raise DistutilsPlatformError, \
                       "I don't know how to install stuff on '%s'" % os.name
+
+    def dump_dirs(self, msg):
+        """Dumps the list of user options."""
+        log.debug(msg + ":")
+        for opt in self.user_options:
+            opt_name = opt[0]
+            if opt_name[-1] == "=":
+                opt_name = opt_name[0:-1]
+            if opt_name in self.negative_opt:
+                opt_name = self.negative_opt[opt_name]
+                opt_name = opt_name.replace('-', '_')
+                val = not getattr(self, opt_name)
+            else:
+                opt_name = opt_name.replace('-', '_')
+                val = getattr(self, opt_name)
+            log.debug("  %s: %s" % (opt_name, val))
 
     def select_scheme(self, name):
         """Sets the install directories by applying the install schemes."""
