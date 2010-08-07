@@ -54,9 +54,7 @@ class install_distinfo(Command):
 
     def finalize_options(self):
         self.set_undefined_options('install',
-                                   ('installer', 'installer'),
-                                   ('requested', 'requested'),
-                                   ('no_record', 'no_record'))
+                                   'installer', 'requested', 'no_record')
 
         self.set_undefined_options('install_lib',
                                    ('install_dir', 'distinfo_dir'))
