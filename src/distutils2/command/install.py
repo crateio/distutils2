@@ -77,8 +77,10 @@ class install(Command):
         #('install-html=', None, "directory for HTML documentation"),
         #('install-info=', None, "directory for GNU info files"),
 
+        # XXX use a name that makes clear this is the old format
         ('record=', None,
-         "filename in which to record list of installed files"),
+         "filename in which to record a list of installed files "
+         "(not PEP 376-compliant)"),
 
         # .dist-info related arguments, read by install_dist_info
         ('no-distinfo', None, 'do not create a .dist-info directory'),
@@ -88,8 +90,8 @@ class install(Command):
         ('no-record', None, 'do not generate a RECORD file'),
         ]
 
-    boolean_options = ['compile', 'force', 'skip-build', 'no-dist-info',
-                       'requested', 'no-dist-record',]
+    boolean_options = ['compile', 'force', 'skip-build', 'no-distinfo',
+                       'requested', 'no-record']
 
     user_options.append(('user', None,
                         "install in user site-package '%s'" % \
