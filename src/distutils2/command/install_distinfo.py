@@ -31,18 +31,18 @@ class install_distinfo(Command):
 
     user_options = [
         ('distinfo-dir=', None,
-                           'directory where the the .dist-info directory will '
-                           'be installed'),
-        ('installer=', None, 'the name of the installer'),
-        ('requested', None, 'generate a REQUESTED file'),
-        ('no-requested', None, 'do not generate a REQUESTED file'),
-        ('no-record', None, 'do not generate a RECORD file'),
+         "directory where the the .dist-info directory will be installed"),
+        ('installer=', None,
+         "the name of the installer"),
+        ('requested', None,
+         "generate a REQUESTED file"),
+        ('no-requested', None,
+         "do not generate a REQUESTED file"),
+        ('no-record', None,
+         "do not generate a RECORD file"),
     ]
 
-    boolean_options = [
-        'requested',
-        'no-record',
-    ]
+    boolean_options = ['requested', 'no-record']
 
     negative_opt = {'no-requested': 'requested'}
 

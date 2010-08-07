@@ -83,11 +83,16 @@ class install(Command):
          "(not PEP 376-compliant)"),
 
         # .dist-info related arguments, read by install_dist_info
-        ('no-distinfo', None, 'do not create a .dist-info directory'),
-        ('installer=', None, 'the name of the installer'),
-        ('requested', None, 'generate a REQUESTED file'),
-        ('no-requested', None, 'do not generate a REQUESTED file'),
-        ('no-record', None, 'do not generate a RECORD file'),
+        ('no-distinfo', None,
+         "do not create a .dist-info directory"),
+        ('installer=', None,
+         "the name of the installer"),
+        ('requested', None,
+         "generate a REQUESTED file (i.e."),
+        ('no-requested', None,
+         "do not generate a REQUESTED file"),
+        ('no-record', None,
+         "do not generate a RECORD file"),
         ]
 
     boolean_options = ['compile', 'force', 'skip-build', 'no-distinfo',
