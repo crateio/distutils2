@@ -72,6 +72,21 @@ class install_data(Command):
                         (out, _) = self.copy_file(data, dir)
                         self.outfiles.append(out)
 
+    def get_source_files(self):
+        sources = []
+        for item in self.data_files:
+            if isinstance(item, str): # plain file
+                item = convert_path(item)
+                if os.path.isfile(item):
+                    sources.append(item)
+            else:    # a (dirname, filenames) tuple
+                dirname, filenames = item
+                for f in filenames:
+                    f = convert_path(f)
+                    if os.path.isfile(f):
+                        sources.append(f)
+        return sources
+
     def get_inputs(self):
         return self.data_files or []
 

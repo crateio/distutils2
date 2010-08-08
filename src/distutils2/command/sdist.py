@@ -170,14 +170,6 @@ class sdist(Command):
         # or zipfile, or whatever.
         self.make_distribution()
 
-    def check_metadata(self):
-        """Deprecated API."""
-        warn("distutils.command.sdist.check_metadata is deprecated, \
-              use the check command instead", PendingDeprecationWarning)
-        check = self.distribution.get_command_obj('check')
-        check.ensure_finalized()
-        check.run()
-
     def get_file_list(self):
         """Figure out the list of files to include in the source
         distribution, and put it in 'self.filelist'.  This might involve
@@ -243,47 +235,10 @@ class sdist(Command):
             if files:
                 self.filelist.extend(files)
 
-        # build_py is used to get:
-        #  - python modules
-        #  - files defined in package_data
-        build_py = self.get_finalized_command('build_py')
-
-        # getting python files
-        if self.distribution.has_pure_modules():
-            self.filelist.extend(build_py.get_source_files())
-
-        # getting package_data files
-        # (computed in build_py.data_files by build_py.finalize_options)
-        for pkg, src_dir, build_dir, filenames in build_py.data_files:
-            for filename in filenames:
-                self.filelist.append(os.path.join(src_dir, filename))
-
-        # getting distribution.data_files
-        if self.distribution.has_data_files():
-            for item in self.distribution.data_files:
-                if isinstance(item, str): # plain file
-                    item = convert_path(item)
-                    if os.path.isfile(item):
-                        self.filelist.append(item)
-                else:    # a (dirname, filenames) tuple
-                    dirname, filenames = item
-                    for f in filenames:
-                        f = convert_path(f)
-                        if os.path.isfile(f):
-                            self.filelist.append(f)
-
-        if self.distribution.has_ext_modules():
-            build_ext = self.get_finalized_command('build_ext')
-            self.filelist.extend(build_ext.get_source_files())
-
-        if self.distribution.has_c_libraries():
-            build_clib = self.get_finalized_command('build_clib')
-            self.filelist.extend(build_clib.get_source_files())
-
-        if self.distribution.has_scripts():
-            build_scripts = self.get_finalized_command('build_scripts')
-            self.filelist.extend(build_scripts.get_source_files())
-
+        for cmd_name in self.distribution.get_command_names():
+            cmd_obj = self.get_finalized_command(cmd_name)
+            self.filelist.extend(cmd_obj.get_source_files())
+                                    
 
     def prune_file_list(self):
         """Prune off branches that might slip into the file list as created
