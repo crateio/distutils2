@@ -1,33 +1,71 @@
 """Tests for distutils.command.bdist."""
 import os
 import sys
+import platform
 from StringIO import StringIO
 
 from distutils2.metadata import (DistributionMetadata, _interpret,
                                  PKG_INFO_PREFERRED_VERSION)
+from distutils2.tests import run_unittest
 from distutils2.tests.support import unittest, LoggingSilencer
+from distutils2.errors import (MetadataConflictError,
+                               MetadataUnrecognizedVersionError)
 
 class DistributionMetadataTestCase(LoggingSilencer, unittest.TestCase):
 
+    def test_instantiation(self):
+        PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
+        fp = open(PKG_INFO)
+        try:
+            contents = fp.read()
+        finally:
+            fp.close()
+        fp = StringIO(contents)
+
+        m = DistributionMetadata()
+        self.assertRaises(MetadataUnrecognizedVersionError, m.items)
+
+        m = DistributionMetadata(PKG_INFO)
+        self.assertEqual(len(m.items()), 22)
+
+        m = DistributionMetadata(fileobj=fp)
+        self.assertEqual(len(m.items()), 22)
+
+        m = DistributionMetadata(mapping=dict(name='Test', version='1.0'))
+        self.assertEqual(len(m.items()), 11)
+
+        d = dict(m.items())
+        self.assertRaises(TypeError, DistributionMetadata,
+                          PKG_INFO, fileobj=fp)
+        self.assertRaises(TypeError, DistributionMetadata,
+                          PKG_INFO, mapping=d)
+        self.assertRaises(TypeError, DistributionMetadata,
+                          fileobj=fp, mapping=d)
+        self.assertRaises(TypeError, DistributionMetadata,
+                          PKG_INFO, mapping=m, fileobj=fp)
 
     def test_interpret(self):
-        platform = sys.platform
+        sys_platform = sys.platform
         version = sys.version.split()[0]
         os_name = os.name
+        platform_version = platform.version()
+        platform_machine = platform.machine()
 
-        self.assertTrue(_interpret("sys.platform == '%s'" % platform))
+        self.assertTrue(_interpret("sys.platform == '%s'" % sys_platform))
         self.assertTrue(_interpret(
-            "sys.platform == '%s' or python_version == '2.4'" % platform))
+            "sys.platform == '%s' or python_version == '2.4'" % sys_platform))
         self.assertTrue(_interpret(
             "sys.platform == '%s' and python_full_version == '%s'" %
-            (platform, version)))
-        self.assertTrue(_interpret("'%s' == sys.platform" % platform))
-
+            (sys_platform, version)))
+        self.assertTrue(_interpret("'%s' == sys.platform" % sys_platform))
         self.assertTrue(_interpret('os.name == "%s"' % os_name))
+        self.assertTrue(_interpret(
+            'platform.version == "%s" and platform.machine == "%s"' %
+            (platform_version, platform_machine)))
 
         # stuff that need to raise a syntax error
         ops = ('os.name == os.name', 'os.name == 2', "'2' == '2'",
-               'okpjonon', '', 'os.name ==')
+               'okpjonon', '', 'os.name ==', 'python_version == 2.4')
         for op in ops:
             self.assertRaises(SyntaxError, _interpret, op)
 
@@ -59,17 +97,13 @@ class DistributionMetadataTestCase(LoggingSilencer, unittest.TestCase):
 
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
         metadata = DistributionMetadata(PKG_INFO)
-        res = StringIO()
-        metadata.write_file(res)
-        res.seek(0)
-        res = res.read()
-        f = open(PKG_INFO)
-        try:
-            # XXX this is not used
-            wanted = f.read()
-        finally:
-            f.close()
-        self.assertTrue('Keywords: keyring,password,crypt' in res)
+        out = StringIO()
+        metadata.write_file(out)
+        out.seek(0)
+        res = DistributionMetadata()
+        res.read_file(out)
+        for k in metadata.keys():
+            self.assertTrue(metadata[k] == res[k])
 
     def test_metadata_markers(self):
         # see if we can be platform-aware
@@ -79,6 +113,10 @@ class DistributionMetadataTestCase(LoggingSilencer, unittest.TestCase):
         metadata = DistributionMetadata(platform_dependent=True)
         metadata.read_file(StringIO(content))
         self.assertEqual(metadata['Requires-Dist'], ['bar'])
+        metadata['Name'] = "baz; sys.platform == 'blah'"
+        # FIXME is None or 'UNKNOWN' correct here?
+        # where is that documented?
+        self.assertEquals(metadata['Name'], None)
 
         # test with context
         context = {'sys.platform': 'okook'}
@@ -106,15 +144,15 @@ class DistributionMetadataTestCase(LoggingSilencer, unittest.TestCase):
         metadata.read_file(out)
         self.assertEqual(wanted, metadata['Description'])
 
-    def test_mapper_apis(self):
+    def test_mapping_api(self):
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
         content = open(PKG_INFO).read()
         content = content % sys.platform
-        metadata = DistributionMetadata()
-        metadata.read_file(StringIO(content))
+        metadata = DistributionMetadata(fileobj=StringIO(content))
         self.assertIn('Version', metadata.keys())
         self.assertIn('0.5', metadata.values())
         self.assertIn(('Version', '0.5'), metadata.items())
+        #TODO test update
 
     def test_versions(self):
         metadata = DistributionMetadata()
@@ -125,6 +163,10 @@ class DistributionMetadataTestCase(LoggingSilencer, unittest.TestCase):
         metadata['Obsoletes-Dist'] = 'ok'
         self.assertEqual(metadata['Metadata-Version'], '1.2')
 
+        self.assertRaises(MetadataConflictError, metadata.set,
+                          'Obsoletes', 'ok')
+
+        del metadata['Obsoletes']
         del metadata['Obsoletes-Dist']
         metadata['Version'] = '1'
         self.assertEqual(metadata['Metadata-Version'], '1.0')
@@ -138,6 +180,9 @@ class DistributionMetadataTestCase(LoggingSilencer, unittest.TestCase):
                                 'SETUPTOOLS-PKG-INFO2')
         metadata.read_file(StringIO(open(PKG_INFO).read()))
         self.assertEqual(metadata['Metadata-Version'], '1.1')
+
+        metadata.version = '1.618'
+        self.assertRaises(MetadataUnrecognizedVersionError, metadata.keys)
 
     def test_warnings(self):
         metadata = DistributionMetadata()
@@ -201,6 +246,10 @@ class DistributionMetadataTestCase(LoggingSilencer, unittest.TestCase):
         metadata = DistributionMetadata()
         metadata['Version'] = 'rr'
         metadata['Requires-dist'] = ['Foo (a)']
+        if metadata.docutils_support:
+            missing, warnings = metadata.check()
+            self.assertEqual(len(warnings), 2)
+            metadata.docutils_support = False
         missing, warnings = metadata.check()
         self.assertEqual(missing, ['Name', 'Home-page'])
         self.assertEqual(len(warnings), 2)

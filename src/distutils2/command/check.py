@@ -8,13 +8,13 @@ from distutils2.core import Command
 from distutils2.errors import DistutilsSetupError
 
 class check(Command):
-    """This command checks the meta-data of the package.
+    """This command checks the metadata of the package.
     """
     description = ("perform some checks on the package")
-    user_options = [('metadata', 'm', 'Verify meta-data'),
+    user_options = [('metadata', 'm', 'Verify metadata'),
                     ('restructuredtext', 'r',
-                     ('Checks if long string meta-data syntax '
-                      'are reStructuredText-compliant')),
+                     ('Checks if long string metadata syntax '
+                      'is reStructuredText-compliant')),
                     ('strict', 's',
                      'Will exit with an error if a check fails')]
 
@@ -53,7 +53,7 @@ class check(Command):
             raise DistutilsSetupError(msg)
 
     def check_metadata(self):
-        """Ensures that all required elements of meta-data are supplied.
+        """Ensures that all required elements of metadata are supplied.
 
         name, version, URL, (author and author_email) or
         (maintainer and maintainer_email)).
@@ -62,7 +62,7 @@ class check(Command):
         """
         missing, __ = self.distribution.metadata.check()
         if missing != []:
-            self.warn("missing required meta-data: %s"  % ', '.join(missing))
+            self.warn("missing required metadata: %s"  % ', '.join(missing))
 
     def check_restructuredtext(self):
         """Checks if the long string fields are reST-compliant."""

@@ -4,21 +4,59 @@ import sys
 from copy import copy
 from StringIO import StringIO
 import subprocess
-import tempfile
 import time
 
+from distutils2.tests import captured_stdout
+from distutils2.tests.support import unittest
 from distutils2.errors import (DistutilsPlatformError,
                                DistutilsByteCompileError,
-                               DistutilsFileError)
-
+                               DistutilsFileError,
+                               DistutilsExecError)
 from distutils2.util import (convert_path, change_root,
-                            check_environ, split_quoted, strtobool,
-                            rfc822_escape, get_compiler_versions,
-                            _find_exe_version, _MAC_OS_X_LD_VERSION,
-                            byte_compile, find_packages)
+                             check_environ, split_quoted, strtobool,
+                             rfc822_escape, get_compiler_versions,
+                             _find_exe_version, _MAC_OS_X_LD_VERSION,
+                             byte_compile, find_packages, spawn, find_executable,
+                             _nt_quote_args, get_pypirc_path, generate_pypirc,
+                             read_pypirc, resolve_dotted_name)
+
 from distutils2 import util
 from distutils2.tests import support
 from distutils2.tests.support import unittest
+
+
+PYPIRC = """\
+[distutils]
+index-servers =
+    pypi
+    server1
+
+[pypi]
+username:me
+password:xxxx
+
+[server1]
+repository:http://example.com
+username:tarek
+password:secret
+"""
+
+PYPIRC_OLD = """\
+[server-login]
+username:tarek
+password:secret
+"""
+
+WANTED = """\
+[distutils]
+index-servers =
+    pypi
+
+[pypi]
+username:tarek
+password:xxx
+"""
+
 
 class FakePopen(object):
     test_class = None
@@ -40,6 +78,9 @@ class UtilTestCase(support.EnvironGuard,
 
     def setUp(self):
         super(UtilTestCase, self).setUp()
+        self.tmp_dir = self.mkdtemp()
+        self.rc = os.path.join(self.tmp_dir, '.pypirc')
+        os.environ['HOME'] = self.tmp_dir
         # saving the environment
         self.name = os.name
         self.platform = sys.platform
@@ -246,7 +287,7 @@ class UtilTestCase(support.EnvironGuard,
         self.assertEqual(res[2], None)
 
     @unittest.skipUnless(hasattr(sys, 'dont_write_bytecode'),
-                          'no dont_write_bytecode support')
+                         'sys.dont_write_bytecode not supported')
     def test_dont_write_bytecode(self):
         # makes sure byte_compile raise a DistutilsError
         # if sys.dont_write_bytecode is True
@@ -259,9 +300,9 @@ class UtilTestCase(support.EnvironGuard,
 
     def test_newer(self):
         self.assertRaises(DistutilsFileError, util.newer, 'xxx', 'xxx')
-        self.newer_f1 = tempfile.NamedTemporaryFile()
+        self.newer_f1 = self.mktempfile()
         time.sleep(1)
-        self.newer_f2 = tempfile.NamedTemporaryFile()
+        self.newer_f2 = self.mktempfile()
         self.assertTrue(util.newer(self.newer_f2.name, self.newer_f1.name))
 
     def test_find_packages(self):
@@ -301,7 +342,17 @@ class UtilTestCase(support.EnvironGuard,
         res = find_packages([root], ['pkg1.pkg2'])
         self.assertEqual(set(res), set(['pkg1', 'pkg5', 'pkg1.pkg3', 'pkg1.pkg3.pkg6']))
 
-    @unittest.skipUnless(sys.version > '2.6', 'Need Python 2.6 or more')
+    def test_resolve_dotted_name(self):
+        self.assertEqual(UtilTestCase, resolve_dotted_name("distutils2.tests.test_util.UtilTestCase"))
+        self.assertEqual(UtilTestCase.test_resolve_dotted_name,
+                         resolve_dotted_name("distutils2.tests.test_util.UtilTestCase.test_resolve_dotted_name"))
+
+        self.assertRaises(ImportError, resolve_dotted_name,
+                          "distutils2.tests.test_util.UtilTestCaseNot")
+        self.assertRaises(ImportError, resolve_dotted_name,
+                          "distutils2.tests.test_util.UtilTestCase.nonexistent_attribute")
+
+    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_run_2to3_on_code(self):
         content = "print 'test'"
         converted_content = "print('test')"
@@ -316,7 +367,7 @@ class UtilTestCase(support.EnvironGuard,
         file_handle.close()
         self.assertEquals(new_content, converted_content)
 
-    @unittest.skipUnless(sys.version > '2.6', 'Need Python 2.6 or more')
+    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_run_2to3_on_doctests(self):
         # to check if text files containing doctests only get converted.
         content = ">>> print 'test'\ntest\n"
@@ -332,21 +383,80 @@ class UtilTestCase(support.EnvironGuard,
         file_handle.close()
         self.assertEquals(new_content, converted_content)
 
-    @unittest.skipUnless(sys.version > '2.6', 'Need Python 2.6 or more')
-    def test_use_additional_fixers(self):
-        # to check if additional fixers work
-        content = "type(x) is T"
-        converted_content = "isinstance(x, T)"
-        file_handle = self.mktempfile()
-        file_name = file_handle.name
-        file_handle.write(content)
-        file_handle.flush()
-        file_handle.seek(0)
-        from distutils2.util import run_2to3
-        run_2to3([file_name], None, ['distutils2.tests.fixer'])
-        new_content = "".join(file_handle.read())
-        file_handle.close()
-        self.assertEquals(new_content, converted_content)
+    def test_nt_quote_args(self):
+
+        for (args, wanted) in ((['with space', 'nospace'],
+                                ['"with space"', 'nospace']),
+                               (['nochange', 'nospace'],
+                                ['nochange', 'nospace'])):
+            res = _nt_quote_args(args)
+            self.assertEqual(res, wanted)
+
+
+    @unittest.skipUnless(os.name in ('nt', 'posix'),
+                         'runs only under posix or nt')
+    def test_spawn(self):
+        tmpdir = self.mkdtemp()
+
+        # creating something executable
+        # through the shell that returns 1
+        if os.name == 'posix':
+            exe = os.path.join(tmpdir, 'foo.sh')
+            self.write_file(exe, '#!/bin/sh\nexit 1')
+            os.chmod(exe, 0777)
+        else:
+            exe = os.path.join(tmpdir, 'foo.bat')
+            self.write_file(exe, 'exit 1')
+
+        os.chmod(exe, 0777)
+        self.assertRaises(DistutilsExecError, spawn, [exe])
+
+        # now something that works
+        if os.name == 'posix':
+            exe = os.path.join(tmpdir, 'foo.sh')
+            self.write_file(exe, '#!/bin/sh\nexit 0')
+            os.chmod(exe, 0777)
+        else:
+            exe = os.path.join(tmpdir, 'foo.bat')
+            self.write_file(exe, 'exit 0')
+
+        os.chmod(exe, 0777)
+        spawn([exe])  # should work without any error
+
+    def test_server_registration(self):
+        # This test makes sure we know how to:
+        # 1. handle several sections in .pypirc
+        # 2. handle the old format
+
+        # new format
+        self.write_file(self.rc, PYPIRC)
+        config = read_pypirc()
+
+        config = config.items()
+        config.sort()
+        expected = [('password', 'xxxx'), ('realm', 'pypi'),
+                    ('repository', 'http://pypi.python.org/pypi'),
+                    ('server', 'pypi'), ('username', 'me')]
+        self.assertEqual(config, expected)
+
+        # old format
+        self.write_file(self.rc, PYPIRC_OLD)
+        config = read_pypirc()
+        config = config.items()
+        config.sort()
+        expected = [('password', 'secret'), ('realm', 'pypi'),
+                    ('repository', 'http://pypi.python.org/pypi'),
+                    ('server', 'server-login'), ('username', 'tarek')]
+        self.assertEqual(config, expected)
+
+    def test_server_empty_registration(self):
+        rc = get_pypirc_path()
+        self.assertTrue(not os.path.exists(rc))
+        generate_pypirc('tarek', 'xxx')
+        self.assertTrue(os.path.exists(rc))
+        content = open(rc).read()
+        self.assertEqual(content, WANTED)
+
 
 def test_suite():
     return unittest.makeSuite(UtilTestCase)

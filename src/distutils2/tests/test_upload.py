@@ -1,5 +1,5 @@
+# -*- encoding: utf-8 -*-
 """Tests for distutils.command.upload."""
-# -*- encoding: utf8 -*-
 import os
 import sys
 
@@ -9,7 +9,6 @@ from distutils2.core import Distribution
 from distutils2.tests import support
 from distutils2.tests.pypi_server import PyPIServer, PyPIServerTestCase
 from distutils2.tests.support import unittest
-from distutils2.tests.test_config import PYPIRC, PyPIRCCommandTestCase
 
 
 PYPIRC_NOPASSWORD = """\
@@ -22,7 +21,33 @@ index-servers =
 username:me
 """
 
-class UploadTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
+PYPIRC = """\
+[distutils]
+
+index-servers =
+    server1
+    server2
+
+[server1]
+username:me
+password:secret
+
+[server2]
+username:meagain
+password: secret
+realm:acme
+repository:http://another.pypi/
+"""
+
+
+class UploadTestCase(support.TempdirManager, support.EnvironGuard,
+                     PyPIServerTestCase):
+
+    def setUp(self):
+        super(UploadTestCase, self).setUp()
+        self.tmp_dir = self.mkdtemp()
+        self.rc = os.path.join(self.tmp_dir, '.pypirc')
+        os.environ['HOME'] = self.tmp_dir
 
     def test_finalize_options(self):
         # new format
@@ -75,6 +100,38 @@ class UploadTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
         self.assertTrue(headers['content-type'].startswith('multipart/form-data'))
         self.assertEqual(handler.command, 'POST')
         self.assertNotIn('\n', headers['authorization'])
+
+    def test_upload_docs(self):
+        path = os.path.join(self.tmp_dir, 'xxx')
+        self.write_file(path)
+        command, pyversion, filename = 'xxx', '2.6', path
+        dist_files = [(command, pyversion, filename)]
+        docs_path = os.path.join(self.tmp_dir, "build", "docs")
+        os.makedirs(docs_path)
+        self.write_file(os.path.join(docs_path, "index.html"), "yellow")
+        self.write_file(self.rc, PYPIRC)
+
+        # lets run it
+        pkg_dir, dist = self.create_dist(dist_files=dist_files, author=u'dédé')
+
+        cmd = upload(dist)
+        cmd.get_finalized_command("build").run()
+        cmd.upload_docs = True
+        cmd.ensure_finalized()
+        cmd.repository = self.pypi.full_address
+        try:
+            prev_dir = os.getcwd()
+            os.chdir(self.tmp_dir)
+            cmd.run()
+        finally:
+            os.chdir(prev_dir)
+
+        handler, request_data = self.pypi.requests[-1]
+        action, name, content =\
+            request_data.split("----------------GHSKFJDLGDS7543FJKLFHRE75642756743254")[1:4]
+        
+        self.assertIn('name=":action"', action)
+        self.assertIn("doc_upload", action)
 
 def test_suite():
     return unittest.makeSuite(UploadTestCase)

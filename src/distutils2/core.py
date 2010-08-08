@@ -19,7 +19,6 @@ from distutils2.util import grok_environment_error
 # Mainly import these so setup scripts can "from distutils2.core import" them.
 from distutils2.dist import Distribution
 from distutils2.command.cmd import Command
-from distutils2.config import PyPIRCCommand
 from distutils2.extension import Extension
 from distutils2.util import find_packages
 
@@ -33,6 +32,7 @@ usage: %(script)s [global_opts] cmd1 [cmd1_opts] [cmd2 [cmd2_opts] ...]
    or: %(script)s --help-commands
    or: %(script)s cmd --help
 """
+
 
 def gen_usage(script_name):
     script = os.path.basename(script_name)
@@ -59,6 +59,7 @@ extension_keywords = ('name', 'sources', 'include_dirs',
                       'library_dirs', 'libraries', 'runtime_library_dirs',
                       'extra_objects', 'extra_compile_args', 'extra_link_args',
                       'swig_opts', 'export_symbols', 'depends', 'language')
+
 
 def setup(**attrs):
     """The gateway to the Distutils: do everything your setup script needs
@@ -156,7 +157,7 @@ def setup(**attrs):
 def run_setup(script_name, script_args=None, stop_after="run"):
     """Run a setup script in a somewhat controlled environment, and
     return the Distribution instance that drives things.  This is useful
-    if you need to find out the distribution meta-data (passed as
+    if you need to find out the distribution metadata (passed as
     keyword args from 'script' to 'setup()', or the contents of the
     config files or command-line.
 
@@ -206,8 +207,6 @@ def run_setup(script_name, script_args=None, stop_after="run"):
         # Hmm, should we do something if exiting with a non-zero code
         # (ie. error)?
         pass
-    except:
-        raise
 
     if _setup_distribution is None:
         raise RuntimeError, \

@@ -1,8 +1,10 @@
 syntax: glob
 *.py[co]
 __pycache__/
+*.so
 configure.cache
 build/
 MANIFEST
 dist/
 *.swp
+.coverage

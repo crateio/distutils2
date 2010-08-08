@@ -1,18 +1,23 @@
-"""Tests for distutils.command.upload_docs."""
 # -*- encoding: utf8 -*-
-import httplib, os, os.path, shutil, sys, tempfile, zipfile
-from cStringIO import StringIO
+"""Tests for distutils.command.upload_docs."""
+import os
+import sys
+import httplib
+import shutil
+import zipfile
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 from distutils2.command import upload_docs as upload_docs_mod
 from distutils2.command.upload_docs import (upload_docs, zip_dir,
-                                    encode_multipart)
+                                            encode_multipart)
 from distutils2.core import Distribution
-
 from distutils2.errors import DistutilsFileError, DistutilsOptionError
 
 from distutils2.tests import support
 from distutils2.tests.pypi_server import PyPIServer, PyPIServerTestCase
-from distutils2.tests.test_config import PyPIRCCommandTestCase
 from distutils2.tests.support import unittest
 
 
@@ -47,16 +52,20 @@ username = real_slim_shady
 password = long_island
 """
 
-class UploadDocsTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
+class UploadDocsTestCase(support.TempdirManager, support.EnvironGuard,
+                         PyPIServerTestCase):
 
     def setUp(self):
         super(UploadDocsTestCase, self).setUp()
+        self.tmp_dir = self.mkdtemp()
+        self.rc = os.path.join(self.tmp_dir, '.pypirc')
+        os.environ['HOME'] = self.tmp_dir
         self.dist = Distribution()
         self.dist.metadata['Name'] = "distr-name"
         self.cmd = upload_docs(self.dist)
 
     def test_default_uploaddir(self):
-        sandbox = tempfile.mkdtemp()
+        sandbox = self.mkdtemp()
         previous = os.getcwd()
         os.chdir(sandbox)
         try:
@@ -69,7 +78,7 @@ class UploadDocsTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
 
     def prepare_sample_dir(self, sample_dir=None):
         if sample_dir is None:
-            sample_dir = tempfile.mkdtemp()
+            sample_dir = self.mkdtemp()
         os.mkdir(os.path.join(sample_dir, "docs"))
         self.write_file(os.path.join(sample_dir, "docs", "index.html"), "Ce mortel ennui")
         self.write_file(os.path.join(sample_dir, "index.html"), "Oh la la")
@@ -178,9 +187,13 @@ class UploadDocsTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
     def test_show_response(self):
         orig_stdout = sys.stdout
         write_args = []
+
         class MockStdIn(object):
             def write(self, arg):
                 write_args.append(arg)
+            def flush(self):
+                pass
+
         sys.stdout = MockStdIn()
         try:
             self.prepare_command()
@@ -188,8 +201,10 @@ class UploadDocsTestCase(PyPIServerTestCase, PyPIRCCommandTestCase):
             self.cmd.run()
         finally:
             sys.stdout = orig_stdout
+
         self.assertTrue(write_args[0], "should report the response")
-        self.assertIn(self.pypi.default_response_data + "\n", write_args[0])
+        self.assertIn(self.pypi.default_response_data + "\n",
+                      '\n'.join(write_args))
 
 def test_suite():
     return unittest.makeSuite(UploadDocsTestCase)

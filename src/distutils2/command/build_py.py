@@ -9,6 +9,7 @@ import sys
 import logging
 from glob import glob
 
+import distutils2
 from distutils2.core import Command
 from distutils2.errors import DistutilsOptionError, DistutilsFileError
 from distutils2.util import convert_path
@@ -107,9 +108,7 @@ class build_py(Command, Mixin2to3):
         self.use_2to3_fixers = []
         
     def finalize_options(self):
-        self.set_undefined_options('build',
-                                   ('build_lib', 'build_lib'),
-                                   ('force', 'force'))
+        self.set_undefined_options('build', 'build_lib', 'force')
 
         # Get the distribution options that are aliases for build_py
         # options -- list of packages and list of modules.
@@ -386,7 +385,12 @@ class build_py(Command, Mixin2to3):
         return modules
 
     def get_source_files(self):
-        return [module[-1] for module in self.find_all_modules()]
+        sources = [module[-1] for module in self.find_all_modules()]
+        sources += [
+            os.path.join(src_dir, filename)
+            for package, src_dir, build_dir, filenames in self.data_files
+            for filename in filenames]
+        return sources
 
     def get_module_outfile(self, build_dir, package, module):
         outfile_path = [build_dir] + list(package) + [module + ".py"]
@@ -408,8 +412,7 @@ class build_py(Command, Mixin2to3):
         outputs += [
             os.path.join(build_dir, filename)
             for package, src_dir, build_dir, filenames in self.data_files
-            for filename in filenames
-            ]
+            for filename in filenames]
 
         return outputs
 

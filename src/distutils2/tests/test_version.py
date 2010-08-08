@@ -188,6 +188,13 @@ class VersionTestCase(unittest.TestCase):
         # XXX need to silent the micro version in this case
         #assert not VersionPredicate('Ho (<3.0,!=2.6)').match('2.6.3')
 
+    def test_predicate_name(self):
+        # Test that names are parsed the right way
+
+        self.assertEqual('Hey', VersionPredicate('Hey (<1.1)').name)
+        self.assertEqual('Foo-Bar', VersionPredicate('Foo-Bar (1.1)').name)
+        self.assertEqual('Foo Bar', VersionPredicate('Foo Bar (1.1)').name)
+
     def test_is_final(self):
         # VersionPredicate knows is a distribution is a final one or not.
         final_versions = ('1.0', '1.0.post456')

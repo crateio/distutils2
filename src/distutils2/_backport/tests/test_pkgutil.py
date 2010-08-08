@@ -10,7 +10,7 @@ import zipfile
 try:
     from hashlib import md5
 except ImportError:
-    from md5 import md5
+    from distutils2._backport.hashlib import md5
 
 from test.test_support import run_unittest, TESTFN
 from distutils2.tests.support import unittest
@@ -25,12 +25,14 @@ except ImportError:
     except ImportError:
         from unittest2.compatibility import relpath
 
+# Adapted from Python 2.7's trunk
+
 # TODO Add a test for getting a distribution that is provided by another
 # distribution.
 
 # TODO Add a test for absolute pathed RECORD items (e.g. /etc/myapp/config.ini)
 
-# Adapted from Python 2.7's trunk
+
 class TestPkgUtilData(unittest.TestCase):
 
     def setUp(self):
@@ -108,10 +110,14 @@ class TestPkgUtilData(unittest.TestCase):
 
         del sys.modules[pkg]
 
+
 # Adapted from Python 2.7's trunk
+
+
 class TestPkgUtilPEP302(unittest.TestCase):
 
     class MyTestLoader(object):
+
         def load_module(self, fullname):
             # Create an empty module
             mod = sys.modules.setdefault(fullname, imp.new_module(fullname))
@@ -120,13 +126,14 @@ class TestPkgUtilPEP302(unittest.TestCase):
             # Make it a package
             mod.__path__ = []
             # Count how many times the module is reloaded
-            mod.__dict__['loads'] = mod.__dict__.get('loads',0) + 1
+            mod.__dict__['loads'] = mod.__dict__.get('loads', 0) + 1
             return mod
 
         def get_data(self, path):
             return "Hello, world!"
 
     class MyTestImporter(object):
+
         def find_module(self, fullname, path=None):
             return TestPkgUtilPEP302.MyTestLoader()
 
@@ -319,7 +326,7 @@ class TestPkgUtilPEP376(unittest.TestCase):
         current_path = os.path.abspath(os.path.dirname(__file__))
         self.sys_path = sys.path[:]
         self.fake_dists_path = os.path.join(current_path, 'fake_dists')
-        sys.path[0:0] = [self.fake_dists_path]
+        sys.path.insert(0, self.fake_dists_path)
 
     def tearDown(self):
         sys.path[:] = self.sys_path
@@ -366,8 +373,12 @@ class TestPkgUtilPEP376(unittest.TestCase):
             if not isinstance(dist, Distribution):
                 self.fail("item received was not a Distribution instance: "
                     "%s" % type(dist))
-            if dist.name in dict(fake_dists).keys():
+            if dist.name in dict(fake_dists).keys() and \
+               dist.path.startswith(self.fake_dists_path):
                 found_dists.append((dist.name, dist.metadata['version'],))
+            else:
+                # check that it doesn't find anything more than this
+                self.assertFalse(dist.path.startswith(self.fake_dists_path))
             # otherwise we don't care what other distributions are found
 
         # Finally, test that we found all that we were looking for
@@ -375,7 +386,8 @@ class TestPkgUtilPEP376(unittest.TestCase):
 
         # Now, test if the egg-info distributions are found correctly as well
         fake_dists += [('bacon', '0.1'), ('cheese', '2.0.2'),
-                       ('banana', '0.4'), ('strawberry', '0.6')]
+                       ('banana', '0.4'), ('strawberry', '0.6'),
+                       ('truffles', '5.0')]
         found_dists = []
 
         dists = [dist for dist in get_distributions(use_egg_info=True)]
@@ -384,8 +396,11 @@ class TestPkgUtilPEP376(unittest.TestCase):
                     isinstance(dist, EggInfoDistribution)):
                 self.fail("item received was not a Distribution or "
                           "EggInfoDistribution instance: %s" % type(dist))
-            if dist.name in dict(fake_dists).keys():
+            if dist.name in dict(fake_dists).keys() and \
+               dist.path.startswith(self.fake_dists_path):
                 found_dists.append((dist.name, dist.metadata['version']))
+            else:
+                self.assertFalse(dist.path.startswith(self.fake_dists_path))
 
         self.assertListEqual(sorted(fake_dists), sorted(found_dists))
 
@@ -485,7 +500,7 @@ class TestPkgUtilPEP376(unittest.TestCase):
 
         l = [dist.name for dist in provides_distribution('truffles', '>1.5',
                                                          use_egg_info=True)]
-        checkLists(l, ['bacon'])
+        checkLists(l, ['bacon', 'truffles'])
 
         l = [dist.name for dist in provides_distribution('truffles', '>=1.0')]
         checkLists(l, ['choxie', 'towel-stuff'])
@@ -548,6 +563,33 @@ class TestPkgUtilPEP376(unittest.TestCase):
 
         l = [dist.name for dist in obsoletes_distribution('truffles', '0.2')]
         checkLists(l, ['towel-stuff'])
+
+    def test_yield_distribution(self):
+        # tests the internal function _yield_distributions
+        from distutils2._backport.pkgutil import _yield_distributions
+        checkLists = lambda x, y: self.assertListEqual(sorted(x), sorted(y))
+
+        eggs = [('bacon', '0.1'), ('banana', '0.4'), ('strawberry', '0.6'),
+                ('truffles', '5.0'), ('cheese', '2.0.2')]
+        dists = [('choxie', '2.0.0.9'), ('grammar', '1.0a4'),
+                 ('towel-stuff', '0.1')]
+
+        checkLists([], _yield_distributions(False, False))
+
+        found = [(dist.name, dist.metadata['Version'])
+                for dist in _yield_distributions(False, True)
+                if dist.path.startswith(self.fake_dists_path)]
+        checkLists(eggs, found)
+
+        found = [(dist.name, dist.metadata['Version'])
+                for dist in _yield_distributions(True, False)
+                if dist.path.startswith(self.fake_dists_path)]
+        checkLists(dists, found)
+
+        found = [(dist.name, dist.metadata['Version'])
+                for dist in _yield_distributions(True, True)
+                if dist.path.startswith(self.fake_dists_path)]
+        checkLists(dists + eggs, found)
 
 
 def test_suite():

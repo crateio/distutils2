@@ -1,5 +1,5 @@
+# -*- encoding: utf-8 -*-
 """Tests for distutils.command.register."""
-# -*- encoding: utf8 -*-
 import sys
 import os
 import getpass
@@ -19,7 +19,7 @@ from distutils2.errors import DistutilsSetupError
 
 from distutils2.tests import support
 from distutils2.tests.support import unittest
-from distutils2.tests.test_config import PYPIRC, PyPIRCCommandTestCase
+
 
 PYPIRC_NOPASSWORD = """\
 [distutils]
@@ -68,10 +68,15 @@ class FakeOpener(object):
     def read(self):
         return 'xxx'
 
-class RegisterTestCase(PyPIRCCommandTestCase):
+class RegisterTestCase(support.TempdirManager, support.EnvironGuard,
+                       unittest.TestCase):
 
     def setUp(self):
         super(RegisterTestCase, self).setUp()
+        self.tmp_dir = self.mkdtemp()
+        self.rc = os.path.join(self.tmp_dir, '.pypirc')
+        os.environ['HOME'] = self.tmp_dir
+
         # patching the password prompt
         self._old_getpass = getpass.getpass
         def _getpass(prompt):
@@ -148,15 +153,15 @@ class RegisterTestCase(PyPIRCCommandTestCase):
 
         self.write_file(self.rc, PYPIRC_NOPASSWORD)
         cmd = self._get_cmd()
-        cmd._set_config()
         cmd.finalize_options()
+        cmd._set_config()
         cmd.send_metadata()
 
         # dist.password should be set
         # therefore used afterwards by other commands
         self.assertEqual(cmd.distribution.password, 'password')
 
-    def test_registering(self):
+    def test_registration(self):
         # this test runs choice 2
         cmd = self._get_cmd()
         inputs = RawInputs('2', 'tarek', 'tarek@ziade.org')
@@ -205,7 +210,7 @@ class RegisterTestCase(PyPIRCCommandTestCase):
         cmd.strict = 1
         self.assertRaises(DistutilsSetupError, cmd.run)
 
-        # metadata are OK but long_description is broken
+        # metadata is OK but long_description is broken
         metadata = {'home_page': 'xxx', 'author': 'xxx',
                     'author_email': u'éxéxé',
                     'name': 'xxx', 'version': 'xxx',

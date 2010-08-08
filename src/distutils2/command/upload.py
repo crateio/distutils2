@@ -11,40 +11,57 @@ import StringIO as StringIO
 try:
     from hashlib import md5
 except ImportError:
-    from md5 import md5
+    from distutils2._backport.hashlib import md5
 
 from distutils2.errors import DistutilsOptionError
-from distutils2.core import PyPIRCCommand
-from distutils2.spawn import spawn
+from distutils2.util import spawn
 from distutils2 import log
+from distutils2.command.cmd import Command
+from distutils2 import log
+from distutils2.util import (metadata_to_dict, read_pypirc,
+                             DEFAULT_REPOSITORY, DEFAULT_REALM)
 
-class upload(PyPIRCCommand):
 
-    description = "upload binary package to PyPI"
+class upload(Command):
 
-    user_options = PyPIRCCommand.user_options + [
+    description = "upload distribution to PyPI"
+
+    user_options = [
+        ('repository=', 'r',
+         "repository URL [default: %s]" % DEFAULT_REPOSITORY),
+        ('show-response', None,
+         "display full response text from server"),
         ('sign', 's',
-         'sign files to upload using gpg'),
-        ('identity=', 'i', 'GPG identity used to sign files'),
+         "sign files to upload using gpg"),
+        ('identity=', 'i',
+         "GPG identity used to sign files"),
+        ('upload-docs', None,
+         "upload documentation too"),
         ]
 
-    boolean_options = PyPIRCCommand.boolean_options + ['sign']
+    boolean_options = ['show-response', 'sign']
 
     def initialize_options(self):
-        PyPIRCCommand.initialize_options(self)
+        self.repository = None
+        self.realm = None
+        self.show_response = 0
         self.username = ''
         self.password = ''
         self.show_response = 0
         self.sign = False
         self.identity = None
+        self.upload_docs = False
 
     def finalize_options(self):
-        PyPIRCCommand.finalize_options(self)
+        if self.repository is None:
+            self.repository = DEFAULT_REPOSITORY
+        if self.realm is None:
+            self.realm = DEFAULT_REALM
         if self.identity and not self.sign:
             raise DistutilsOptionError(
                 "Must use --sign for --identity to have meaning"
             )
-        config = self._read_pypirc()
+        config = read_pypirc(self.repository, self.realm)
         if config != {}:
             self.username = config['username']
             self.password = config['password']
@@ -61,6 +78,12 @@ class upload(PyPIRCCommand):
             raise DistutilsOptionError("No dist file created in earlier command")
         for command, pyversion, filename in self.distribution.dist_files:
             self.upload_file(command, pyversion, filename)
+        if self.upload_docs:
+            upload_docs = self.get_finalized_command("upload_docs")
+            upload_docs.repository = self.repository
+            upload_docs.username = self.username
+            upload_docs.password = self.password
+            upload_docs.run()
 
     # XXX to be refactored with register.post_to_server
     def upload_file(self, command, pyversion, filename):
@@ -81,11 +104,11 @@ class upload(PyPIRCCommand):
             spawn(gpg_args,
                   dry_run=self.dry_run)
 
-        # Fill in the data - send all the meta-data in case we need to
+        # Fill in the data - send all the metadata in case we need to
         # register a new release
         content = open(filename,'rb').read()
 
-        data = self._metadata_to_pypy_dict()
+        data = metadata_to_dict(self.distribution.metadata)
 
         # extra upload infos
         data[':action'] = 'file_upload'

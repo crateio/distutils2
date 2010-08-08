@@ -45,7 +45,7 @@ class BuildExtTestCase(support.TempdirManager,
             build_ext.USER_BASE = site.USER_BASE
 
     # XXX only works with 2.6 > -- dunno why yet
-    @unittest.skipUnless(sys.version_info >= (2, 6,), 'works for >= 2.6')
+    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_build_ext(self):
         global ALREADY_TESTED
         xx_c = os.path.join(self.tmp_dir, 'xxmodule.c')
@@ -126,11 +126,8 @@ class BuildExtTestCase(support.TempdirManager,
         # make sure we get some library dirs under solaris
         self.assertTrue(len(cmd.library_dirs) > 0)
 
+    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_user_site(self):
-        # site.USER_SITE was introduced in 2.6
-        if sys.version < '2.6':
-            return
-
         import site
         dist = Distribution({'name': 'xx'})
         cmd = build_ext(dist)
@@ -368,4 +365,4 @@ def test_suite():
     else: return unittest.makeSuite(BuildExtTestCase)
 
 if __name__ == '__main__':
-    distsutils2.tests.run_unittest(test_suite())
+    distutils2.tests.run_unittest(test_suite())

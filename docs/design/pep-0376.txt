@@ -17,7 +17,7 @@ Abstract
 This PEP proposes various enhancements for Distutils:
 
 - A new format for the .egg-info structure.
-- Some APIs to read the meta-data of a distribution.
+- Some APIs to read the metadata of a distribution.
 - A replacement PEP 262.
 - An uninstall feature.
 

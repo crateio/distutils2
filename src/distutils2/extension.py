@@ -5,13 +5,7 @@ modules in setup scripts."""
 
 __revision__ = "$Id: extension.py 77704 2010-01-23 09:23:15Z tarek.ziade $"
 
-import os
 import warnings
-
-try:
-    import sysconfig
-except ImportError:
-    from distutils2._backport import sysconfig
 
 # This class is really only used by the "build_ext" command, so it might
 # make sense to put it in distutils.command.build_ext.  However, that
@@ -22,6 +16,7 @@ except ImportError:
 # Also, putting this in build_ext.py means every setup script would have to
 # import that large-ish module (indirectly, through distutils.core) in
 # order to do anything.
+
 
 class Extension(object):
     """Just a collection of attributes that describes an extension
@@ -90,7 +85,7 @@ class Extension(object):
 
     # When adding arguments to this constructor, be sure to update
     # setup_keywords in core.py.
-    def __init__ (self, name, sources,
+    def __init__(self, name, sources,
                   include_dirs=None,
                   define_macros=None,
                   undef_macros=None,
@@ -101,11 +96,11 @@ class Extension(object):
                   extra_compile_args=None,
                   extra_link_args=None,
                   export_symbols=None,
-                  swig_opts = None,
+                  swig_opts=None,
                   depends=None,
                   language=None,
                   optional=None,
-                  **kw                      # To catch unknown keywords
+                  **kw # To catch unknown keywords
                  ):
         if not isinstance(name, str):
             raise AssertionError("'name' must be a string")
@@ -140,4 +135,3 @@ class Extension(object):
             options = ', '.join(sorted(options))
             msg = "Unknown Extension options: %s" % options
             warnings.warn(msg)
-

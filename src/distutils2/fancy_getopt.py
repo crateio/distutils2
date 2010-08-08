@@ -38,7 +38,7 @@ class FancyGetopt(object):
         on the command line sets 'verbose' to false
     """
 
-    def __init__ (self, option_table=None):
+    def __init__(self, option_table=None):
 
         # The option table is (currently) a list of tuples.  The
         # tuples may have 3 or four values:
@@ -175,7 +175,8 @@ class FancyGetopt(object):
             self.long_opts.append(long)
 
             if long[-1] == '=':             # option takes an argument?
-                if short: short = short + ':'
+                if short:
+                    short = short + ':'
                 long = long[0:-1]
                 self.takes_arg[long] = 1
             else:

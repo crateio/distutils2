@@ -13,15 +13,18 @@ Thanks to:
 - Pior Bastida
 - Titus Brown
 - Nicolas Cadou
+- Konrad Delong
 - Josip Djolonga
 - Yannick Gringas
 - Jeremy Kloth
 - Martin von Löwis
 - Carl Meyer
-- Alexis Metaireau
+- Alexis Métaireau
+- Zubin Mithra
 - Michael Mulich
-- George Peris
+- George Peristerakis
 - Sean Reifschneider
+- Luis Rojas
 - Erik Rose
 - Brian Rosner
 - Alexandre Vassalotti

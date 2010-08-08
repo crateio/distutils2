@@ -1,4 +1,3 @@
-import sys
 import re
 
 from distutils2.errors import IrrationalVersionError, HugeMajorVersionNumError
@@ -322,7 +321,7 @@ def suggest_normalized_version(s):
     return None
 
 
-_PREDICATE = re.compile(r"(?i)^\s*([a-z_]\w*(?:\.[a-z_]\w*)*)(.*)")
+_PREDICATE = re.compile(r"(?i)^\s*([a-z_][\sa-zA-Z_-]*(?:\.[a-z_]\w*)*)(.*)")
 _VERSIONS = re.compile(r"^\s*\((.*)\)\s*$")
 _PLAIN_VERSIONS = re.compile(r"^\s*(.*)\s*$")
 _SPLIT_CMP = re.compile(r"^\s*(<=|>=|<|>|!=|==)\s*([^\s,]+)\s*$")
@@ -350,12 +349,14 @@ class VersionPredicate(object):
                   }
 
     def __init__(self, predicate):
+        self._string = predicate
         predicate = predicate.strip()
         match = _PREDICATE.match(predicate)
         if match is None:
             raise ValueError('Bad predicate "%s"' % predicate)
 
-        self.name, predicates = match.groups()
+        name, predicates = match.groups()
+        self.name = name.strip()
         predicates = predicates.strip()
         predicates = _VERSIONS.match(predicates)
         if predicates is not None:
@@ -373,6 +374,9 @@ class VersionPredicate(object):
             if not self._operators[operator](version, predicate):
                 return False
         return True
+
+    def __repr__(self):
+        return self._string
 
 
 class _Versions(VersionPredicate):
@@ -418,3 +422,12 @@ def is_valid_version(predicate):
         return False
     else:
         return True
+
+
+def get_version_predicate(requirements):
+    """Return a VersionPredicate object, from a string or an already
+    existing object.
+    """
+    if isinstance(requirements, str):
+        requirements = VersionPredicate(requirements)
+    return requirements

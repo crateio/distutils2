@@ -28,9 +28,8 @@ from distutils2.command.sdist import sdist
 from distutils2.command.sdist import show_formats
 from distutils2.core import Distribution
 from distutils2.tests.support import unittest
-from distutils2.tests.test_config import PyPIRCCommandTestCase
 from distutils2.errors import DistutilsExecError, DistutilsOptionError
-from distutils2.spawn import find_executable
+from distutils2.util import find_executable
 from distutils2.tests import support
 from distutils2.log import WARN
 try:
@@ -58,12 +57,15 @@ somecode%(sep)sdoc.dat
 somecode%(sep)sdoc.txt
 """
 
-class SDistTestCase(PyPIRCCommandTestCase):
+class SDistTestCase(support.TempdirManager, support.LoggingSilencer,
+                    support.EnvironGuard, unittest.TestCase):
 
     def setUp(self):
         # PyPIRCCommandTestCase creates a temp dir already
         # and put it in self.tmp_dir
         super(SDistTestCase, self).setUp()
+        self.tmp_dir = self.mkdtemp()
+        os.environ['HOME'] = self.tmp_dir
         # setting up an environment
         self.old_path = os.getcwd()
         os.mkdir(join(self.tmp_dir, 'somecode'))
@@ -239,7 +241,7 @@ class SDistTestCase(PyPIRCCommandTestCase):
 
     @unittest.skipUnless(zlib, "requires zlib")
     def test_metadata_check_option(self):
-        # testing the `medata-check` option
+        # testing the `check-metadata` option
         dist, cmd = self.get_cmd(metadata={})
 
         # this should raise some warnings !
@@ -293,7 +295,7 @@ class SDistTestCase(PyPIRCCommandTestCase):
         self.assertRaises(DistutilsOptionError, cmd.finalize_options)
 
     @unittest.skipUnless(zlib, "requires zlib")
-    @unittest.skipUnless(UID_GID_SUPPORT, "Requires grp and pwd support")
+    @unittest.skipUnless(UID_GID_SUPPORT, "requires grp and pwd support")
     def test_make_distribution_owner_group(self):
 
         # check if tar and gzip are installed
