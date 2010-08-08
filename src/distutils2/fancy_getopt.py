@@ -26,10 +26,6 @@ longopt_re = re.compile(r'^%s$' % longopt_pat)
 # For recognizing "negative alias" options, eg. "quiet=!verbose"
 neg_alias_re = re.compile("^(%s)=!(%s)$" % (longopt_pat, longopt_pat))
 
-# This is used to translate long options to legitimate Python identifiers
-# (for use as attributes of some object).
-longopt_xlate = string.maketrans('-', '_')
-
 class FancyGetopt(object):
     """Wrapper around the standard 'getopt()' module that provides some
     handy extra functionality:
@@ -114,8 +110,7 @@ class FancyGetopt(object):
         """Translate long option name 'long_option' to the form it
         has as an attribute of some object: ie., translate hyphens
         to underscores."""
-        return string.translate(long_option, longopt_xlate)
-
+        return long_option.replace('-', '_')
 
     def _check_alias_dict (self, aliases, what):
         assert isinstance(aliases, dict)
@@ -470,7 +465,7 @@ def translate_longopt(opt):
     """Convert a long option name to a valid Python identifier by
     changing "-" to "_".
     """
-    return string.translate(opt, longopt_xlate)
+    return opt.replace('-', '_')
 
 
 class OptionDummy(object):

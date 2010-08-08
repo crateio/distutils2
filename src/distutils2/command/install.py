@@ -308,7 +308,6 @@ class install(Command):
 
     def dump_dirs(self, msg):
         """Dumps the list of user options."""
-        from distutils2.fancy_getopt import longopt_xlate
         log.debug(msg + ":")
         for opt in self.user_options:
             opt_name = opt[0]
@@ -316,10 +315,10 @@ class install(Command):
                 opt_name = opt_name[0:-1]
             if opt_name in self.negative_opt:
                 opt_name = self.negative_opt[opt_name]
-                opt_name = opt_name.translate(longopt_xlate)
+                opt_name = opt_name.replace('-', '_')
                 val = not getattr(self, opt_name)
             else:
-                opt_name = opt_name.translate(longopt_xlate)
+                opt_name = opt_name.replace('-', '_')
                 val = getattr(self, opt_name)
             log.debug("  %s: %s" % (opt_name, val))
 

@@ -156,13 +156,12 @@ class Command(object):
 
 
     def dump_options(self, header=None, indent=""):
-        from distutils2.fancy_getopt import longopt_xlate
         if header is None:
             header = "command options for '%s':" % self.get_command_name()
         self.announce(indent + header, level=log.INFO)
         indent = indent + "  "
         for (option, _, _) in self.user_options:
-            option = option.translate(longopt_xlate)
+            option = option.replace('-', '_')
             if option[-1] == "=":
                 option = option[:-1]
             value = getattr(self, option)
