@@ -375,8 +375,7 @@ class build_py(Command, Mixin2to3):
         sources += [
             os.path.join(src_dir, filename)
             for package, src_dir, build_dir, filenames in self.data_files
-            for filename in filenames
-            ]
+            for filename in filenames]
         return sources
 
     def get_module_outfile(self, build_dir, package, module):
@@ -399,8 +398,7 @@ class build_py(Command, Mixin2to3):
         outputs += [
             os.path.join(build_dir, filename)
             for package, src_dir, build_dir, filenames in self.data_files
-            for filename in filenames
-            ]
+            for filename in filenames]
 
         return outputs
 

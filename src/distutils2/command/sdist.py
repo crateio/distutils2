@@ -238,7 +238,6 @@ class sdist(Command):
         for cmd_name in self.distribution.get_command_names():
             cmd_obj = self.get_finalized_command(cmd_name)
             self.filelist.extend(cmd_obj.get_source_files())
-                                    
 
     def prune_file_list(self):
         """Prune off branches that might slip into the file list as created

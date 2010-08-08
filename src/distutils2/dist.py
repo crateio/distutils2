@@ -699,27 +699,20 @@ Common commands: (see '--help-commands' for more)
 
     def _get_command_groups(self):
         """Helper function to retrieve all the command class names divided
-        into "standard commands" (listed in distutils2.command.__all__)
-        and "extra commands" (mentioned in self.cmdclass, but not a standard
-        command).
+        into standard commands (listed in distutils2.command.__all__)
+        and extra commands (given in self.cmdclass and not standard
+        commands).
         """
-        import distutils2.command
-        std_commands = distutils2.command.__all__
-        is_std = {}
-        for cmd in std_commands:
-            is_std[cmd] = 1
-
-        extra_commands = []
-        for cmd in self.cmdclass:
-            if not is_std.get(cmd):
-                extra_commands.append(cmd)
+        from distutils2.command import __all__ as std_commands
+        extra_commands = [cmd for cmd in self.cmdclass
+                          if cmd not in std_commands]
         return std_commands, extra_commands
 
     def print_commands(self):
         """Print out a help message listing all available commands with a
-        description of each.  The list is divided into "standard commands"
-        (listed in distutils2.command.__all__) and "extra commands"
-        (mentioned in self.cmdclass, but not a standard command).  The
+        description of each.  The list is divided into standard commands
+        (listed in distutils2.command.__all__) and extra commands
+        (given in self.cmdclass and not standard commands).  The
         descriptions come from the command class attribute
         'description'.
         """
@@ -740,9 +733,10 @@ Common commands: (see '--help-commands' for more)
 
     def get_command_list(self):
         """Get a list of (command, description) tuples.
-        The list is divided into "standard commands" (listed in
-        distutils2.command.__all__) and "extra commands" (mentioned in
-        self.cmdclass, but not a standard command).  The descriptions come
+
+        The list is divided into standard commands (listed in
+        distutils2.command.__all__) and extra commands (given in
+        self.cmdclass and not standard commands).  The descriptions come
         from the command class attribute 'description'.
         """
         # Currently this is only used on Mac OS, for the Mac-only GUI
@@ -772,7 +766,7 @@ Common commands: (see '--help-commands' for more)
         return pkgs
 
     def get_command_names(self):
-        """Return a list of command names."""
+        """Return a list of all command names."""
         return [getattr(cls, 'command_name', cls.__name__)
                 for cls in self.get_command_classes()]
 
