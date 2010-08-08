@@ -628,7 +628,7 @@ def askYn(question, default = None, helptext = None):
     while True:
         answer = ask(question, default, helptext, required = True)
         if answer and answer[0].lower() in 'yn':
-            return(answer[0].lower())
+            return answer[0].lower()
 
         print '\nERROR: You must select "Y" or "N".\n'
 
@@ -659,7 +659,7 @@ def ask(question, default=None, helptext=None, required=True,
             print '=' * 70
             continue
         if default and not line:
-            return(default)
+            return default
         if not line and required:
             print '*' * 70
             print 'This value cannot be empty.'
@@ -668,7 +668,7 @@ def ask(question, default=None, helptext=None, required=True,
                 print helptext
             print '*' * 70
             continue
-        return(line)
+        return line
 
 
 def buildTroveDict(troveList):
@@ -679,7 +679,7 @@ def buildTroveDict(troveList):
             if not subkey in subDict:
                 subDict[subkey] = {}
             subDict = subDict[subkey]
-    return(dict)
+    return dict
 troveDict = buildTroveDict(troveList)
 
 
@@ -696,8 +696,8 @@ class SetupClass(object):
 
     def lookupOption(self, key):
         if not self.config.has_option('DEFAULT', key):
-            return(None)
-        return(self.config.get('DEFAULT', key))
+            return None
+        return self.config.get('DEFAULT', key)
 
 
     def loadConfigFile(self):
@@ -749,7 +749,8 @@ class SetupClass(object):
 
         for root, dirs, files in os.walk(os.curdir):
             for file in files:
-                if root == os.curdir and file == 'setup.py': continue
+                if root == os.curdir and file == 'setup.py':
+                    continue
                 fileName = os.path.join(root, file)
                 self.inspectFile(fileName)
 
@@ -858,8 +859,8 @@ class SetupClass(object):
             try:
                 return
             except IndexError:
-                print("ERROR: Invalid selection, type a number from the list "
-                    "above.")
+                print ("ERROR: Invalid selection, type a number from the list "
+                       "above.")
 
 
     def setTroveDevStatus(self, classifierDict):
@@ -889,8 +890,8 @@ Status''', required=False)
                     classifierDict[key] = 1
                     return
                 except KeyError:
-                    print("ERROR: Invalid selection, type a single digit "
-                        "number.")
+                    print ("ERROR: Invalid selection, type a single digit "
+                           "number.")
 
     def _dotted_packages(self, data):
         packages = sorted(data.keys())
