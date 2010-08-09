@@ -352,6 +352,21 @@ class UtilTestCase(support.EnvironGuard,
         self.assertRaises(ImportError, resolve_dotted_name,
                           "distutils2.tests.test_util.UtilTestCase.nonexistent_attribute")
 
+    def test_import_nested_first_time(self):
+        tmp_dir = self.mkdtemp()
+        os.makedirs(os.path.join(tmp_dir, 'a', 'b'))
+        self.write_file(os.path.join(tmp_dir, 'a', '__init__.py'), '')
+        self.write_file(os.path.join(tmp_dir, 'a', 'b', '__init__.py'), '')
+        self.write_file(os.path.join(tmp_dir, 'a', 'b', 'c.py'), 'class Foo: pass')
+
+        try:
+            sys.path.append(tmp_dir)
+            resolve_dotted_name("a.b.c.Foo")
+            # assert nothing raised
+        finally:
+            sys.path.remove(tmp_dir)
+
+        
     @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_run_2to3_on_code(self):
         content = "print 'test'"
