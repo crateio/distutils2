@@ -21,12 +21,14 @@ Most distutils command implementations are subclasses of the
 indirectly, directly subclassing the command they are replacing.  Commands are
 required to derive from :class:`Command`.
 
-.. % \section{Extending existing commands}
-.. % \label{extend-existing}
+.. .. _extend-existing:
+      Extending existing commands
+      ===========================
 
-.. % \section{Writing new commands}
-.. % \label{new-commands}
-.. % \XXX{Would an uninstall command be a good example here?}
+
+.. .. _new-commands:
+      Writing new commands
+      ====================
 
 
 Integrating new commands
@@ -41,16 +43,15 @@ The most common, and possibly the most reasonable for most needs, is to include
 the new implementations with your :file:`setup.py` script, and cause the
 :func:`distutils.core.setup` function use them::
 
-   from distutils2.command.build_py import build_py as _build_py
    from distutils2.core import setup
+   from distutils2.command.build_py import build_py as _build_py
 
    class build_py(_build_py):
        """Specialized Python source builder."""
 
        # implement whatever needs to be different...
 
-   setup(cmdclass={'build_py': build_py},
-         ...)
+   setup(..., cmdclass={'build_py': build_py})
 
 This approach is most valuable if the new implementations must be used to use a
 particular package, as everyone interested in the package will need to have the
@@ -92,5 +93,3 @@ to add ``(command, filename)`` pairs to ``self.distribution.dist_files`` so that
 :command:`upload` can upload it to PyPI.  The *filename* in the pair contains no
 path information, only the name of the file itself.  In dry-run mode, pairs
 should still be added to represent what would have been created.
-
-

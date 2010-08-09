@@ -61,8 +61,7 @@ file :file:`foo.py`, then your setup script can be as simple as this::
    from distutils2.core import setup
    setup(name='foo',
          version='1.0',
-         py_modules=['foo'],
-         )
+         py_modules=['foo'])
 
 Some observations:
 
@@ -192,5 +191,3 @@ distribution root
    the top-level directory of your source tree (or  source distribution); the
    directory where :file:`setup.py` exists.  Generally  :file:`setup.py` will be
    run from this directory.
-
-

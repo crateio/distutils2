@@ -21,8 +21,8 @@ In the simplest case, you'll have two files to worry about: a setup script and
 the single module you're distributing, :file:`foo.py` in this example::
 
    <root>/
-           setup.py
-           foo.py
+          setup.py
+          foo.py
 
 (In all diagrams in this section, *<root>* will refer to the distribution root
 directory.)  A minimal setup script to describe this situation would be::
@@ -30,8 +30,7 @@ directory.)  A minimal setup script to describe this situation would be::
    from distutils2.core import setup
    setup(name='foo',
          version='1.0',
-         py_modules=['foo'],
-         )
+         py_modules=['foo'])
 
 Note that the name of the distribution is specified independently with the
 :option:`name` option, and there's no rule that says it has to be the same as
@@ -40,21 +39,20 @@ convention to follow).  However, the distribution name is used to generate
 filenames, so you should stick to letters, digits, underscores, and hyphens.
 
 Since :option:`py_modules` is a list, you can of course specify multiple
-modules, eg. if you're distributing modules :mod:`foo` and :mod:`bar`, your
+modules, e.g. if you're distributing modules :mod:`foo` and :mod:`bar`, your
 setup might look like this::
 
    <root>/
-           setup.py
-           foo.py
-           bar.py
+          setup.py
+          foo.py
+          bar.py
 
 and the setup script might be  ::
 
    from distutils2.core import setup
    setup(name='foobar',
          version='1.0',
-         py_modules=['foo', 'bar'],
-         )
+         py_modules=['foo', 'bar'])
 
 You can put module source files into another directory, but if you have enough
 modules to do that, it's probably easier to specify modules by package rather
@@ -78,8 +76,7 @@ The setup script from the last example could also be written as  ::
    from distutils2.core import setup
    setup(name='foobar',
          version='1.0',
-         packages=[''],
-         )
+         packages=[''])
 
 (The empty string stands for the root package.)
 
@@ -87,9 +84,10 @@ If those two files are moved into a subdirectory, but remain in the root
 package, e.g.::
 
    <root>/
-           setup.py
-           src/      foo.py
-                     bar.py
+          setup.py
+          src/
+              foo.py
+              bar.py
 
 then you would still specify the root package, but you have to tell the
 Distutils where source files in the root package live::
@@ -98,20 +96,20 @@ Distutils where source files in the root package live::
    setup(name='foobar',
          version='1.0',
          package_dir={'': 'src'},
-         packages=[''],
-         )
+         packages=[''])
 
 More typically, though, you will want to distribute multiple modules in the same
 package (or in sub-packages).  For example, if the :mod:`foo`  and :mod:`bar`
-modules belong in package :mod:`foobar`, one way to layout your source tree is
+modules belong in package :mod:`foobar`, one way to lay out your source tree is
+
 ::
 
    <root>/
-           setup.py
-           foobar/
-                    __init__.py
-                    foo.py
-                    bar.py
+          setup.py
+          foobar/
+                 __init__.py
+                 foo.py
+                 bar.py
 
 This is in fact the default layout expected by the Distutils, and the one that
 requires the least work to describe in your setup script::
@@ -119,19 +117,18 @@ requires the least work to describe in your setup script::
    from distutils2.core import setup
    setup(name='foobar',
          version='1.0',
-         packages=['foobar'],
-         )
+         packages=['foobar'])
 
 If you want to put modules in directories not named for their package, then you
 need to use the :option:`package_dir` option again.  For example, if the
 :file:`src` directory holds modules in the :mod:`foobar` package::
 
    <root>/
-           setup.py
-           src/
-                    __init__.py
-                    foo.py
-                    bar.py
+          setup.py
+          src/
+              __init__.py
+              foo.py
+              bar.py
 
 an appropriate setup script would be  ::
 
@@ -139,17 +136,16 @@ an appropriate setup script would be  ::
    setup(name='foobar',
          version='1.0',
          package_dir={'foobar': 'src'},
-         packages=['foobar'],
-         )
+         packages=['foobar'])
 
 Or, you might put modules from your main package right in the distribution
 root::
 
    <root>/
-           setup.py
-           __init__.py
-           foo.py
-           bar.py
+          setup.py
+          __init__.py
+          foo.py
+          bar.py
 
 in which case your setup script would be  ::
 
@@ -157,8 +153,7 @@ in which case your setup script would be  ::
    setup(name='foobar',
          version='1.0',
          package_dir={'foobar': ''},
-         packages=['foobar'],
-         )
+         packages=['foobar'])
 
 (The empty string also stands for the current directory.)
 
@@ -169,22 +164,21 @@ figure out which directories correspond to Python packages by looking for
 :file:`__init__.py` files.)  Thus, if the default layout grows a sub-package::
 
    <root>/
-           setup.py
-           foobar/
-                    __init__.py
-                    foo.py
-                    bar.py
-                    subfoo/
-                              __init__.py
-                              blah.py
+          setup.py
+          foobar/
+                 __init__.py
+                 foo.py
+                 bar.py
+                 subfoo/
+                        __init__.py
+                        blah.py
 
 then the corresponding setup script would be  ::
 
    from distutils2.core import setup
    setup(name='foobar',
          version='1.0',
-         packages=['foobar', 'foobar.subfoo'],
-         )
+         packages=['foobar', 'foobar.subfoo'])
 
 (Again, the empty string in :option:`package_dir` stands for the current
 directory.)
@@ -201,8 +195,8 @@ it only affects the source for pure Python modules.  The simplest  case, a
 single extension module in a single C source file, is::
 
    <root>/
-           setup.py
-           foo.c
+          setup.py
+          foo.c
 
 If the :mod:`foo` extension belongs in the root package, the setup script for
 this could be  ::
@@ -210,8 +204,7 @@ this could be  ::
    from distutils2.core import setup, Extension
    setup(name='foobar',
          version='1.0',
-         ext_modules=[Extension('foo', ['foo.c'])],
-         )
+         ext_modules=[Extension('foo', ['foo.c'])])
 
 If the extension actually belongs in a package, say :mod:`foopkg`, then
 

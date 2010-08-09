@@ -154,8 +154,7 @@ contains only this one extension and nothing else might be::
     from distutils2.core import setup, Extension
     setup(name='foo',
           version='1.0',
-          ext_modules=[Extension('foo', ['foo.c'])],
-          )
+          ext_modules=[Extension('foo', ['foo.c'])])
 
 The :class:`Extension` class (actually, the underlying extension-building
 machinery implemented by the :command:`build_ext` command) supports a great deal
@@ -187,8 +186,7 @@ same base package), use the :option:`ext_package` keyword argument to
     setup(...,
           ext_package='pkg',
           ext_modules=[Extension('foo', ['foo.c']),
-                       Extension('subpkg.bar', ['bar.c'])],
-         )
+                       Extension('subpkg.bar', ['bar.c'])])
 
 will compile :file:`foo.c` to the extension :mod:`pkg.foo`, and :file:`bar.c` to
 :mod:`pkg.subpkg.bar`.
@@ -216,8 +214,7 @@ this::
     setup(...,
           ext_modules=[Extension('_foo', ['foo.i'],
                                  swig_opts=['-modern', '-I../include'])],
-          py_modules=['foo'],
-         )
+          py_modules=['foo'])
 
 Or on the command line like this::
 
@@ -272,8 +269,7 @@ search path, though, you can find that directory using the Distutils
     from distutils2.sysconfig import get_python_inc
     incdir = os.path.join(get_python_inc(plat_specific=1), 'Numerical')
     setup(...,
-          Extension(..., include_dirs=[incdir]),
-          )
+          Extension(..., include_dirs=[incdir]))
 
 Even though this is quite portable---it will work on any Python installation,
 regardless of platform---it's probably easier to just write your C code in the
@@ -452,8 +448,7 @@ The :option:`scripts` option simply is a list of files to be handled in this
 way.  From the PyXML setup script::
 
     setup(...,
-          scripts=['scripts/xmlproc_parse', 'scripts/xmlproc_val']
-          )
+          scripts=['scripts/xmlproc_parse', 'scripts/xmlproc_val'])
 
 All the scripts will also be added to the ``MANIFEST`` file if no template is
 provided. See :ref:`manifest`.
@@ -485,20 +480,19 @@ the files can be arranged like this in the source tree::
     setup.py
     src/
         mypkg/
-            __init__.py
-            module.py
-            data/
-                tables.dat
-                spoons.dat
-                forks.dat
+              __init__.py
+              module.py
+              data/
+                   tables.dat
+                   spoons.dat
+                   forks.dat
 
 The corresponding call to :func:`setup` might be::
 
     setup(...,
           packages=['mypkg'],
           package_dir={'mypkg': 'src/mypkg'},
-          package_data={'mypkg': ['data/*.dat']},
-          )
+          package_data={'mypkg': ['data/*.dat']})
 
 
 .. _distutils-additional-files:
@@ -516,8 +510,7 @@ following way::
     setup(...,
           data_files=[('bitmaps', ['bm/b1.gif', 'bm/b2.gif']),
                       ('config', ['cfg/data.cfg']),
-                      ('/etc/init.d', ['init-script'])]
-         )
+                      ('/etc/init.d', ['init-script'])])
 
 Note that you can specify the directory names where the data files will be
 installed, but you cannot rename the data files themselves.
@@ -657,8 +650,7 @@ information is sometimes used to indicate sub-releases.  These are
               'Topic :: Communications :: Email',
               'Topic :: Office/Business',
               'Topic :: Software Development :: Bug Tracking',
-              ],
-          )
+              ])
 
 
 Debugging the setup script

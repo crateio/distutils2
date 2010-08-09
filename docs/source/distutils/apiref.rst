@@ -14,7 +14,7 @@ API Reference
 
 The :mod:`distutils.core` module is the only module that needs to be installed
 to use the Distutils. It provides the :func:`setup` (which is called from the
-setup script). Indirectly provides the  :class:`distutils.dist.Distribution` and
+setup script). Indirectly provides the :class:`distutils.dist.Distribution` and
 :class:`distutils.cmd.Command` class.
 
 
@@ -23,8 +23,8 @@ setup script). Indirectly provides the  :class:`distutils.dist.Distribution` and
    The basic do-everything function that does most everything you could ever ask
    for from a Distutils method.
 
-   The setup function takes a large number of arguments. These are laid out in the
-   following table.
+   The setup function takes a large number of arguments. These are laid out in
+   the following table.
 
    +--------------------+--------------------------------+-------------------------------------------------------------+
    | argument name      | value                          | type                                                        |
@@ -68,7 +68,7 @@ setup script). Indirectly provides the  :class:`distutils.dist.Distribution` and
    |                    | files to be built and          |                                                             |
    |                    | installed                      |                                                             |
    +--------------------+--------------------------------+-------------------------------------------------------------+
-   | *ext_modules*      | A list of Python extensions to | A list of  instances of                                     |
+   | *ext_modules*      | A list of Python extensions to | A list of instances of                                      |
    |                    | be built                       | :class:`distutils.core.Extension`                           |
    +--------------------+--------------------------------+-------------------------------------------------------------+
    | *classifiers*      | A list of categories for the   | The list of available                                       |
@@ -109,24 +109,24 @@ setup script). Indirectly provides the  :class:`distutils.dist.Distribution` and
 
 .. function:: run_setup(script_name[, script_args=None, stop_after='run'])
 
-   Run a setup script in a somewhat controlled environment, and return  the
-   :class:`distutils.dist.Distribution` instance that drives things.   This is
-   useful if you need to find out the distribution metadata  (passed as keyword
-   args from *script* to :func:`setup`), or  the contents of the config files or
+   Run a setup script in a somewhat controlled environment, and return the
+   :class:`distutils.dist.Distribution` instance that drives things.  This is
+   useful if you need to find out the distribution metadata (passed as keyword
+   args from *script* to :func:`setup`), or the contents of the config files or
    command line.
 
-   *script_name* is a file that will be run with :func:`execfile` ``sys.argv[0]``
-   will be replaced with *script* for the duration of the call.  *script_args* is a
-   list of strings; if supplied, ``sys.argv[1:]`` will be replaced by *script_args*
-   for the duration  of the call.
+   *script_name* is a file that will be run with :func:`execfile`
+   ``sys.argv[0]`` will be replaced with *script* for the duration of the call.
+   *script_args* is a list of strings; if supplied, ``sys.argv[1:]`` will be
+   replaced by *script_args* for the duration of the call.
 
-   *stop_after* tells :func:`setup` when to stop processing; possible  values:
+   *stop_after* tells :func:`setup` when to stop processing; possible values:
 
    +---------------+---------------------------------------------+
    | value         | description                                 |
    +===============+=============================================+
    | *init*        | Stop after the :class:`Distribution`        |
-   |               | instance has been created  and populated    |
+   |               | instance has been created and populated     |
    |               | with the keyword arguments to :func:`setup` |
    +---------------+---------------------------------------------+
    | *config*      | Stop after config files have been parsed    |
@@ -134,22 +134,21 @@ setup script). Indirectly provides the  :class:`distutils.dist.Distribution` and
    |               | :class:`Distribution` instance)             |
    +---------------+---------------------------------------------+
    | *commandline* | Stop after the command line                 |
-   |               | (``sys.argv[1:]`` or  *script_args*) have   |
+   |               | (``sys.argv[1:]`` or *script_args*) have    |
    |               | been parsed (and the data stored in the     |
    |               | :class:`Distribution` instance.)            |
    +---------------+---------------------------------------------+
    | *run*         | Stop after all commands have been run (the  |
-   |               | same as  if :func:`setup` had been called   |
-   |               | in the usual way). This is the default      |
-   |               | value.                                      |
+   |               | same as if :func:`setup` had been called in |
+   |               | the usual way). This is the default value.  |
    +---------------+---------------------------------------------+
 
-In addition, the :mod:`distutils.core` module exposed a number of  classes that
+In addition, the :mod:`distutils.core` module exposed a number of classes that
 live elsewhere.
 
 * :class:`~distutils.extension.Extension` from :mod:`distutils.extension`
 
-* :class:`~distutils.cmd.Command` from :mod:`distutils.cmd`
+* :class:`~distutils.command.cmd.Command` from :mod:`distutils.command.cmd`
 
 * :class:`~distutils.dist.Distribution` from :mod:`distutils.dist`
 
@@ -167,7 +166,7 @@ the full reference.
    +========================+================================+===========================+
    | *name*                 | the full name of the           | string                    |
    |                        | extension, including any       |                           |
-   |                        | packages --- ie. *not* a       |                           |
+   |                        | packages --- i.e. *not* a      |                           |
    |                        | filename or pathname, but      |                           |
    |                        | Python dotted name             |                           |
    +------------------------+--------------------------------+---------------------------+
@@ -218,7 +217,7 @@ the full reference.
    |                        | loaded)                        |                           |
    +------------------------+--------------------------------+---------------------------+
    | *extra_objects*        | list of extra files to link    | string                    |
-   |                        | with (eg. object files not     |                           |
+   |                        | with (e.g. object files not    |                           |
    |                        | implied by 'sources', static   |                           |
    |                        | library that must be           |                           |
    |                        | explicitly specified, binary   |                           |
@@ -265,11 +264,11 @@ the full reference.
 
 .. class:: Distribution
 
-   A :class:`Distribution` describes how to build, install and package up a Python
-   software package.
+   A :class:`Distribution` describes how to build, install and package up a
+   Python software package.
 
-   See the :func:`setup` function for a list of keyword arguments accepted  by the
-   Distribution constructor. :func:`setup` creates a Distribution instance.
+   See the :func:`setup` function for a list of keyword arguments accepted by
+   the Distribution constructor. :func:`setup` creates a Distribution instance.
 
 
 .. class:: Command
@@ -286,9 +285,9 @@ the full reference.
 
 
 This module provides the abstract base class for the :class:`CCompiler`
-classes.  A :class:`CCompiler` instance can be used for all the compile  and
-link steps needed to build a single project. Methods are provided to  set
-options for the compiler --- macro definitions, include directories,  link path,
+classes.  A :class:`CCompiler` instance can be used for all the compile and
+link steps needed to build a single project. Methods are provided to set
+options for the compiler --- macro definitions, include directories, link path,
 libraries and the like.
 
 This module provides the following functions.
@@ -297,10 +296,10 @@ This module provides the following functions.
 .. function:: gen_lib_options(compiler, library_dirs, runtime_library_dirs, libraries)
 
    Generate linker options for searching library directories and linking with
-   specific libraries.  *libraries* and *library_dirs* are, respectively, lists of
-   library names (not filenames!) and search directories.  Returns a list of
-   command-line options suitable for use with some compiler (depending on the two
-   format strings passed in).
+   specific libraries.  *libraries* and *library_dirs* are, respectively, lists
+   of library names (not filenames!) and search directories.  Returns a list of
+   command-line options suitable for use with some compiler (depending on the
+   two format strings passed in).
 
 
 .. function:: gen_preprocess_options(macros, include_dirs)
@@ -308,9 +307,9 @@ This module provides the following functions.
    Generate C preprocessor options (:option:`-D`, :option:`-U`, :option:`-I`) as
    used by at least two types of compilers: the typical Unix compiler and Visual
    C++. *macros* is the usual thing, a list of 1- or 2-tuples, where ``(name,)``
-   means undefine (:option:`-U`) macro *name*, and ``(name, value)`` means define
-   (:option:`-D`) macro *name* to *value*.  *include_dirs* is just a list of
-   directory names to be added to the header file search path (:option:`-I`).
+   means undefine (:option:`-U`) macro *name*, and ``(name, value)`` means
+   define (:option:`-D`) macro *name* to *value*.  *include_dirs* is just a list
+   of directory names to be added to the header file search path (:option:`-I`).
    Returns a list of command-line options suitable for either Unix compilers or
    Visual C++.
 
@@ -319,19 +318,18 @@ This module provides the following functions.
 
    Determine the default compiler to use for the given platform.
 
-   *osname* should be one of the standard Python OS names (i.e. the ones returned
-   by ``os.name``) and *platform* the common value returned by ``sys.platform`` for
-   the platform in question.
+   *osname* should be one of the standard Python OS names (i.e. the ones
+   returned by ``os.name``) and *platform* the common value returned by
+   ``sys.platform`` for the platform in question.
 
-   The default values are ``os.name`` and ``sys.platform`` in case the parameters
-   are not given.
+   The default values are ``os.name`` and ``sys.platform``.
 
 
 .. function:: new_compiler(plat=None, compiler=None, verbose=0, dry_run=0, force=0)
 
    Factory function to generate an instance of some CCompiler subclass for the
-   supplied platform/compiler combination. *plat* defaults to ``os.name`` (eg.
-   ``'posix'``, ``'nt'``), and *compiler*  defaults to the default compiler for
+   supplied platform/compiler combination. *plat* defaults to ``os.name`` (e.g.
+   ``'posix'``, ``'nt'``), and *compiler* defaults to the default compiler for
    that platform. Currently only ``'posix'`` and ``'nt'`` are supported, and the
    default compilers are "traditional Unix interface" (:class:`UnixCCompiler`
    class) and Visual C++ (:class:`MSVCCompiler` class).  Note that it's perfectly
@@ -345,106 +343,107 @@ This module provides the following functions.
 
 .. function:: show_compilers()
 
-   Print list of available compilers (used by the :option:`--help-compiler` options
-   to :command:`build`, :command:`build_ext`, :command:`build_clib`).
+   Print list of available compilers (used by the :option:`--help-compiler`
+   options to :command:`build`, :command:`build_ext`, :command:`build_clib`).
 
 
 .. class:: CCompiler([verbose=0, dry_run=0, force=0])
 
-   The abstract base class :class:`CCompiler` defines the interface that  must be
-   implemented by real compiler classes.  The class also has  some utility methods
-   used by several compiler classes.
+   The abstract base class :class:`CCompiler` defines the interface that must be
+   implemented by real compiler classes.  The class also has some utility
+   methods used by several compiler classes.
 
-   The basic idea behind a compiler abstraction class is that each instance can be
-   used for all the compile/link steps in building a single project.  Thus,
+   The basic idea behind a compiler abstraction class is that each instance can
+   be used for all the compile/link steps in building a single project.  Thus,
    attributes common to all of those compile and link steps --- include
    directories, macros to define, libraries to link against, etc. --- are
-   attributes of the compiler instance.  To allow for variability in how individual
-   files are treated, most of those attributes may be varied on a per-compilation
-   or per-link basis.
+   attributes of the compiler instance.  To allow for variability in how
+   individual files are treated, most of those attributes may be varied on a
+   per-compilation or per-link basis.
 
    The constructor for each subclass creates an instance of the Compiler object.
-   Flags are *verbose* (show verbose output), *dry_run* (don't actually execute the
-   steps) and *force* (rebuild everything, regardless of dependencies). All of
-   these flags default to ``0`` (off). Note that you probably don't want to
+   Flags are *verbose* (show verbose output), *dry_run* (don't actually execute
+   the steps) and *force* (rebuild everything, regardless of dependencies).  All
+   of these flags default to ``0`` (off). Note that you probably don't want to
    instantiate :class:`CCompiler` or one of its subclasses directly - use the
    :func:`distutils.CCompiler.new_compiler` factory function instead.
 
-   The following methods allow you to manually alter compiler options for  the
+   The following methods allow you to manually alter compiler options for the
    instance of the Compiler class.
 
 
    .. method:: CCompiler.add_include_dir(dir)
 
-      Add *dir* to the list of directories that will be searched for header files.
-      The compiler is instructed to search directories in the order in which they are
-      supplied by successive calls to :meth:`add_include_dir`.
+      Add *dir* to the list of directories that will be searched for header
+      files.  The compiler is instructed to search directories in the order in
+      which they are supplied by successive calls to :meth:`add_include_dir`.
 
 
    .. method:: CCompiler.set_include_dirs(dirs)
 
-      Set the list of directories that will be searched to *dirs* (a list of strings).
-      Overrides any preceding calls to :meth:`add_include_dir`; subsequent calls to
-      :meth:`add_include_dir` add to the list passed to :meth:`set_include_dirs`.
-      This does not affect any list of standard include directories that the compiler
-      may search by default.
+      Set the list of directories that will be searched to *dirs* (a list of
+      strings). Overrides any preceding calls to :meth:`add_include_dir`;
+      subsequent calls to :meth:`add_include_dir` add to the list passed to
+      :meth:`set_include_dirs`. This does not affect any list of standard
+      include directories that the compiler may search by default.
 
 
    .. method:: CCompiler.add_library(libname)
 
-      Add *libname* to the list of libraries that will be included in all links driven
-      by this compiler object.  Note that *libname* should \*not\* be the name of a
-      file containing a library, but the name of the library itself: the actual
-      filename will be inferred by the linker, the compiler, or the compiler class
-      (depending on the platform).
+      Add *libname* to the list of libraries that will be included in all links
+      driven by this compiler object.  Note that *libname* should *not* be the
+      name of a file containing a library, but the name of the library itself:
+      the actual filename will be inferred by the linker, the compiler, or the
+      compiler class (depending on the platform).
 
-      The linker will be instructed to link against libraries in the order they were
-      supplied to :meth:`add_library` and/or :meth:`set_libraries`.  It is perfectly
-      valid to duplicate library names; the linker will be instructed to link against
-      libraries as many times as they are mentioned.
+      The linker will be instructed to link against libraries in the order they
+      were supplied to :meth:`add_library` and/or :meth:`set_libraries`.  It is
+      perfectly valid to duplicate library names; the linker will be instructed
+      to link against libraries as many times as they are mentioned.
 
 
    .. method:: CCompiler.set_libraries(libnames)
 
-      Set the list of libraries to be included in all links driven by this compiler
-      object to *libnames* (a list of strings).  This does not affect any standard
-      system libraries that the linker may include by default.
+      Set the list of libraries to be included in all links driven by this
+      compiler object to *libnames* (a list of strings).  This does not affect
+      any standard system libraries that the linker may include by default.
 
 
    .. method:: CCompiler.add_library_dir(dir)
 
       Add *dir* to the list of directories that will be searched for libraries
-      specified to :meth:`add_library` and :meth:`set_libraries`.  The linker will be
-      instructed to search for libraries in the order they are supplied to
-      :meth:`add_library_dir` and/or :meth:`set_library_dirs`.
+      specified to :meth:`add_library` and :meth:`set_libraries`.  The linker
+      will be instructed to search for libraries in the order they are supplied
+      to :meth:`add_library_dir` and/or :meth:`set_library_dirs`.
 
 
    .. method:: CCompiler.set_library_dirs(dirs)
 
-      Set the list of library search directories to *dirs* (a list of strings).  This
-      does not affect any standard library search path that the linker may search by
-      default.
+      Set the list of library search directories to *dirs* (a list of strings).
+      This does not affect any standard library search path that the linker may
+      search by default.
 
 
    .. method:: CCompiler.add_runtime_library_dir(dir)
 
-      Add *dir* to the list of directories that will be searched for shared libraries
-      at runtime.
+      Add *dir* to the list of directories that will be searched for shared
+      libraries at runtime.
 
 
    .. method:: CCompiler.set_runtime_library_dirs(dirs)
 
-      Set the list of directories to search for shared libraries at runtime to *dirs*
-      (a list of strings).  This does not affect any standard search path that the
-      runtime linker may search by default.
+      Set the list of directories to search for shared libraries at runtime to
+      *dirs* (a list of strings).  This does not affect any standard search path
+      that the runtime linker may search by default.
 
 
    .. method:: CCompiler.define_macro(name[, value=None])
 
-      Define a preprocessor macro for all compilations driven by this compiler object.
-      The optional parameter *value* should be a string; if it is not supplied, then
-      the macro will be defined without an explicit value and the exact outcome
-      depends on the compiler used (XXX true? does ANSI say anything about this?)
+      Define a preprocessor macro for all compilations driven by this compiler
+      object. The optional parameter *value* should be a string; if it is not
+      supplied, then the macro will be defined without an explicit value and the
+      exact outcome depends on the compiler used (XXX true? does ANSI say
+      anything about this?)
 
 
    .. method:: CCompiler.undefine_macro(name)
@@ -453,32 +452,32 @@ This module provides the following functions.
       object.  If the same macro is defined by :meth:`define_macro` and
       undefined by :meth:`undefine_macro` the last call takes precedence
       (including multiple redefinitions or undefinitions).  If the macro is
-      redefined/undefined on a per-compilation basis (ie. in the call to
+      redefined/undefined on a per-compilation basis (i.e. in the call to
       :meth:`compile`), then that takes precedence.
 
 
    .. method:: CCompiler.add_link_object(object)
 
-      Add *object* to the list of object files (or analogues, such as explicitly named
-      library files or the output of "resource compilers") to be included in every
-      link driven by this compiler object.
+      Add *object* to the list of object files (or analogues, such as explicitly
+      named library files or the output of "resource compilers") to be included
+      in every link driven by this compiler object.
 
 
    .. method:: CCompiler.set_link_objects(objects)
 
-      Set the list of object files (or analogues) to be included in every link to
-      *objects*.  This does not affect any standard object files that the linker may
-      include by default (such as system libraries).
+      Set the list of object files (or analogues) to be included in every link
+      to *objects*.  This does not affect any standard object files that the
+      linker may include by default (such as system libraries).
 
-   The following methods implement methods for autodetection of compiler  options,
-   providing some functionality similar to GNU :program:`autoconf`.
+   The following methods implement methods for autodetection of compiler
+   options, providing some functionality similar to GNU :program:`autoconf`.
 
 
    .. method:: CCompiler.detect_language(sources)
 
-      Detect the language of a given file, or list of files. Uses the  instance
-      attributes :attr:`language_map` (a dictionary), and  :attr:`language_order` (a
-      list) to do the job.
+      Detect the language of a given file, or list of files. Uses the instance
+      attributes :attr:`language_map` (a dictionary), and :attr:`language_order`
+      (a list) to do the job.
 
 
    .. method:: CCompiler.find_library_file(dirs, lib[, debug=0])
@@ -546,11 +545,11 @@ This module provides the following functions.
 
    .. method:: CCompiler.compile(sources[, output_dir=None, macros=None, include_dirs=None, debug=0, extra_preargs=None, extra_postargs=None, depends=None])
 
-      Compile one or more source files. Generates object files (e.g.  transforms a
+      Compile one or more source files. Generates object files (e.g. transforms a
       :file:`.c` file to a :file:`.o` file.)
 
       *sources* must be a list of filenames, most likely C/C++ files, but in reality
-      anything that can be handled by a particular compiler and compiler class (eg.
+      anything that can be handled by a particular compiler and compiler class (e.g.
       :class:`MSVCCompiler` can handle resource files in *sources*).  Return a list of
       object filenames, one per source filename in *sources*.  Depending on the
       implementation, not all source files will necessarily be compiled, but all
@@ -621,13 +620,13 @@ This module provides the following functions.
 
       *libraries* is a list of libraries to link against.  These are library names,
       not filenames, since they're translated into filenames in a platform-specific
-      way (eg. *foo* becomes :file:`libfoo.a` on Unix and :file:`foo.lib` on
+      way (e.g. *foo* becomes :file:`libfoo.a` on Unix and :file:`foo.lib` on
       DOS/Windows).  However, they can include a directory component, which means the
       linker will look in that specific directory rather than searching all the normal
       locations.
 
       *library_dirs*, if supplied, should be a list of directories to search for
-      libraries that were specified as bare library names (ie. no directory
+      libraries that were specified as bare library names (i.e. no directory
       component).  These are on top of the system default and those supplied to
       :meth:`add_library_dir` and/or :meth:`set_library_dirs`.  *runtime_library_dirs*
       is a list of directories that will be embedded into the shared library and used
@@ -637,12 +636,12 @@ This module provides the following functions.
       *export_symbols* is a list of symbols that the shared library will export.
       (This appears to be relevant only on Windows.)
 
-      *debug* is as for :meth:`compile` and :meth:`create_static_lib`,  with the
+      *debug* is as for :meth:`compile` and :meth:`create_static_lib`, with the
       slight distinction that it actually matters on most platforms (as opposed to
       :meth:`create_static_lib`, which includes a *debug* flag mostly for form's
       sake).
 
-      *extra_preargs* and *extra_postargs* are as for :meth:`compile`  (except of
+      *extra_preargs* and *extra_postargs* are as for :meth:`compile` (except of
       course that they supply command-line arguments for the particular linker being
       used).
 
@@ -655,21 +654,21 @@ This module provides the following functions.
    .. method:: CCompiler.link_executable(objects, output_progname[, output_dir=None, libraries=None, library_dirs=None, runtime_library_dirs=None, debug=0, extra_preargs=None, extra_postargs=None, target_lang=None])
 
       Link an executable.  *output_progname* is the name of the file executable, while
-      *objects* are a list of object filenames to link in. Other arguments  are as for
+      *objects* are a list of object filenames to link in. Other arguments are as for
       the :meth:`link` method.
 
 
    .. method:: CCompiler.link_shared_lib(objects, output_libname[, output_dir=None, libraries=None, library_dirs=None, runtime_library_dirs=None, export_symbols=None, debug=0, extra_preargs=None, extra_postargs=None, build_temp=None, target_lang=None])
 
-      Link a shared library. *output_libname* is the name of the output  library,
-      while *objects* is a list of object filenames to link in.  Other arguments are
+      Link a shared library. *output_libname* is the name of the output library,
+      while *objects* is a list of object filenames to link in. Other arguments are
       as for the :meth:`link` method.
 
 
    .. method:: CCompiler.link_shared_object(objects, output_filename[, output_dir=None, libraries=None, library_dirs=None, runtime_library_dirs=None, export_symbols=None, debug=0, extra_preargs=None, extra_postargs=None, build_temp=None, target_lang=None])
 
       Link a shared object. *output_filename* is the name of the shared object that
-      will be created, while *objects* is a list of object filenames  to link in.
+      will be created, while *objects* is a list of object filenames to link in.
       Other arguments are as for the :meth:`link` method.
 
 
@@ -679,7 +678,7 @@ This module provides the following functions.
       to file named *output_file*, or *stdout* if *output_file* not supplied.
       *macros* is a list of macro definitions as for :meth:`compile`, which will
       augment the macros set with :meth:`define_macro` and :meth:`undefine_macro`.
-      *include_dirs* is a list of directory names that will be added to the  default
+      *include_dirs* is a list of directory names that will be added to the default
       list, in the same way as :meth:`add_include_dir`.
 
       Raises :exc:`PreprocessError` on failure.
@@ -691,15 +690,15 @@ This module provides the following functions.
    .. method:: CCompiler.executable_filename(basename[, strip_dir=0, output_dir=''])
 
       Returns the filename of the executable for the given *basename*.  Typically for
-      non-Windows platforms this is the same as the basename,  while Windows will get
+      non-Windows platforms this is the same as the basename, while Windows will get
       a :file:`.exe` added.
 
 
    .. method:: CCompiler.library_filename(libname[, lib_type='static', strip_dir=0, output_dir=''])
 
       Returns the filename for the given library name on the current platform. On Unix
-      a library with *lib_type* of ``'static'`` will typically  be of the form
-      :file:`liblibname.a`, while a *lib_type* of ``'dynamic'``  will be of the form
+      a library with *lib_type* of ``'static'`` will typically be of the form
+      :file:`liblibname.a`, while a *lib_type* of ``'dynamic'`` will be of the form
       :file:`liblibname.so`.
 
 
@@ -716,26 +715,26 @@ This module provides the following functions.
 
    .. method:: CCompiler.execute(func, args[, msg=None, level=1])
 
-      Invokes :func:`distutils.util.execute` This method invokes a  Python function
-      *func* with the given arguments *args*, after  logging and taking into account
+      Invokes :func:`distutils.util.execute` This method invokes a Python function
+      *func* with the given arguments *args*, after logging and taking into account
       the *dry_run* flag. XXX see also.
 
 
    .. method:: CCompiler.spawn(cmd)
 
-      Invokes :func:`distutils.util.spawn`. This invokes an external  process to run
+      Invokes :func:`distutils.util.spawn`. This invokes an external process to run
       the given command. XXX see also.
 
 
    .. method:: CCompiler.mkpath(name[, mode=511])
 
-      Invokes :func:`distutils.dir_util.mkpath`. This creates a directory  and any
+      Invokes :func:`distutils.dir_util.mkpath`. This creates a directory and any
       missing ancestor directories. XXX see also.
 
 
    .. method:: CCompiler.move_file(src, dst)
 
-      Invokes :meth:`distutils.file_util.move_file`. Renames *src* to  *dst*.  XXX see
+      Invokes :meth:`distutils.file_util.move_file`. Renames *src* to *dst*.  XXX see
       also.
 
 
@@ -751,7 +750,7 @@ This module provides the following functions.
 
    .. method:: CCompiler.debug_print(msg)
 
-      If the *debug* flag is set on this :class:`CCompiler` instance, print  *msg* to
+      If the *debug* flag is set on this :class:`CCompiler` instance, print *msg* to
       standard output, otherwise do nothing.
 
 .. % \subsection{Compiler-specific modules}
@@ -847,8 +846,8 @@ This module provides the EMXCCompiler class, a subclass of
 :class:`UnixCCompiler` that handles the EMX port of the GNU C compiler to OS/2.
 
 
-:mod:`distutils.archive_util` ---  Archiving utilities
-======================================================
+:mod:`distutils.archive_util` --- Archiving utilities
+=====================================================
 
 .. module:: distutils.archive_util
    :synopsis: Utility functions for creating archive files (tarballs, zip files, ...)
@@ -860,12 +859,13 @@ tarballs or zipfiles.
 
 .. function:: make_archive(base_name, format[, root_dir=None, base_dir=None, verbose=0, dry_run=0])
 
-   Create an archive file (eg. ``zip`` or ``tar``).  *base_name*  is the name of
-   the file to create, minus any format-specific extension;  *format* is the
-   archive format: one of ``zip``, ``tar``,  ``ztar``, or ``gztar``. *root_dir* is
-   a directory that will be the root directory of the archive; ie. we typically
-   ``chdir`` into *root_dir* before  creating the archive.  *base_dir* is the
-   directory where we start  archiving from; ie. *base_dir* will be the common
+   Create an archive file (e.g. ``zip`` or ``tar``).  *base_name* is the name of
+   the file to create, minus any format-specific extension; *format* is the
+   archive format: one of ``zip``, ``tar``, ``ztar``, or ``gztar``. *root_dir*
+   is a directory that will be the root directory of the archive; i.e. we
+   typically
+   ``chdir`` into *root_dir* before creating the archive.  *base_dir* is the
+   directory where we start archiving from; i.e. *base_dir* will be the common
    prefix of all files and directories in the archive.  *root_dir* and *base_dir*
    both default to the current directory.  Returns the name of the archive file.
 
@@ -875,23 +875,23 @@ tarballs or zipfiles.
 .. function:: make_tarball(base_name, base_dir[, compress='gzip', verbose=0, dry_run=0])
 
    'Create an (optional compressed) archive as a tar file from all files in and
-   under *base_dir*. *compress* must be ``'gzip'`` (the default),  ``'compress'``,
+   under *base_dir*. *compress* must be ``'gzip'`` (the default), ``'compress'``,
    ``'bzip2'``, or ``None``.  Both :program:`tar` and the compression utility named
-   by *compress* must be on the  default program search path, so this is probably
-   Unix-specific.  The  output tar file will be named :file:`base_dir.tar`,
+   by *compress* must be on the default program search path, so this is probably
+   Unix-specific.  The output tar file will be named :file:`base_dir.tar`,
    possibly plus the appropriate compression extension (:file:`.gz`, :file:`.bz2`
    or :file:`.Z`).  Return the output filename.
 
-   .. XXX This should be replaced with calls to the :mod:`tarfile` module.
+   .. TODO update to reflect use of the :mod:`tarfile` module.
 
 
 .. function:: make_zipfile(base_name, base_dir[, verbose=0, dry_run=0])
 
    Create a zip file from all files in and under *base_dir*.  The output zip file
-   will be named *base_dir* + :file:`.zip`.  Uses either the  :mod:`zipfile` Python
-   module (if available) or the InfoZIP :file:`zip`  utility (if installed and
-   found on the default search path).  If neither  tool is available, raises
-   :exc:`DistutilsExecError`.   Returns the name of the output zip file.
+   will be named *base_dir* + :file:`.zip`.  Uses either the :mod:`zipfile` Python
+   module (if available) or the InfoZIP :file:`zip` utility (if installed and
+   found on the default search path).  If neither tool is available, raises
+   :exc:`DistutilsExecError`.  Returns the name of the output zip file.
 
 
 :mod:`distutils.dep_util` --- Dependency checking
@@ -902,16 +902,16 @@ tarballs or zipfiles.
 
 
 This module provides functions for performing simple, timestamp-based
-dependency of files and groups of files; also, functions based entirely  on such
+dependency of files and groups of files; also, functions based entirely on such
 timestamp dependency analysis.
 
 
 .. function:: newer(source, target)
 
-   Return true if *source* exists and is more recently modified than *target*, or
-   if *source* exists and *target* doesn't. Return false if both exist and *target*
-   is the same age or newer  than *source*. Raise :exc:`DistutilsFileError` if
-   *source* does not exist.
+   Return true if *source* exists and is more recently modified than *target*,
+   or if *source* exists and *target* doesn't. Return false if both exist and
+   *target* is the same age or newer than *source*. Raise
+   :exc:`DistutilsFileError` if *source* does not exist.
 
 
 .. function:: newer_pairwise(sources, targets)
@@ -926,15 +926,15 @@ timestamp dependency analysis.
 .. function:: newer_group(sources, target[, missing='error'])
 
    Return true if *target* is out-of-date with respect to any file listed in
-   *sources*  In other words, if *target* exists and is newer than every file in
-   *sources*, return false; otherwise return true. *missing* controls what we do
-   when a source file is missing; the default (``'error'``) is to blow up with an
-   :exc:`OSError` from  inside :func:`os.stat`; if it is ``'ignore'``, we silently
-   drop any missing source files; if it is ``'newer'``, any missing source files
-   make us assume that *target* is out-of-date (this is handy in "dry-run" mode:
-   it'll make you pretend to carry out commands that wouldn't work because inputs
-   are missing, but that doesn't matter because you're not actually going to run
-   the commands).
+   *sources*.  In other words, if *target* exists and is newer than every file
+   in *sources*, return false; otherwise return true. *missing* controls what
+   we do when a source file is missing; the default (``'error'``) is to blow up
+   with an :exc:`OSError` from inside :func:`os.stat`; if it is ``'ignore'``, we
+   silently drop any missing source files; if it is ``'newer'``, any missing
+   source files make us assume that *target* is out-of-date (this is handy in
+   "dry-run" mode: it'll make you pretend to carry out commands that wouldn't
+   work because inputs are missing, but that doesn't matter because you're not
+   actually going to run the commands).
 
 
 :mod:`distutils.dir_util` --- Directory tree operations
@@ -953,47 +953,47 @@ directories.
    Create a directory and any missing ancestor directories.  If the directory
    already exists (or if *name* is the empty string, which means the current
    directory, which of course exists), then do nothing.  Raise
-   :exc:`DistutilsFileError` if unable to create some directory along the way (eg.
-   some sub-path exists, but is a file rather than a directory).  If *verbose* is
-   true, print a one-line summary of each mkdir to stdout.  Return the list of
-   directories actually created.
+   :exc:`DistutilsFileError` if unable to create some directory along the way
+   (e.g. some sub-path exists, but is a file rather than a directory).  If
+   *verbose* is true, print a one-line summary of each mkdir to stdout.  Return
+   the list of directories actually created.
 
 
 .. function:: create_tree(base_dir, files[, mode=0777, verbose=0, dry_run=0])
 
-   Create all the empty directories under *base_dir* needed to put *files* there.
-   *base_dir* is just the a name of a directory which doesn't necessarily exist
-   yet; *files* is a list of filenames to be interpreted relative to *base_dir*.
-   *base_dir* + the directory portion of every file in *files* will be created if
-   it doesn't already exist.  *mode*, *verbose* and *dry_run* flags  are as for
-   :func:`mkpath`.
+   Create all the empty directories under *base_dir* needed to put *files*
+   there. *base_dir* is just the a name of a directory which doesn't necessarily
+   exist yet; *files* is a list of filenames to be interpreted relative to
+   *base_dir*. *base_dir* + the directory portion of every file in *files* will
+   be created if it doesn't already exist.  *mode*, *verbose* and *dry_run*
+   flags are as for :func:`mkpath`.
 
 
 .. function:: copy_tree(src, dst[, preserve_mode=1, preserve_times=1, preserve_symlinks=0, update=0, verbose=0, dry_run=0])
 
    Copy an entire directory tree *src* to a new location *dst*.  Both *src* and
    *dst* must be directory names.  If *src* is not a directory, raise
-   :exc:`DistutilsFileError`.  If *dst* does  not exist, it is created with
-   :func:`mkpath`.  The end result of the  copy is that every file in *src* is
-   copied to *dst*, and  directories under *src* are recursively copied to *dst*.
-   Return the list of files that were copied or might have been copied, using their
-   output name. The return value is unaffected by *update* or *dry_run*: it is
-   simply the list of all files under *src*, with the names changed to be under
-   *dst*.
+   :exc:`DistutilsFileError`.  If *dst* does not exist, it is created with
+   :func:`mkpath`.  The end result of the copy is that every file in *src* is
+   copied to *dst*, and directories under *src* are recursively copied to
+   *dst*. Return the list of files that were copied or might have been copied,
+   using their output name. The return value is unaffected by *update* or
+   *dry_run*: it is simply the list of all files under *src*, with the names
+   changed to be under *dst*.
 
-   *preserve_mode* and *preserve_times* are the same as for :func:`copy_file` in
-   :mod:`distutils.file_util`; note that they only apply to regular files, not to
-   directories.  If *preserve_symlinks* is true, symlinks will be copied as
-   symlinks (on platforms that support them!); otherwise (the default), the
-   destination of the symlink will be copied.  *update* and *verbose* are the same
-   as for :func:`copy_file`.
+   *preserve_mode* and *preserve_times* are the same as for :func:`copy_file`
+   in :mod:`distutils.file_util`; note that they only apply to regular files,
+   not to directories.  If *preserve_symlinks* is true, symlinks will be copied
+   as symlinks (on platforms that support them!); otherwise (the default), the
+   destination of the symlink will be copied.  *update* and *verbose* are the
+   same as for :func:`copy_file`.
 
 
 .. function:: remove_tree(directory[, verbose=0, dry_run=0])
 
-   Recursively remove *directory* and all files and directories underneath it. Any
-   errors are ignored (apart from being reported to ``sys.stdout`` if *verbose* is
-   true).
+   Recursively remove *directory* and all files and directories underneath it.
+   Any errors are ignored (apart from being reported to ``sys.stdout`` if
+   *verbose* is true).
 
 .. XXX Some of this could be replaced with the shutil module?
 
@@ -1019,30 +1019,30 @@ This module contains some utility functions for operating on individual files.
    *src* will only be copied if *dst* does not exist, or if *dst* does exist but
    is older than *src*.
 
-   *link* allows you to make hard links (using :func:`os.link`) or symbolic links
-   (using :func:`os.symlink`) instead of copying: set it to ``'hard'`` or
-   ``'sym'``; if it is ``None`` (the default), files are copied. Don't set *link*
-   on systems that don't support it: :func:`copy_file` doesn't check if hard or
-   symbolic linking is available.  It uses :func:`_copy_file_contents` to copy file
-   contents.
+   *link* allows you to make hard links (using :func:`os.link`) or symbolic
+   links (using :func:`os.symlink`) instead of copying: set it to ``'hard'`` or
+   ``'sym'``; if it is ``None`` (the default), files are copied. Don't set
+   *link* on systems that don't support it: :func:`copy_file` doesn't check if
+   hard or symbolic linking is available.  It uses :func:`_copy_file_contents`
+   to copy file contents.
 
-   Return a tuple ``(dest_name, copied)``: *dest_name* is the actual  name of the
-   output file, and *copied* is true if the file was copied  (or would have been
-   copied, if *dry_run* true).
+   Return a tuple ``(dest_name, copied)``: *dest_name* is the actual name of
+   the output file, and *copied* is true if the file was copied (or would have
+   been copied, if *dry_run* true).
 
    .. % XXX if the destination file already exists, we clobber it if
    .. % copying, but blow up if linking.  Hmmm.  And I don't know what
    .. % macostools.copyfile() does.  Should definitely be consistent, and
    .. % should probably blow up if destination exists and we would be
-   .. % changing it (ie. it's not already a hard/soft link to src OR
+   .. % changing it (i.e. it's not already a hard/soft link to src OR
    .. % (not update) and (src newer than dst)).
 
 
 .. function:: move_file(src, dst[, verbose, dry_run])
 
-   Move file *src* to *dst*. If *dst* is a directory, the file will be moved into
-   it with the same name; otherwise, *src* is just renamed to *dst*.  Returns the
-   new full name of the file.
+   Move file *src* to *dst*. If *dst* is a directory, the file will be moved
+   into it with the same name; otherwise, *src* is just renamed to *dst*.
+   Returns the new full name of the file.
 
    .. warning::
 
@@ -1063,7 +1063,7 @@ This module contains some utility functions for operating on individual files.
    :synopsis: Miscellaneous other utility functions
 
 
-This module contains other assorted bits and pieces that don't fit into  any
+This module contains other assorted bits and pieces that don't fit into any
 other utility module.
 
 
@@ -1071,11 +1071,11 @@ other utility module.
 
    Return a string that identifies the current platform.  This is used mainly to
    distinguish platform-specific build directories and platform-specific built
-   distributions.  Typically includes the OS name and version and the architecture
-   (as supplied by 'os.uname()'), although the exact information included depends
-   on the OS; eg. for IRIX the architecture isn't particularly important (IRIX only
-   runs on SGI hardware), but for Linux the kernel version isn't particularly
-   important.
+   distributions.  Typically includes the OS name and version and the
+   architecture (as supplied by 'os.uname()'), although the exact information
+   included depends on the OS; e.g. for IRIX the architecture isn't particularly
+   important (IRIX only runs on SGI hardware), but for Linux the kernel version
+   isn't particularly important.
 
    Examples of returned values:
 
@@ -1110,24 +1110,25 @@ other utility module.
 
    * ``macosx-10.6-intel``
 
-   .. % XXX isn't this also provided by some other non-distutils module?
+   .. XXX reinvention of platform module?
 
 
 .. function:: convert_path(pathname)
 
-   Return 'pathname' as a name that will work on the native filesystem, i.e. split
-   it on '/' and put it back together again using the current directory separator.
-   Needed because filenames in the setup script are always supplied in Unix style,
-   and have to be converted to the local convention before we can actually use them
-   in the filesystem.  Raises :exc:`ValueError` on non-Unix-ish systems if
-   *pathname* either  starts or ends with a slash.
+   Return 'pathname' as a name that will work on the native filesystem, i.e.
+   split it on '/' and put it back together again using the current directory
+   separator. Needed because filenames in the setup script are always supplied
+   in Unix style, and have to be converted to the local convention before we
+   can actually use them in the filesystem.  Raises :exc:`ValueError` on
+   non-Unix-ish systems if *pathname* either starts or ends with a slash.
 
 
 .. function:: change_root(new_root, pathname)
 
-   Return *pathname* with *new_root* prepended.  If *pathname* is relative, this is
-   equivalent to ``os.path.join(new_root,pathname)`` Otherwise, it requires making
-   *pathname* relative and then joining the two, which is tricky on DOS/Windows.
+   Return *pathname* with *new_root* prepended.  If *pathname* is relative, this
+   is equivalent to ``os.path.join(new_root,pathname)`` Otherwise, it requires
+   making *pathname* relative and then joining the two, which is tricky on
+   DOS/Windows.
 
 
 .. function:: check_environ()
@@ -1137,63 +1138,64 @@ other utility module.
    includes:
 
    * :envvar:`HOME` - user's home directory (Unix only)
-   * :envvar:`PLAT` - description of the current platform, including hardware and
-     OS (see :func:`get_platform`)
+   * :envvar:`PLAT` - description of the current platform, including hardware
+     and OS (see :func:`get_platform`)
 
 
 .. function:: subst_vars(s, local_vars)
 
    Perform shell/Perl-style variable substitution on *s*.  Every occurrence of
-   ``$`` followed by a name is considered a variable, and variable is substituted
-   by the value found in the *local_vars* dictionary, or in ``os.environ`` if it's
-   not in *local_vars*. *os.environ* is first checked/augmented to guarantee that
-   it contains certain values: see :func:`check_environ`.  Raise :exc:`ValueError`
-   for any variables not found in either *local_vars* or ``os.environ``.
+   ``$`` followed by a name is considered a variable, and variable is
+   substituted by the value found in the *local_vars* dictionary, or in
+   ``os.environ`` if it's not in *local_vars*. *os.environ* is first
+   checked/augmented to guarantee that it contains certain values: see
+   :func:`check_environ`.  Raise :exc:`ValueError` for any variables not found
+   in either *local_vars* or ``os.environ``.
 
    Note that this is not a fully-fledged string interpolation function. A valid
-   ``$variable`` can consist only of upper and lower case letters, numbers and an
-   underscore. No { } or ( ) style quoting is available.
+   ``$variable`` can consist only of upper and lower case letters, numbers and
+   an underscore. No { } or ( ) style quoting is available.
 
 
 .. function:: grok_environment_error(exc[, prefix='error: '])
 
-   Generate a useful error message from an :exc:`EnvironmentError`  (:exc:`IOError`
-   or :exc:`OSError`) exception object.   Handles Python 1.5.1 and later styles,
-   and does what it can to deal with  exception objects that don't have a filename
-   (which happens when the error  is due to a two-file operation, such as
-   :func:`rename` or  :func:`link`).  Returns the error message as a string
-   prefixed  with *prefix*.
+   Generate a useful error message from an :exc:`EnvironmentError`
+   (:exc:`IOError` or :exc:`OSError`) exception object. Does what it can to deal
+   with exception objects that don't have a filename (which happens when the
+   error is due to a two-file operation, such as :func:`rename` or
+   :func:`link`).  Returns the error message as a string prefixed with *prefix*.
 
 
 .. function:: split_quoted(s)
 
-   Split a string up according to Unix shell-like rules for quotes and backslashes.
-   In short: words are delimited by spaces, as long as those spaces are not escaped
-   by a backslash, or inside a quoted string. Single and double quotes are
-   equivalent, and the quote characters can be backslash-escaped.  The backslash is
-   stripped from any two-character escape sequence, leaving only the escaped
-   character.  The quote characters are stripped from any quoted string.  Returns a
-   list of words.
+   Split a string up according to Unix shell-like rules for quotes and
+   backslashes. In short: words are delimited by spaces, as long as those spaces
+   are not escaped by a backslash, or inside a quoted string. Single and double
+   quotes are equivalent, and the quote characters can be backslash-escaped.
+   The backslash is stripped from any two-character escape sequence, leaving
+   only the escaped character.  The quote characters are stripped from any
+   quoted string.  Returns a list of words.
 
    .. % Should probably be moved into the standard library.
 
 
 .. function:: execute(func, args[, msg=None, verbose=0, dry_run=0])
 
-   Perform some action that affects the outside world (for instance, writing to the
-   filesystem).  Such actions are special because they are disabled by the
-   *dry_run* flag.  This method takes  care of all that bureaucracy for you; all
-   you have to do is supply the function to call and an argument tuple for it (to
-   embody the "external action" being performed), and an optional message to print.
+   Perform some action that affects the outside world (for instance, writing to
+   the filesystem).  Such actions are special because they are disabled by the
+   *dry_run* flag.  This method takes care of all that bureaucracy for you;
+   all you have to do is supply the function to call and an argument tuple for
+   it (to embody the "external action" being performed), and an optional message
+   to print.
 
 
 .. function:: strtobool(val)
 
    Convert a string representation of truth to true (1) or false (0).
 
-   True values are ``y``, ``yes``, ``t``, ``true``, ``on``  and ``1``; false values
-   are ``n``, ``no``, ``f``, ``false``,  ``off`` and ``0``.  Raises
-   :exc:`ValueError` if *val*  is anything else.
+   True values are ``y``, ``yes``, ``t``, ``true``, ``on`` and ``1``; false
+   values are ``n``, ``no``, ``f``, ``false``, ``off`` and ``0``.  Raises
+   :exc:`ValueError` if *val* is anything else.
 
 .. TODO Add :term: markup to bytecode when merging into the stdlib
 
@@ -1221,18 +1223,18 @@ other utility module.
    filesystem.
 
    Byte-compilation is either done directly in this interpreter process with the
-   standard :mod:`py_compile` module, or indirectly by writing a temporary script
-   and executing it.  Normally, you should let :func:`byte_compile` figure out to
-   use direct compilation or not (see the source for details).  The *direct* flag
-   is used by the script generated in indirect mode; unless you know what you're
-   doing, leave it set to ``None``.
+   standard :mod:`py_compile` module, or indirectly by writing a temporary
+   script and executing it.  Normally, you should let :func:`byte_compile`
+   figure out to use direct compilation or not (see the source for details).
+   The *direct* flag is used by the script generated in indirect mode; unless
+   you know what you're doing, leave it set to ``None``.
 
 
 .. function:: rfc822_escape(header)
 
    Return a version of *header* escaped for inclusion in an :rfc:`822` header, by
-   ensuring there are 8 spaces space after each newline. Note that it does no other
-   modification of the string.
+   ensuring there are 8 spaces space after each newline.  Note that it does no
+   other modification of the string.
 
    .. % this _can_ be replaced
 
@@ -1243,8 +1245,8 @@ other utility module.
 ================================================
 
 .. module:: distutils.dist
-   :synopsis: Provides the Distribution class, which represents the module distribution being
-              built/installed/distributed
+   :synopsis: Provides the Distribution class, which represents the module
+              distribution being built/installed/distributed
 
 
 This module provides the :class:`Distribution` class, which represents the
@@ -1255,8 +1257,8 @@ module distribution being built/installed/distributed.
 ==================================================
 
 .. module:: distutils.extension
-   :synopsis: Provides the Extension class, used to describe C/C++ extension modules in setup
-              scripts
+   :synopsis: Provides the Extension class, used to describe C/C++ extension
+              modules in setup scripts
 
 
 This module provides the :class:`Extension` class, used to describe C/C++
@@ -1285,7 +1287,7 @@ This module provides the DEBUG flag.
 
 Provides exceptions used by the Distutils modules.  Note that Distutils modules
 may raise standard exceptions; in particular, SystemExit is usually raised for
-errors that are obviously the end-user's fault (eg. bad command-line arguments).
+errors that are obviously the end-user's fault (e.g. bad command-line arguments).
 
 This module is safe to use in ``from ... import *`` mode; it only exports
 symbols whose names start with ``Distutils`` and end with ``Error``.
@@ -1298,17 +1300,17 @@ symbols whose names start with ``Distutils`` and end with ``Error``.
    :synopsis: Additional getopt functionality
 
 
-This module provides a wrapper around the standard :mod:`getopt`  module that
+This module provides a wrapper around the standard :mod:`getopt` module that
 provides the following additional features:
 
 * short and long options are tied together
 
-* options have help strings, so :func:`fancy_getopt` could potentially  create a
+* options have help strings, so :func:`fancy_getopt` could potentially create a
   complete usage summary
 
 * options set attributes of a passed-in object
 
-* boolean options can have "negative aliases" --- eg. if :option:`--quiet` is
+* boolean options can have "negative aliases" --- e.g. if :option:`--quiet` is
   the "negative alias" of :option:`--verbose`, then :option:`--quiet` on the
   command line sets *verbose* to false.
 
@@ -1323,7 +1325,7 @@ provides the following additional features:
    to option names, both the key and value should be in the *options* list.
    *object* is an object which will be used to store values (see the :meth:`getopt`
    method of the :class:`FancyGetopt` class). *args* is the argument list. Will use
-   ``sys.argv[1:]`` if you  pass ``None`` as *args*.
+   ``sys.argv[1:]`` if you pass ``None`` as *args*.
 
 
 .. function:: wrap_text(text, width)
@@ -1341,7 +1343,7 @@ provides the following additional features:
 
    If an option takes an argument, its *long_option* should have ``'='`` appended;
    *short_option* should just be a single character, no ``':'`` in any case.
-   *short_option* should be ``None`` if a *long_option*  doesn't have a
+   *short_option* should be ``None`` if a *long_option* doesn't have a
    corresponding *short_option*. All option tuples must have long options.
 
 The :class:`FancyGetopt` class provides the following methods:
@@ -1387,6 +1389,8 @@ The :class:`FancyGetopt` class provides the following methods:
 This module provides the :class:`FileList` class, used for poking about the
 filesystem and building lists of files.
 
+.. TODO move to util
+
 
 :mod:`distutils.log` --- Simple PEP 282-style logging
 =====================================================
@@ -1406,8 +1410,8 @@ filesystem and building lists of files.
    :synopsis: Provides the spawn() function
 
 
-This module provides the :func:`spawn` function, a front-end to  various
-platform-specific functions for launching another program in a  sub-process.
+This module provides the :func:`spawn` function, a front-end to various
+platform-specific functions for launching another program in a sub-process.
 Also provides :func:`find_executable` to search the path for a given executable
 name.
 
@@ -1531,30 +1535,30 @@ Python's own build procedures.
    :synopsis: provides the TextFile class, a simple interface to text files
 
 
-This module provides the :class:`TextFile` class, which gives an interface  to
-text files that (optionally) takes care of stripping comments, ignoring  blank
+This module provides the :class:`TextFile` class, which gives an interface to
+text files that (optionally) takes care of stripping comments, ignoring blank
 lines, and joining lines with backslashes.
 
 
 .. class:: TextFile([filename=None, file=None, **options])
 
-   This class provides a file-like object that takes care of all  the things you
-   commonly want to do when processing a text file  that has some line-by-line
-   syntax: strip comments (as long as ``#``  is your comment character), skip blank
-   lines, join adjacent lines by escaping the newline (ie. backslash at end of
+   This class provides a file-like object that takes care of all the things you
+   commonly want to do when processing a text file that has some line-by-line
+   syntax: strip comments (as long as ``#`` is your comment character), skip blank
+   lines, join adjacent lines by escaping the newline (i.e. backslash at end of
    line), strip leading and/or trailing whitespace.  All of these are optional and
    independently controllable.
 
-   The class provides a :meth:`warn` method so you can generate  warning messages
-   that report physical line number, even if the  logical line in question spans
-   multiple physical lines.  Also  provides :meth:`unreadline` for implementing
+   The class provides a :meth:`warn` method so you can generate warning messages
+   that report physical line number, even if the logical line in question spans
+   multiple physical lines.  Also provides :meth:`unreadline` for implementing
    line-at-a-time lookahead.
 
    :class:`TextFile` instances are create with either *filename*, *file*, or both.
    :exc:`RuntimeError` is raised if both are ``None``. *filename* should be a
    string, and *file* a file object (or something that provides :meth:`readline`
-   and :meth:`close`  methods).  It is recommended that you supply at least
-   *filename*,  so that :class:`TextFile` can include it in warning messages.  If
+   and :meth:`close` methods).  It is recommended that you supply at least
+   *filename*, so that :class:`TextFile` can include it in warning messages.  If
    *file* is not supplied, :class:`TextFile` creates its own using the
    :func:`open` built-in function.
 
@@ -1607,9 +1611,9 @@ lines, and joining lines with backslashes.
 
    Note that since *rstrip_ws* can strip the trailing newline, the semantics of
    :meth:`readline` must differ from those of the built-in file object's
-   :meth:`readline` method!  In particular, :meth:`readline`  returns ``None`` for
-   end-of-file: an empty string might just be a  blank line (or an all-whitespace
-   line), if *rstrip_ws* is true  but *skip_blanks* is not.
+   :meth:`readline` method!  In particular, :meth:`readline` returns ``None`` for
+   end-of-file: an empty string might just be a blank line (or an all-whitespace
+   line), if *rstrip_ws* is true but *skip_blanks* is not.
 
 
    .. method:: TextFile.open(filename)
@@ -1629,8 +1633,8 @@ lines, and joining lines with backslashes.
       Print (to stderr) a warning message tied to the current logical line in the
       current file.  If the current logical line in the file spans multiple physical
       lines, the warning refers to the whole range, such as ``"lines 3-5"``.  If
-      *line* is supplied,  it overrides the current line number; it may be a list or
-      tuple  to indicate a range of physical lines, or an integer for a  single
+      *line* is supplied, it overrides the current line number; it may be a list or
+      tuple to indicate a range of physical lines, or an integer for a single
       physical line.
 
 
@@ -1638,11 +1642,11 @@ lines, and joining lines with backslashes.
 
       Read and return a single logical line from the current file (or from an internal
       buffer if lines have previously been "unread" with :meth:`unreadline`).  If the
-      *join_lines* option  is true, this may involve reading multiple physical lines
-      concatenated into a single string.  Updates the current line number,  so calling
-      :meth:`warn` after :meth:`readline` emits a warning  about the physical line(s)
-      just read.  Returns ``None`` on end-of-file,  since the empty string can occur
-      if *rstrip_ws* is true but  *strip_blanks* is not.
+      *join_lines* option is true, this may involve reading multiple physical lines
+      concatenated into a single string.  Updates the current line number, so calling
+      :meth:`warn` after :meth:`readline` emits a warning about the physical line(s)
+      just read.  Returns ``None`` on end-of-file, since the empty string can occur
+      if *rstrip_ws* is true but *strip_blanks* is not.
 
 
    .. method:: TextFile.readlines()
@@ -1656,7 +1660,7 @@ lines, and joining lines with backslashes.
       Push *line* (a string) onto an internal buffer that will be checked by future
       :meth:`readline` calls.  Handy for implementing a parser with line-at-a-time
       lookahead. Note that lines that are "unread" with :meth:`unreadline` are not
-      subsequently re-cleansed (whitespace  stripped, or whatever) when read with
+      subsequently re-cleansed (whitespace stripped, or whatever) when read with
       :meth:`readline`. If multiple calls are made to :meth:`unreadline` before a call
       to :meth:`readline`, the lines will be returned most in most recent first order.
 
@@ -1750,7 +1754,7 @@ Subclasses of :class:`Command` must define the following methods.
 .. method:: Command.finalize_options()
 
    Set final values for all the options that this command supports. This is
-   always called as late as possible, ie.  after any option assignments from the
+   always called as late as possible, i.e. after any option assignments from the
    command line or from other commands have been done.  Thus, this is the place
    to to code option dependencies: if *foo* depends on *bar*, then it is safe to
    set *foo* from *bar* as long as *foo* still has the same value it was
@@ -1775,7 +1779,7 @@ Subclasses of :class:`Command` must define the following methods.
    predicate)``, with *command_name* a string and *predicate* a function, a
    string or ``None``.  *predicate* is a method of the parent command that
    determines whether the corresponding command is applicable in the current
-   situation.  (E.g. we ``install_headers`` is only applicable if we have any C
+   situation.  (E.g. ``install_headers`` is only applicable if we have any C
    header files to install.)  If *predicate* is ``None``, that command is always
    applicable.
 
@@ -2000,7 +2004,7 @@ Subclasses of :class:`Command` must define the following methods.
    :synopsis: Register a module with the Python Package Index
 
 
-The ``register`` command registers the package with the Python Package  Index.
+The ``register`` command registers the package with the Python Package Index.
 This is described in more detail in :PEP:`301`.
 
 .. % todo

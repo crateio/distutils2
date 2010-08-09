@@ -39,7 +39,7 @@ consequences:
 The basic syntax of the configuration file is simple::
 
    [command]
-   option=value
+   option = value
    ...
 
 where *command* is one of the Distutils commands (e.g. :command:`build_py`,
@@ -85,7 +85,7 @@ explicitly, and remember to provide :option:`--inplace`. An easier way is to
 configuration file for this distribution::
 
    [build_ext]
-   inplace=1
+   inplace = 1
 
 This will affect all builds of this module distribution, whether or not you
 explicitly specify :command:`build_ext`.  If you include :file:`setup.cfg` in
@@ -120,7 +120,7 @@ split across multiple lines for readability.
 
 .. seealso::
 
-   :ref:`inst-config-syntax` in "Installing Python Modules"
+   :ref:`inst-config-syntax` in "Installing Python Projects"
       More information on the configuration files is available in the manual for
       system administrators.
 
@@ -129,4 +129,3 @@ split across multiple lines for readability.
 
 .. [#] This ideal probably won't be achieved until auto-configuration is fully
    supported by the Distutils.
-

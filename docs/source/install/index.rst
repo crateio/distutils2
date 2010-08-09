@@ -6,7 +6,7 @@
   Installing Python Projects
 ******************************
 
-:Author: Greg Ward
+:Author: Greg Ward and Distutils2 contributors
 :Release: |version|
 :Date: |today|
 
@@ -24,8 +24,8 @@
 
 .. topic:: Abstract
 
-   This document describes the Python Distribution Utilities ("Distutils") from the
-   end-user's point-of-view, describing how to extend the capabilities of a
+   This document describes the Python Distribution Utilities ("Distutils2") from
+   the end-user's point-of-view, describing how to extend the capabilities of a
    standard Python installation by building and installing third-party Python
    modules and extensions.
 
@@ -188,11 +188,11 @@ under the distribution root; if you're excessively concerned with speed, or want
 to keep the source tree pristine, you can change the build directory with the
 :option:`--build-base` option. For example::
 
-   python setup.py build --build-base=/tmp/pybuild/foo-1.0
+   python setup.py build --build-base /tmp/pybuild/foo-1.0
 
 (Or you could do this permanently with a directive in your system or personal
-Distutils configuration file; see section :ref:`inst-config-files`.)  Normally, this
-isn't necessary.
+Distutils configuration file; see section :ref:`inst-config-files`.)  Normally,
+this isn't necessary.
 
 The default layout for the build tree is as follows::
 
@@ -319,13 +319,13 @@ are installing for.
 
 Installing a new module distribution is as simple as ::
 
-   python setup.py install --home=<dir>
+   python setup.py install --home <dir>
 
 where you can supply any directory you like for the :option:`--home` option.  On
 Unix, lazy typists can just type a tilde (``~``); the :command:`install` command
 will expand this to your home directory::
 
-   python setup.py install --home=~
+   python setup.py install --home ~
 
 The :option:`--home` option defines the installation base directory.  Files are
 installed to the following directories under the installation base as follows:
@@ -362,7 +362,7 @@ However, if you are installing Python modules from source, you probably want
 them to go in :file:`/usr/local/lib/python2.{X}` rather than
 :file:`/usr/lib/python2.{X}`.  This can be done with ::
 
-   /usr/bin/python setup.py install --prefix=/usr/local
+   /usr/bin/python setup.py install --prefix /usr/local
 
 Another possibility is a network filesystem where the name used to write to a
 remote directory is different from the name used to read it: for example, the
@@ -425,7 +425,7 @@ installation under Windows is simpler than under Unix, the :option:`--prefix`
 option has traditionally been used to install additional packages in separate
 locations on Windows. ::
 
-   python setup.py install --prefix="\Temp\Python"
+   python setup.py install --prefix "\Temp\Python"
 
 to install modules to the :file:`\\Temp\\Python` directory on the current drive.
 
@@ -452,10 +452,10 @@ Custom Installation
 ===================
 
 Sometimes, the alternate installation schemes described in section
-:ref:`inst-alt-install` just don't do what you want.  You might want to tweak just
-one or two directories while keeping everything under the same base directory,
-or you might want to completely redefine the installation scheme.  In either
-case, you're creating a *custom installation scheme*.
+:ref:`inst-alt-install` just don't do what you want.  You might want to tweak
+just one or two directories while keeping everything under the same base
+directory, or you might want to completely redefine the installation scheme.
+In either case, you're creating a *custom installation scheme*.
 
 You probably noticed the column of "override options" in the tables describing
 the alternate installation schemes above.  Those options are how you define a
@@ -472,7 +472,7 @@ under Unix---but you want scripts to go in :file:`~/scripts` rather than
 a relative path, which will be interpreted relative to the installation base
 directory (your home directory, in this case)::
 
-   python setup.py install --home=~ --install-scripts=scripts
+   python setup.py install --home ~ --install-scripts scripts
 
 Another Unix example: suppose your Python installation was built and installed
 with a prefix of :file:`/usr/local/python`, so under a standard  installation
@@ -480,7 +480,7 @@ scripts will wind up in :file:`/usr/local/python/bin`.  If you want them in
 :file:`/usr/local/bin` instead, you would supply this absolute directory for the
 :option:`--install-scripts` option::
 
-   python setup.py install --install-scripts=/usr/local/bin
+   python setup.py install --install-scripts /usr/local/bin
 
 (This performs an installation using the "prefix scheme," where the prefix is
 whatever your Python interpreter was installed with--- :file:`/usr/local/python`
@@ -493,7 +493,7 @@ itself.  This is almost as easy as customizing the script installation directory
 pure modules and non-pure modules (i.e., modules from a non-pure distribution).
 For example::
 
-   python setup.py install --install-purelib=Site --install-platlib=Site
+   python setup.py install --install-purelib Site --install-platlib Site
 
 The specified installation directories are relative to :file:`{prefix}`.  Of
 course, you also have to ensure that these directories are in Python's module
@@ -507,19 +507,19 @@ module-related files under :file:`python` in your home directory, and you want a
 separate directory for each platform that you use your home directory from, you
 might define the following installation scheme::
 
-   python setup.py install --home=~ \
-                           --install-purelib=python/lib \
-                           --install-platlib=python/lib.$PLAT \
-                           --install-scripts=python/scripts
-                           --install-data=python/data
+   python setup.py install --home ~ \
+                           --install-purelib python/lib \
+                           --install-platlib python/'lib.$PLAT' \
+                           --install-scripts python/scripts
+                           --install-data python/data
 
 or, equivalently, ::
 
-   python setup.py install --home=~/python \
-                           --install-purelib=lib \
-                           --install-platlib='lib.$PLAT' \
-                           --install-scripts=scripts
-                           --install-data=data
+   python setup.py install --home ~/python \
+                           --install-purelib lib \
+                           --install-platlib 'lib.$PLAT' \
+                           --install-scripts scripts
+                           --install-data data
 
 ``$PLAT`` is not (necessarily) an environment variable---it will be expanded by
 the Distutils as it parses your command line options, just as it does when
@@ -530,25 +530,25 @@ new module distribution would be very tedious.  Thus, you can put these options
 into your Distutils config file (see section :ref:`inst-config-files`)::
 
    [install]
-   install-base=$HOME
-   install-purelib=python/lib
-   install-platlib=python/lib.$PLAT
-   install-scripts=python/scripts
-   install-data=python/data
+   install-base = $HOME
+   install-purelib = python/lib
+   install-platlib = python/lib.$PLAT
+   install-scripts = python/scripts
+   install-data = python/data
 
 or, equivalently, ::
 
    [install]
-   install-base=$HOME/python
-   install-purelib=lib
-   install-platlib=lib.$PLAT
-   install-scripts=scripts
-   install-data=data
+   install-base = $HOME/python
+   install-purelib = lib
+   install-platlib = lib.$PLAT
+   install-scripts = scripts
+   install-data = data
 
 Note that these two are *not* equivalent if you supply a different installation
 base directory when you run the setup script.  For example, ::
 
-   python setup.py install --install-base=/tmp
+   python setup.py install --install-base /tmp
 
 would install pure modules to :file:`{/tmp/python/lib}` in the first case, and
 to :file:`{/tmp/lib}` in the second case.  (For the second case, you probably
@@ -698,16 +698,16 @@ Notes:
 
 (1)
    Strictly speaking, the system-wide configuration file lives in the directory
-   where the Distutils are installed; under Python 1.6 and later on Unix, this is
-   as shown. For Python 1.5.2, the Distutils will normally be installed to
+   where the Distutils are installed; under Python 1.6 and later on Unix, this
+   is as shown. For Python 1.5.2, the Distutils will normally be installed to
    :file:`{prefix}/lib/python1.5/site-packages/distutils`, so the system
    configuration file should be put there under Python 1.5.2.
 
 (2)
-   On Unix, if the :envvar:`HOME` environment variable is not defined, the user's
-   home directory will be determined with the :func:`getpwuid` function from the
-   standard :mod:`pwd` module. This is done by the :func:`os.path.expanduser`
-   function used by Distutils.
+   On Unix, if the :envvar:`HOME` environment variable is not defined, the
+   user's home directory will be determined with the :func:`getpwuid` function
+   from the standard :mod:`pwd` module. This is done by the
+   :func:`os.path.expanduser` function used by Distutils.
 
 (3)
    I.e., in the current directory (usually the location of the setup script).
@@ -736,16 +736,16 @@ Syntax of config files
 The Distutils configuration files all have the same syntax.  The config files
 are grouped into sections.  There is one section for each Distutils command,
 plus a ``global`` section for global options that affect every command.  Each
-section consists of one option per line, specified as ``option=value``.
+section consists of one option per line, specified as ``option = value``.
 
 For example, the following is a complete config file that just forces all
 commands to run quietly by default::
 
    [global]
-   verbose=0
+   verbose = 0
 
-If this is installed as the system config file, it will affect all processing of
-any Python module distribution by any user on the current system.  If it is
+If this is installed as the system config file, it will affect all processing
+of any Python module distribution by any user on the current system.  If it is
 installed as your personal config file (on systems that support them), it will
 affect only module distributions processed by you.  And if it is used as the
 :file:`setup.cfg` for a particular module distribution, it affects only that
@@ -756,12 +756,12 @@ You could override the default "build base" directory and make the
 following::
 
    [build]
-   build-base=blib
-   force=1
+   build-base = blib
+   force = 1
 
 which corresponds to the command-line arguments ::
 
-   python setup.py build --build-base=blib --force
+   python setup.py build --build-base blib --force
 
 except that including the :command:`build` command on the command-line means
 that command will be run.  Including a particular command in config files has no
@@ -805,6 +805,8 @@ specifying custom flags for the compiler and linker in order to use a particular
 library or produce a special kind of object code. This is especially true if the
 extension hasn't been tested on your platform, or if you're trying to
 cross-compile Python.
+
+.. TODO update to new setup.cfg
 
 In the most general case, the extension author might have foreseen that
 compiling the extensions would be complicated, and provided a :file:`Setup` file
@@ -908,7 +910,7 @@ the default name (:file:`foo.lib`.) [#]_
 
 To let Distutils compile your extension with Borland C++ you now have to type::
 
-   python setup.py build --compiler=bcpp
+   python setup.py build --compiler bcpp
 
 If you want to use the Borland C++ compiler as the default, you could specify
 this in your personal or system-wide configuration file for Distutils (see
@@ -948,7 +950,7 @@ http://www.emmestech.com/software/pexports-0.43/download_pexports.html).
 
 ::
 
-   pexports python25.dll >python25.def
+   pexports python25.dll > python25.def
 
 The location of an installed :file:`python25.dll` will depend on the
 installation options and the version and language of Windows.  In a "just for
@@ -969,11 +971,11 @@ normal libraries do.
 
 To let Distutils compile your extension with Cygwin you now have to type ::
 
-   python setup.py build --compiler=cygwin
+   python setup.py build --compiler cygwin
 
 and for Cygwin in no-cygwin mode [#]_ or for MinGW type::
 
-   python setup.py build --compiler=mingw32
+   python setup.py build --compiler mingw32
 
 If you want to use any of these options/compilers as default, you should
 consider to write it in your personal or system-wide configuration file for
@@ -983,16 +985,17 @@ Distutils (see section :ref:`inst-config-files`.)
 .. seealso::
 
    `Building Python modules on MS Windows platform with MinGW <http://www.zope.org/Members/als/tips/win32_mingw_modules>`_
-      Information about building the required libraries for the MinGW environment.
+      Information about building the required libraries for the MinGW
+      environment.
 
 
 .. rubric:: Footnotes
 
-.. [#] This also means you could replace all existing COFF-libraries with OMF-libraries
-   of the same name.
+.. [#] This also means you could replace all existing COFF-libraries with
+   OMF-libraries of the same name.
 
-.. [#] Check http://sources.redhat.com/cygwin/ and http://www.mingw.org/ for more
-   information
+.. [#] Check http://sources.redhat.com/cygwin/ and http://www.mingw.org/ for
+   more information
 
 .. [#] Then you have no POSIX emulation available, but you also don't need
    :file:`cygwin1.dll`.
