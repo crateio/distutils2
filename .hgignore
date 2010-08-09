@@ -3,8 +3,9 @@ syntax: glob
 __pycache__/
 *.so
 configure.cache
-build/
 MANIFEST
+build/
 dist/
+_static/
 *.swp
 .coverage
