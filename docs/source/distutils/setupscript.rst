@@ -66,8 +66,8 @@ The :option:`packages` option tells the Distutils to process (build, distribute,
 install, etc.) all pure Python modules found in each package mentioned in the
 :option:`packages` list.  In order to do this, of course, there has to be a
 correspondence between package names and directories in the filesystem.  The
-default correspondence is the most obvious one, i.e. package :mod:`distutils` is
-found in the directory :file:`distutils` relative to the distribution root.
+default correspondence is the most obvious one, i.e. package :mod:`distutils2` is
+found in the directory :file:`distutils2` relative to the distribution root.
 Thus, when you say ``packages = ['foo']`` in your setup script, you are
 promising that the Distutils will find a file :file:`foo/__init__.py` (which
 might be spelled differently on your system, but you get the idea) relative to
@@ -147,7 +147,7 @@ compiler/linker are needed, describing this extension is quite simple::
 
     Extension('foo', ['foo.c'])
 
-The :class:`Extension` class can be imported from :mod:`distutils.core` along
+The :class:`Extension` class can be imported from :mod:`distutils2.core` along
 with :func:`setup`.  Thus, the setup script for a module distribution that
 contains only this one extension and nothing else might be::
 
@@ -264,7 +264,7 @@ is to write C code like  ::
 
 If you must put the :file:`Numerical` include directory right into your header
 search path, though, you can find that directory using the Distutils
-:mod:`distutils.sysconfig` module::
+:mod:`distutils2.sysconfig` module::
 
     from distutils2.sysconfig import get_python_inc
     incdir = os.path.join(get_python_inc(plat_specific=1), 'Numerical')
@@ -365,7 +365,7 @@ A distribution may relate to packages in three specific ways:
 #. It can obsolete packages or modules.
 
 These relationships can be specified using keyword arguments to the
-:func:`distutils.core.setup` function.
+:func:`distutils2.core.setup` function.
 
 Dependencies on other Python modules and packages can be specified by supplying
 the *requires* keyword argument to :func:`setup`. The value must be a list of

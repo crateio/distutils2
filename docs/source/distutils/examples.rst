@@ -298,7 +298,7 @@ in the Metadata, and ``pyX.X`` the major and minor version of Python like
 ``2.7`` or ``3.2``.
 
 You can read back this static file, by using the
-:class:`distutils.dist.DistributionMetadata` class and its
+:class:`distutils2.dist.DistributionMetadata` class and its
 :func:`read_pkg_file` method::
 
     >>> from distutils2.dist import DistributionMetadata

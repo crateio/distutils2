@@ -5,17 +5,17 @@ API Reference
 *************
 
 
-:mod:`distutils.core` --- Core Distutils functionality
-======================================================
+:mod:`distutils2.core` --- Core Distutils functionality
+=======================================================
 
-.. module:: distutils.core
+.. module:: distutils2.core
    :synopsis: The core Distutils functionality
 
 
-The :mod:`distutils.core` module is the only module that needs to be installed
+The :mod:`distutils2.core` module is the only module that needs to be installed
 to use the Distutils. It provides the :func:`setup` (which is called from the
-setup script). Indirectly provides the :class:`distutils.dist.Distribution` and
-:class:`distutils.cmd.Command` class.
+setup script). Indirectly provides the :class:`distutils2.dist.Distribution` and
+:class:`distutils2.cmd.Command` class.
 
 
 .. function:: setup(arguments)
@@ -31,13 +31,13 @@ setup script). Indirectly provides the :class:`distutils.dist.Distribution` and
    +====================+================================+=============================================================+
    | *name*             | The name of the package        | a string                                                    |
    +--------------------+--------------------------------+-------------------------------------------------------------+
-   | *version*          | The version number of the      | See :mod:`distutils.version`                                |
+   | *version*          | The version number of the      | See :mod:`distutils2.version`                               |
    |                    | package                        |                                                             |
    +--------------------+--------------------------------+-------------------------------------------------------------+
-   | *description*      | A single line describing the   | a string                                                    |
+   | *summary*          | A single line describing the   | a string                                                    |
    |                    | package                        |                                                             |
    +--------------------+--------------------------------+-------------------------------------------------------------+
-   | *long_description* | Longer description of the      | a string                                                    |
+   | *description*      | Longer description of the      | a string                                                    |
    |                    | package                        |                                                             |
    +--------------------+--------------------------------+-------------------------------------------------------------+
    | *author*           | The name of the package author | a string                                                    |
@@ -53,7 +53,7 @@ setup script). Indirectly provides the :class:`distutils.dist.Distribution` and
    |                    | current maintainer, if         |                                                             |
    |                    | different from the author      |                                                             |
    +--------------------+--------------------------------+-------------------------------------------------------------+
-   | *url*              | A URL for the package          | a URL                                                       |
+   | *home_page*        | A URL for the package          | a URL                                                       |
    |                    | (homepage)                     |                                                             |
    +--------------------+--------------------------------+-------------------------------------------------------------+
    | *download_url*     | A URL to download the package  | a URL                                                       |
@@ -69,14 +69,14 @@ setup script). Indirectly provides the :class:`distutils.dist.Distribution` and
    |                    | installed                      |                                                             |
    +--------------------+--------------------------------+-------------------------------------------------------------+
    | *ext_modules*      | A list of Python extensions to | A list of instances of                                      |
-   |                    | be built                       | :class:`distutils.core.Extension`                           |
+   |                    | be built                       | :class:`distutils2.extension.Extension`                     |
    +--------------------+--------------------------------+-------------------------------------------------------------+
    | *classifiers*      | A list of categories for the   | The list of available                                       |
    |                    | package                        | categorizations is at                                       |
    |                    |                                | http://pypi.python.org/pypi?:action=list_classifiers.       |
    +--------------------+--------------------------------+-------------------------------------------------------------+
    | *distclass*        | the :class:`Distribution`      | A subclass of                                               |
-   |                    | class to use                   | :class:`distutils.core.Distribution`                        |
+   |                    | class to use                   | :class:`distutils2.dist.Distribution`                       |
    +--------------------+--------------------------------+-------------------------------------------------------------+
    | *script_name*      | The name of the setup.py       | a string                                                    |
    |                    | script - defaults to           |                                                             |
@@ -110,7 +110,7 @@ setup script). Indirectly provides the :class:`distutils.dist.Distribution` and
 .. function:: run_setup(script_name[, script_args=None, stop_after='run'])
 
    Run a setup script in a somewhat controlled environment, and return the
-   :class:`distutils.dist.Distribution` instance that drives things.  This is
+   :class:`distutils2.dist.Distribution` instance that drives things.  This is
    useful if you need to find out the distribution metadata (passed as keyword
    args from *script* to :func:`setup`), or the contents of the config files or
    command line.
@@ -143,14 +143,14 @@ setup script). Indirectly provides the :class:`distutils.dist.Distribution` and
    |               | the usual way). This is the default value.  |
    +---------------+---------------------------------------------+
 
-In addition, the :mod:`distutils.core` module exposed a number of classes that
+In addition, the :mod:`distutils2.core` module exposed a number of classes that
 live elsewhere.
 
-* :class:`~distutils.extension.Extension` from :mod:`distutils.extension`
+* :class:`~distutils.extension.Extension` from :mod:`distutils2.extension`
 
-* :class:`~distutils.command.cmd.Command` from :mod:`distutils.command.cmd`
+* :class:`~distutils.command.cmd.Command` from :mod:`distutils2.command.cmd`
 
-* :class:`~distutils.dist.Distribution` from :mod:`distutils.dist`
+* :class:`~distutils.dist.Distribution` from :mod:`distutils2.dist`
 
 A short description of each of these follows, but see the relevant module for
 the full reference.
@@ -277,10 +277,10 @@ the full reference.
    implement a single distutils command.
 
 
-:mod:`distutils.ccompiler` --- CCompiler base class
-===================================================
+:mod:`distutils2.ccompiler` --- CCompiler base class
+====================================================
 
-.. module:: distutils.ccompiler
+.. module:: distutils2.ccompiler
    :synopsis: Abstract CCompiler class
 
 
@@ -366,7 +366,7 @@ This module provides the following functions.
    the steps) and *force* (rebuild everything, regardless of dependencies).  All
    of these flags default to ``0`` (off). Note that you probably don't want to
    instantiate :class:`CCompiler` or one of its subclasses directly - use the
-   :func:`distutils.CCompiler.new_compiler` factory function instead.
+   :func:`distutils2.CCompiler.new_compiler` factory function instead.
 
    The following methods allow you to manually alter compiler options for the
    instance of the Compiler class.
@@ -538,7 +538,7 @@ This module provides the following functions.
       that will be split into executable name and (optional) list of arguments.
       (Splitting the string is done similarly to how Unix shells operate: words are
       delimited by spaces, but quotes and backslashes can override this.  See
-      :func:`distutils.util.split_quoted`.)
+      :func:`distutils2.util.split_quoted`.)
 
    The following methods invoke stages in the build process.
 
@@ -715,32 +715,32 @@ This module provides the following functions.
 
    .. method:: CCompiler.execute(func, args[, msg=None, level=1])
 
-      Invokes :func:`distutils.util.execute` This method invokes a Python function
+      Invokes :func:`distutils2.util.execute` This method invokes a Python function
       *func* with the given arguments *args*, after logging and taking into account
       the *dry_run* flag. XXX see also.
 
 
    .. method:: CCompiler.spawn(cmd)
 
-      Invokes :func:`distutils.util.spawn`. This invokes an external process to run
+      Invokes :func:`distutils2.util.spawn`. This invokes an external process to run
       the given command. XXX see also.
 
 
    .. method:: CCompiler.mkpath(name[, mode=511])
 
-      Invokes :func:`distutils.dir_util.mkpath`. This creates a directory and any
+      Invokes :func:`distutils2.dir_util.mkpath`. This creates a directory and any
       missing ancestor directories. XXX see also.
 
 
    .. method:: CCompiler.move_file(src, dst)
 
-      Invokes :meth:`distutils.file_util.move_file`. Renames *src* to *dst*.  XXX see
+      Invokes :meth:`distutils2.file_util.move_file`. Renames *src* to *dst*.  XXX see
       also.
 
 
    .. method:: CCompiler.announce(msg[, level=1])
 
-      Write a message using :func:`distutils.log.debug`. XXX see also.
+      Write a message using :func:`distutils2.log.debug`. XXX see also.
 
 
    .. method:: CCompiler.warn(msg)
@@ -761,10 +761,10 @@ This module provides the following functions.
 .. % function.
 
 
-:mod:`distutils.unixccompiler` --- Unix C Compiler
-==================================================
+:mod:`distutils2.unixccompiler` --- Unix C Compiler
+===================================================
 
-.. module:: distutils.unixccompiler
+.. module:: distutils2.unixccompiler
    :synopsis: UNIX C Compiler
 
 
@@ -790,10 +790,10 @@ This module provides the :class:`UnixCCompiler` class, a subclass of
 * link shared library handled by :program:`cc` :option:`-shared`
 
 
-:mod:`distutils.msvccompiler` --- Microsoft Compiler
-====================================================
+:mod:`distutils2.msvccompiler` --- Microsoft Compiler
+=====================================================
 
-.. module:: distutils.msvccompiler
+.. module:: distutils2.msvccompiler
    :synopsis: Microsoft Compiler
 
 
@@ -813,20 +813,20 @@ that the distutils user has made an explicit choice to override the compiler
 selection by :class:`MSVCCompiler`.
 
 
-:mod:`distutils.bcppcompiler` --- Borland Compiler
-==================================================
+:mod:`distutils2.bcppcompiler` --- Borland Compiler
+===================================================
 
-.. module:: distutils.bcppcompiler
+.. module:: distutils2.bcppcompiler
 
 
 This module provides :class:`BorlandCCompiler`, an subclass of the abstract
 :class:`CCompiler` class for the Borland C++ compiler.
 
 
-:mod:`distutils.cygwincompiler` --- Cygwin Compiler
-===================================================
+:mod:`distutils2.cygwincompiler` --- Cygwin Compiler
+====================================================
 
-.. module:: distutils.cygwinccompiler
+.. module:: distutils2.cygwinccompiler
 
 
 This module provides the :class:`CygwinCCompiler` class, a subclass of
@@ -835,10 +835,10 @@ Windows.  It also contains the Mingw32CCompiler class which handles the mingw32
 port of GCC (same as cygwin in no-cygwin mode).
 
 
-:mod:`distutils.emxccompiler` --- OS/2 EMX Compiler
-===================================================
+:mod:`distutils2.emxccompiler` --- OS/2 EMX Compiler
+====================================================
 
-.. module:: distutils.emxccompiler
+.. module:: distutils2.emxccompiler
    :synopsis: OS/2 EMX Compiler support
 
 
@@ -846,10 +846,10 @@ This module provides the EMXCCompiler class, a subclass of
 :class:`UnixCCompiler` that handles the EMX port of the GNU C compiler to OS/2.
 
 
-:mod:`distutils.archive_util` --- Archiving utilities
-=====================================================
+:mod:`distutils2.archive_util` --- Archiving utilities
+======================================================
 
-.. module:: distutils.archive_util
+.. module:: distutils2.archive_util
    :synopsis: Utility functions for creating archive files (tarballs, zip files, ...)
 
 
@@ -894,10 +894,10 @@ tarballs or zipfiles.
    :exc:`DistutilsExecError`.  Returns the name of the output zip file.
 
 
-:mod:`distutils.dep_util` --- Dependency checking
-=================================================
+:mod:`distutils2.dep_util` --- Dependency checking
+==================================================
 
-.. module:: distutils.dep_util
+.. module:: distutils2.dep_util
    :synopsis: Utility functions for simple dependency checking
 
 
@@ -937,10 +937,10 @@ timestamp dependency analysis.
    actually going to run the commands).
 
 
-:mod:`distutils.dir_util` --- Directory tree operations
-=======================================================
+:mod:`distutils2.dir_util` --- Directory tree operations
+========================================================
 
-.. module:: distutils.dir_util
+.. module:: distutils2.dir_util
    :synopsis: Utility functions for operating on directories and directory trees
 
 
@@ -982,7 +982,7 @@ directories.
    changed to be under *dst*.
 
    *preserve_mode* and *preserve_times* are the same as for :func:`copy_file`
-   in :mod:`distutils.file_util`; note that they only apply to regular files,
+   in :mod:`distutils2.file_util`; note that they only apply to regular files,
    not to directories.  If *preserve_symlinks* is true, symlinks will be copied
    as symlinks (on platforms that support them!); otherwise (the default), the
    destination of the symlink will be copied.  *update* and *verbose* are the
@@ -998,10 +998,10 @@ directories.
 .. XXX Some of this could be replaced with the shutil module?
 
 
-:mod:`distutils.file_util` --- Single file operations
-=====================================================
+:mod:`distutils2.file_util` --- Single file operations
+======================================================
 
-.. module:: distutils.file_util
+.. module:: distutils2.file_util
    :synopsis: Utility functions for operating on single files
 
 
@@ -1056,10 +1056,10 @@ This module contains some utility functions for operating on individual files.
    without line terminators) to it.
 
 
-:mod:`distutils.util` --- Miscellaneous other utility functions
-===============================================================
+:mod:`distutils2.util` --- Miscellaneous other utility functions
+================================================================
 
-.. module:: distutils.util
+.. module:: distutils2.util
    :synopsis: Miscellaneous other utility functions
 
 
@@ -1241,10 +1241,10 @@ other utility module.
 .. % \subsection{Distutils objects}
 
 
-:mod:`distutils.dist` --- The Distribution class
-================================================
+:mod:`distutils2.dist` --- The Distribution class
+=================================================
 
-.. module:: distutils.dist
+.. module:: distutils2.dist
    :synopsis: Provides the Distribution class, which represents the module
               distribution being built/installed/distributed
 
@@ -1253,10 +1253,10 @@ This module provides the :class:`Distribution` class, which represents the
 module distribution being built/installed/distributed.
 
 
-:mod:`distutils.extension` --- The Extension class
-==================================================
+:mod:`distutils2.extension` --- The Extension class
+===================================================
 
-.. module:: distutils.extension
+.. module:: distutils2.extension
    :synopsis: Provides the Extension class, used to describe C/C++ extension
               modules in setup scripts
 
@@ -1268,20 +1268,20 @@ extension modules in setup scripts.
 .. % The following haven't been moved into a more appropriate section yet.
 
 
-:mod:`distutils.debug` --- Distutils debug mode
-===============================================
+:mod:`distutils2.debug` --- Distutils debug mode
+================================================
 
-.. module:: distutils.debug
+.. module:: distutils2.debug
    :synopsis: Provides the debug flag for distutils
 
 
 This module provides the DEBUG flag.
 
 
-:mod:`distutils.errors` --- Distutils exceptions
-================================================
+:mod:`distutils2.errors` --- Distutils exceptions
+=================================================
 
-.. module:: distutils.errors
+.. module:: distutils2.errors
    :synopsis: Provides standard distutils exceptions
 
 
@@ -1293,10 +1293,10 @@ This module is safe to use in ``from ... import *`` mode; it only exports
 symbols whose names start with ``Distutils`` and end with ``Error``.
 
 
-:mod:`distutils.fancy_getopt` --- Wrapper around the standard getopt module
-===========================================================================
+:mod:`distutils2.fancy_getopt` --- Wrapper around the standard getopt module
+============================================================================
 
-.. module:: distutils.fancy_getopt
+.. module:: distutils2.fancy_getopt
    :synopsis: Additional getopt functionality
 
 
@@ -1378,10 +1378,10 @@ The :class:`FancyGetopt` class provides the following methods:
    If supplied, prints the supplied *header* at the top of the help.
 
 
-:mod:`distutils.filelist` --- The FileList class
-================================================
+:mod:`distutils2.filelist` --- The FileList class
+=================================================
 
-.. module:: distutils.filelist
+.. module:: distutils2.filelist
    :synopsis: The FileList class, used for poking about the file system and
               building lists of files.
 
@@ -1392,10 +1392,10 @@ filesystem and building lists of files.
 .. TODO move to util
 
 
-:mod:`distutils.log` --- Simple PEP 282-style logging
-=====================================================
+:mod:`distutils2.log` --- Simple PEP 282-style logging
+======================================================
 
-.. module:: distutils.log
+.. module:: distutils2.log
    :synopsis: A simple logging mechanism, 282-style
 
 
@@ -1403,10 +1403,10 @@ filesystem and building lists of files.
 
 
 
-:mod:`distutils.spawn` --- Spawn a sub-process
-==============================================
+:mod:`distutils2.spawn` --- Spawn a sub-process
+===============================================
 
-.. module:: distutils.spawn
+.. module:: distutils2.spawn
    :synopsis: Provides the spawn() function
 
 
@@ -1416,17 +1416,17 @@ Also provides :func:`find_executable` to search the path for a given executable
 name.
 
 
-:mod:`distutils.sysconfig` --- System configuration information
-===============================================================
+:mod:`distutils2.sysconfig` --- System configuration information
+================================================================
 
-.. module:: distutils.sysconfig
+.. module:: distutils2.sysconfig
    :synopsis: Low-level access to configuration information of the Python interpreter.
 .. moduleauthor:: Fred L. Drake, Jr. <fdrake@acm.org>
 .. moduleauthor:: Greg Ward <gward@python.net>
 .. sectionauthor:: Fred L. Drake, Jr. <fdrake@acm.org>
 
 
-The :mod:`distutils.sysconfig` module provides access to Python's low-level
+The :mod:`distutils2.sysconfig` module provides access to Python's low-level
 configuration information.  The specific configuration variables available
 depend heavily on the platform and configuration. The specific variables depend
 on the build process for the specific version of Python being run; the variables
@@ -1436,7 +1436,7 @@ installed with Python on Unix systems.  The configuration header is called
 for earlier versions of Python.
 
 Some additional functions are provided which perform some useful manipulations
-for other parts of the :mod:`distutils` package.
+for other parts of the :mod:`distutils2` package.
 
 
 .. data:: PREFIX
@@ -1501,14 +1501,14 @@ for other parts of the :mod:`distutils` package.
    standard library is returned rather than the directory for the installation of
    third-party extensions.
 
-The following function is only intended for use within the :mod:`distutils`
+The following function is only intended for use within the :mod:`distutils2`
 package.
 
 
 .. function:: customize_compiler(compiler)
 
    Do any platform-specific customization of a
-   :class:`distutils.ccompiler.CCompiler` instance.
+   :class:`distutils2.ccompiler.CCompiler` instance.
 
    This function is only needed on Unix at this time, but should be called
    consistently to support forward-compatibility.  It inserts the information that
@@ -1522,16 +1522,16 @@ Python's own build procedures.
 
 .. function:: set_python_build()
 
-   Inform the :mod:`distutils.sysconfig` module that it is being used as part of
+   Inform the :mod:`distutils2.sysconfig` module that it is being used as part of
    the build process for Python.  This changes a lot of relative locations for
    files, allowing them to be located in the build area rather than in an installed
    Python.
 
 
-:mod:`distutils.text_file` --- The TextFile class
-=================================================
+:mod:`distutils2.text_file` --- The TextFile class
+==================================================
 
-.. module:: distutils.text_file
+.. module:: distutils2.text_file
    :synopsis: provides the TextFile class, a simple interface to text files
 
 
@@ -1665,10 +1665,10 @@ lines, and joining lines with backslashes.
       to :meth:`readline`, the lines will be returned most in most recent first order.
 
 
-:mod:`distutils.version` --- Version number classes
-===================================================
+:mod:`distutils2.version` --- Version number classes
+====================================================
 
-.. module:: distutils.version
+.. module:: distutils2.version
    :synopsis: implements classes that represent module version numbers.
 
 
@@ -1680,10 +1680,10 @@ lines, and joining lines with backslashes.
 .. % separate module, with the command name as the name of the module.
 
 
-:mod:`distutils.cmd` --- Abstract base class for Distutils commands
-===================================================================
+:mod:`distutils2.cmd` --- Abstract base class for Distutils commands
+====================================================================
 
-.. module:: distutils.cmd
+.. module:: distutils2.cmd
    :synopsis: This module provides the abstract base class Command. This class
               is subclassed by the modules in the distutils.command subpackage.
 
@@ -1712,10 +1712,10 @@ This module supplies the abstract base class :class:`Command`.
 
 .. % todo
 
-:mod:`distutils.command.check` --- Check the metadata of a package
-==================================================================
+:mod:`distutils2.command.check` --- Check the metadata of a package
+===================================================================
 
-.. module:: distutils.command.check
+.. module:: distutils2.command.check
    :synopsis: Check the metadata of a package
 
 
@@ -1730,15 +1730,15 @@ Creating a new Distutils command
 
 This section outlines the steps to create a new Distutils command.
 
-A new command lives in a module in the :mod:`distutils.command` package. There
+A new command lives in a module in the :mod:`distutils2.command` package. There
 is a sample template in that directory called :file:`command_template`.  Copy
 this file to a new module with the same name as the new command you're
 implementing.  This module should implement a class with the same name as the
 module (and the command).  So, for instance, to create the command
 ``peel_banana`` (so that users can run ``setup.py peel_banana``), you'd copy
-:file:`command_template` to :file:`distutils/command/peel_banana.py`, then edit
+:file:`command_template` to :file:`distutils2/command/peel_banana.py`, then edit
 it so that it's implementing the class :class:`peel_banana`, a subclass of
-:class:`distutils.cmd.Command`.
+:class:`distutils2.cmd.Command`.
 
 Subclasses of :class:`Command` must define the following methods.
 
@@ -1788,10 +1788,10 @@ Subclasses of :class:`Command` must define the following methods.
    defined.  The canonical example is the :command:`install` command.
 
 
-:mod:`distutils.command` --- Individual Distutils commands
-==========================================================
+:mod:`distutils2.command` --- Individual Distutils commands
+===========================================================
 
-.. module:: distutils.command
+.. module:: distutils2.command
    :synopsis: This subpackage contains one module for each standard Distutils command.
 
 
@@ -1799,40 +1799,30 @@ Subclasses of :class:`Command` must define the following methods.
 .. % todo
 
 
-:mod:`distutils.command.bdist` --- Build a binary installer
-===========================================================
+:mod:`distutils2.command.bdist` --- Build a binary installer
+============================================================
 
-.. module:: distutils.command.bdist
+.. module:: distutils2.command.bdist
    :synopsis: Build a binary installer for a package
 
 
 .. % todo
 
 
-:mod:`distutils.command.bdist_packager` --- Abstract base class for packagers
-=============================================================================
+:mod:`distutils2.command.bdist_dumb` --- Build a "dumb" installer
+=================================================================
 
-.. module:: distutils.command.bdist_packager
-   :synopsis: Abstract base class for packagers
-
-
-.. % todo
-
-
-:mod:`distutils.command.bdist_dumb` --- Build a "dumb" installer
-================================================================
-
-.. module:: distutils.command.bdist_dumb
+.. module:: distutils2.command.bdist_dumb
    :synopsis: Build a "dumb" installer - a simple archive of files
 
 
 .. % todo
 
 
-:mod:`distutils.command.bdist_msi` --- Build a Microsoft Installer binary package
-=================================================================================
+:mod:`distutils2.command.bdist_msi` --- Build a Microsoft Installer binary package
+==================================================================================
 
-.. module:: distutils.command.bdist_msi
+.. module:: distutils2.command.bdist_msi
    :synopsis: Build a binary distribution as a Windows MSI file
 
 .. class:: bdist_msi(Command)
@@ -1847,160 +1837,150 @@ Subclasses of :class:`Command` must define the following methods.
    installations, and allows installation through group policies.
 
 
-:mod:`distutils.command.bdist_rpm` --- Build a binary distribution as a Redhat RPM and SRPM
-===========================================================================================
+:mod:`distutils2.command.bdist_wininst` --- Build a Windows installer
+=====================================================================
 
-.. module:: distutils.command.bdist_rpm
-   :synopsis: Build a binary distribution as a Redhat RPM and SRPM
-
-
-.. % todo
-
-
-:mod:`distutils.command.bdist_wininst` --- Build a Windows installer
-====================================================================
-
-.. module:: distutils.command.bdist_wininst
+.. module:: distutils2.command.bdist_wininst
    :synopsis: Build a Windows installer
 
 
 .. % todo
 
 
-:mod:`distutils.command.sdist` --- Build a source distribution
-==============================================================
+:mod:`distutils2.command.sdist` --- Build a source distribution
+===============================================================
 
-.. module:: distutils.command.sdist
+.. module:: distutils2.command.sdist
    :synopsis: Build a source distribution
 
 
 .. % todo
 
 
-:mod:`distutils.command.build` --- Build all files of a package
-===============================================================
+:mod:`distutils2.command.build` --- Build all files of a package
+================================================================
 
-.. module:: distutils.command.build
+.. module:: distutils2.command.build
    :synopsis: Build all files of a package
 
 
 .. % todo
 
 
-:mod:`distutils.command.build_clib` --- Build any C libraries in a package
-==========================================================================
+:mod:`distutils2.command.build_clib` --- Build any C libraries in a package
+===========================================================================
 
-.. module:: distutils.command.build_clib
+.. module:: distutils2.command.build_clib
    :synopsis: Build any C libraries in a package
 
 
 .. % todo
 
 
-:mod:`distutils.command.build_ext` --- Build any extensions in a package
-========================================================================
+:mod:`distutils2.command.build_ext` --- Build any extensions in a package
+=========================================================================
 
-.. module:: distutils.command.build_ext
+.. module:: distutils2.command.build_ext
    :synopsis: Build any extensions in a package
 
 
 .. % todo
 
 
-:mod:`distutils.command.build_py` --- Build the .py/.pyc files of a package
-===========================================================================
+:mod:`distutils2.command.build_py` --- Build the .py/.pyc files of a package
+============================================================================
 
-.. module:: distutils.command.build_py
+.. module:: distutils2.command.build_py
    :synopsis: Build the .py/.pyc files of a package
 
 
 .. class:: build_py(Command)
 
 
-:mod:`distutils.command.build_scripts` --- Build the scripts of a package
-=========================================================================
+:mod:`distutils2.command.build_scripts` --- Build the scripts of a package
+==========================================================================
 
-.. module:: distutils.command.build_scripts
+.. module:: distutils2.command.build_scripts
    :synopsis: Build the scripts of a package
 
 
 .. % todo
 
 
-:mod:`distutils.command.clean` --- Clean a package build area
-=============================================================
+:mod:`distutils2.command.clean` --- Clean a package build area
+==============================================================
 
-.. module:: distutils.command.clean
+.. module:: distutils2.command.clean
    :synopsis: Clean a package build area
 
 
 .. % todo
 
 
-:mod:`distutils.command.config` --- Perform package configuration
-=================================================================
+:mod:`distutils2.command.config` --- Perform package configuration
+==================================================================
 
-.. module:: distutils.command.config
+.. module:: distutils2.command.config
    :synopsis: Perform package configuration
 
 
 .. % todo
 
 
-:mod:`distutils.command.install` --- Install a package
-======================================================
+:mod:`distutils2.command.install` --- Install a package
+=======================================================
 
-.. module:: distutils.command.install
+.. module:: distutils2.command.install
    :synopsis: Install a package
 
 
 .. % todo
 
 
-:mod:`distutils.command.install_data` --- Install data files from a package
-===========================================================================
+:mod:`distutils2.command.install_data` --- Install data files from a package
+============================================================================
 
-.. module:: distutils.command.install_data
+.. module:: distutils2.command.install_data
    :synopsis: Install data files from a package
 
 
 .. % todo
 
 
-:mod:`distutils.command.install_headers` --- Install C/C++ header files from a package
-======================================================================================
+:mod:`distutils2.command.install_headers` --- Install C/C++ header files from a package
+=======================================================================================
 
-.. module:: distutils.command.install_headers
+.. module:: distutils2.command.install_headers
    :synopsis: Install C/C++ header files from a package
 
 
 .. % todo
 
 
-:mod:`distutils.command.install_lib` --- Install library files from a package
-=============================================================================
+:mod:`distutils2.command.install_lib` --- Install library files from a package
+==============================================================================
 
-.. module:: distutils.command.install_lib
+.. module:: distutils2.command.install_lib
    :synopsis: Install library files from a package
 
 
 .. % todo
 
 
-:mod:`distutils.command.install_scripts` --- Install script files from a package
-================================================================================
+:mod:`distutils2.command.install_scripts` --- Install script files from a package
+=================================================================================
 
-.. module:: distutils.command.install_scripts
+.. module:: distutils2.command.install_scripts
    :synopsis: Install script files from a package
 
 
 .. % todo
 
 
-:mod:`distutils.command.register` --- Register a module with the Python Package Index
-=====================================================================================
+:mod:`distutils2.command.register` --- Register a module with the Python Package Index
+======================================================================================
 
-.. module:: distutils.command.register
+.. module:: distutils2.command.register
    :synopsis: Register a module with the Python Package Index
 
 

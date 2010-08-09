@@ -197,8 +197,8 @@ Following the Distutils' own manifest template, let's trace how the
 :command:`sdist` command builds the list of files to include in the Distutils
 source distribution:
 
-#. include all Python source files in the :file:`distutils` and
-   :file:`distutils/command` subdirectories (because packages corresponding to
+#. include all Python source files in the :file:`distutils2` and
+   :file:`distutils2/command` subdirectories (because packages corresponding to
    those two directories were mentioned in the :option:`packages` option in the
    setup script---see section :ref:`setup-script`)
 

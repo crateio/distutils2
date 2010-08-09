@@ -16,7 +16,7 @@ should be copied into packages in addition to :file:`.py` files as a
 convenience.
 
 Most distutils command implementations are subclasses of the
-:class:`distutils.cmd.Command` class.  New commands may directly inherit from
+:class:`distutils2.cmd.Command` class.  New commands may directly inherit from
 :class:`Command`, while replacements often derive from :class:`Command`
 indirectly, directly subclassing the command they are replacing.  Commands are
 required to derive from :class:`Command`.
@@ -41,7 +41,7 @@ provides that support.  This is really hard for many reasons.
 
 The most common, and possibly the most reasonable for most needs, is to include
 the new implementations with your :file:`setup.py` script, and cause the
-:func:`distutils.core.setup` function use them::
+:func:`distutils2.core.setup` function use them::
 
    from distutils2.core import setup
    from distutils2.command.build_py import build_py as _build_py
@@ -75,9 +75,9 @@ file provided with a package.
 This new option can be used to add any number of packages to the list of
 packages searched for command implementations; multiple package names should be
 separated by commas.  When not specified, the search is only performed in the
-:mod:`distutils.command` package.  When :file:`setup.py` is run with the option
+:mod:`distutils2.command` package.  When :file:`setup.py` is run with the option
 :option:`--command-packages` :option:`distcmds,buildcmds`, however, the packages
-:mod:`distutils.command`, :mod:`distcmds`, and :mod:`buildcmds` will be searched
+:mod:`distutils2.command`, :mod:`distcmds`, and :mod:`buildcmds` will be searched
 in that order.  New commands are expected to be implemented in modules of the
 same name as the command by classes sharing the same name.  Given the example
 command-line option above, the command :command:`bdist_openpkg` could be

@@ -713,13 +713,9 @@ Notes:
    I.e., in the current directory (usually the location of the setup script).
 
 (4)
-   (See also note (1).)  Under Python 1.6 and later, Python's default "installation
-   prefix" is :file:`C:\\Python`, so the system configuration file is normally
-   :file:`C:\\Python\\Lib\\distutils\\distutils.cfg`. Under Python 1.5.2, the
-   default prefix was :file:`C:\\Program Files\\Python`, and the Distutils were not
-   part of the standard library---so the system configuration file would be
-   :file:`C:\\Program Files\\Python\\distutils\\distutils.cfg` in a standard Python
-   1.5.2 installation under Windows.
+   (See also note (1).) Python's default installation prefix is
+   :file:`C:\\Python`, so the system configuration file is normally
+   :file:`C:\\Python\\Lib\\distutils\\distutils.cfg`.
 
 (5)
    On Windows, if the :envvar:`HOME` environment variable is not defined,
