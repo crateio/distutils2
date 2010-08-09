@@ -455,9 +455,8 @@ way.  From the PyXML setup script::
           scripts=['scripts/xmlproc_parse', 'scripts/xmlproc_val']
           )
 
-.. versionchanged:: 2.7
-    All the scripts will also be added to the ``MANIFEST``
-    file if no template is provided. See :ref:`manifest`.
+All the scripts will also be added to the ``MANIFEST`` file if no template is
+provided. See :ref:`manifest`.
 
 .. _distutils-installing-package-data:
 
@@ -501,12 +500,6 @@ The corresponding call to :func:`setup` might be::
           package_data={'mypkg': ['data/*.dat']},
           )
 
-.. versionadded:: 2.4
-
-.. versionchanged:: 2.7
-    All the files that match ``package_data`` will be added to the ``MANIFEST``
-    file if no template is provided. See :ref:`manifest`.
-
 
 .. _distutils-additional-files:
 
@@ -544,9 +537,8 @@ without specifying a target directory, but this is not recommended, and the
 files directly in the target directory, an empty string should be given as the
 directory.
 
-.. versionchanged:: 2.7
-    All the files that match ``data_files`` will be added to the ``MANIFEST``
-    file if no template is provided. See :ref:`manifest`.
+All the files that match ``data_files`` will be added to the ``MANIFEST`` file
+if no template is provided. See :ref:`manifest`.
 
 
 
@@ -606,8 +598,7 @@ Notes:
     Either the author or the maintainer must be identified.
 
 (4)
-    These fields should not be used if your package is to be compatible with Python
-    versions prior to 2.2.3 or 2.3.  The list is available from the `PyPI website
+    The list of fields is available from the `PyPI website
     <http://pypi.python.org/pypi>`_.
 
 (5)
@@ -630,8 +621,6 @@ Notes:
 
 'list of strings'
     See below.
-
-None of the string values may be Unicode.
 
 Encoding the version information is an art in itself. Python packages generally
 adhere to the version format *major.minor[.patch][sub]*. The major number is 0
