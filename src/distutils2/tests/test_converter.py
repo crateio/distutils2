@@ -1,8 +1,8 @@
 """Tests for distutils.converter."""
 import os
 import sys
-import unittest2
 from distutils2.converter import DistutilsRefactoringTool
+from distutils2.tests.support import unittest
 
 _CURDIR = os.path.dirname(__file__)
 
@@ -15,9 +15,9 @@ def _read_file(path):
         f.close()
 
 
-class ConverterTestCase(unittest2.TestCase):
+class ConverterTestCase(unittest.TestCase):
 
-    @unittest2.skipUnless(not sys.version < '2.6', 'Needs Python >=2.6')
+    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_conversions(self):
         # for all XX_before in the conversions/ dir
         # we run the refactoring tool
@@ -30,10 +30,10 @@ class ConverterTestCase(unittest2.TestCase):
             wanted = file_.replace('before', 'after')
             wanted = _read_file(os.path.join(convdir, wanted))
             res = ref.refactor_string(original, 'setup.py')
-            self.assertEquals(str(res), wanted)
+            self.assertEqual(str(res), wanted)
 
 def test_suite():
-    return unittest2.makeSuite(ConverterTestCase)
+    return unittest.makeSuite(ConverterTestCase)
 
 if __name__ == '__main__':
-    unittest2.main(defaultTest="test_suite")
+    unittest.main(defaultTest="test_suite")

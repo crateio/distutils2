@@ -1,8 +1,7 @@
+# -*- encoding: utf-8 -*-
 """Tests for distutils.command.register."""
-# -*- encoding: utf8 -*-
 import sys
 import os
-import unittest2
 import getpass
 import urllib2
 import warnings
@@ -19,7 +18,8 @@ from distutils2.core import Distribution
 from distutils2.errors import DistutilsSetupError
 
 from distutils2.tests import support
-from distutils2.tests.test_config import PYPIRC, PyPIRCCommandTestCase
+from distutils2.tests.support import unittest
+
 
 PYPIRC_NOPASSWORD = """\
 [distutils]
@@ -68,10 +68,15 @@ class FakeOpener(object):
     def read(self):
         return 'xxx'
 
-class RegisterTestCase(PyPIRCCommandTestCase):
+class RegisterTestCase(support.TempdirManager, support.EnvironGuard,
+                       unittest.TestCase):
 
     def setUp(self):
         super(RegisterTestCase, self).setUp()
+        self.tmp_dir = self.mkdtemp()
+        self.rc = os.path.join(self.tmp_dir, '.pypirc')
+        os.environ['HOME'] = self.tmp_dir
+
         # patching the password prompt
         self._old_getpass = getpass.getpass
         def _getpass(prompt):
@@ -124,7 +129,7 @@ class RegisterTestCase(PyPIRCCommandTestCase):
 
         # with the content similar to WANTED_PYPIRC
         content = open(self.rc).read()
-        self.assertEquals(content, WANTED_PYPIRC)
+        self.assertEqual(content, WANTED_PYPIRC)
 
         # now let's make sure the .pypirc file generated
         # really works : we shouldn't be asked anything
@@ -141,22 +146,22 @@ class RegisterTestCase(PyPIRCCommandTestCase):
         self.assertTrue(self.conn.reqs, 2)
         req1 = dict(self.conn.reqs[0].headers)
         req2 = dict(self.conn.reqs[1].headers)
-        self.assertEquals(req2['Content-length'], req1['Content-length'])
+        self.assertEqual(req2['Content-length'], req1['Content-length'])
         self.assertTrue('xxx' in self.conn.reqs[1].data)
 
     def test_password_not_in_file(self):
 
         self.write_file(self.rc, PYPIRC_NOPASSWORD)
         cmd = self._get_cmd()
-        cmd._set_config()
         cmd.finalize_options()
+        cmd._set_config()
         cmd.send_metadata()
 
         # dist.password should be set
         # therefore used afterwards by other commands
-        self.assertEquals(cmd.distribution.password, 'password')
+        self.assertEqual(cmd.distribution.password, 'password')
 
-    def test_registering(self):
+    def test_registration(self):
         # this test runs choice 2
         cmd = self._get_cmd()
         inputs = RawInputs('2', 'tarek', 'tarek@ziade.org')
@@ -171,7 +176,7 @@ class RegisterTestCase(PyPIRCCommandTestCase):
         self.assertTrue(self.conn.reqs, 1)
         req = self.conn.reqs[0]
         headers = dict(req.headers)
-        self.assertEquals(headers['Content-length'], '608')
+        self.assertEqual(headers['Content-length'], '608')
         self.assertTrue('tarek' in req.data)
 
     def test_password_reset(self):
@@ -189,10 +194,10 @@ class RegisterTestCase(PyPIRCCommandTestCase):
         self.assertTrue(self.conn.reqs, 1)
         req = self.conn.reqs[0]
         headers = dict(req.headers)
-        self.assertEquals(headers['Content-length'], '290')
+        self.assertEqual(headers['Content-length'], '290')
         self.assertTrue('tarek' in req.data)
 
-    @unittest2.skipUnless(DOCUTILS_SUPPORT, 'needs docutils')
+    @unittest.skipUnless(DOCUTILS_SUPPORT, 'needs docutils')
     def test_strict(self):
         # testing the script option
         # when on, the register command stops if
@@ -205,7 +210,7 @@ class RegisterTestCase(PyPIRCCommandTestCase):
         cmd.strict = 1
         self.assertRaises(DistutilsSetupError, cmd.run)
 
-        # metadata are OK but long_description is broken
+        # metadata is OK but long_description is broken
         metadata = {'home_page': 'xxx', 'author': 'xxx',
                     'author_email': u'éxéxé',
                     'name': 'xxx', 'version': 'xxx',
@@ -246,11 +251,11 @@ class RegisterTestCase(PyPIRCCommandTestCase):
         cmd.ensure_finalized()
         cmd.distribution.metadata['Requires-Dist'] = ['lxml']
         data = cmd.build_post_data('submit')
-        self.assertEquals(data['metadata_version'], '1.2')
-        self.assertEquals(data['requires_dist'], ['lxml'])
+        self.assertEqual(data['metadata_version'], '1.2')
+        self.assertEqual(data['requires_dist'], ['lxml'])
 
 def test_suite():
-    return unittest2.makeSuite(RegisterTestCase)
+    return unittest.makeSuite(RegisterTestCase)
 
 if __name__ == "__main__":
-    unittest2.main(defaultTest="test_suite")
+    unittest.main(defaultTest="test_suite")

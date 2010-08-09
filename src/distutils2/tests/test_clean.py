@@ -1,15 +1,15 @@
 """Tests for distutils.command.clean."""
 import sys
 import os
-import unittest2
 import getpass
 
 from distutils2.command.clean import clean
 from distutils2.tests import support
+from distutils2.tests.support import unittest
 
 class cleanTestCase(support.TempdirManager,
                     support.LoggingSilencer,
-                    unittest2.TestCase):
+                    unittest.TestCase):
 
     def test_simple_run(self):
         pkg_dir, dist = self.create_dist()
@@ -44,7 +44,7 @@ class cleanTestCase(support.TempdirManager,
         cmd.run()
 
 def test_suite():
-    return unittest2.makeSuite(cleanTestCase)
+    return unittest.makeSuite(cleanTestCase)
 
 if __name__ == "__main__":
-    unittest2.main(defaultTest="test_suite")
+    unittest.main(defaultTest="test_suite")

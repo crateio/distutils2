@@ -3,7 +3,6 @@
 import os
 import os.path
 import sys
-import unittest2
 import site
 
 from distutils2._backport import sysconfig
@@ -22,11 +21,12 @@ from distutils2.core import Distribution
 from distutils2.errors import DistutilsOptionError
 
 from distutils2.tests import support
+from distutils2.tests.support import unittest
 
 class InstallTestCase(support.TempdirManager,
                       support.EnvironGuard,
                       support.LoggingSilencer,
-                      unittest2.TestCase):
+                      unittest.TestCase):
 
     def test_home_installation_scheme(self):
         # This ensure two things:
@@ -75,11 +75,9 @@ class InstallTestCase(support.TempdirManager,
         check_path(cmd.install_scripts, os.path.join(destination, "bin"))
         check_path(cmd.install_data, destination)
 
+    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_user_site(self):
-        # site.USER_SITE was introduced in 2.6
-        if sys.version < '2.6':
-            return
-
+        # test install with --user
         # preparing the environment for the test
         self.old_user_base = get_config_var('userbase')
         self.old_user_site = get_path('purelib', '%s_user' % os.name)
@@ -139,23 +137,23 @@ class InstallTestCase(support.TempdirManager,
 
         # two elements
         cmd.handle_extra_path()
-        self.assertEquals(cmd.extra_path, ['path', 'dirs'])
-        self.assertEquals(cmd.extra_dirs, 'dirs')
-        self.assertEquals(cmd.path_file, 'path')
+        self.assertEqual(cmd.extra_path, ['path', 'dirs'])
+        self.assertEqual(cmd.extra_dirs, 'dirs')
+        self.assertEqual(cmd.path_file, 'path')
 
         # one element
         cmd.extra_path = ['path']
         cmd.handle_extra_path()
-        self.assertEquals(cmd.extra_path, ['path'])
-        self.assertEquals(cmd.extra_dirs, 'path')
-        self.assertEquals(cmd.path_file, 'path')
+        self.assertEqual(cmd.extra_path, ['path'])
+        self.assertEqual(cmd.extra_dirs, 'path')
+        self.assertEqual(cmd.path_file, 'path')
 
         # none
         dist.extra_path = cmd.extra_path = None
         cmd.handle_extra_path()
-        self.assertEquals(cmd.extra_path, None)
-        self.assertEquals(cmd.extra_dirs, '')
-        self.assertEquals(cmd.path_file, None)
+        self.assertEqual(cmd.extra_path, None)
+        self.assertEqual(cmd.extra_dirs, '')
+        self.assertEqual(cmd.path_file, None)
 
         # three elements (no way !)
         cmd.extra_path = 'path,dirs,again'
@@ -195,13 +193,17 @@ class InstallTestCase(support.TempdirManager,
         cmd.ensure_finalized()
         cmd.run()
 
-        # let's check the RECORD file was created with one
-        # line (the egg info file)
+        # let's check the RECORD file was created with four
+        # lines, one for each .dist-info entry: METADATA,
+        # INSTALLER, REQUSTED, RECORD
         f = open(cmd.record)
         try:
-            self.assertEquals(len(f.readlines()), 1)
+            self.assertEqual(len(f.readlines()), 4)
         finally:
             f.close()
+
+        # XXX test that fancy_getopt is okay with options named
+        # record and no-record but unrelated
 
     def _test_debug_mode(self):
         # this covers the code called when DEBUG is set
@@ -214,7 +216,7 @@ class InstallTestCase(support.TempdirManager,
         self.assertTrue(len(self.logs) > old_logs_len)
 
 def test_suite():
-    return unittest2.makeSuite(InstallTestCase)
+    return unittest.makeSuite(InstallTestCase)
 
 if __name__ == "__main__":
-    unittest2.main(defaultTest="test_suite")
+    unittest.main(defaultTest="test_suite")

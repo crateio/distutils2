@@ -1,11 +1,11 @@
 """Tests for distutils.ccompiler."""
 import os
-import unittest2
 from distutils2.tests import captured_stdout
 
 from distutils2.compiler.ccompiler import (gen_lib_options, CCompiler,
                                  get_default_compiler, customize_compiler)
 from distutils2.tests import support
+from distutils2.tests.support import unittest
 
 class FakeCompiler(object):
     def library_dir_option(self, dir):
@@ -20,7 +20,7 @@ class FakeCompiler(object):
     def library_option(self, lib):
         return "-l" + lib
 
-class CCompilerTestCase(support.EnvironGuard, unittest2.TestCase):
+class CCompilerTestCase(support.EnvironGuard, unittest.TestCase):
 
     def test_gen_lib_options(self):
         compiler = FakeCompiler()
@@ -31,7 +31,7 @@ class CCompilerTestCase(support.EnvironGuard, unittest2.TestCase):
         opts = gen_lib_options(compiler, libdirs, runlibdirs, libs)
         wanted = ['-Llib1', '-Llib2', '-cool', '-Rrunlib1', 'found',
                   '-lname2']
-        self.assertEquals(opts, wanted)
+        self.assertEqual(opts, wanted)
 
     def test_customize_compiler(self):
 
@@ -51,10 +51,10 @@ class CCompilerTestCase(support.EnvironGuard, unittest2.TestCase):
 
         comp = compiler()
         customize_compiler(comp)
-        self.assertEquals(comp.exes['archiver'], 'my_ar -arflags')
+        self.assertEqual(comp.exes['archiver'], 'my_ar -arflags')
 
 def test_suite():
-    return unittest2.makeSuite(CCompilerTestCase)
+    return unittest.makeSuite(CCompilerTestCase)
 
 if __name__ == "__main__":
-    unittest2.main(defaultTest="test_suite")
+    unittest.main(defaultTest="test_suite")

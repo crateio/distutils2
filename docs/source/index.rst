@@ -1,31 +1,30 @@
-.. _distutils-index:
+.. Distutils2 documentation master file, created by
+   sphinx-quickstart on Sun Feb 28 15:23:06 2010.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
 
-###############################
-  Distributing Python Modules
-###############################
+Welcome to Distutils2's documentation!
+======================================
 
-:Authors: Greg Ward, Anthony Baxter
-:Email: distutils-sig@python.org
-:Release: |version|
-:Date: |today|
-
-This document describes the Python Distribution Utilities ("Distutils") from
-the module developer's point of view, describing how to use the Distutils to
-make Python modules and extensions easily available to a wider audience with
-very little overhead for build/release/install mechanics.
+Contents:
 
 .. toctree::
    :maxdepth: 2
    :numbered:
 
-   introduction.rst
-   setupscript.rst
-   configfile.rst
-   sourcedist.rst
-   builtdist.rst
-   packageindex.rst
-   uploading.rst
-   examples.rst
-   extending.rst
-   commandref.rst
-   apiref.rst
+   metadata
+   pkgutil
+   depgraph
+   commands
+   command_hooks
+   test_framework
+   projects-index
+   version
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+

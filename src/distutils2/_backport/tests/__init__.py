@@ -1,12 +1,13 @@
 import os
 import sys
-import unittest2
+
+from distutils2.tests.support import unittest
 
 
-here = os.path.dirname(__file__)
+here = os.path.dirname(__file__) or os.curdir
 
 def test_suite():
-    suite = unittest2.TestSuite()
+    suite = unittest.TestSuite()
     for fn in os.listdir(here):
         if fn.startswith("test") and fn.endswith(".py"):
             modname = "distutils2._backport.tests." + fn[:-3]
@@ -15,4 +16,5 @@ def test_suite():
             suite.addTest(module.test_suite())
     return suite
 
-
+if __name__ == '__main__':
+    unittest.main(defaultTest='test_suite')

@@ -68,11 +68,7 @@ class install_lib(Command):
         self.set_undefined_options('install',
                                    ('build_lib', 'build_dir'),
                                    ('install_lib', 'install_dir'),
-                                   ('force', 'force'),
-                                   ('compile', 'compile'),
-                                   ('optimize', 'optimize'),
-                                   ('skip_build', 'skip_build'),
-                                  )
+                                   'force', 'compile', 'optimize', 'skip_build')
 
         if self.compile is None:
             self.compile = 1

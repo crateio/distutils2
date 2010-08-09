@@ -56,13 +56,6 @@ import operator
 if not hasattr(os, 'SEEK_SET'):
     os.SEEK_SET = 0
 
-if sys.platform == 'mac':
-    # This module needs work for MacOS9, especially in the area of pathname
-    # handling. In many places it is assumed a simple substitution of / by the
-    # local os.path.sep is good enough to convert pathnames, but this does not
-    # work with the mac rooted:path:name versus :nonrooted:path:name syntax
-    raise ImportError, "tarfile does not work for platform==mac"
-
 try:
     import grp, pwd
 except ImportError:
@@ -370,7 +363,7 @@ class SubsequentHeaderError(HeaderError):
 #---------------------------
 # internal stream interface
 #---------------------------
-class _LowLevelFile:
+class _LowLevelFile(object):
     """Low-level file object. Supports reading and writing.
        It is used instead of a regular file object for streaming
        access.
@@ -394,7 +387,7 @@ class _LowLevelFile:
     def write(self, s):
         os.write(self.fd, s)
 
-class _Stream:
+class _Stream(object):
     """Class that serves as an adapter between TarFile and
        a stream-like object.  The stream-like object only
        needs to have a read() or write() method and is accessed
@@ -2003,8 +1996,10 @@ class TarFile(object):
         # Append the tar header and data to the archive.
         if tarinfo.isreg():
             f = bltn_open(name, "rb")
-            self.addfile(tarinfo, f)
-            f.close()
+            try:
+                self.addfile(tarinfo, f)
+            finally:
+                f.close()
 
         elif tarinfo.isdir():
             self.addfile(tarinfo)
@@ -2214,9 +2209,11 @@ class TarFile(object):
         """
         source = self.extractfile(tarinfo)
         target = bltn_open(targetpath, "wb")
-        copyfileobj(source, target)
-        source.close()
-        target.close()
+        try:
+            copyfileobj(source, target)
+        finally:
+            source.close()
+            target.close()
 
     def makeunknown(self, tarinfo, targetpath):
         """Make a file from a TarInfo object with an unknown type
@@ -2423,7 +2420,7 @@ class TarFile(object):
             print >> sys.stderr, msg
 # class TarFile
 
-class TarIter:
+class TarIter(object):
     """Iterator Class.
 
        for tarinfo in TarFile(...):
@@ -2460,7 +2457,7 @@ class TarIter:
         return tarinfo
 
 # Helper classes for sparse file support
-class _section:
+class _section(object):
     """Base class for _data and _hole.
     """
     def __init__(self, offset, size):
@@ -2507,7 +2504,7 @@ class _ringbuffer(list):
 #---------------------------------------------
 TAR_PLAIN = 0           # zipfile.ZIP_STORED
 TAR_GZIPPED = 8         # zipfile.ZIP_DEFLATED
-class TarFileCompat:
+class TarFileCompat(object):
     """TarFile class compatible with standard module zipfile's
        ZipFile class.
     """
@@ -2564,8 +2561,10 @@ def is_tarfile(name):
        are able to handle, else return False.
     """
     try:
-        t = open(name)
-        t.close()
+        try:
+            t = open(name)
+        finally:
+            t.close()
         return True
     except TarError:
         return False

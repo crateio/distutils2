@@ -153,10 +153,7 @@ class bdist_msi (Command):
         else:
             self.versions = list(self.all_versions)
 
-        self.set_undefined_options('bdist',
-                                   ('dist_dir', 'dist_dir'),
-                                   ('plat_name', 'plat_name'),
-                                   )
+        self.set_undefined_options('bdist', 'dist_dir', 'plat_name')
 
         if self.pre_install_script:
             raise DistutilsOptionError, "the pre-install-script feature is not yet implemented"
@@ -177,12 +174,12 @@ class bdist_msi (Command):
         if not self.skip_build:
             self.run_command('build')
 
-        install = self.reinitialize_command('install', reinit_subcommands=1)
+        install = self.get_reinitialized_command('install', reinit_subcommands=1)
         install.prefix = self.bdist_dir
         install.skip_build = self.skip_build
         install.warn_dir = 0
 
-        install_lib = self.reinitialize_command('install_lib')
+        install_lib = self.get_reinitialized_command('install_lib')
         # we do not want to include pyc or pyo files
         install_lib.compile = 0
         install_lib.optimize = 0

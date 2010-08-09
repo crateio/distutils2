@@ -18,12 +18,11 @@ except ImportError:
     from distutils2._backport.shutil import get_archive_formats
 
 from distutils2.core import Command
-from distutils2 import util
 from distutils2.errors import (DistutilsPlatformError, DistutilsOptionError,
-                              DistutilsTemplateError)
+                               DistutilsTemplateError)
 from distutils2.manifest import Manifest
 from distutils2 import log
-from distutils2.util import convert_path, newer
+from distutils2.util import convert_path
 
 def show_formats():
     """Print all possible values for the 'formats' option (used by
@@ -44,12 +43,6 @@ _COMMENTED_LINE = re.compile('^#.*\n$|^\w*\n$', re.M)
 class sdist(Command):
 
     description = "create a source distribution (tarball, zip file, etc.)"
-
-    def checking_metadata(self):
-        """Callable used for the check sub-command.
-
-        Placed here so user_options can view it"""
-        return self.metadata_check
 
     user_options = [
         ('template=', 't',
@@ -77,8 +70,8 @@ class sdist(Command):
         ('dist-dir=', 'd',
          "directory to put the source distribution archive(s) in "
          "[default: dist]"),
-        ('medata-check', None,
-         "Ensure that all required elements of meta-data "
+        ('check-metadata', None,
+         "Ensure that all required elements of metadata "
          "are supplied. Warn if any missing. [default]"),
         ('owner=', 'u',
          "Owner name used when creating a tar file [default: current user]"),
@@ -87,7 +80,7 @@ class sdist(Command):
         ]
 
     boolean_options = ['use-defaults', 'prune',
-                       'manifest-only', 'keep-temp', 'metadata-check']
+                       'manifest-only', 'keep-temp', 'check-metadata']
 
     help_options = [
         ('help-formats', None,
@@ -99,8 +92,6 @@ class sdist(Command):
 
     default_format = {'posix': 'gztar',
                       'nt': 'zip' }
-
-    sub_commands = [('check', checking_metadata)]
 
     def initialize_options(self):
         # 'template' and 'manifest' are, respectively, the names of
@@ -162,9 +153,9 @@ class sdist(Command):
         # manifest
         self.filelist.clear()
 
-        # Run sub commands
-        for cmd_name in self.get_sub_commands():
-            self.run_command(cmd_name)
+        # Check the package metadata
+        if self.metadata_check:
+            self.run_command('check')
 
         # Do whatever it takes to get the list of files to process
         # (process the manifest template, read an existing manifest,
@@ -178,14 +169,6 @@ class sdist(Command):
         # Otherwise, go ahead and create the source distribution tarball,
         # or zipfile, or whatever.
         self.make_distribution()
-
-    def check_metadata(self):
-        """Deprecated API."""
-        warn("distutils.command.sdist.check_metadata is deprecated, \
-              use the check command instead", PendingDeprecationWarning)
-        check = self.distribution.get_command_obj('check')
-        check.ensure_finalized()
-        check.run()
 
     def get_file_list(self):
         """Figure out the list of files to include in the source
@@ -252,47 +235,9 @@ class sdist(Command):
             if files:
                 self.filelist.extend(files)
 
-        # build_py is used to get:
-        #  - python modules
-        #  - files defined in package_data
-        build_py = self.get_finalized_command('build_py')
-
-        # getting python files
-        if self.distribution.has_pure_modules():
-            self.filelist.extend(build_py.get_source_files())
-
-        # getting package_data files
-        # (computed in build_py.data_files by build_py.finalize_options)
-        for pkg, src_dir, build_dir, filenames in build_py.data_files:
-            for filename in filenames:
-                self.filelist.append(os.path.join(src_dir, filename))
-
-        # getting distribution.data_files
-        if self.distribution.has_data_files():
-            for item in self.distribution.data_files:
-                if isinstance(item, str): # plain file
-                    item = convert_path(item)
-                    if os.path.isfile(item):
-                        self.filelist.append(item)
-                else:    # a (dirname, filenames) tuple
-                    dirname, filenames = item
-                    for f in filenames:
-                        f = convert_path(f)
-                        if os.path.isfile(f):
-                            self.filelist.append(f)
-
-        if self.distribution.has_ext_modules():
-            build_ext = self.get_finalized_command('build_ext')
-            self.filelist.extend(build_ext.get_source_files())
-
-        if self.distribution.has_c_libraries():
-            build_clib = self.get_finalized_command('build_clib')
-            self.filelist.extend(build_clib.get_source_files())
-
-        if self.distribution.has_scripts():
-            build_scripts = self.get_finalized_command('build_scripts')
-            self.filelist.extend(build_scripts.get_source_files())
-
+        for cmd_name in self.distribution.get_command_names():
+            cmd_obj = self.get_finalized_command(cmd_name)
+            self.filelist.extend(cmd_obj.get_source_files())
 
     def prune_file_list(self):
         """Prune off branches that might slip into the file list as created
@@ -371,7 +316,7 @@ class sdist(Command):
         'self.keep_temp' is true).  The list of archive files created is
         stored so it can be retrieved later by 'get_archive_files()'.
         """
-        # Don't warn about missing meta-data here -- should be (and is!)
+        # Don't warn about missing metadata here -- should be (and is!)
         # done elsewhere.
         base_dir = self.distribution.get_fullname()
         base_name = os.path.join(self.dist_dir, base_dir)

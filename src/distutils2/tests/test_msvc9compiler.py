@@ -1,10 +1,10 @@
 """Tests for distutils.msvc9compiler."""
 import sys
-import unittest2
 import os
 
 from distutils2.errors import DistutilsPlatformError
 from distutils2.tests import support
+from distutils2.tests.support import unittest
 
 _MANIFEST = """\
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -62,9 +62,9 @@ _CLEANED_MANIFEST = """\
 
 
 class msvc9compilerTestCase(support.TempdirManager,
-                            unittest2.TestCase):
+                            unittest.TestCase):
 
-    @unittest2.skipUnless(sys.platform=="win32", "These tests are only for win32")
+    @unittest.skipUnless(sys.platform == "win32", "runs only on win32")
     def test_no_compiler(self):
         # makes sure query_vcvarsall throws
         # a DistutilsPlatformError if the compiler
@@ -86,7 +86,7 @@ class msvc9compilerTestCase(support.TempdirManager,
         finally:
             msvc9compiler.find_vcvarsall = old_find_vcvarsall
 
-    @unittest2.skipUnless(sys.platform=="win32", "These tests are only for win32")
+    @unittest.skipUnless(sys.platform == "win32", "runs only on win32")
     def test_reg_class(self):
         from distutils2.msvccompiler import get_build_version
         if get_build_version() < 8.0:
@@ -105,35 +105,39 @@ class msvc9compilerTestCase(support.TempdirManager,
         import _winreg
         HKCU = _winreg.HKEY_CURRENT_USER
         keys = Reg.read_keys(HKCU, 'xxxx')
-        self.assertEquals(keys, None)
+        self.assertEqual(keys, None)
 
         keys = Reg.read_keys(HKCU, r'Control Panel')
         self.assertTrue('Desktop' in keys)
 
-    @unittest2.skipUnless(sys.platform=="win32", "These tests are only for win32")
+    @unittest.skipUnless(sys.platform == "win32", "runs only on win32")
     def test_remove_visual_c_ref(self):
         from distutils2.msvc9compiler import MSVCCompiler
         tempdir = self.mkdtemp()
         manifest = os.path.join(tempdir, 'manifest')
         f = open(manifest, 'w')
-        f.write(_MANIFEST)
-        f.close()
+        try:
+            f.write(_MANIFEST)
+        finally:
+            f.close()
 
         compiler = MSVCCompiler()
         compiler._remove_visual_c_ref(manifest)
 
         # see what we got
         f = open(manifest)
-        # removing trailing spaces
-        content = '\n'.join([line.rstrip() for line in f.readlines()])
-        f.close()
+        try:
+            # removing trailing spaces
+            content = '\n'.join([line.rstrip() for line in f.readlines()])
+        finally:
+            f.close()
 
         # makes sure the manifest was properly cleaned
-        self.assertEquals(content, _CLEANED_MANIFEST)
+        self.assertEqual(content, _CLEANED_MANIFEST)
 
 
 def test_suite():
-    return unittest2.makeSuite(msvc9compilerTestCase)
+    return unittest.makeSuite(msvc9compilerTestCase)
 
 if __name__ == "__main__":
-    unittest2.main(defaultTest="test_suite")
+    unittest.main(defaultTest="test_suite")

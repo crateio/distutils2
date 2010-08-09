@@ -3,27 +3,31 @@
 import os
 import sys
 import StringIO
-import unittest2
 
 from distutils2.command.build_py import build_py
 from distutils2.core import Distribution
 from distutils2.errors import DistutilsFileError
 
 from distutils2.tests import support
+from distutils2.tests.support import unittest
 
 
 class BuildPyTestCase(support.TempdirManager,
                       support.LoggingSilencer,
-                      unittest2.TestCase):
+                      unittest.TestCase):
 
     def test_package_data(self):
         sources = self.mkdtemp()
         f = open(os.path.join(sources, "__init__.py"), "w")
-        f.write("# Pretend this is a package.")
-        f.close()
+        try:
+            f.write("# Pretend this is a package.")
+        finally:
+            f.close()
         f = open(os.path.join(sources, "README.txt"), "w")
-        f.write("Info about this package")
-        f.close()
+        try:
+            f.write("Info about this package")
+        finally:
+            f.close()
 
         destination = self.mkdtemp()
 
@@ -90,8 +94,8 @@ class BuildPyTestCase(support.TempdirManager,
             os.chdir(cwd)
             sys.stdout = old_stdout
 
-    @unittest2.skipUnless(hasattr(sys, 'dont_write_bytecode'),
-                         'dont_write_bytecode support')
+    @unittest.skipUnless(hasattr(sys, 'dont_write_bytecode'),
+                         'sys.dont_write_bytecode not supported')
     def test_dont_write_bytecode(self):
         # makes sure byte_compile is not used
         pkg_dir, dist = self.create_dist()
@@ -109,7 +113,7 @@ class BuildPyTestCase(support.TempdirManager,
         self.assertTrue('byte-compiling is disabled' in self.logs[0][1])
 
 def test_suite():
-    return unittest2.makeSuite(BuildPyTestCase)
+    return unittest.makeSuite(BuildPyTestCase)
 
 if __name__ == "__main__":
-    unittest2.main(defaultTest="test_suite")
+    unittest.main(defaultTest="test_suite")

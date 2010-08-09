@@ -6,7 +6,7 @@ in the distutils.command package.
 
 __revision__ = "$Id: cmd.py 75192 2009-10-02 23:49:48Z tarek.ziade $"
 
-import sys, os, re
+import os, re
 from distutils2.errors import DistutilsOptionError
 from distutils2 import util
 from distutils2 import log
@@ -19,7 +19,7 @@ try:
 except ImportError:
     from distutils2._backport.shutil import make_archive
 
-class Command:
+class Command(object):
     """Abstract base class for defining command classes, the "worker bees"
     of the Distutils.  A useful analogy for command classes is to think of
     them as subroutines with local variables called "options".  The options
@@ -51,14 +51,19 @@ class Command:
     # defined.  The canonical example is the "install" command.
     sub_commands = []
 
+    # Pre and post command hooks are run just before or just after the command
+    # itself. They are simple functions that receive the command instance. They
+    # should be specified as dotted strings.
+    pre_hook = None
+    post_hook = None
+
 
     # -- Creation/initialization methods -------------------------------
 
     def __init__(self, dist):
         """Create and initialize a new Command object.  Most importantly,
         invokes the 'initialize_options()' method, which is the real
-        initializer and depends on the actual command being
-        instantiated.
+        initializer and depends on the actual command being instantiated.
         """
         # late import because of mutual dependence between these classes
         from distutils2.dist import Distribution
@@ -189,6 +194,31 @@ class Command:
         """
         log.log(level, msg)
 
+    # -- External interface --------------------------------------------
+    # (called by outsiders)
+
+    def get_source_files(self):
+        """Return the list of files that are used as inputs to this command,
+        i.e. the files used to generate the output files.  The result is used
+        by the `sdist` command in determining the set of default files.
+
+        Command classes should implement this method if they operate on files
+        from the source tree.
+        """
+        return []
+
+    def get_outputs(self):
+        """Return the list of files that would be produced if this command
+        were actually run.  Not affected by the "dry-run" flag or whether
+        any other commands have been run.
+
+        Command classes should implement this method if they produce any
+        output files that get consumed by another command.  e.g., `build_ext`
+        returns the list of built extension modules, but not any temporary
+        files used in the compilation process.
+        """
+        return []
+
     # -- Option validation methods -------------------------------------
     # (these are very handy in writing the 'finalize_options()' method)
     #
@@ -273,26 +303,30 @@ class Command:
         else:
             return self.__class__.__name__
 
-    def set_undefined_options(self, src_cmd, *option_pairs):
-        """Set the values of any "undefined" options from corresponding
-        option values in some other command object.  "Undefined" here means
-        "is None", which is the convention used to indicate that an option
-        has not been changed between 'initialize_options()' and
-        'finalize_options()'.  Usually called from 'finalize_options()' for
-        options that depend on some other command rather than another
-        option of the same command.  'src_cmd' is the other command from
-        which option values will be taken (a command object will be created
-        for it if necessary); the remaining arguments are
-        '(src_option,dst_option)' tuples which mean "take the value of
-        'src_option' in the 'src_cmd' command object, and copy it to
-        'dst_option' in the current command object".
+    def set_undefined_options(self, src_cmd, *options):
+        """Set values of undefined options from another command.
+
+        Undefined options are options set to None, which is the convention
+        used to indicate that an option has not been changed between
+        'initialize_options()' and 'finalize_options()'.  This method is
+        usually called from 'finalize_options()' for options that depend on
+        some other command rather than another option of the same command,
+        typically subcommands.
+
+        The 'src_cmd' argument is the other command from which option values
+        will be taken (a command object will be created for it if necessary);
+        the remaining positional arguments are strings that give the name of
+        the option to set. If the name is different on the source and target
+        command, you can pass a tuple with '(name_on_source, name_on_dest)' so
+        that 'self.name_on_dest' will be set from 'src_cmd.name_on_source'.
         """
-
-        # Option_pairs: list of (src_option, dst_option) tuples
-
         src_cmd_obj = self.distribution.get_command_obj(src_cmd)
         src_cmd_obj.ensure_finalized()
-        for (src_option, dst_option) in option_pairs:
+        for obj in options:
+            if isinstance(obj, tuple):
+                src_option, dst_option = obj
+            else:
+                src_option, dst_option = obj, obj
             if getattr(self, dst_option) is None:
                 setattr(self, dst_option,
                         getattr(src_cmd_obj, src_option))
@@ -308,10 +342,8 @@ class Command:
         cmd_obj.ensure_finalized()
         return cmd_obj
 
-    # XXX rename to 'get_reinitialized_command()'? (should do the
-    # same in dist.py, if so)
-    def reinitialize_command(self, command, reinit_subcommands=0):
-        return self.distribution.reinitialize_command(
+    def get_reinitialized_command(self, command, reinit_subcommands=0):
+        return self.distribution.get_reinitialized_command(
             command, reinit_subcommands)
 
     def run_command(self, command):
@@ -351,8 +383,10 @@ class Command:
         if os.path.isdir(name) or name == '':
             return
         if dry_run:
+            head = ''
             for part in name.split(os.sep):
-                self.log(part)
+                log.info("created directory %s%s", head, part)
+                head += part + os.sep
             return
         os.makedirs(name, mode)
 
@@ -387,7 +421,7 @@ class Command:
 
     def spawn(self, cmd, search_path=1, level=1):
         """Spawn an external command respecting dry-run flag."""
-        from distutils2.spawn import spawn
+        from distutils2.util import spawn
         spawn(cmd, search_path, dry_run= self.dry_run)
 
     def make_archive(self, base_name, format, root_dir=None, base_dir=None,
@@ -423,7 +457,7 @@ class Command:
         # If 'outfile' must be regenerated (either because it doesn't
         # exist, is out-of-date, or the 'force' flag is true) then
         # perform the action that presumably regenerates it
-        if self.force or dep_util.newer_group(infiles, outfile):
+        if self.force or util.newer_group(infiles, outfile):
             self.execute(func, args, exec_msg, level)
 
         # Otherwise, print the "skip" message

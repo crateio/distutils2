@@ -2,8 +2,9 @@
 
 The only module that needs to be imported to use the Distutils; provides
 the 'setup' function (which is to be called from the setup script).  Also
-indirectly provides the Distribution and Command classes, although they are
-really defined in distutils2.dist and distutils2.cmd.
+exports useful classes so that setup scripts can import them from here
+although they are really defined in other modules: Distribution, Command,
+PyPIRCommand, Extension, find_packages.
 """
 
 __revision__ = "$Id: core.py 77704 2010-01-23 09:23:15Z tarek.ziade $"
@@ -12,14 +13,14 @@ import sys
 import os
 
 from distutils2.errors import (DistutilsSetupError, DistutilsArgError,
-                              DistutilsError, CCompilerError)
+                               DistutilsError, CCompilerError)
 from distutils2.util import grok_environment_error
 
 # Mainly import these so setup scripts can "from distutils2.core import" them.
 from distutils2.dist import Distribution
-from distutils2.cmd import Command
-from distutils2.config import PyPIRCCommand
+from distutils2.command.cmd import Command
 from distutils2.extension import Extension
+from distutils2.util import find_packages
 
 # This is a barebones help message generated displayed when the user
 # runs the setup script with no arguments at all.  More useful help
@@ -31,6 +32,7 @@ usage: %(script)s [global_opts] cmd1 [cmd1_opts] [cmd2 [cmd2_opts] ...]
    or: %(script)s --help-commands
    or: %(script)s cmd --help
 """
+
 
 def gen_usage(script_name):
     script = os.path.basename(script_name)
@@ -47,7 +49,8 @@ setup_keywords = ('distclass', 'script_name', 'script_args', 'options',
                   'maintainer', 'maintainer_email', 'url', 'license',
                   'description', 'long_description', 'keywords',
                   'platforms', 'classifiers', 'download_url',
-                  'requires', 'provides', 'obsoletes',
+                  'requires', 'provides', 'obsoletes', 'use_2to3',
+                  'convert_2to3_doctests',
                   )
 
 # Legal keyword arguments for the Extension constructor
@@ -56,6 +59,7 @@ extension_keywords = ('name', 'sources', 'include_dirs',
                       'library_dirs', 'libraries', 'runtime_library_dirs',
                       'extra_objects', 'extra_compile_args', 'extra_link_args',
                       'swig_opts', 'export_symbols', 'depends', 'language')
+
 
 def setup(**attrs):
     """The gateway to the Distutils: do everything your setup script needs
@@ -94,11 +98,7 @@ def setup(**attrs):
 
     # Determine the distribution class -- either caller-supplied or
     # our Distribution (see below).
-    klass = attrs.get('distclass')
-    if klass:
-        del attrs['distclass']
-    else:
-        klass = Distribution
+    distclass = attrs.pop('distclass', Distribution)
 
     if 'script_name' not in attrs:
         attrs['script_name'] = os.path.basename(sys.argv[0])
@@ -108,7 +108,7 @@ def setup(**attrs):
     # Create the Distribution instance, using the remaining arguments
     # (ie. everything except distclass) to initialize it
     try:
-        _setup_distribution = dist = klass(attrs)
+        _setup_distribution = dist = distclass(attrs)
     except DistutilsSetupError, msg:
         if 'name' in attrs:
             raise SystemExit, "error in %s setup command: %s" % \
@@ -157,7 +157,7 @@ def setup(**attrs):
 def run_setup(script_name, script_args=None, stop_after="run"):
     """Run a setup script in a somewhat controlled environment, and
     return the Distribution instance that drives things.  This is useful
-    if you need to find out the distribution meta-data (passed as
+    if you need to find out the distribution metadata (passed as
     keyword args from 'script' to 'setup()', or the contents of the
     config files or command-line.
 
@@ -207,8 +207,6 @@ def run_setup(script_name, script_args=None, stop_after="run"):
         # Hmm, should we do something if exiting with a non-zero code
         # (ie. error)?
         pass
-    except:
-        raise
 
     if _setup_distribution is None:
         raise RuntimeError, \

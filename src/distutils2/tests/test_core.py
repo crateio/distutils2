@@ -6,8 +6,8 @@ import os
 import shutil
 import sys
 from distutils2.tests import captured_stdout
-import unittest2
 from distutils2.tests import support
+from distutils2.tests.support import unittest
 
 # setup script that uses __file__
 setup_using___file__ = """\
@@ -28,7 +28,7 @@ setup()
 """
 
 
-class CoreTestCase(support.EnvironGuard, unittest2.TestCase):
+class CoreTestCase(support.EnvironGuard, unittest.TestCase):
 
     def setUp(self):
         super(CoreTestCase, self).setUp()
@@ -64,13 +64,13 @@ class CoreTestCase(support.EnvironGuard, unittest2.TestCase):
         f = self.write_setup(setup_using___file__)
         for s in ['init', 'config', 'commandline', 'run']:
             distutils2.core.run_setup(f, stop_after=s)
-        self.assertRaises(ValueError, distutils2.core.run_setup, 
+        self.assertRaises(ValueError, distutils2.core.run_setup,
                           f, stop_after='bob')
 
     def test_run_setup_args(self):
         f = self.write_setup(setup_using___file__)
-        d = distutils2.core.run_setup(f, script_args=["--help"], 
-                                        stop_after="init")
+        d = distutils2.core.run_setup(f, script_args=["--help"],
+                                      stop_after="init")
         self.assertEqual(['--help'], d.script_args)
 
     def test_run_setup_uses_current_dir(self):
@@ -92,7 +92,7 @@ class CoreTestCase(support.EnvironGuard, unittest2.TestCase):
         self.assertEqual(cwd, output)
 
 def test_suite():
-    return unittest2.makeSuite(CoreTestCase)
+    return unittest.makeSuite(CoreTestCase)
 
 if __name__ == "__main__":
-    unittest2.main(defaultTest="test_suite")
+    unittest.main(defaultTest="test_suite")

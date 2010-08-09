@@ -1,16 +1,16 @@
 """Tests for distutils.command.build_clib."""
-import unittest2
 import os
 import sys
 
 from distutils2.command.build_clib import build_clib
 from distutils2.errors import DistutilsSetupError
 from distutils2.tests import support
-from distutils2.spawn import find_executable
+from distutils2.util import find_executable
+from distutils2.tests.support import unittest
 
 class BuildCLibTestCase(support.TempdirManager,
                         support.LoggingSilencer,
-                        unittest2.TestCase):
+                        unittest.TestCase):
 
     def test_check_library_dist(self):
         pkg_dir, dist = self.create_dist()
@@ -55,14 +55,14 @@ class BuildCLibTestCase(support.TempdirManager,
         self.assertRaises(DistutilsSetupError, cmd.get_source_files)
 
         cmd.libraries = [('name', {'sources': ['a', 'b']})]
-        self.assertEquals(cmd.get_source_files(), ['a', 'b'])
+        self.assertEqual(cmd.get_source_files(), ['a', 'b'])
 
         cmd.libraries = [('name', {'sources': ('a', 'b')})]
-        self.assertEquals(cmd.get_source_files(), ['a', 'b'])
+        self.assertEqual(cmd.get_source_files(), ['a', 'b'])
 
         cmd.libraries = [('name', {'sources': ('a', 'b')}),
                          ('name2', {'sources': ['c', 'd']})]
-        self.assertEquals(cmd.get_source_files(), ['a', 'b', 'c', 'd'])
+        self.assertEqual(cmd.get_source_files(), ['a', 'b', 'c', 'd'])
 
     def test_build_libraries(self):
 
@@ -91,11 +91,11 @@ class BuildCLibTestCase(support.TempdirManager,
 
         cmd.include_dirs = 'one-dir'
         cmd.finalize_options()
-        self.assertEquals(cmd.include_dirs, ['one-dir'])
+        self.assertEqual(cmd.include_dirs, ['one-dir'])
 
         cmd.include_dirs = None
         cmd.finalize_options()
-        self.assertEquals(cmd.include_dirs, [])
+        self.assertEqual(cmd.include_dirs, [])
 
         cmd.distribution.libraries = 'WONTWORK'
         self.assertRaises(DistutilsSetupError, cmd.finalize_options)
@@ -137,7 +137,7 @@ class BuildCLibTestCase(support.TempdirManager,
         self.assertTrue('libfoo.a' in os.listdir(build_temp))
 
 def test_suite():
-    return unittest2.makeSuite(BuildCLibTestCase)
+    return unittest.makeSuite(BuildCLibTestCase)
 
 if __name__ == "__main__":
-    unittest2.main(defaultTest="test_suite")
+    unittest.main(defaultTest="test_suite")

@@ -40,8 +40,7 @@ class build_scripts (Command):
     def finalize_options (self):
         self.set_undefined_options('build',
                                    ('build_scripts', 'build_dir'),
-                                   ('force', 'force'),
-                                   ('executable', 'executable'))
+                                   'force', 'executable')
         self.scripts = self.distribution.scripts
 
     def get_source_files(self):

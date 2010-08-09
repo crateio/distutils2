@@ -1,33 +1,71 @@
 """Tests for distutils.command.bdist."""
-import unittest2
 import os
 import sys
+import platform
 from StringIO import StringIO
 
 from distutils2.metadata import (DistributionMetadata, _interpret,
                                  PKG_INFO_PREFERRED_VERSION)
+from distutils2.tests import run_unittest
+from distutils2.tests.support import unittest, LoggingSilencer
+from distutils2.errors import (MetadataConflictError,
+                               MetadataUnrecognizedVersionError)
 
-class DistributionMetadataTestCase(unittest2.TestCase):
+class DistributionMetadataTestCase(LoggingSilencer, unittest.TestCase):
 
+    def test_instantiation(self):
+        PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
+        fp = open(PKG_INFO)
+        try:
+            contents = fp.read()
+        finally:
+            fp.close()
+        fp = StringIO(contents)
+
+        m = DistributionMetadata()
+        self.assertRaises(MetadataUnrecognizedVersionError, m.items)
+
+        m = DistributionMetadata(PKG_INFO)
+        self.assertEqual(len(m.items()), 22)
+
+        m = DistributionMetadata(fileobj=fp)
+        self.assertEqual(len(m.items()), 22)
+
+        m = DistributionMetadata(mapping=dict(name='Test', version='1.0'))
+        self.assertEqual(len(m.items()), 11)
+
+        d = dict(m.items())
+        self.assertRaises(TypeError, DistributionMetadata,
+                          PKG_INFO, fileobj=fp)
+        self.assertRaises(TypeError, DistributionMetadata,
+                          PKG_INFO, mapping=d)
+        self.assertRaises(TypeError, DistributionMetadata,
+                          fileobj=fp, mapping=d)
+        self.assertRaises(TypeError, DistributionMetadata,
+                          PKG_INFO, mapping=m, fileobj=fp)
 
     def test_interpret(self):
-        platform = sys.platform
+        sys_platform = sys.platform
         version = sys.version.split()[0]
         os_name = os.name
+        platform_version = platform.version()
+        platform_machine = platform.machine()
 
-        assert _interpret("sys.platform == '%s'" % platform)
-        assert _interpret("sys.platform == '%s' or python_version == '2.4'" \
-                % platform)
-        assert _interpret("sys.platform == '%s' and "
-                          "python_full_version == '%s'"\
-                % (platform, version))
-        assert _interpret("'%s' == sys.platform" % platform)
-
-        assert _interpret('os.name == "%s"' % os_name)
+        self.assertTrue(_interpret("sys.platform == '%s'" % sys_platform))
+        self.assertTrue(_interpret(
+            "sys.platform == '%s' or python_version == '2.4'" % sys_platform))
+        self.assertTrue(_interpret(
+            "sys.platform == '%s' and python_full_version == '%s'" %
+            (sys_platform, version)))
+        self.assertTrue(_interpret("'%s' == sys.platform" % sys_platform))
+        self.assertTrue(_interpret('os.name == "%s"' % os_name))
+        self.assertTrue(_interpret(
+            'platform.version == "%s" and platform.machine == "%s"' %
+            (platform_version, platform_machine)))
 
         # stuff that need to raise a syntax error
         ops = ('os.name == os.name', 'os.name == 2', "'2' == '2'",
-               'okpjonon', '', 'os.name ==')
+               'okpjonon', '', 'os.name ==', 'python_version == 2.4')
         for op in ops:
             self.assertRaises(SyntaxError, _interpret, op)
 
@@ -35,53 +73,57 @@ class DistributionMetadataTestCase(unittest2.TestCase):
         OP = 'os.name == "%s"' % os_name
         AND = ' and '
         OR = ' or '
-        assert _interpret(OP+AND+OP)
-        assert _interpret(OP+AND+OP+AND+OP)
-        assert _interpret(OP+OR+OP)
-        assert _interpret(OP+OR+OP+OR+OP)
+        self.assertTrue(_interpret(OP + AND + OP))
+        self.assertTrue(_interpret(OP + AND + OP + AND + OP))
+        self.assertTrue(_interpret(OP + OR + OP))
+        self.assertTrue(_interpret(OP + OR + OP + OR + OP))
 
         # other operators
-        assert _interpret("os.name != 'buuuu'")
-        assert _interpret("python_version > '1.0'")
-        assert _interpret("python_version < '5.0'")
-        assert _interpret("python_version <= '5.0'")
-        assert _interpret("python_version >= '1.0'")
-        assert _interpret("'%s' in os.name" % os_name)
-        assert _interpret("'buuuu' not in os.name")
-        assert _interpret("'buuuu' not in os.name and '%s' in os.name" \
-                            % os_name)
+        self.assertTrue(_interpret("os.name != 'buuuu'"))
+        self.assertTrue(_interpret("python_version > '1.0'"))
+        self.assertTrue(_interpret("python_version < '5.0'"))
+        self.assertTrue(_interpret("python_version <= '5.0'"))
+        self.assertTrue(_interpret("python_version >= '1.0'"))
+        self.assertTrue(_interpret("'%s' in os.name" % os_name))
+        self.assertTrue(_interpret("'buuuu' not in os.name"))
+        self.assertTrue(_interpret(
+            "'buuuu' not in os.name and '%s' in os.name" % os_name))
 
         # execution context
-        assert _interpret('python_version == "0.1"', {'python_version': '0.1'})
+        self.assertTrue(_interpret('python_version == "0.1"',
+                                   {'python_version': '0.1'}))
 
     def test_metadata_read_write(self):
 
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
         metadata = DistributionMetadata(PKG_INFO)
-        res = StringIO()
-        metadata.write_file(res)
-        res.seek(0)
-        res = res.read()
-        f = open(PKG_INFO)
-        wanted = f.read()
-        self.assert_('Keywords: keyring,password,crypt' in res)
-        f.close()
+        out = StringIO()
+        metadata.write_file(out)
+        out.seek(0)
+        res = DistributionMetadata()
+        res.read_file(out)
+        for k in metadata.keys():
+            self.assertTrue(metadata[k] == res[k])
 
     def test_metadata_markers(self):
         # see if we can be platform-aware
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
         content = open(PKG_INFO).read()
         content = content % sys.platform
-        metadata = DistributionMetadata(platform_dependant=True)
+        metadata = DistributionMetadata(platform_dependent=True)
         metadata.read_file(StringIO(content))
-        self.assertEquals(metadata['Requires-Dist'], ['bar'])
+        self.assertEqual(metadata['Requires-Dist'], ['bar'])
+        metadata['Name'] = "baz; sys.platform == 'blah'"
+        # FIXME is None or 'UNKNOWN' correct here?
+        # where is that documented?
+        self.assertEquals(metadata['Name'], None)
 
         # test with context
         context = {'sys.platform': 'okook'}
-        metadata = DistributionMetadata(platform_dependant=True,
+        metadata = DistributionMetadata(platform_dependent=True,
                                         execution_context=context)
         metadata.read_file(StringIO(content))
-        self.assertEquals(metadata['Requires-Dist'], ['foo'])
+        self.assertEqual(metadata['Requires-Dist'], ['foo'])
 
     def test_description(self):
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
@@ -93,47 +135,54 @@ class DistributionMetadataTestCase(unittest2.TestCase):
         # see if we can read the description now
         DESC = os.path.join(os.path.dirname(__file__), 'LONG_DESC.txt')
         wanted = open(DESC).read()
-        self.assertEquals(wanted, metadata['Description'])
+        self.assertEqual(wanted, metadata['Description'])
 
         # save the file somewhere and make sure we can read it back
         out = StringIO()
         metadata.write_file(out)
         out.seek(0)
         metadata.read_file(out)
-        self.assertEquals(wanted, metadata['Description'])
+        self.assertEqual(wanted, metadata['Description'])
 
-    def test_mapper_apis(self):
+    def test_mapping_api(self):
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
         content = open(PKG_INFO).read()
         content = content % sys.platform
-        metadata = DistributionMetadata()
-        metadata.read_file(StringIO(content))
+        metadata = DistributionMetadata(fileobj=StringIO(content))
         self.assertIn('Version', metadata.keys())
         self.assertIn('0.5', metadata.values())
         self.assertIn(('Version', '0.5'), metadata.items())
+        #TODO test update
 
     def test_versions(self):
         metadata = DistributionMetadata()
         metadata['Obsoletes'] = 'ok'
-        self.assertEquals(metadata['Metadata-Version'], '1.1')
+        self.assertEqual(metadata['Metadata-Version'], '1.1')
 
         del metadata['Obsoletes']
         metadata['Obsoletes-Dist'] = 'ok'
-        self.assertEquals(metadata['Metadata-Version'], '1.2')
+        self.assertEqual(metadata['Metadata-Version'], '1.2')
 
+        self.assertRaises(MetadataConflictError, metadata.set,
+                          'Obsoletes', 'ok')
+
+        del metadata['Obsoletes']
         del metadata['Obsoletes-Dist']
         metadata['Version'] = '1'
-        self.assertEquals(metadata['Metadata-Version'], '1.0')
+        self.assertEqual(metadata['Metadata-Version'], '1.0')
 
         PKG_INFO = os.path.join(os.path.dirname(__file__),
                                 'SETUPTOOLS-PKG-INFO')
         metadata.read_file(StringIO(open(PKG_INFO).read()))
-        self.assertEquals(metadata['Metadata-Version'], '1.0')
+        self.assertEqual(metadata['Metadata-Version'], '1.0')
 
         PKG_INFO = os.path.join(os.path.dirname(__file__),
                                 'SETUPTOOLS-PKG-INFO2')
         metadata.read_file(StringIO(open(PKG_INFO).read()))
-        self.assertEquals(metadata['Metadata-Version'], '1.1')
+        self.assertEqual(metadata['Metadata-Version'], '1.1')
+
+        metadata.version = '1.618'
+        self.assertRaises(MetadataUnrecognizedVersionError, metadata.keys)
 
     def test_warnings(self):
         metadata = DistributionMetadata()
@@ -161,7 +210,7 @@ class DistributionMetadataTestCase(unittest2.TestCase):
 
         # we should have a certain amount of warnings
         num_wanted = len(values)
-        self.assertEquals(num_wanted, res)
+        self.assertEqual(num_wanted, res)
 
     def test_multiple_predicates(self):
         metadata = DistributionMetadata()
@@ -184,29 +233,33 @@ class DistributionMetadataTestCase(unittest2.TestCase):
             res = m.warns
             del m.warns
 
-        self.assertEquals(res, 0)
+        self.assertEqual(res, 0)
 
     def test_project_url(self):
         metadata = DistributionMetadata()
         metadata['Project-URL'] = [('one', 'http://ok')]
-        self.assertEquals(metadata['Project-URL'],
+        self.assertEqual(metadata['Project-URL'],
                           [('one', 'http://ok')])
-        self.assertEquals(metadata.version, '1.2')
+        self.assertEqual(metadata.version, '1.2')
 
     def test_check(self):
         metadata = DistributionMetadata()
         metadata['Version'] = 'rr'
         metadata['Requires-dist'] = ['Foo (a)']
+        if metadata.docutils_support:
+            missing, warnings = metadata.check()
+            self.assertEqual(len(warnings), 2)
+            metadata.docutils_support = False
         missing, warnings = metadata.check()
-        self.assertEquals(missing, ['Name', 'Home-page'])
-        self.assertEquals(len(warnings), 2)
+        self.assertEqual(missing, ['Name', 'Home-page'])
+        self.assertEqual(len(warnings), 2)
 
     def test_best_choice(self):
         metadata = DistributionMetadata()
         metadata['Version'] = '1.0'
-        self.assertEquals(metadata.version, PKG_INFO_PREFERRED_VERSION)
+        self.assertEqual(metadata.version, PKG_INFO_PREFERRED_VERSION)
         metadata['Classifier'] = ['ok']
-        self.assertEquals(metadata.version, '1.2')
+        self.assertEqual(metadata.version, '1.2')
 
     def test_project_urls(self):
         # project-url is a bit specific, make sure we write it
@@ -214,7 +267,7 @@ class DistributionMetadataTestCase(unittest2.TestCase):
         metadata = DistributionMetadata()
         metadata['Version'] = '1.0'
         metadata['Project-Url'] = [('one', 'http://ok')]
-        self.assertEquals(metadata['Project-Url'], [('one', 'http://ok')])
+        self.assertEqual(metadata['Project-Url'], [('one', 'http://ok')])
         file_ = StringIO()
         metadata.write_file(file_)
         file_.seek(0)
@@ -224,11 +277,11 @@ class DistributionMetadataTestCase(unittest2.TestCase):
         file_.seek(0)
         metadata = DistributionMetadata()
         metadata.read_file(file_)
-        self.assertEquals(metadata['Project-Url'], [('one', 'http://ok')])
+        self.assertEqual(metadata['Project-Url'], [('one', 'http://ok')])
 
 
 def test_suite():
-    return unittest2.makeSuite(DistributionMetadataTestCase)
+    return unittest.makeSuite(DistributionMetadataTestCase)
 
 if __name__ == '__main__':
     run_unittest(test_suite())

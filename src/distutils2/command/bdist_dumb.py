@@ -77,15 +77,13 @@ class bdist_dumb (Command):
                       ("don't know how to create dumb built distributions " +
                        "on platform %s") % os.name
 
-        self.set_undefined_options('bdist',
-                                   ('dist_dir', 'dist_dir'),
-                                   ('plat_name', 'plat_name'))
+        self.set_undefined_options('bdist', 'dist_dir', 'plat_name')
 
     def run(self):
         if not self.skip_build:
             self.run_command('build')
 
-        install = self.reinitialize_command('install', reinit_subcommands=1)
+        install = self.get_reinitialized_command('install', reinit_subcommands=1)
         install.root = self.bdist_dir
         install.skip_build = self.skip_build
         install.warn_dir = 0
@@ -115,8 +113,9 @@ class bdist_dumb (Command):
                        % (repr(install.install_base),
                           repr(install.install_platbase)))
             else:
-                archive_root = os.path.join(self.bdist_dir,
-                                   ensure_relative(install.install_base))
+                archive_root = os.path.join(
+                    self.bdist_dir,
+                    self._ensure_relative(install.install_base))
 
         # Make the archive
         filename = self.make_archive(pseudoinstall_root,
@@ -135,3 +134,9 @@ class bdist_dumb (Command):
             else:
                 rmtree(self.bdist_dir)
 
+    def _ensure_relative(self, path):
+        # copied from dir_util, deleted
+        drive, path = os.path.splitdrive(path)
+        if path[0:1] == os.sep:
+            path = drive + path[1:]
+        return path

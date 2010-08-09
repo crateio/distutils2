@@ -76,9 +76,7 @@ class build_clib(Command):
         self.set_undefined_options('build',
                                    ('build_temp', 'build_clib'),
                                    ('build_temp', 'build_temp'),
-                                   ('compiler', 'compiler'),
-                                   ('debug', 'debug'),
-                                   ('force', 'force'))
+                                   'compiler', 'debug', 'force')
 
         self.libraries = self.distribution.libraries
         if self.libraries:

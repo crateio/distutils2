@@ -8,6 +8,7 @@ __revision__ = "$Id: bdist_wininst.py 77761 2010-01-26 22:46:15Z tarek.ziade $"
 import sys
 import os
 import string
+from shutil import rmtree
 try:
     from sysconfig import get_python_version
 except ImportError:
@@ -99,10 +100,7 @@ class bdist_wininst (Command):
                       " option must be specified" % (short_version,)
             self.target_version = short_version
 
-        self.set_undefined_options('bdist',
-                                   ('dist_dir', 'dist_dir'),
-                                   ('plat_name', 'plat_name'),
-                                  )
+        self.set_undefined_options('bdist', 'dist_dir', 'plat_name')
 
         if self.install_script:
             for script in self.distribution.scripts:
@@ -126,13 +124,13 @@ class bdist_wininst (Command):
         if not self.skip_build:
             self.run_command('build')
 
-        install = self.reinitialize_command('install', reinit_subcommands=1)
+        install = self.get_reinitialized_command('install', reinit_subcommands=1)
         install.root = self.bdist_dir
         install.skip_build = self.skip_build
         install.warn_dir = 0
         install.plat_name = self.plat_name
 
-        install_lib = self.reinitialize_command('install_lib')
+        install_lib = self.get_reinitialized_command('install_lib')
         # we do not want to include pyc or pyo files
         install_lib.compile = 0
         install_lib.optimize = 0
@@ -176,8 +174,8 @@ class bdist_wininst (Command):
 
         # And make an archive relative to the root of the
         # pseudo-installation tree.
-        from tempfile import mktemp
-        archive_basename = mktemp()
+        from tempfile import NamedTemporaryFile
+        archive_basename = NamedTemporaryFile().name
         fullname = self.distribution.get_fullname()
         arcname = self.make_archive(archive_basename, "zip",
                                     root_dir=self.bdist_dir)

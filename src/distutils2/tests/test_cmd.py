@@ -1,17 +1,17 @@
 """Tests for distutils.cmd."""
-import unittest2
 import os
 from distutils2.tests import captured_stdout, run_unittest
 
-from distutils2.cmd import Command
+from distutils2.command.cmd import Command
 from distutils2.dist import Distribution
 from distutils2.errors import DistutilsOptionError
+from distutils2.tests.support import unittest
 
 class MyCmd(Command):
     def initialize_options(self):
         pass
 
-class CommandTestCase(unittest2.TestCase):
+class CommandTestCase(unittest.TestCase):
 
     def setUp(self):
         dist = Distribution()
@@ -43,7 +43,7 @@ class CommandTestCase(unittest2.TestCase):
 
         # making sure execute gets called properly
         def _execute(func, args, exec_msg, level):
-            self.assertEquals(exec_msg, 'generating out from in')
+            self.assertEqual(exec_msg, 'generating out from in')
         cmd.force = True
         cmd.execute = _execute
         cmd.make_file(infiles='in', outfile='out', func='func', args=())
@@ -62,7 +62,7 @@ class CommandTestCase(unittest2.TestCase):
 
         wanted = ["command options for 'MyCmd':", '  option1 = 1',
                   '  option2 = 1']
-        self.assertEquals(msgs, wanted)
+        self.assertEqual(msgs, wanted)
 
     def test_ensure_string(self):
         cmd = self.cmd
@@ -80,7 +80,7 @@ class CommandTestCase(unittest2.TestCase):
         cmd = self.cmd
         cmd.option1 = 'ok,dok'
         cmd.ensure_string_list('option1')
-        self.assertEquals(cmd.option1, ['ok', 'dok'])
+        self.assertEqual(cmd.option1, ['ok', 'dok'])
 
         cmd.option2 = ['xxx', 'www']
         cmd.ensure_string_list('option2')
@@ -98,13 +98,13 @@ class CommandTestCase(unittest2.TestCase):
 
     def test_ensure_dirname(self):
         cmd = self.cmd
-        cmd.option1 = os.path.dirname(__file__)
+        cmd.option1 = os.path.dirname(__file__) or os.curdir
         cmd.ensure_dirname('option1')
         cmd.option2 = 'xxx'
         self.assertRaises(DistutilsOptionError, cmd.ensure_dirname, 'option2')
 
 def test_suite():
-    return unittest2.makeSuite(CommandTestCase)
+    return unittest.makeSuite(CommandTestCase)
 
 if __name__ == '__main__':
     run_unittest(test_suite())
