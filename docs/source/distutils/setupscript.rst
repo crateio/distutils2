@@ -17,7 +17,7 @@ of sections: the Distutils' own setup script.  (Keep in mind that although the
 Distutils are included with Python 1.6 and later, they also have an independent
 existence so that Python 1.5.2 users can use them to install other module
 distributions.  The Distutils' own setup script, shown here, is used to install
-the package into Python 1.5.2.) ::
+the project into Python 1.5.2.) ::
 
     #!/usr/bin/env python
 
@@ -356,6 +356,8 @@ previous build.
 Relationships between Distributions and Packages
 ================================================
 
+.. FIXME rewrite to update to PEP 345 (but without dist/release confusion)
+
 A distribution may relate to packages in three specific ways:
 
 #. It can require packages or modules.
@@ -546,37 +548,37 @@ This information includes:
 +----------------------+---------------------------+-----------------+--------+
 | Meta-Data            | Description               | Value           | Notes  |
 +======================+===========================+=================+========+
-| ``name``             | name of the package       | short string    | \(1)   |
+| ``name``             | name of the project       | short string    | \(1)   |
 +----------------------+---------------------------+-----------------+--------+
 | ``version``          | version of this release   | short string    | (1)(2) |
 +----------------------+---------------------------+-----------------+--------+
-| ``author``           | package author's name     | short string    | \(3)   |
+| ``author``           | project author's name     | short string    | \(3)   |
 +----------------------+---------------------------+-----------------+--------+
 | ``author_email``     | email address of the      | email address   | \(3)   |
-|                      | package author            |                 |        |
+|                      | project author            |                 |        |
 +----------------------+---------------------------+-----------------+--------+
-| ``maintainer``       | package maintainer's name | short string    | \(3)   |
+| ``maintainer``       | project maintainer's name | short string    | \(3)   |
 +----------------------+---------------------------+-----------------+--------+
 | ``maintainer_email`` | email address of the      | email address   | \(3)   |
-|                      | package maintainer        |                 |        |
+|                      | project maintainer        |                 |        |
 +----------------------+---------------------------+-----------------+--------+
-| ``url``              | home page for the package | URL             | \(1)   |
+| ``home_page``        | home page for the project | URL             | \(1)   |
 +----------------------+---------------------------+-----------------+--------+
-| ``description``      | short, summary            | short string    |        |
+| ``summary``          | short, summary            | short string    |        |
 |                      | description of the        |                 |        |
-|                      | package                   |                 |        |
+|                      | project                   |                 |        |
 +----------------------+---------------------------+-----------------+--------+
-| ``long_description`` | longer description of the | long string     | \(5)   |
-|                      | package                   |                 |        |
+| ``description``      | longer description of the | long string     | \(5)   |
+|                      | project                   |                 |        |
 +----------------------+---------------------------+-----------------+--------+
 | ``download_url``     | location where the        | URL             | \(4)   |
-|                      | package may be downloaded |                 |        |
+|                      | project may be downloaded |                 |        |
 +----------------------+---------------------------+-----------------+--------+
 | ``classifiers``      | a list of classifiers     | list of strings | \(4)   |
 +----------------------+---------------------------+-----------------+--------+
 | ``platforms``        | a list of platforms       | list of strings |        |
 +----------------------+---------------------------+-----------------+--------+
-| ``license``          | license for the package   | short string    | \(6)   |
+| ``license``          | license for the release   | short string    | \(6)   |
 +----------------------+---------------------------+-----------------+--------+
 
 Notes:
@@ -595,12 +597,12 @@ Notes:
     <http://pypi.python.org/pypi>`_.
 
 (5)
-    The ``long_description`` field is used by PyPI when you are registering a
-    package, to build its home page.
+    The ``description`` field is used by PyPI when you are registering a
+    project, to build its home page.
 
 (6)
     The ``license`` field is a text indicating the license covering the
-    package where the license is not a selection from the "License" Trove
+    release where the license is not a selection from the "License" Trove
     classifiers. See the ``Classifier`` field. Notice that
     there's a ``licence`` distribution option which is deprecated but still
     acts as an alias for ``license``.
@@ -615,11 +617,13 @@ Notes:
 'list of strings'
     See below.
 
-Encoding the version information is an art in itself. Python packages generally
+.. TODO move text to :mod:`distutils2.version`, leave a link
+
+Encoding the version information is an art in itself. Python projects generally
 adhere to the version format *major.minor[.patch][sub]*. The major number is 0
 for initial, experimental releases of software. It is incremented for releases
-that represent major milestones in a package. The minor number is incremented
-when important new features are added to the package. The patch number
+that represent major milestones in a project. The minor number is incremented
+when important new features are added to the project. The patch number
 increments when bug-fix releases are made. Additional trailing version
 information is sometimes used to indicate sub-releases.  These are
 "a1,a2,...,aN" (for alpha releases, where functionality and API may change),
@@ -627,7 +631,7 @@ information is sometimes used to indicate sub-releases.  These are
 (for final pre-release release testing). Some examples:
 
 0.1.0
-    the first, experimental release of a package
+    the first, experimental release of a project
 
 1.0.1a2
     the second alpha release of the first patch version of 1.0
@@ -662,8 +666,8 @@ wants.
 Distutils catches any exceptions when running the setup script, and print a
 simple error message before the script is terminated.  The motivation for this
 behaviour is to not confuse administrators who don't know much about Python and
-are trying to install a package.  If they get a big long traceback from deep
-inside the guts of Distutils, they may think the package or the Python
+are trying to install a project.  If they get a big long traceback from deep
+inside the guts of Distutils, they may think the project or the Python
 installation is broken because they don't read all the way down to the bottom
 and see that it's a permission problem.
 
