@@ -4,7 +4,7 @@
   Distributing Python Projects
 ###############################
 
-:Authors: Greg Ward, Anthony Baxter and others
+:Authors: Greg Ward, Anthony Baxter and Distutils2 contributors
 :Email: distutils-sig@python.org
 :Release: |version|
 :Date: |today|
@@ -21,12 +21,13 @@ with very little overhead for build/release/install mechanics.
    introduction
    setupscript
    configfile
-   configure
    sourcedist
    builtdist
    packageindex
    uploading
    examples
    extending
+   commandhooks
    commandref
+   newcommands
    apiref

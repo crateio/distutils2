@@ -1195,6 +1195,7 @@ other utility module.
    are ``n``, ``no``, ``f``, ``false``,  ``off`` and ``0``.  Raises
    :exc:`ValueError` if *val*  is anything else.
 
+.. TODO Add :term: markup to bytecode when merging into the stdlib
 
 .. function:: byte_compile(py_files[, optimize=0, force=0, prefix=None, base_dir=None, verbose=1, dry_run=0, direct=None])
 
@@ -1209,7 +1210,7 @@ other utility module.
 
    If *force* is true, all files are recompiled regardless of timestamps.
 
-   The source filename encoded in each :term:`bytecode` file defaults to the filenames
+   The source filename encoded in each bytecode file defaults to the filenames
    listed in *py_files*; you can modify these with *prefix* and *basedir*.
    *prefix* is a string that will be stripped off of each source filename, and
    *base_dir* is a directory name that will be prepended (after *prefix* is

@@ -1,7 +1,0 @@
-
-============
-Dependencies
-============
-
-* unittest2
-

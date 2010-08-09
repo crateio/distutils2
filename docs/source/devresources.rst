@@ -9,6 +9,11 @@ Source code
 * Main repo: http://hg.python.org/distutils2
 * For contributors at: http://bitbucket.org/tarek/distutils2
 
+Dependencies
+~~~~~~~~~~~~
+
+* unittest2
+
 Issue Tracker
 ~~~~~~~~~~~~~
 

@@ -75,7 +75,7 @@ Now, we can create the actual picture using:
 
 An example output image is:
 
-.. figure:: images/depgraph_output.png
+.. figure:: ../images/depgraph_output.png
    :alt: An example dot output
 
 If you want to include ``.egg`` and ``.egg-info`` distributions as well, then

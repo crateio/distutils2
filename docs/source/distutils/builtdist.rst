@@ -315,7 +315,9 @@ will reflect this and now has the form :file:`foo-1.0.win32-py2.0.exe`.  You
 have to create a separate installer for every Python version you want to
 support.
 
-The installer will try to compile pure modules into :term:`bytecode` after installation
+.. TODO Add :term: markup to bytecode when merging into the stdlib
+
+The installer will try to compile pure modules into bytecode after installation
 on the target system in normal and optimizing mode.  If you don't want this to
 happen for some reason, you can run the :command:`bdist_wininst` command with
 the :option:`--no-target-compile` and/or the :option:`--no-target-optimize`
@@ -428,7 +430,7 @@ built-in functions in the installation script.
 
    Which folders are available depends on the exact Windows version, and probably
    also the configuration.  For details refer to Microsoft's documentation of the
-   :cfunc:`SHGetSpecialFolderPath` function.
+   c:function:`SHGetSpecialFolderPath` function.
 
 
 .. function:: create_shortcut(target, description, filename[, arguments[, workdir[, iconpath[, iconindex]]]])
