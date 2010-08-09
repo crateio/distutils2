@@ -22,7 +22,7 @@ __all__ = ['Manifest']
 
 # a \ followed by some spaces + EOL
 _COLLAPSE_PATTERN = re.compile('\\\w*\n', re.M)
-_COMMENTED_LINE = re.compile('#.*?(?=\n)|^\w*\n|\n(?=$)', re.M|re.S)
+_COMMENTED_LINE = re.compile('#.*?(?=\n)|^\w*\n|\n(?=$)', re.M | re.S)
 
 class Manifest(object):
     """A list of files built by on exploring the filesystem and filtered by

@@ -202,6 +202,9 @@ class InstallTestCase(support.TempdirManager,
         finally:
             f.close()
 
+        # XXX test that fancy_getopt is okay with options named
+        # record and no-record but unrelated
+
     def _test_debug_mode(self):
         # this covers the code called when DEBUG is set
         old_logs_len = len(self.logs)

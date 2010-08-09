@@ -1,13 +1,37 @@
-"""Mocked PyPI Server implementation, to use in tests.
+"""Mock PyPI Server implementation, to use in tests.
 
 This module also provides a simple test case to extend if you need to use
-the PyPIServer all along your test case. Be sure to read the documentation 
+the PyPIServer all along your test case. Be sure to read the documentation
 before any use.
+
+XXX TODO:
+
+The mock server can handle simple HTTP request (to simulate a simple index) or
+XMLRPC requests, over HTTP. Both does not have the same intergface to deal
+with, and I think it's a pain.
+
+A good idea could be to re-think a bit the way dstributions are handled in the
+mock server. As it should return malformed HTML pages, we need to keep the
+static behavior.
+
+I think of something like that:
+
+    >>> server = PyPIMockServer()
+    >>> server.startHTTP()
+    >>> server.startXMLRPC()
+
+Then, the server must have only one port to rely on, eg.
+
+    >>> server.fulladress()
+    "http://ip:port/"
+
+It could be simple to have one HTTP server, relaying the requests to the two
+implementations (static HTTP and XMLRPC over HTTP).
 """
 
-import os
 import Queue
 import SocketServer
+import os.path
 import select
 import socket
 import threading
@@ -29,7 +53,7 @@ def use_http_server(*server_args, **server_kwargs):
     return use_pypi_server(*server_args, **server_kwargs)
 
 def use_pypi_server(*server_args, **server_kwargs):
-    """Decorator to make use of the PyPIServer for test methods, 
+    """Decorator to make use of the PyPIServer for test methods,
     just when needed, and not for the entire duration of the testcase.
     """
     def wrapper(func):
@@ -51,8 +75,8 @@ class PyPIServerTestCase(unittest.TestCase):
         self.pypi.start()
 
     def tearDown(self):
-        self.pypi.stop()
         super(PyPIServerTestCase, self).tearDown()
+        self.pypi.stop()
 
 class PyPIServer(threading.Thread):
     """PyPI Mocked server.
@@ -65,8 +89,8 @@ class PyPIServer(threading.Thread):
                  static_filesystem_paths=["default"],
                  static_uri_paths=["simple"], serve_xmlrpc=False) :
         """Initialize the server.
-        
-        Default behavior is to start the HTTP server. You can either start the 
+
+        Default behavior is to start the HTTP server. You can either start the
         xmlrpc server by setting xmlrpc to True. Caution: Only one server will
         be started.
 
@@ -80,6 +104,7 @@ class PyPIServer(threading.Thread):
         self._run = True
         self._serve_xmlrpc = serve_xmlrpc
 
+        #TODO allow to serve XMLRPC and HTTP static files at the same time.
         if not self._serve_xmlrpc:
             self.server = HTTPServer(('', 0), PyPIRequestHandler)
             self.server.RequestHandlerClass.pypi_server = self
@@ -89,7 +114,7 @@ class PyPIServer(threading.Thread):
             self.default_response_status = 200
             self.default_response_headers = [('Content-type', 'text/plain')]
             self.default_response_data = "hello"
-            
+
             # initialize static paths / filesystems
             self.static_uri_paths = static_uri_paths
             if test_static_path is not None:
@@ -97,7 +122,7 @@ class PyPIServer(threading.Thread):
             self.static_filesystem_paths = [PYPI_DEFAULT_STATIC_PATH + "/" + path
                 for path in static_filesystem_paths]
         else:
-            # xmlrpc server
+            # XMLRPC server
             self.server = PyPIXMLRPCServer(('', 0))
             self.xmlrpc = XMLRPCMockIndex()
             # register the xmlrpc methods
@@ -176,7 +201,7 @@ class PyPIRequestHandler(SimpleHTTPRequestHandler):
         # serve the content from local disc if we request an URL beginning
         # by a pattern defined in `static_paths`
         url_parts = self.path.split("/")
-        if (len(url_parts) > 1 and 
+        if (len(url_parts) > 1 and
                 url_parts[1] in self.pypi_server.static_uri_paths):
             data = None
             # always take the last first.
@@ -214,7 +239,7 @@ class PyPIRequestHandler(SimpleHTTPRequestHandler):
             try:
                 status = int(status)
             except ValueError:
-                # we probably got something like YYY Codename. 
+                # we probably got something like YYY Codename.
                 # Just get the first 3 digits
                 status = int(status[:3])
 
@@ -233,7 +258,7 @@ class PyPIXMLRPCServer(SimpleXMLRPCServer):
         self.server_port = port
 
 class MockDist(object):
-    """Fake distribution, used in the Mock PyPI Server""" 
+    """Fake distribution, used in the Mock PyPI Server"""
     def __init__(self, name, version="1.0", hidden=False, url="http://url/",
              type="sdist", filename="", size=10000,
              digest="123456", downloads=7, has_sig=False,
@@ -252,7 +277,7 @@ class MockDist(object):
         self.name = name
         self.version = version
         self.hidden = hidden
-        
+
         # URL infos
         self.url = url
         self.digest = digest
@@ -261,7 +286,7 @@ class MockDist(object):
         self.python_version = python_version
         self.comment = comment
         self.type = type
-        
+
         # metadata
         self.author = author
         self.author_email = author_email
@@ -280,7 +305,7 @@ class MockDist(object):
         self.cheesecake_documentation_id = documentation_id
         self.cheesecake_code_kwalitee_id = code_kwalitee_id
         self.cheesecake_installability_id = installability_id
-        
+
         self.obsoletes = obsoletes
         self.obsoletes_dist = obsoletes_dist
         self.provides = provides
@@ -289,7 +314,7 @@ class MockDist(object):
         self.requires_dist = requires_dist
         self.requires_external = requires_external
         self.requires_python = requires_python
-        
+
     def url_infos(self):
         return {
             'url': self.url,
@@ -331,11 +356,12 @@ class MockDist(object):
             'summary': self.summary,
             'home_page': self.homepage,
             'stable_version': self.stable_version,
-            'provides_dist': self.provides_dist,
+            'provides_dist': self.provides_dist or "%s (%s)" % (self.name,
+                                                              self.version),
             'requires': self.requires,
             'cheesecake_installability_id': self.cheesecake_installability_id,
         }
-    
+
     def search_result(self):
         return {
             '_pypi_ordering': 0,
@@ -346,7 +372,7 @@ class MockDist(object):
 
 class XMLRPCMockIndex(object):
     """Mock XMLRPC server"""
-    
+
     def __init__(self, dists=[]):
         self._dists = dists
 
@@ -385,7 +411,7 @@ class XMLRPCMockIndex(object):
             # return only un-hidden
             return [d.version for d in self._dists if d.name == package_name
                     and not d.hidden]
-    
+
     def release_urls(self, package_name, version):
         return [d.url_infos() for d in self._dists
                 if d.name == package_name and d.version == version]

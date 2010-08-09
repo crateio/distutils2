@@ -22,6 +22,7 @@ from distutils2.index.errors import (IndexesError, DownloadError,
                                      ReleaseNotFound, ProjectNotFound)
 from distutils2.index.mirrors import get_mirrors
 from distutils2.metadata import DistributionMetadata
+from distutils2.version import get_version_predicate
 from distutils2 import __version__ as __distutils2_version__
 
 __all__ = ['Crawler', 'DEFAULT_SIMPLE_INDEX_URL']
@@ -158,7 +159,7 @@ class Crawler(BaseClient):
         """Search for releases and return a ReleaseList object containing
         the results.
         """
-        predicate = self._get_version_predicate(requirements)
+        predicate = get_version_predicate(requirements)
         if self._projects.has_key(predicate.name.lower()) and not force_update:
             return self._projects.get(predicate.name.lower())
         prefer_final = self._get_prefer_final(prefer_final)
@@ -173,7 +174,7 @@ class Crawler(BaseClient):
 
     def get_release(self, requirements, prefer_final=None):
         """Return only one release that fulfill the given requirements"""
-        predicate = self._get_version_predicate(requirements)
+        predicate = get_version_predicate(requirements)
         release = self.get_releases(predicate, prefer_final)\
                       .get_last(predicate)
         if not release:

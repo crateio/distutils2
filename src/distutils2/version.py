@@ -349,6 +349,7 @@ class VersionPredicate(object):
                   }
 
     def __init__(self, predicate):
+        self._string = predicate
         predicate = predicate.strip()
         match = _PREDICATE.match(predicate)
         if match is None:
@@ -373,6 +374,9 @@ class VersionPredicate(object):
             if not self._operators[operator](version, predicate):
                 return False
         return True
+
+    def __repr__(self):
+        return self._string
 
 
 class _Versions(VersionPredicate):
@@ -418,3 +422,12 @@ def is_valid_version(predicate):
         return False
     else:
         return True
+
+
+def get_version_predicate(requirements):
+    """Return a VersionPredicate object, from a string or an already
+    existing object.
+    """
+    if isinstance(requirements, str):
+        requirements = VersionPredicate(requirements)
+    return requirements

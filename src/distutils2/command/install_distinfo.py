@@ -31,18 +31,18 @@ class install_distinfo(Command):
 
     user_options = [
         ('distinfo-dir=', None,
-                           'directory where the the .dist-info directory will '
-                           'be installed'),
-        ('installer=', None, 'the name of the installer'),
-        ('requested', None, 'generate a REQUESTED file'),
-        ('no-requested', None, 'do not generate a REQUESTED file'),
-        ('no-record', None, 'do not generate a RECORD file'),
+         "directory where the the .dist-info directory will be installed"),
+        ('installer=', None,
+         "the name of the installer"),
+        ('requested', None,
+         "generate a REQUESTED file"),
+        ('no-requested', None,
+         "do not generate a REQUESTED file"),
+        ('no-record', None,
+         "do not generate a RECORD file"),
     ]
 
-    boolean_options = [
-        'requested',
-        'no-record',
-    ]
+    boolean_options = ['requested', 'no-record']
 
     negative_opt = {'no-requested': 'requested'}
 
@@ -54,14 +54,14 @@ class install_distinfo(Command):
 
     def finalize_options(self):
         self.set_undefined_options('install',
-                                   ('installer', 'installer'),
-                                   ('requested', 'requested'),
-                                   ('no_record', 'no_record'))
+                                   'installer', 'requested', 'no_record')
 
         self.set_undefined_options('install_lib',
                                    ('install_dir', 'distinfo_dir'))
 
         if self.installer is None:
+            # FIXME distutils or distutils2?
+            # + document default in the option help text above and in install
             self.installer = 'distutils'
         if self.requested is None:
             self.requested = True
@@ -144,10 +144,7 @@ class install_distinfo(Command):
         return self.outputs
 
 
-# The following routines are taken from setuptools' pkg_resources module and
-# can be replaced by importing them from pkg_resources once it is included
-# in the stdlib.
-
+# The following functions are taken from setuptools' pkg_resources module.
 
 def safe_name(name):
     """Convert an arbitrary string to a standard distribution name

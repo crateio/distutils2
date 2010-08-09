@@ -5,7 +5,8 @@ commands."""
 
 __revision__ = "$Id: __init__.py 71473 2009-04-11 14:55:07Z tarek.ziade $"
 
-__all__ = ['build',
+__all__ = ['check',
+           'build',
            'build_py',
            'build_ext',
            'build_clib',
@@ -16,17 +17,11 @@ __all__ = ['build',
            'install_headers',
            'install_scripts',
            'install_data',
+           'install_distinfo',
            'sdist',
-           'register',
            'bdist',
            'bdist_dumb',
            'bdist_wininst',
+           'register',
            'upload',
-           'check',
-           # These two are reserved for future use:
-           #'bdist_sdux',
-           #'bdist_pkgtool',
-           # Note:
-           # bdist_packager is not included because it only provides
-           # an abstract base class
           ]

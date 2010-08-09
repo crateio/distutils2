@@ -1,7 +1,7 @@
 """Support code for distutils2 test cases.
 
 Always import unittest from this module, it will be the right version
-(standard library unittest for 2.7 and higher, third-party unittest2
+(standard library unittest for 3.2 and higher, third-party unittest2
 release for older versions).
 
 Three helper classes are provided: LoggingSilencer, TempdirManager and
@@ -17,10 +17,10 @@ call the mixin class' setUp method or it won't work (same thing for
 tearDown):
 
         def setUp(self):
-            super(self.__class__, self).setUp()
+            super(SomeTestCase, self).setUp()
             ... # other setup code
 
-Read each class' docstring to see their purpose and usage.
+Read each class' docstring to see its purpose and usage.
 
 Also provided is a DummyCommand class, useful to mock commands in the
 tests of another command that needs them (see docstring).

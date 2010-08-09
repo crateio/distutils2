@@ -33,6 +33,7 @@ usage: %(script)s [global_opts] cmd1 [cmd1_opts] [cmd2 [cmd2_opts] ...]
    or: %(script)s cmd --help
 """
 
+
 def gen_usage(script_name):
     script = os.path.basename(script_name)
     return USAGE % {'script': script}
@@ -58,6 +59,7 @@ extension_keywords = ('name', 'sources', 'include_dirs',
                       'library_dirs', 'libraries', 'runtime_library_dirs',
                       'extra_objects', 'extra_compile_args', 'extra_link_args',
                       'swig_opts', 'export_symbols', 'depends', 'language')
+
 
 def setup(**attrs):
     """The gateway to the Distutils: do everything your setup script needs

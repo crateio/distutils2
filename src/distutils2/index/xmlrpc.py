@@ -3,8 +3,10 @@ import xmlrpclib
 
 from distutils2.errors import IrrationalVersionError
 from distutils2.index.base import BaseClient
-from distutils2.index.errors import ProjectNotFound, InvalidSearchField
+from distutils2.index.errors import (ProjectNotFound, InvalidSearchField,
+                                     ReleaseNotFound)
 from distutils2.index.dist import ReleaseInfo
+from distutils2.version import get_version_predicate
 
 __all__ = ['Client', 'DEFAULT_XMLRPC_INDEX_URL']
 
@@ -41,7 +43,7 @@ class Client(BaseClient):
         related informations.
         """
         prefer_final = self._get_prefer_final(prefer_final)
-        predicate = self._get_version_predicate(requirements)
+        predicate = get_version_predicate(requirements)
         releases = self.get_releases(predicate.name)
         release = releases.get_last(predicate, prefer_final)
         self.get_metadata(release.name, "%s" % release.version)
@@ -72,7 +74,7 @@ class Client(BaseClient):
         def get_versions(project_name, show_hidden):
             return self.proxy.package_releases(project_name, show_hidden)
 
-        predicate = self._get_version_predicate(requirements)
+        predicate = get_version_predicate(requirements)
         prefer_final = self._get_prefer_final(prefer_final)
         project_name = predicate.name
         if not force_update and (project_name.lower() in self._projects):
@@ -96,6 +98,8 @@ class Client(BaseClient):
                                               index=self._index)
                                   for version in versions])
         project = project.filter(predicate)
+        if len(project) == 0:
+            raise ReleaseNotFound("%s" % predicate)
         project.sort_releases(prefer_final)
         return project
 

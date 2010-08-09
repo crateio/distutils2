@@ -3,10 +3,10 @@
 Supports all metadata formats (1.0, 1.1, 1.2).
 """
 
-import re
 import os
 import sys
 import platform
+import re
 from StringIO import StringIO
 from email import message_from_file
 from tokenize import tokenize, NAME, OP, STRING, ENDMARKER
@@ -52,12 +52,12 @@ PKG_INFO_ENCODING = 'utf-8'
 PKG_INFO_PREFERRED_VERSION = '1.0'
 
 _LINE_PREFIX = re.compile('\n       \|')
-_241_FIELDS = ('Metadata-Version',  'Name', 'Version', 'Platform',
+_241_FIELDS = ('Metadata-Version', 'Name', 'Version', 'Platform',
                'Summary', 'Description',
                'Keywords', 'Home-page', 'Author', 'Author-email',
                'License')
 
-_314_FIELDS = ('Metadata-Version',  'Name', 'Version', 'Platform',
+_314_FIELDS = ('Metadata-Version', 'Name', 'Version', 'Platform',
                'Supported-Platform', 'Summary', 'Description',
                'Keywords', 'Home-page', 'Author', 'Author-email',
                'License', 'Classifier', 'Download-URL', 'Obsoletes',
@@ -65,7 +65,7 @@ _314_FIELDS = ('Metadata-Version',  'Name', 'Version', 'Platform',
 
 _314_MARKERS = ('Obsoletes', 'Provides', 'Requires')
 
-_345_FIELDS = ('Metadata-Version',  'Name', 'Version', 'Platform',
+_345_FIELDS = ('Metadata-Version', 'Name', 'Version', 'Platform',
                'Supported-Platform', 'Summary', 'Description',
                'Keywords', 'Home-page', 'Author', 'Author-email',
                'Maintainer', 'Maintainer-email', 'License',
@@ -91,6 +91,7 @@ def _version2fieldlist(version):
     elif version == '1.2':
         return _345_FIELDS
     raise MetadataUnrecognizedVersionError(version)
+
 
 def _best_version(fields):
     """Detect the best version depending on the fields used."""
@@ -349,7 +350,7 @@ class DistributionMetadata(object):
         Empty values (e.g. None and []) are not setted this way.
         """
         def _set(key, value):
-            if value not in ([], None) and key in _ATTR2FIELD:
+            if value not in ([], None, '') and key in _ATTR2FIELD:
                 self.set(self._convert_name(key), value)
 
         if other is None:
@@ -387,13 +388,16 @@ class DistributionMetadata(object):
             for v in value:
                 # check that the values are valid predicates
                 if not is_valid_predicate(v.split(';')[0]):
-                    warn('"%s" is not a valid predicate' % v)
+                    warn('"%s" is not a valid predicate (field "%s")' %
+                         (v, name))
         elif name in _VERSIONS_FIELDS and value is not None:
             if not is_valid_versions(value):
-                warn('"%s" is not a valid predicate' % value)
+                warn('"%s" is not a valid version (field "%s")' %
+                     (value, name))
         elif name in _VERSION_FIELDS and value is not None:
             if not is_valid_version(value):
-                warn('"%s" is not a valid version' % value)
+                warn('"%s" is not a valid version (field "%s")' %
+                     (value, name))
 
         if name in _UNICODEFIELDS:
             value = self._encode_field(value)
@@ -448,7 +452,7 @@ class DistributionMetadata(object):
                 missing.append(attr)
 
         if _HAS_DOCUTILS:
-            warnings = self._check_rst_data(self['Description'])
+            warnings.extend(self._check_rst_data(self['Description']))
 
         # checking metadata 1.2 (XXX needs to check 1.1, 1.0)
         if self['Metadata-Version'] != '1.2':
@@ -497,6 +501,7 @@ _OPERATORS = {'==': lambda x, y: x == y,
               'in': lambda x, y: x in y,
               'not in': lambda x, y: x not in y}
 
+
 def _operate(operation, x, y):
     return _OPERATORS[operation](x, y)
 
@@ -507,6 +512,7 @@ _VARS = {'sys.platform': sys.platform,
          'os.name': os.name,
          'platform.version': platform.version(),
          'platform.machine': platform.machine()}
+
 
 class _Operation(object):
 
@@ -568,6 +574,7 @@ class _Operation(object):
         right = self._convert(self.right)
         return _operate(self.op, left, right)
 
+
 class _OR(object):
     def __init__(self, left, right=None):
         self.left = left
@@ -596,6 +603,7 @@ class _AND(object):
 
     def __call__(self):
         return self.left() and self.right()
+
 
 class _CHAIN(object):
 
@@ -657,6 +665,7 @@ class _CHAIN(object):
             if not op():
                 return False
         return True
+
 
 def _interpret(marker, execution_context=None):
     """Interpret a marker and return a result depending on environment."""
