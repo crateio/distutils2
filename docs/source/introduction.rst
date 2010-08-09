@@ -1,14 +1,16 @@
 .. _distutils-intro:
 
-****************************
-An Introduction to Distutils
-****************************
+*****************************
+An Introduction to Distutils2
+*****************************
 
-This document covers using the Distutils to distribute your Python modules,
-concentrating on the role of developer/distributor: if you're looking for
+This document covers using Distutils2 to distribute your Python modules,
+concentrating on the role of developer/distributor; if you're looking for
 information on installing Python modules, you should refer to the
 :ref:`install-index` chapter.
 
+Throughout this documentation, the terms "Distutils", "the Distutils" and
+"Distutils2" will be used with the same meaning.
 
 .. _distutils-concepts:
 
@@ -56,7 +58,7 @@ distribution.
 If all you want to do is distribute a module called :mod:`foo`, contained in a
 file :file:`foo.py`, then your setup script can be as simple as this::
 
-   from distutils.core import setup
+   from distutils2.core import setup
    setup(name='foo',
          version='1.0',
          py_modules=['foo'],
@@ -113,22 +115,8 @@ for this platform) with the :command:`bdist_wininst` command.  For example::
    python setup.py bdist_wininst
 
 will create an executable installer, :file:`foo-1.0.win32.exe`, in the current
-directory.
-
-Other useful built distribution formats are RPM, implemented by the
-:command:`bdist_rpm` command, Solaris :program:`pkgtool`
-(:command:`bdist_pkgtool`), and HP-UX :program:`swinstall`
-(:command:`bdist_sdux`).  For example, the following command will create an RPM
-file called :file:`foo-1.0.noarch.rpm`::
-
-   python setup.py bdist_rpm
-
-(The :command:`bdist_rpm` command uses the :command:`rpm` executable, therefore
-this has to be run on an RPM-based system such as Red Hat Linux, SuSE Linux, or
-Mandrake Linux.)
-
-You can find out what distribution formats are available at any time by running
-::
+directory. You can find out what distribution formats are available at any time
+by running ::
 
    python setup.py bdist --help-formats
 

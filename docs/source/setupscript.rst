@@ -21,7 +21,7 @@ the package into Python 1.5.2.) ::
 
     #!/usr/bin/env python
 
-    from distutils.core import setup
+    from distutils2.core import setup
 
     setup(name='Distutils',
           version='1.0',
@@ -150,7 +150,7 @@ The :class:`Extension` class can be imported from :mod:`distutils.core` along
 with :func:`setup`.  Thus, the setup script for a module distribution that
 contains only this one extension and nothing else might be::
 
-    from distutils.core import setup, Extension
+    from distutils2.core import setup, Extension
     setup(name='foo',
           version='1.0',
           ext_modules=[Extension('foo', ['foo.c'])],
@@ -268,7 +268,7 @@ If you must put the :file:`Numerical` include directory right into your header
 search path, though, you can find that directory using the Distutils
 :mod:`distutils.sysconfig` module::
 
-    from distutils.sysconfig import get_python_inc
+    from distutils2.sysconfig import get_python_inc
     incdir = os.path.join(get_python_inc(plat_specific=1), 'Numerical')
     setup(...,
           Extension(..., include_dirs=[incdir]),
@@ -669,19 +669,6 @@ information is sometimes used to indicate sub-releases.  These are
               'Topic :: Software Development :: Bug Tracking',
               ],
           )
-
-If you wish to include classifiers in your :file:`setup.py` file and also wish
-to remain backwards-compatible with Python releases prior to 2.2.3, then you can
-include the following code fragment in your :file:`setup.py` before the
-:func:`setup` call. ::
-
-    # patch distutils if it can't cope with the "classifiers" or
-    # "download_url" keywords
-    from sys import version
-    if version < '2.2.3':
-        from distutils.dist import DistributionMetadata
-        DistributionMetadata.classifiers = None
-        DistributionMetadata.download_url = None
 
 
 Debugging the setup script

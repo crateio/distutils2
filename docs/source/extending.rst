@@ -41,8 +41,8 @@ The most common, and possibly the most reasonable for most needs, is to include
 the new implementations with your :file:`setup.py` script, and cause the
 :func:`distutils.core.setup` function use them::
 
-   from distutils.command.build_py import build_py as _build_py
-   from distutils.core import setup
+   from distutils2.command.build_py import build_py as _build_py
+   from distutils2.core import setup
 
    class build_py(_build_py):
        """Specialized Python source builder."""

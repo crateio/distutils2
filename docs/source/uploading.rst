@@ -57,7 +57,7 @@ the package home page.
 The ``long_description`` field can be attached to a text file located
 in the package::
 
-    from distutils.core import setup
+    from distutils2.core import setup
 
     setup(name='Distutils',
           long_description=open('README.txt'))

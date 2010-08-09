@@ -21,11 +21,11 @@ files present on the target system) are processed after the contents of the
 setup script, but before the command-line.  This has  several useful
 consequences:
 
-.. % (If you have more advanced needs, such as determining which extensions
-.. % to build based on what capabilities are present on the target system,
-.. % then you need the Distutils ``auto-configuration'' facility.  This
-.. % started to appear in Distutils 0.9 but, as of this writing, isn't mature
-.. % or stable enough yet for real-world use.)
+.. If you have more advanced needs, such as determining which extensions to
+   build based on what capabilities are present on the target system, then you
+   need the Distutils auto-configuration facility.  This started to appear in
+   Distutils 0.9 but, as of this writing, isn't mature or stable enough yet
+   for real-world use.
 
 * installers can override some of what you put in :file:`setup.py` by editing
   :file:`setup.cfg`
@@ -65,6 +65,8 @@ universal :option:`--help` option, e.g. ::
      --undef (-U)         C preprocessor macros to undefine
      --swig-opts          list of SWIG command line options
    [...]
+
+.. XXX do we want to support ``setup.py --help metadata``?
 
 Note that an option spelled :option:`--foo-bar` on the command-line  is spelled
 :option:`foo_bar` in configuration files.
