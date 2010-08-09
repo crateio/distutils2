@@ -4,7 +4,7 @@
 Uploading Packages to the Package Index
 ***************************************
 
-The Python Package Index (PyPI) not only stores the package info, but also  the
+The Python Package Index (PyPI) not only stores the package info, but also the
 package data if the author of the package wishes to. The distutils command
 :command:`upload` pushes the distribution files to PyPI.
 
@@ -20,19 +20,20 @@ line for the invocation including the :command:`upload` command are uploaded.
 
 The :command:`upload` command uses the username, password, and repository URL
 from the :file:`$HOME/.pypirc` file (see section :ref:`pypirc` for more on this
-file). If a :command:`register` command was previously called in the same command,
-and if the password was entered in the prompt, :command:`upload` will reuse the
-entered password. This is useful if you do not want to store a clear text
-password in the :file:`$HOME/.pypirc` file.
+file). If a :command:`register` command was previously called in the same
+command, and if the password was entered in the prompt, :command:`upload` will
+reuse the entered password. This is useful if you do not want to store a clear
+text password in the :file:`$HOME/.pypirc` file.
 
-You can specify another PyPI server with the :option:`--repository=*url*` option::
+You can specify another PyPI server with the :option:`--repository=*url*`
+option::
 
     python setup.py sdist bdist_wininst upload -r http://example.com/pypi
 
 See section :ref:`pypirc` for more on defining several servers.
 
 You can use the :option:`--sign` option to tell :command:`upload` to sign each
-uploaded file using GPG (GNU Privacy Guard).  The  :program:`gpg` program must
+uploaded file using GPG (GNU Privacy Guard).  The :program:`gpg` program must
 be available for execution on the system :envvar:`PATH`.  You can also specify
 which key to use for signing using the :option:`--identity=*name*` option.
 
@@ -45,28 +46,35 @@ server for help in debugging upload problems).
 PyPI package display
 ====================
 
-The ``long_description`` field plays a special role at PyPI. It is used by
+The ``description`` field plays a special role at PyPI. It is used by
 the server to display a home page for the registered package.
 
 If you use the `reStructuredText <http://docutils.sourceforge.net/rst.html>`_
 syntax for this field, PyPI will parse it and display an HTML output for
 the package home page.
 
-The ``long_description`` field can be attached to a text file located
-in the package::
+The ``description`` field can be filled from a text file located in the
+project::
 
     from distutils2.core import setup
 
-    setup(name='Distutils',
-          long_description=open('README.txt'))
+    fp = open('README.txt')
+    try:
+        description = fp.read()
+    finally:
+        fp.close()
+
+    setup(name='Distutils2',
+          description=description)
 
 In that case, :file:`README.txt` is a regular reStructuredText text file located
 in the root of the package besides :file:`setup.py`.
 
 To prevent registering broken reStructuredText content, you can use the
 :program:`rst2html` program that is provided by the :mod:`docutils` package
-and check the ``long_description`` from the command line::
+and check the ``description`` from the command line::
 
-    $ python setup.py --long-description | rst2html.py > output.html
+    $ python setup.py --description | rst2html.py > output.html
 
-:mod:`docutils` will display a warning if there's something wrong with your syntax.
+:mod:`docutils` will display a warning if there's something wrong with your
+syntax.

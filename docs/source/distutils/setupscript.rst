@@ -13,24 +13,22 @@ call to :func:`setup`, and most information supplied to the Distutils by the
 module developer is supplied as keyword arguments to :func:`setup`.
 
 Here's a slightly more involved example, which we'll follow for the next couple
-of sections: the Distutils' own setup script.  (Keep in mind that although the
-Distutils are included with Python 1.6 and later, they also have an independent
-existence so that Python 1.5.2 users can use them to install other module
-distributions.  The Distutils' own setup script, shown here, is used to install
-the project into Python 1.5.2.) ::
+of sections: a setup script that could be used for Distutils2 itself::
 
     #!/usr/bin/env python
 
-    from distutils2.core import setup
+    from distutils2.core import setup, find_packages
 
-    setup(name='Distutils',
+    setup(name='Distutils2',
           version='1.0',
-          description='Python Distribution Utilities',
-          author='Greg Ward',
-          author_email='gward@python.net',
-          url='http://www.python.org/sigs/distutils-sig/',
-          packages=['distutils', 'distutils.command'],
-         )
+          summary='Python Distribution Utilities',
+          keywords=['packaging', 'distutils2'],
+          author=u'Tarek Ziadé',
+          author_email='tarek@ziade.org',
+          home_page='http://bitbucket.org/tarek/distutils2/wiki/Home',
+          license='PSF',
+          packages=find_packages())
+
 
 There are only two differences between this and the trivial one-file
 distribution presented in section :ref:`distutils-simple-example`: more
@@ -261,6 +259,8 @@ included in the search path when building Python extensions, the best approach
 is to write C code like  ::
 
     #include <Numerical/arrayobject.h>
+
+.. TODO check if it's d2.sysconfig or the new sysconfig module now
 
 If you must put the :file:`Numerical` include directory right into your header
 search path, though, you can find that directory using the Distutils
@@ -497,7 +497,11 @@ The corresponding call to :func:`setup` might be::
           package_data={'mypkg': ['data/*.dat']})
 
 
-.. _distutils-additional-files:
+All the files that match ``package_data`` will be added to the ``MANIFEST``
+file if no template is provided. See :ref:`manifest`.
+
+
+.. _distutils2-additional-files:
 
 Installing Additional Files
 ===========================
@@ -539,11 +543,11 @@ if no template is provided. See :ref:`manifest`.
 
 .. _metadata:
 
-Additional metadata
-===================
+Metadata reference
+==================
 
 The setup script may include additional metadata beyond the name and version.
-This information includes:
+This table describes required and additional information:
 
 +----------------------+---------------------------+-----------------+--------+
 | Meta-Data            | Description               | Value           | Notes  |
@@ -564,14 +568,13 @@ This information includes:
 +----------------------+---------------------------+-----------------+--------+
 | ``home_page``        | home page for the project | URL             | \(1)   |
 +----------------------+---------------------------+-----------------+--------+
-| ``summary``          | short, summary            | short string    |        |
-|                      | description of the        |                 |        |
+| ``summary``          | short description of the  | short string    |        |
 |                      | project                   |                 |        |
 +----------------------+---------------------------+-----------------+--------+
 | ``description``      | longer description of the | long string     | \(5)   |
 |                      | project                   |                 |        |
 +----------------------+---------------------------+-----------------+--------+
-| ``download_url``     | location where the        | URL             | \(4)   |
+| ``download_url``     | location where the        | URL             |        |
 |                      | project may be downloaded |                 |        |
 +----------------------+---------------------------+-----------------+--------+
 | ``classifiers``      | a list of classifiers     | list of strings | \(4)   |
@@ -593,16 +596,16 @@ Notes:
     Either the author or the maintainer must be identified.
 
 (4)
-    The list of fields is available from the `PyPI website
-    <http://pypi.python.org/pypi>`_.
+    The list of classifiers is available from the `PyPI website
+    <http://pypi.python.org/pypi>`_. See also :mod:`distutils2.mkpkg`.
 
 (5)
     The ``description`` field is used by PyPI when you are registering a
-    project, to build its home page.
+    release, to build its PyPI page.
 
 (6)
     The ``license`` field is a text indicating the license covering the
-    release where the license is not a selection from the "License" Trove
+    distribution where the license is not a selection from the "License" Trove
     classifiers. See the ``Classifier`` field. Notice that
     there's a ``licence`` distribution option which is deprecated but still
     acts as an alias for ``license``.
@@ -617,7 +620,10 @@ Notes:
 'list of strings'
     See below.
 
-.. TODO move text to :mod:`distutils2.version`, leave a link
+In Python 2.x, "string value" means a unicode object. If a byte string (str or
+bytes) is given, it has to be valid ASCII.
+
+.. TODO move this section to the version document, keep a summary, add a link
 
 Encoding the version information is an art in itself. Python projects generally
 adhere to the version format *major.minor[.patch][sub]*. The major number is 0
@@ -671,8 +677,10 @@ inside the guts of Distutils, they may think the project or the Python
 installation is broken because they don't read all the way down to the bottom
 and see that it's a permission problem.
 
+.. FIXME DISTUTILS_DEBUG is dead, document logging/warnings here
+
 On the other hand, this doesn't help the developer to find the cause of the
 failure. For this purpose, the DISTUTILS_DEBUG environment variable can be set
-to anything except an empty string, and distutils will now print detailed
-information what it is doing, and prints the full traceback in case an exception
-occurs.
+to anything except an empty string, and Distutils2 will now print detailed
+information about what it is doing, and prints the full traceback in case an
+exception occurs.
