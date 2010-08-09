@@ -236,7 +236,7 @@ options to the :command:`bdist_rpm` command as follows:
 | Icon                          | :option:`icon`              | (none)                  |
 +-------------------------------+-----------------------------+-------------------------+
 
-Obviously, supplying even a few of these options on the command-line would be
+Obviously, supplying even a few of these options on the command line would be
 tedious and error-prone, so it's usually best to put them in the setup
 configuration file, :file:`setup.cfg`\ ---see section :ref:`setup-config`.  If
 you distribute or package many Python module distributions, you might want to
@@ -436,7 +436,7 @@ built-in functions in the installation script.
    This function creates a shortcut. *target* is the path to the program to be
    started by the shortcut. *description* is the description of the shortcut.
    *filename* is the title of the shortcut that the user will see. *arguments*
-   specifies the command line arguments, if any. *workdir* is the working directory
+   specifies the command-line arguments, if any. *workdir* is the working directory
    for the program. *iconpath* is the file containing the icon for the shortcut,
    and *iconindex* is the index of the icon in the file *iconpath*.  Again, for
    details consult the Microsoft documentation for the :class:`IShellLink`

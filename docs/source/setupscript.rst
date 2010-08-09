@@ -4,13 +4,13 @@
 Writing the Setup Script
 ************************
 
-The setup script is the centre of all activity in building, distributing, and
+The setup script is the center of all activity in building, distributing, and
 installing modules using the Distutils.  The main purpose of the setup script is
 to describe your module distribution to the Distutils, so that the various
 commands that operate on your modules do the right thing.  As we saw in section
-:ref:`distutils-simple-example` above, the setup script consists mainly of a call to
-:func:`setup`, and most information supplied to the Distutils by the module
-developer is supplied as keyword arguments to :func:`setup`.
+:ref:`distutils-simple-example` above, the setup script consists mainly of a
+call to :func:`setup`, and most information supplied to the Distutils by the
+module developer is supplied as keyword arguments to :func:`setup`.
 
 Here's a slightly more involved example, which we'll follow for the next couple
 of sections: the Distutils' own setup script.  (Keep in mind that although the
@@ -33,12 +33,12 @@ the package into Python 1.5.2.) ::
          )
 
 There are only two differences between this and the trivial one-file
-distribution presented in section :ref:`distutils-simple-example`: more metadata, and the
-specification of pure Python modules by package, rather than by module.  This is
-important since the Distutils consist of a couple of dozen modules split into
-(so far) two packages; an explicit list of every module would be tedious to
-generate and difficult to maintain.  For more information on the additional
-meta-data, see section :ref:`meta-data`.
+distribution presented in section :ref:`distutils-simple-example`: more
+metadata, and the specification of pure Python modules by package, rather than
+by module.  This is important since the Distutils consist of a couple of dozen
+modules split into (so far) two packages; an explicit list of every module
+would be tedious to generate and difficult to maintain.  For more information
+on the additional metadata, see section :ref:`metadata`.
 
 Note that any pathnames (files or directories) supplied in the setup script
 should be written using the Unix convention, i.e. slash-separated.  The
@@ -112,7 +112,8 @@ Listing individual modules
 For a small module distribution, you might prefer to list all modules rather
 than listing packages---especially the case of a single module that goes in the
 "root package" (i.e., no package at all).  This simplest case was shown in
-section :ref:`distutils-simple-example`; here is a slightly more involved example::
+section :ref:`distutils-simple-example`; here is a slightly more involved
+example::
 
     py_modules = ['mod1', 'pkg.mod2']
 
@@ -218,7 +219,7 @@ this::
           py_modules=['foo'],
          )
 
-Or on the commandline like this::
+Or on the command line like this::
 
     > python setup.py build_ext --swig-opts="-modern -I../include"
 
@@ -278,7 +279,7 @@ Even though this is quite portable---it will work on any Python installation,
 regardless of platform---it's probably easier to just write your C code in the
 sensible way.
 
-You can define and undefine pre-processor macros with the ``define_macros`` and
+You can define and undefine preprocessor macros with the ``define_macros`` and
 ``undef_macros`` options. ``define_macros`` takes a list of ``(name, value)``
 tuples, where ``name`` is the name of the macro to define (a string) and
 ``value`` is its value: either a string or ``None``.  (Defining a macro ``FOO``
@@ -343,7 +344,7 @@ linker. These files must not have extensions, as the default extension for the
 compiler is used.
 
 :option:`extra_compile_args` and :option:`extra_link_args` can be used to
-specify additional command line options for the respective compiler and linker
+specify additional command-line options for the respective compiler and linker
 command lines.
 
 :option:`export_symbols` is only useful on Windows.  It can contain a list of
@@ -549,12 +550,12 @@ directory.
 
 
 
-.. _meta-data:
+.. _metadata:
 
-Additional meta-data
-====================
+Additional metadata
+===================
 
-The setup script may include additional meta-data beyond the name and version.
+The setup script may include additional metadata beyond the name and version.
 This information includes:
 
 +----------------------+---------------------------+-----------------+--------+

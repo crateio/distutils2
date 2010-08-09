@@ -6,9 +6,9 @@ Introduction
 ============
 
 This module provides the necessary functions to provide support for
-the "Importer Protocol" as described in :pep:`302` and for working with
+the "Importer Protocol" as described in :PEP:`302` and for working with
 the database of installed Python distributions which is specified in
-:pep:`376`. In addition to the functions required in :pep:`376`, back support
+:PEP:`376`. In addition to the functions required in :PEP:`376`, back support
 for older ``.egg`` and ``.egg-info`` distributions is provided as well. These
 distributions are represented by the class
 :class:`distutils2._backport.pkgutil.EggInfoDistribution` and

@@ -4,9 +4,9 @@
 Registering with the Package Index
 **********************************
 
-The Python Package Index (PyPI) holds meta-data describing distributions
+The Python Package Index (PyPI) holds metadata describing distributions
 packaged with distutils. The distutils command :command:`register` is used to
-submit your distribution's meta-data to the index. It is invoked as follows::
+submit your distribution's metadata to the index. It is invoked as follows::
 
     python setup.py register
 
@@ -30,10 +30,10 @@ your registration.
 
 Once you are registered, you may choose option 1 from the menu. You will be
 prompted for your PyPI username and password, and :command:`register` will then
-submit your meta-data to the index.
+submit your metadata to the index.
 
 You may submit any number of versions of your distribution to the index. If you
-alter the meta-data for a particular version, you may submit it again and the
+alter the metadata for a particular version, you may submit it again and the
 index will be updated.
 
 PyPI holds a record for each (name, version) combination submitted. The first

@@ -79,7 +79,7 @@ separated by commas.  When not specified, the search is only performed in the
 :mod:`distutils.command`, :mod:`distcmds`, and :mod:`buildcmds` will be searched
 in that order.  New commands are expected to be implemented in modules of the
 same name as the command by classes sharing the same name.  Given the example
-command line option above, the command :command:`bdist_openpkg` could be
+command-line option above, the command :command:`bdist_openpkg` could be
 implemented by the class :class:`distcmds.bdist_openpkg.bdist_openpkg` or
 :class:`buildcmds.bdist_openpkg.bdist_openpkg`.
 

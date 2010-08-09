@@ -90,8 +90,8 @@ setup script). Indirectly provides the  :class:`distutils.dist.Distribution` and
    +--------------------+--------------------------------+-------------------------------------------------------------+
    | *license*          | The license for the package    | a string                                                    |
    +--------------------+--------------------------------+-------------------------------------------------------------+
-   | *keywords*         | Descriptive meta-data, see     |                                                             |
-   |                    | :pep:`314`                     |                                                             |
+   | *keywords*         | Descriptive metadata, see      |                                                             |
+   |                    | :PEP:`314`                     |                                                             |
    +--------------------+--------------------------------+-------------------------------------------------------------+
    | *platforms*        |                                |                                                             |
    +--------------------+--------------------------------+-------------------------------------------------------------+
@@ -111,9 +111,9 @@ setup script). Indirectly provides the  :class:`distutils.dist.Distribution` and
 
    Run a setup script in a somewhat controlled environment, and return  the
    :class:`distutils.dist.Distribution` instance that drives things.   This is
-   useful if you need to find out the distribution meta-data  (passed as keyword
+   useful if you need to find out the distribution metadata  (passed as keyword
    args from *script* to :func:`setup`), or  the contents of the config files or
-   command-line.
+   command line.
 
    *script_name* is a file that will be run with :func:`execfile` ``sys.argv[0]``
    will be replaced with *script* for the duration of the call.  *script_args* is a
@@ -133,7 +133,7 @@ setup script). Indirectly provides the  :class:`distutils.dist.Distribution` and
    |               | (and their data stored in the               |
    |               | :class:`Distribution` instance)             |
    +---------------+---------------------------------------------+
-   | *commandline* | Stop after the command-line                 |
+   | *commandline* | Stop after the command line                 |
    |               | (``sys.argv[1:]`` or  *script_args*) have   |
    |               | been parsed (and the data stored in the     |
    |               | :class:`Distribution` instance.)            |
@@ -305,7 +305,7 @@ This module provides the following functions.
 
 .. function:: gen_preprocess_options(macros, include_dirs)
 
-   Generate C pre-processor options (:option:`-D`, :option:`-U`, :option:`-I`) as
+   Generate C preprocessor options (:option:`-D`, :option:`-U`, :option:`-I`) as
    used by at least two types of compilers: the typical Unix compiler and Visual
    C++. *macros* is the usual thing, a list of 1- or 2-tuples, where ``(name,)``
    means undefine (:option:`-U`) macro *name*, and ``(name, value)`` means define
@@ -535,7 +535,7 @@ This module provides the following functions.
       | *archiver*   | static library creator                   |
       +--------------+------------------------------------------+
 
-      On platforms with a command-line (Unix, DOS/Windows), each of these is a string
+      On platforms with a command line (Unix, DOS/Windows), each of these is a string
       that will be split into executable name and (optional) list of arguments.
       (Splitting the string is done similarly to how Unix shells operate: words are
       delimited by spaces, but quotes and backslashes can override this.  See
@@ -574,7 +574,7 @@ This module provides the following functions.
       symbols in (or alongside) the object file(s).
 
       *extra_preargs* and *extra_postargs* are implementation-dependent. On platforms
-      that have the notion of a command-line (e.g. Unix, DOS/Windows), they are most
+      that have the notion of a command line (e.g. Unix, DOS/Windows), they are most
       likely lists of strings: extra command-line arguments to prepend/append to the
       compiler command line.  On other platforms, consult the implementation class
       documentation.  In any event, they are intended as an escape hatch for those
@@ -770,7 +770,7 @@ This module provides the following functions.
 
 
 This module provides the :class:`UnixCCompiler` class, a subclass of
-:class:`CCompiler` that handles the typical Unix-style command-line  C compiler:
+:class:`CCompiler` that handles the typical Unix-style command-line C compiler:
 
 * macros defined with :option:`-Dname[=value]`
 
@@ -1707,15 +1707,15 @@ This module supplies the abstract base class :class:`Command`.
 
 .. % todo
 
-:mod:`distutils.command.check` --- Check the meta-data of a package
-===================================================================
+:mod:`distutils.command.check` --- Check the metadata of a package
+==================================================================
 
 .. module:: distutils.command.check
    :synopsis: Check the metadata of a package
 
 
-The ``check`` command performs some tests on the meta-data of a package.
-For example, it verifies that all required meta-data are provided as
+The ``check`` command performs some tests on the metadata of a package.
+For example, it verifies that all required metadata are provided as
 the arguments passed to the :func:`setup` function.
 
 .. % todo
@@ -1741,7 +1741,7 @@ Subclasses of :class:`Command` must define the following methods.
 
    Set default values for all the options that this command supports.  Note that
    these defaults may be overridden by other commands, by the setup script, by
-   config files, or by the command-line.  Thus, this is not the place to code
+   config files, or by the command line.  Thus, this is not the place to code
    dependencies between options; generally, :meth:`initialize_options`
    implementations are just a bunch of ``self.foo = None`` assignments.
 
@@ -1750,7 +1750,7 @@ Subclasses of :class:`Command` must define the following methods.
 
    Set final values for all the options that this command supports. This is
    always called as late as possible, ie.  after any option assignments from the
-   command-line or from other commands have been done.  Thus, this is the place
+   command line or from other commands have been done.  Thus, this is the place
    to to code option dependencies: if *foo* depends on *bar*, then it is safe to
    set *foo* from *bar* as long as *foo* still has the same value it was
    assigned in :meth:`initialize_options`.
@@ -1760,7 +1760,7 @@ Subclasses of :class:`Command` must define the following methods.
 
    A command's raison d'etre: carry out the action it exists to perform,
    controlled by the options initialized in :meth:`initialize_options`,
-   customized by other commands, the setup script, the command-line, and config
+   customized by other commands, the setup script, the command line, and config
    files, and finalized in :meth:`finalize_options`.  All terminal output and
    filesystem interaction should be done by :meth:`run`.
 
@@ -2000,17 +2000,17 @@ Subclasses of :class:`Command` must define the following methods.
 
 
 The ``register`` command registers the package with the Python Package  Index.
-This is described in more detail in :pep:`301`.
+This is described in more detail in :PEP:`301`.
 
 .. % todo
 
-:mod:`distutils.command.check` --- Check the meta-data of a package
-===================================================================
+:mod:`distutils.command.check` --- Check the metadata of a package
+==================================================================
 
 .. module:: distutils.command.check
    :synopsis: Check the metadata of a package
 
 
-The ``check`` command performs some tests on the meta-data of a package.
-For example, it verifies that all required meta-data are provided as
+The ``check`` command performs some tests on the metadata of a package.
+For example, it verifies that all required metadata are provided as
 the arguments passed to the :func:`setup` function.

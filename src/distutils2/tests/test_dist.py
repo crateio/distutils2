@@ -245,7 +245,7 @@ class DistributionTestCase(support.TempdirManager,
         self.assertRaises(ValueError, dist.announce, args, kwargs)
 
     def test_find_config_files_disable(self):
-        # Ticket #1180: Allow user to disable their home config file.
+        # Bug #1180: Allow users to disable their own config file.
         temp_home = self.mkdtemp()
         if os.name == 'posix':
             user_filename = os.path.join(temp_home, ".pydistutils.cfg")

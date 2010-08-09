@@ -249,7 +249,7 @@ class BCPPCompiler(CCompiler) :
             # list of object files
             ld_args.extend(objects)
 
-            # XXX the command-line syntax for Borland C++ is a bit wonky;
+            # XXX the command line syntax for Borland C++ is a bit wonky;
             # certain filenames are jammed together in one big string, but
             # comma-delimited.  This doesn't mesh too well with the
             # Unix-centric attitude (with a DOS/Windows quoting hack) of
