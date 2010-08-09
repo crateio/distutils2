@@ -2003,14 +2003,3 @@ The ``register`` command registers the package with the Python Package  Index.
 This is described in more detail in :PEP:`301`.
 
 .. % todo
-
-:mod:`distutils.command.check` --- Check the metadata of a package
-==================================================================
-
-.. module:: distutils.command.check
-   :synopsis: Check the metadata of a package
-
-
-The ``check`` command performs some tests on the metadata of a package.
-For example, it verifies that all required metadata are provided as
-the arguments passed to the :func:`setup` function.
