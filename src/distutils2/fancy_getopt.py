@@ -71,7 +71,7 @@ class FancyGetopt(object):
 
         # These keep track of the information in the option table.  We
         # don't actually populate these structures until we're ready to
-        # parse the command-line, since the 'option_table' passed in here
+        # parse the command line, since the 'option_table' passed in here
         # isn't necessarily the final word.
         self.short_opts = []
         self.long_opts = []
@@ -80,7 +80,7 @@ class FancyGetopt(object):
         self.takes_arg = {}
 
         # And 'option_order' is filled up in 'getopt()'; it records the
-        # original order of options (and their values) on the command-line,
+        # original order of options (and their values) on the command line,
         # but expands short options, converts aliases, etc.
         self.option_order = []
 

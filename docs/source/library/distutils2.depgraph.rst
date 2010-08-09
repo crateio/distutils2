@@ -60,7 +60,7 @@ Example output on my configuration is:
 
 Now, we proceed with generating a graphical representation of the graph. First
 we write it to a file, and then we generate a PNG image using the ``dot``
-command line tool::
+command-line tool::
 
   from distutils2.depgraph import graph_to_dot
   f = open('output.dot', 'w')
@@ -75,7 +75,7 @@ Now, we can create the actual picture using:
 
 An example output image is:
 
-.. figure:: images/depgraph_output.png
+.. figure:: ../images/depgraph_output.png
    :alt: An example dot output
 
 If you want to include ``.egg`` and ``.egg-info`` distributions as well, then

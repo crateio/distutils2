@@ -85,7 +85,7 @@ by HTML pages in the "simple index", to find distributions related
 downloads.
 
 It's possible to tell the PyPIClient to follow external links by setting the 
-`follow_externals` attribute, on instanciation or after::
+`follow_externals` attribute, on instantiation or after::
 
     >>> client = Crawler(follow_externals=True)
 
@@ -112,7 +112,7 @@ or ::
 You also can specify mirrors to fallback on in case the first index_url you
 provided doesnt respond, or not correctly. The default behavior for
 `Crawler` is to use the list provided by Python.org DNS records, as
-described in the :pep:`381` about mirroring infrastructure.
+described in the :PEP:`381` about mirroring infrastructure.
 
 If you don't want to rely on these, you could specify the list of mirrors you
 want to try by specifying the `mirrors` attribute. It's a simple iterable::

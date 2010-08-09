@@ -97,7 +97,7 @@ class Command(object):
         # just to be safe.
         self.force = None
 
-        # The 'help' flag is just used for command-line parsing, so
+        # The 'help' flag is just used for command line parsing, so
         # none of that complicated bureaucracy is needed.
         self.help = 0
 
@@ -128,7 +128,7 @@ class Command(object):
     #   finalize_options()
     #     decide on the final values for all options; this is called
     #     after all possible intervention from the outside world
-    #     (command-line, option file, etc.) has been processed
+    #     (command line, option file, etc.) has been processed
     #   run()
     #     run the command: do whatever it is we're here to do,
     #     controlled by the command's various option values
@@ -137,7 +137,7 @@ class Command(object):
         """Set default values for all the options that this command
         supports.  Note that these defaults may be overridden by other
         commands, by the setup script, by config files, or by the
-        command-line.  Thus, this is not the place to code dependencies
+        command line.  Thus, this is not the place to code dependencies
         between options; generally, 'initialize_options()' implementations
         are just a bunch of "self.foo = None" assignments.
 
@@ -149,7 +149,7 @@ class Command(object):
     def finalize_options(self):
         """Set final values for all the options that this command supports.
         This is always called as late as possible, ie.  after any option
-        assignments from the command-line or from other commands have been
+        assignments from the command line or from other commands have been
         done.  Thus, this is the place to code option dependencies: if
         'foo' depends on 'bar', then it is safe to set 'foo' from 'bar' as
         long as 'foo' still has the same value it was assigned in
@@ -179,7 +179,7 @@ class Command(object):
         """A command's raison d'etre: carry out the action it exists to
         perform, controlled by the options initialized in
         'initialize_options()', customized by other commands, the setup
-        script, the command-line, and config files, and finalized in
+        script, the command line and config files, and finalized in
         'finalize_options()'.  All terminal output and filesystem
         interaction should be done by 'run()'.
 
