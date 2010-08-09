@@ -1,31 +1,73 @@
-=======
-pkgutil
-=======
+:mod:`pkgutil` --- Package utilities
+====================================
 
-Introduction
-============
+.. module:: pkgutil
+   :synopsis: Utilities to support packages.
 
-This module provides the necessary functions to provide support for
-the "Importer Protocol" as described in :PEP:`302` and for working with
-the database of installed Python distributions which is specified in
-:PEP:`376`. In addition to the functions required in :PEP:`376`, back support
-for older ``.egg`` and ``.egg-info`` distributions is provided as well. These
-distributions are represented by the class
-:class:`distutils2._backport.pkgutil.EggInfoDistribution` and
-most functions provide an extra argument ``use_egg_info`` which indicates if
-they should consider these old styled distributions. In this document,
-first a complete documentation of the functions and classes
-is provided and then several use cases are presented.
+.. TODO Follow the reST conventions used in the stdlib
 
-Caching
-+++++++
+This module provides functions to manipulate packages, as well as
+the necessary functions to provide support for the "Importer Protocol" as
+described in :PEP:`302` and for working with the database of installed Python
+distributions which is specified in :PEP:`376`. In addition to the functions
+required in :PEP:`376`, back support for older ``.egg`` and ``.egg-info``
+distributions is provided as well. These distributions are represented by the
+class :class:`~distutils2._backport.pkgutil.EggInfoDistribution` and most
+functions provide an extra argument ``use_egg_info`` which indicates if
+they should consider these old styled distributions. This document details
+first the functions and classes available and then presents several use cases.
 
-For performance purposes, the list of distributions is being internally
-cached. It is enabled by default, but you can turn it off or clear
-it using
-:func:`distutils2._backport.pkgutil.enable_cache`,
-:func:`distutils2._backport.pkgutil.disable_cache` and
-:func:`distutils2._backport.pkgutil.clear_cache`.
+
+.. function:: extend_path(path, name)
+
+   Extend the search path for the modules which comprise a package. Intended use is
+   to place the following code in a package's :file:`__init__.py`::
+
+      from pkgutil import extend_path
+      __path__ = extend_path(__path__, __name__)
+
+   This will add to the package's ``__path__`` all subdirectories of directories on
+   ``sys.path`` named after the package.  This is useful if one wants to distribute
+   different parts of a single logical package as multiple directories.
+
+   It also looks for :file:`\*.pkg` files beginning where ``*`` matches the *name*
+   argument.  This feature is similar to :file:`\*.pth` files (see the :mod:`site`
+   module for more information), except that it doesn't special-case lines starting
+   with ``import``.  A :file:`\*.pkg` file is trusted at face value: apart from
+   checking for duplicates, all entries found in a :file:`\*.pkg` file are added to
+   the path, regardless of whether they exist on the filesystem.  (This is a
+   feature.)
+
+   If the input path is not a list (as is the case for frozen packages) it is
+   returned unchanged.  The input path is not modified; an extended copy is
+   returned.  Items are only appended to the copy at the end.
+
+   It is assumed that ``sys.path`` is a sequence.  Items of ``sys.path`` that are
+   not strings referring to existing directories are ignored. Unicode items on
+   ``sys.path`` that cause errors when used as filenames may cause this function
+   to raise an exception (in line with :func:`os.path.isdir` behavior).
+
+.. function:: get_data(package, resource)
+
+   Get a resource from a package.
+
+   This is a wrapper for the :pep:`302` loader :func:`get_data` API. The package
+   argument should be the name of a package, in standard module format
+   (foo.bar). The resource argument should be in the form of a relative
+   filename, using ``/`` as the path separator. The parent directory name
+   ``..`` is not allowed, and nor is a rooted name (starting with a ``/``).
+
+   The function returns a binary string that is the contents of the
+   specified resource.
+
+   For packages located in the filesystem, which have already been imported,
+   this is the rough equivalent of::
+
+       d = os.path.dirname(sys.modules[package].__file__)
+       data = open(os.path.join(d, resource), 'rb').read()
+
+   If the package cannot be located or loaded, or it uses a :pep:`302` loader
+   which does not support :func:`get_data`, then None is returned.
 
 
 API Reference
@@ -33,6 +75,17 @@ API Reference
 
 .. automodule:: distutils2._backport.pkgutil
    :members:
+
+Caching
++++++++
+
+For performance purposes, the list of distributions is being internally
+cached. It is enabled by default, but you can turn it off or clear
+it using :func:`~distutils2._backport.pkgutil.enable_cache`,
+:func:`~distutils2._backport.pkgutil.disable_cache` and
+:func:`~distutils2._backport.pkgutil.clear_cache`.
+
+
 
 Example Usage
 =============
