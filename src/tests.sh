@@ -37,4 +37,4 @@ if [ $? -ne 0 ];then
 else
     echo Success
 fi
-echo Good job, commit now!
+echo "Good job, commit now! (or add tests)"

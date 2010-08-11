@@ -162,12 +162,12 @@ Common commands: (see '--help-commands' for more)
 
         # 'script_name' and 'script_args' are usually set to sys.argv[0]
         # and sys.argv[1:], but they can be overridden when the caller is
-        # not necessarily a setup script run from the command-line.
+        # not necessarily a setup script run from the command line.
         self.script_name = None
         self.script_args = None
 
         # 'command_options' is where we store command options between
-        # parsing them (from config files, the command-line, etc.) and when
+        # parsing them (from config files, the command line, etc.) and when
         # they are actually needed -- ie. when the command in question is
         # instantiated.  It is a dictionary of dictionaries of 2-tuples:
         #   command_options = { command_name : { option : (source, value) } }
@@ -187,18 +187,18 @@ Common commands: (see '--help-commands' for more)
         # These options are really the business of various commands, rather
         # than of the Distribution itself.  We provide aliases for them in
         # Distribution as a convenience to the developer.
-        self.packages = None
+        self.packages = []
         self.package_data = {}
         self.package_dir = None
-        self.py_modules = None
-        self.libraries = None
-        self.headers = None
-        self.ext_modules = None
+        self.py_modules = []
+        self.libraries = []
+        self.headers = []
+        self.ext_modules = []
         self.ext_package = None
-        self.include_dirs = None
+        self.include_dirs = []
         self.extra_path = None
-        self.scripts = None
-        self.data_files = None
+        self.scripts = []
+        self.data_files = []
         self.password = ''
         self.use_2to3 = False
         self.convert_2to3_doctests = []
@@ -422,9 +422,9 @@ Common commands: (see '--help-commands' for more)
         command class -- thus, we have to be able to load command classes
         in order to parse the command line.  Any error in that 'options'
         attribute raises DistutilsGetoptError; any error on the
-        command-line raises DistutilsArgError.  If no Distutils commands
+        command line raises DistutilsArgError.  If no Distutils commands
         were found on the command line, raises DistutilsArgError.  Return
-        true if command-line was successfully parsed and we should carry
+        true if command line was successfully parsed and we should carry
         on with executing commands; false if no errors but we shouldn't
         execute commands (currently, this only happens if user asks for
         help).
@@ -571,7 +571,7 @@ Common commands: (see '--help-commands' for more)
             if help_option_found:
                 return
 
-        # Put the options from the command-line into their official
+        # Put the options from the command line into their official
         # holding pen, the 'command_options' dictionary.
         opt_dict = self.get_option_dict(command)
         for (name, value) in vars(opts).items():
@@ -592,7 +592,7 @@ Common commands: (see '--help-commands' for more)
 
     def _show_help(self, parser, global_options=1, display_options=1,
                    commands=[]):
-        """Show help for the setup script command-line in the form of
+        """Show help for the setup script command line in the form of
         several lists of command-line options.  'parser' should be a
         FancyGetopt instance; do not expect it to be returned in the
         same state, as its option table will be reset to make it
@@ -697,25 +697,26 @@ Common commands: (see '--help-commands' for more)
 
             print("  %-*s  %s" % (max_length, cmd, description))
 
+    def _get_command_groups(self):
+        """Helper function to retrieve all the command class names divided
+        into standard commands (listed in distutils2.command.__all__)
+        and extra commands (given in self.cmdclass and not standard
+        commands).
+        """
+        from distutils2.command import __all__ as std_commands
+        extra_commands = [cmd for cmd in self.cmdclass
+                          if cmd not in std_commands]
+        return std_commands, extra_commands
+
     def print_commands(self):
         """Print out a help message listing all available commands with a
-        description of each.  The list is divided into "standard commands"
-        (listed in distutils2.command.__all__) and "extra commands"
-        (mentioned in self.cmdclass, but not a standard command).  The
+        description of each.  The list is divided into standard commands
+        (listed in distutils2.command.__all__) and extra commands
+        (given in self.cmdclass and not standard commands).  The
         descriptions come from the command class attribute
         'description'.
         """
-        import distutils2.command
-        std_commands = distutils2.command.__all__
-        is_std = {}
-        for cmd in std_commands:
-            is_std[cmd] = 1
-
-        extra_commands = []
-        for cmd in self.cmdclass.keys():
-            if not is_std.get(cmd):
-                extra_commands.append(cmd)
-
+        std_commands, extra_commands = self._get_command_groups()
         max_length = 0
         for cmd in (std_commands + extra_commands):
             if len(cmd) > max_length:
@@ -732,30 +733,17 @@ Common commands: (see '--help-commands' for more)
 
     def get_command_list(self):
         """Get a list of (command, description) tuples.
-        The list is divided into "standard commands" (listed in
-        distutils2.command.__all__) and "extra commands" (mentioned in
-        self.cmdclass, but not a standard command).  The descriptions come
+
+        The list is divided into standard commands (listed in
+        distutils2.command.__all__) and extra commands (given in
+        self.cmdclass and not standard commands).  The descriptions come
         from the command class attribute 'description'.
         """
         # Currently this is only used on Mac OS, for the Mac-only GUI
         # Distutils interface (by Jack Jansen)
 
-        import distutils2.command
-        std_commands = distutils2.command.__all__
-        is_std = {}
-        for cmd in std_commands:
-            is_std[cmd] = 1
-
-        extra_commands = []
-        for cmd in self.cmdclass.keys():
-            if not is_std.get(cmd):
-                extra_commands.append(cmd)
-
         rv = []
-        for cmd in (std_commands + extra_commands):
-            cls = self.cmdclass.get(cmd)
-            if not cls:
-                cls = self.get_command_class(cmd)
+        for cls in self.get_command_classes():
             try:
                 description = cls.description
             except AttributeError:
@@ -776,6 +764,23 @@ Common commands: (see '--help-commands' for more)
                 pkgs.insert(0, "distutils2.command")
             self.command_packages = pkgs
         return pkgs
+
+    def get_command_names(self):
+        """Return a list of all command names."""
+        return [getattr(cls, 'command_name', cls.__name__)
+                for cls in self.get_command_classes()]
+
+    def get_command_classes(self):
+        """Return a list of all command classes."""
+        std_commands, extra_commands = self._get_command_groups()
+        classes = []
+        for cmd in (std_commands + extra_commands):
+            try:
+                cls = self.cmdclass[cmd]
+            except KeyError:
+                cls = self.get_command_class(cmd)
+            classes.append(cls)
+        return classes
 
     def get_command_class(self, command):
         """Return the class that implements the Distutils command named by

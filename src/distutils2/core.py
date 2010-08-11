@@ -86,7 +86,7 @@ def setup(**attrs):
     and the next command are used to set attributes of the current command
     object.
 
-    When the entire command-line has been successfully parsed, calls the
+    When the entire command line has been successfully parsed, calls the
     'run()' method on each command object in turn.  This method will be
     driven entirely by the Distribution object (which each command object
     has a reference to, thanks to its constructor), and the
@@ -127,7 +127,7 @@ def setup(**attrs):
         return dist
 
     # Parse the command line and override config files; any
-    # command-line errors are the end user's fault, so turn them into
+    # command line errors are the end user's fault, so turn them into
     # SystemExit to suppress tracebacks.
     try:
         ok = dist.parse_command_line()
@@ -159,7 +159,7 @@ def run_setup(script_name, script_args=None, stop_after="run"):
     return the Distribution instance that drives things.  This is useful
     if you need to find out the distribution metadata (passed as
     keyword args from 'script' to 'setup()', or the contents of the
-    config files or command-line.
+    config files or command line.
 
     'script_name' is a file that will be run with 'execfile()';
     'sys.argv[0]' will be replaced with 'script' for the duration of the
@@ -176,8 +176,8 @@ def run_setup(script_name, script_args=None, stop_after="run"):
         stop after config files have been parsed (and their data
         stored in the Distribution instance)
       commandline
-        stop after the command-line ('sys.argv[1:]' or 'script_args')
-        have been parsed (and the data stored in the Distribution)
+        stop after the command line ('sys.argv[1:]' or 'script_args')
+        has been parsed (and the data stored in the Distribution)
       run [default]
         stop after all commands have been run (the same as if 'setup()'
         had been called in the usual way
