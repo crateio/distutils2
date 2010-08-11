@@ -26,12 +26,14 @@ import os
 import sys
 import re
 import shutil
-import ConfigParser
+from ConfigParser import RawConfigParser
 from textwrap import dedent
-from distutils2._trove import all_classifiers
+# importing this with an underscore as it should be replaced by the
+# dict form or another structures for all purposes
+from distutils2._trove import all_classifiers as _CLASSIFIERS_LIST
 
 
-helpText = {
+_helptext = {
     'name': '''
 The name of the program to be packaged, usually a single word composed
 of lower-case characters such as "python", "sqlalchemy", or "CherryPy".
@@ -74,7 +76,7 @@ human language, programming language, user interface, etc...
 # methods and functional tests of running the script)
 
 
-def askYn(question, default=None, helptext=None):
+def ask_yn(question, default=None, helptext=None):
     while True:
         answer = ask(question, default, helptext, required=True)
         if answer and answer[0].lower() in 'yn':
@@ -121,57 +123,59 @@ def ask(question, default=None, helptext=None, required=True,
         return line
 
 
-def buildTroveDict(classifiers):
-    dict = {}
+def _build_classifiers_dict(classifiers):
+    d = {}
     for key in classifiers:
-        subDict = dict
+        subDict = d
         for subkey in key.split(' :: '):
             if not subkey in subDict:
                 subDict[subkey] = {}
             subDict = subDict[subkey]
-    return dict
-troveDict = buildTroveDict(all_classifiers)
+    return d
+
+CLASSIFIERS = _build_classifiers_dict(_CLASSIFIERS_LIST)
 
 
-class SetupClass(object):
+class MainProgram(object):
     def __init__(self):
-        self.config = None
-        self.classifierDict = {}
-        self.setupData = {}
-        self.setupData['classifier'] = self.classifierDict
-        self.setupData['packages'] = {}
-        self.loadConfigFile()
+        self.configparser = None
+        self.classifiers = {}
+        self.data = {}
+        self.data['classifier'] = self.classifiers
+        self.data['packages'] = {}
+        self.load_config_file()
 
-    def lookupOption(self, key):
-        if not self.config.has_option('DEFAULT', key):
+    def lookup_option(self, key):
+        if not self.configparser.has_option('DEFAULT', key):
             return None
-        return self.config.get('DEFAULT', key)
+        return self.configparser.get('DEFAULT', key)
 
-    def loadConfigFile(self):
-        self.config = ConfigParser.RawConfigParser()
-        self.config.read(os.path.expanduser('~/.mkpkgpy'))
-        self.setupData['author'] = self.lookupOption('author')
-        self.setupData['author_email'] = self.lookupOption('author_email')
+    def load_config_file(self):
+        self.configparser = RawConfigParser()
+        # TODO replace with section in distutils config file
+        self.configparser.read(os.path.expanduser('~/.mkpkgpy'))
+        self.data['author'] = self.lookup_option('author')
+        self.data['author_email'] = self.lookup_option('author_email')
 
-    def updateConfigFile(self):
+    def update_config_file(self):
         valuesDifferent = False
         # FIXME looking only for those two fields seems wrong
         for compareKey in ('author', 'author_email'):
-            if self.lookupOption(compareKey) != self.setupData[compareKey]:
+            if self.lookup_option(compareKey) != self.data[compareKey]:
                 valuesDifferent = True
-                self.config.set('DEFAULT', compareKey,
-                    self.setupData[compareKey])
+                self.configparser.set('DEFAULT', compareKey,
+                                      self.data[compareKey])
 
         if not valuesDifferent:
             return
 
         fp = open(os.path.expanduser('~/.mkpkgpy'), 'w')
         try:
-            self.config.write(fp)
+            self.configparser.write(fp)
         finally:
             fp.close()
 
-    def loadExistingSetup(self):
+    def load_existing_setup_script(self):
         raise NotImplementedError
         # Ideas:
         # - define a mock module to assign to sys.modules['distutils'] before
@@ -186,35 +190,34 @@ class SetupClass(object):
         # deprecated or removed in recent Pythons, the ast module is not
         # present before 2.6)
 
-    def inspectFile(self, path):
+    def inspect_file(self, path):
         fp = open(path, 'r')
         try:
-            for line in [fp.readline() for x in range(10)]:
+            for line in [fp.readline() for _ in range(10)]:
                 m = re.match(r'^#!.*python((?P<major>\d)(\.\d+)?)?$', line)
                 if m:
                     if m.group('major') == '3':
-                        self.classifierDict['Programming Language :: Python :: 3'] = 1
+                        self.classifiers['Programming Language :: Python :: 3'] = 1
                     else:
-                        self.classifierDict['Programming Language :: Python :: 2'] = 1
+                        self.classifiers['Programming Language :: Python :: 2'] = 1
         finally:
             fp.close()
 
-    def inspectDirectory(self):
+    def inspect_directory(self):
         dirName = os.path.basename(os.getcwd())
-        self.setupData['name'] = dirName
+        self.data['name'] = dirName
         m = re.match(r'(.*)-(\d.+)', dirName)
         if m:
-            self.setupData['name'] = m.group(1)
-            self.setupData['version'] = m.group(2)
+            self.data['name'] = m.group(1)
+            self.data['version'] = m.group(2)
 
         for root, dirs, files in os.walk(os.curdir):
-            for file in files:
-                if root == os.curdir and file == 'setup.py':
+            for filename in files:
+                if root == os.curdir and filename == 'setup.py':
                     continue
-                fileName = os.path.join(root, file)
-                self.inspectFile(fileName)
+                self.inspect_file(os.path.join(root, filename))
 
-                if file == '__init__.py':
+                if filename == '__init__.py':
                     trySrc = os.path.join(os.curdir, 'src')
                     tmpRoot = root
                     if tmpRoot.startswith(trySrc):
@@ -222,62 +225,60 @@ class SetupClass(object):
                     if tmpRoot.startswith(os.path.sep):
                         tmpRoot = tmpRoot[len(os.path.sep):]
 
-                    self.setupData['packages'][tmpRoot] = root[1 + len(os.path.sep):]
+                    self.data['packages'][tmpRoot] = root[1 + len(os.path.sep):]
 
-    def queryUser(self):
-        self.setupData['name'] = ask('Package name', self.setupData['name'],
-              helpText['name'])
-        self.setupData['version'] = ask('Current version number',
-              self.setupData.get('version'), helpText['version'])
-        self.setupData['description'] = ask('Package description',
-              self.setupData.get('description'), helpText['description'],
+    def query_user(self):
+        self.data['name'] = ask('Package name', self.data['name'],
+              _helptext['name'])
+        self.data['version'] = ask('Current version number',
+              self.data.get('version'), _helptext['version'])
+        self.data['description'] = ask('Package description',
+              self.data.get('description'), _helptext['description'],
               lengthy=True)
-        self.setupData['author'] = ask('Author name',
-              self.setupData.get('author'), helpText['author'])
-        self.setupData['author_email'] = ask('Author e-mail address',
-              self.setupData.get('author_email'), helpText['author_email'])
-        self.setupData['url'] = ask('Project URL',
-              self.setupData.get('url'), helpText['url'], required=False)
+        self.data['author'] = ask('Author name',
+              self.data.get('author'), _helptext['author'])
+        self.data['author_email'] = ask('Author e-mail address',
+              self.data.get('author_email'), _helptext['author_email'])
+        self.data['url'] = ask('Project URL',
+              self.data.get('url'), _helptext['url'], required=False)
 
-        if askYn('Do you want to set Trove classifiers?',
-                 helptext=helpText['do_classifier']) == 'y':
-            self.setTroveClassifier()
+        if ask_yn('Do you want to set Trove classifiers?',
+                  helptext=_helptext['do_classifier']) == 'y':
+            self.set_classifier()
 
-    def setTroveClassifier(self):
-        self.setTroveDevStatus(self.classifierDict)
-        self.setTroveLicense(self.classifierDict)
-        self.setTroveOther(self.classifierDict)
+    def set_classifier(self):
+        self.set_devel_status(self.classifiers)
+        self.set_license(self.classifiers)
+        self.set_other_classifier(self.classifiers)
 
-    def setTroveOther(self, classifierDict):
-        if askYn('Do you want to set other trove identifiers', 'n',
-                 helpText['trove_generic']) != 'y':
+    def set_other_classifier(self, classifiers):
+        if ask_yn('Do you want to set other trove identifiers', 'n',
+                  _helptext['trove_generic']) != 'y':
             return
+        self.walk_classifiers(classifiers, [CLASSIFIERS], '')
 
-        self.walkTrove(classifierDict, [troveDict], '')
-
-    def walkTrove(self, classifierDict, trovePath, desc):
-        trove = trovePath[-1]
+    def walk_classifiers(self, classifiers, trovepath, desc):
+        trove = trovepath[-1]
 
         if not trove:
             return
 
         for key in sorted(trove.keys()):
             if len(trove[key]) == 0:
-                if askYn('Add "%s"' % desc[4:] + ' :: ' + key, 'n') == 'y':
-                    classifierDict[desc[4:] + ' :: ' + key] = 1
+                if ask_yn('Add "%s"' % desc[4:] + ' :: ' + key, 'n') == 'y':
+                    classifiers[desc[4:] + ' :: ' + key] = 1
                 continue
 
-            if askYn('Do you want to set items under\n   "%s" (%d sub-items)'
-                    % (key, len(trove[key])), 'n',
-                    helpText['trove_generic']) == 'y':
-                self.walkTrove(classifierDict, trovePath + [trove[key]],
-                        desc + ' :: ' + key)
+            if ask_yn('Do you want to set items under\n   "%s" (%d sub-items)'
+                      % (key, len(trove[key])), 'n',
+                      _helptext['trove_generic']) == 'y':
+                self.walk_classifiers(classifiers, trovepath + [trove[key]],
+                                      desc + ' :: ' + key)
 
-    def setTroveLicense(self, classifierDict):
+    def set_license(self, classifiers):
         while True:
             license = ask('What license do you use',
-                        helptext=helpText['trove_license'],
-                        required=False)
+                          helptext=_helptext['trove_license'], required=False)
             if not license:
                 return
 
@@ -285,8 +286,8 @@ class SetupClass(object):
 
             foundList = []
             # TODO use enumerate
-            for index in range(len(all_classifiers)):
-                troveItem = all_classifiers[index]
+            for index in range(len(_CLASSIFIERS_LIST)):
+                troveItem = _CLASSIFIERS_LIST[index]
                 if not troveItem.startswith('License :: '):
                     continue
                 troveItem = troveItem[11:].lower()
@@ -302,7 +303,7 @@ class SetupClass(object):
             question = 'Matching licenses:\n\n'
             # TODO use enumerate?
             for i in xrange(1, len(foundList) + 1):
-                question += '   %s) %s\n' % (i, all_classifiers[foundList[i - 1]])
+                question += '   %s) %s\n' % (i, _CLASSIFIERS_LIST[foundList[i - 1]])
             question += ('\nType the number of the license you wish to use or '
                          '? to try again:')
             troveLicense = ask(question, required=False)
@@ -313,14 +314,14 @@ class SetupClass(object):
                 return
             # FIXME the int conversion can fail
             foundIndex = foundList[int(troveLicense) - 1]
-            classifierDict[all_classifiers[foundIndex]] = 1
+            classifiers[_CLASSIFIERS_LIST[foundIndex]] = 1
             try:
                 return
             except IndexError:
                 print ("ERROR: Invalid selection, type a number from the list "
                        "above.")
 
-    def setTroveDevStatus(self, classifierDict):
+    def set_devel_status(self, classifiers):
         while True:
             choice = ask(dedent('''\
                 Please select the project status:
@@ -343,8 +344,8 @@ class SetupClass(object):
                            'Development Status :: 4 - Beta',
                            'Development Status :: 5 - Production/Stable',
                            'Development Status :: 6 - Mature',
-                    classifierDict[key] = 1
                            'Development Status :: 7 - Inactive'][choice]
+                    classifiers[key] = 1
                     return
                 except (IndexError, ValueError):
                     print ("ERROR: Invalid selection, type a single digit "
@@ -359,7 +360,7 @@ class SetupClass(object):
             modified_pkgs.append(pkg)
         return modified_pkgs
 
-    def writeSetup(self):
+    def write_setup_script(self):
         if os.path.exists('setup.py'):
             if os.path.exists('setup.py.old'):
                 print ("ERROR: setup.py.old backup exists, please check that "
@@ -372,25 +373,25 @@ class SetupClass(object):
             # XXX do LFs work on all platforms?
             fp.write('#!/usr/bin/env python\n\n')
             fp.write('from distutils2.core import setup\n\n')
-            fp.write('setup(name=%s,\n' % repr(self.setupData['name']))
-            fp.write('      version=%s,\n' % repr(self.setupData['version']))
+            fp.write('setup(name=%s,\n' % repr(self.data['name']))
+            fp.write('      version=%s,\n' % repr(self.data['version']))
             fp.write('      description=%s,\n'
-                    % repr(self.setupData['description']))
-            fp.write('      author=%s,\n' % repr(self.setupData['author']))
+                    % repr(self.data['description']))
+            fp.write('      author=%s,\n' % repr(self.data['author']))
             fp.write('      author_email=%s,\n'
-                    % repr(self.setupData['author_email']))
-            if self.setupData['url']:
-                fp.write('      url=%s,\n' % repr(self.setupData['url']))
-            if self.setupData['classifier']:
+                    % repr(self.data['author_email']))
+            if self.data['url']:
+                fp.write('      url=%s,\n' % repr(self.data['url']))
+            if self.data['classifier']:
                 fp.write('      classifier=[\n')
-                for classifier in sorted(self.setupData['classifier'].keys()):
+                for classifier in sorted(self.data['classifier'].keys()):
                     fp.write('            %s,\n' % repr(classifier))
                 fp.write('         ],\n')
-            if self.setupData['packages']:
+            if self.data['packages']:
                 fp.write('      packages=%s,\n'
-                        % repr(self._dotted_packages(self.setupData['packages'])))
+                        % repr(self._dotted_packages(self.data['packages'])))
                 fp.write('      package_dir=%s,\n'
-                        % repr(self.setupData['packages']))
+                        % repr(self.data['packages']))
             fp.write('      #scripts=[\'path/to/script\']\n')
 
             fp.write('      )\n')
@@ -403,13 +404,13 @@ class SetupClass(object):
 
 def main():
     """Main entry point."""
-    setup = SetupClass()
+    program = MainProgram()
     # uncomment when implemented
-    #setup.loadExistingSetup()
-    setup.inspectDirectory()
-    setup.queryUser()
-    setup.updateConfigFile()
-    setup.writeSetup()
+    #program.load_existing_setup_script()
+    program.inspect_directory()
+    program.query_user()
+    program.update_config_file()
+    program.write_setup()
 
 
 if __name__ == '__main__':
