@@ -12,12 +12,11 @@
 #
 #  Written by Sean Reifschneider <jafo@tummy.com>
 #
-#  TODO:
-#
+#  Original TODO list:
 #  Look for a license file and automatically add the category.
 #  When a .c file is found during the walk, can we add it as an extension?
 #  Ask if there is a maintainer different that the author
-#  Ask for the platform (can we detect this via "import win32" or something)?
+#  Ask for the platform (can we detect this via "import win32" or something?)
 #  Ask for the dependencies.
 #  Ask for the Requires-Dist
 #  Ask for the Provides-Dist
@@ -70,6 +69,9 @@ Optionally, you can set other trove identifiers for things such as the
 human language, programming language, user interface, etc...
 ''',
 }
+
+# XXX everything needs docstrings and tests (both low-level tests of various
+# methods and functional tests of running the script)
 
 
 def askYn(question, default=None, helptext=None):
@@ -153,6 +155,7 @@ class SetupClass(object):
 
     def updateConfigFile(self):
         valuesDifferent = False
+        # FIXME looking only for those two fields seems wrong
         for compareKey in ('author', 'author_email'):
             if self.lookupOption(compareKey) != self.setupData[compareKey]:
                 valuesDifferent = True
@@ -162,10 +165,26 @@ class SetupClass(object):
         if not valuesDifferent:
             return
 
-        self.config.write(open(os.path.expanduser('~/.mkpkgpy'), 'w'))
+        fp = open(os.path.expanduser('~/.mkpkgpy'), 'w')
+        try:
+            self.config.write(fp)
+        finally:
+            fp.close()
 
     def loadExistingSetup(self):
         raise NotImplementedError
+        # Ideas:
+        # - define a mock module to assign to sys.modules['distutils'] before
+        # importing the setup script as a module (or executing it); it would
+        # provide setup (a function that just returns its args as a dict),
+        # Extension (ditto), find_packages (the real function)
+        # - we could even mock Distribution and commands to handle more setup
+        # scripts
+        # - we could use a sandbox (http://bugs.python.org/issue8680)
+        # - the cleanest way is to parse the file, not import it, but there is
+        # no way to do that across versions (the compiler package is
+        # deprecated or removed in recent Pythons, the ast module is not
+        # present before 2.6)
 
     def inspectFile(self, path):
         fp = open(path, 'r')
@@ -265,6 +284,7 @@ class SetupClass(object):
             licenseWords = license.lower().split(' ')
 
             foundList = []
+            # TODO use enumerate
             for index in range(len(all_classifiers)):
                 troveItem = all_classifiers[index]
                 if not troveItem.startswith('License :: '):
@@ -280,6 +300,7 @@ class SetupClass(object):
                     foundList.append(index)
 
             question = 'Matching licenses:\n\n'
+            # TODO use enumerate?
             for i in xrange(1, len(foundList) + 1):
                 question += '   %s) %s\n' % (i, all_classifiers[foundList[i - 1]])
             question += ('\nType the number of the license you wish to use or '
@@ -290,6 +311,7 @@ class SetupClass(object):
                 continue
             if troveLicense == '':
                 return
+            # FIXME the int conversion can fail
             foundIndex = foundList[int(troveLicense) - 1]
             classifierDict[all_classifiers[foundIndex]] = 1
             try:
@@ -300,7 +322,7 @@ class SetupClass(object):
 
     def setTroveDevStatus(self, classifierDict):
         while True:
-            devStatus = ask(dedent('''\
+            choice = ask(dedent('''\
                 Please select the project status:
 
                 1 - Planning
@@ -312,20 +334,19 @@ class SetupClass(object):
                 7 - Inactive
 
                 Status'''), required=False)
-            if devStatus:
+            if choice:
                 try:
-                    key = {
-                           '1': 'Development Status :: 1 - Planning',
-                           '2': 'Development Status :: 2 - Pre-Alpha',
-                           '3': 'Development Status :: 3 - Alpha',
-                           '4': 'Development Status :: 4 - Beta',
-                           '5': 'Development Status :: 5 - Production/Stable',
-                           '6': 'Development Status :: 6 - Mature',
-                           '7': 'Development Status :: 7 - Inactive',
-                           }[devStatus]
+                    choice = int(choice) - 1
+                    key = ['Development Status :: 1 - Planning',
+                           'Development Status :: 2 - Pre-Alpha',
+                           'Development Status :: 3 - Alpha',
+                           'Development Status :: 4 - Beta',
+                           'Development Status :: 5 - Production/Stable',
+                           'Development Status :: 6 - Mature',
                     classifierDict[key] = 1
+                           'Development Status :: 7 - Inactive'][choice]
                     return
-                except KeyError:
+                except (IndexError, ValueError):
                     print ("ERROR: Invalid selection, type a single digit "
                            "number.")
 
@@ -340,10 +361,15 @@ class SetupClass(object):
 
     def writeSetup(self):
         if os.path.exists('setup.py'):
+            if os.path.exists('setup.py.old'):
+                print ("ERROR: setup.py.old backup exists, please check that "
+                        "current setup.py is correct and remove setup.py.old")
+                return
             shutil.move('setup.py', 'setup.py.old')
 
         fp = open('setup.py', 'w')
         try:
+            # XXX do LFs work on all platforms?
             fp.write('#!/usr/bin/env python\n\n')
             fp.write('from distutils2.core import setup\n\n')
             fp.write('setup(name=%s,\n' % repr(self.setupData['name']))
@@ -376,7 +402,10 @@ class SetupClass(object):
 
 
 def main():
+    """Main entry point."""
     setup = SetupClass()
+    # uncomment when implemented
+    #setup.loadExistingSetup()
     setup.inspectDirectory()
     setup.queryUser()
     setup.updateConfigFile()
