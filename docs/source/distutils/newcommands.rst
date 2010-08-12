@@ -37,14 +37,14 @@ aggregate a collection of tests to be run under a common test harness.
 By default, tests will be run in the "verbose" mode of the ``unittest``
 package's text test runner, but you can get the "quiet" mode (just dots) if
 you supply the ``-q`` or ``--quiet`` option, either as a global option to
-the setup script (e.g. ``setup.py -q test``) or as an option for the ``test``
-command itself (e.g. ``setup.py test -q``).  There is one other option
+the setup script (for example ``setup.py -q test``) or as an option for the ``test``
+command itself (for example ``setup.py test -q``).  There is one other option
 available:
 
 ``--test-suite=NAME, -s NAME``
     Specify the test suite (or module, class, or method) to be run
-    (e.g. ``some_module.test_suite``).  The default for this option can be
-    set by giving a ``test_suite`` argument to the ``setup()`` function, e.g.::
+    (for example ``some_module.test_suite``).  The default for this option can be
+    set by giving a ``test_suite`` argument to the ``setup()`` function, for example::
 
         setup(
             # ...
@@ -113,7 +113,7 @@ must already be registered with PyPI, using the distutils ``register``
 command -- just like the ``upload`` command.
 
 Assuming there is an ``Example`` project with documentation in the
-subdirectory ``docs``, e.g.::
+subdirectory ``docs``, for example::
 
   Example/
   |-- example.py
@@ -134,7 +134,7 @@ command::
     python setup.py upload_docs --upload-dir=docs/build/html
 
 As with any other ``setuptools`` based command, you can define useful
-defaults in the ``setup.cfg`` of your Python project, e.g.:
+defaults in the ``setup.cfg`` of your Python project, for example:
 
 .. code-block:: ini
 
