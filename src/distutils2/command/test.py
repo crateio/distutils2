@@ -1,7 +1,7 @@
 import os, sys
 from distutils2.core import Command 
 from distutils2._backport.pkgutil import get_distribution
-from distutils2.util import resolve_dotted_name
+from distutils2.util import resolve_name
 import unittest
 import warnings
 
@@ -36,11 +36,11 @@ class test(Command):
                 self.run_command('build')
                 os.chdir(self.build_lib)
             args = {"module": self.test_suite,
-                    "argv": sys.argv[:1],
-                    "testLoader": resolve_dotted_name(self.test_loader)
+                    "argv": sys.argv[:1]
             }
-            if args['testLoader'] is None:
-                del args['testLoader']
+            loader_instance = resolve_name(self.test_loader)
+            if loader_instance is not None:
+                args['testLoader'] = loader_instance
             unittest.main(**args)
         finally:
             os.chdir(prev_cwd)
