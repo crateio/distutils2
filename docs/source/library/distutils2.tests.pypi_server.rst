@@ -78,7 +78,7 @@ For this, you need to add a `server` parameter to your method, like this::
         def test_somthing(self, server):
             # your tests goes here
 
-The decorator will instanciate the server for you, and run and stop it just
+The decorator will instantiate the server for you, and run and stop it just
 before and after your method call. You also can pass the server initializer,
 just like this::
 

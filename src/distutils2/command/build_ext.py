@@ -101,7 +101,7 @@ class build_ext(Command):
         ('swig-cpp', None,
          "make SWIG create C++ files (default is C)"),
         ('swig-opts=', None,
-         "list of SWIG command line options"),
+         "list of SWIG command-line options"),
         ('swig=', None,
          "path to the SWIG executable"),
         ]
@@ -384,7 +384,7 @@ class build_ext(Command):
             self.compiler_obj.initialize(self.plat_name)
 
         # And make sure that any compile/link-related options (which might
-        # come from the command-line or from the setup script) are set in
+        # come from the command line or from the setup script) are set in
         # that CCompiler object -- that way, they automatically apply to
         # all compiling and linking done here.
         if self.include_dirs is not None:
@@ -471,7 +471,7 @@ class build_ext(Command):
         #     guess it's useful)
         # The environment variable should take precedence, and
         # any sensible compiler will give precedence to later
-        # command line args.  Hence we combine them in order:
+        # command-line args.  Hence we combine them in order:
         extra_args = ext.extra_compile_args or []
 
         macros = ext.define_macros[:]

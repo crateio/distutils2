@@ -3,15 +3,15 @@ Metadata
 ========
 
 Distutils2 provides a :class:`DistributionMetadata` class that can read and
-write Metadata files. This class is compatible with all versions of Metadata:
+write metadata files. This class is compatible with all metadata versions:
 
-* 1.0 : :pep:`241`
-* 1.1 : :pep:`314`
-* 1.2 : :pep:`345`
+* 1.0: :PEP:`241`
+* 1.1: :PEP:`314`
+* 1.2: :PEP:`345`
 
-The :pep:`345` implementation supports the micro-language for the environment
+The :PEP:`345` implementation supports the micro-language for the environment
 markers, and displays warnings when versions that are supposed to be
-:pep:`386` are violating the scheme.
+:PEP:`386` are violating the scheme.
 
 
 Reading metadata
@@ -44,7 +44,7 @@ we saw earlier is ignored::
     ['bar']
 
 If you want to provide your own execution context, let's say to test the
-Metadata under a particular environment that is not the current environment,
+metadata under a particular environment that is not the current environment,
 you can provide your own values in the ``execution_context`` option, which
 is the dict that may contain one or more keys of the context the micro-language
 expects.
@@ -78,7 +78,7 @@ use :attr:`metadata.PKG_INFO_PREFERRED_VERSION`. It is set by default to 1.0.
 Conflict checking and best version
 ==================================
 
-Some fields in :pep:`345` have to follow a version scheme in their versions
+Some fields in :PEP:`345` have to follow a version scheme in their versions
 predicate. When the scheme is violated, a warning is emitted::
 
     >>> from distutils2.metadata import DistributionMetadata
@@ -86,7 +86,6 @@ predicate. When the scheme is violated, a warning is emitted::
     >>> metadata['Requires-Dist'] = ['Funky (Groovie)']
     "Funky (Groovie)" is not a valid predicate
     >>> metadata['Requires-Dist'] = ['Funky (1.2)']
-
 
 
 .. TODO talk about check()

@@ -3,10 +3,10 @@ Representation of informations coming from indexes
 ==================================================
 
 Informations coming from indexes are represented by the classes present in the
-`dist` module.
+:mod:`distutils2.index.dist` module.
 
-APIs
-====
+API
+===
 
 Keep in mind that each project (eg. FooBar) can have several releases 
 (eg. 1.1, 1.2, 1.3), and each of these releases can be provided in multiple 
@@ -37,9 +37,9 @@ distributions can be found.
 ReleasesList
 ------------
 
-The `dist` module also provides another class, to work with lists of 
-:class:`distutils.index.dist.ReleaseInfo` classes. It allow to filter 
-and order results.
+The :mod:`~distutils2.index.dist` module also provides another class, to work
+with lists of :class:`distutils2.index.dist.ReleaseInfo` classes. It allow to
+filter and order results.
 
 .. autoclass:: distutils2.index.dist.ReleasesList
     :members:
@@ -99,6 +99,8 @@ attribute, it can be fetched by using the "fetch_metadata" method::
     None # metadata field is actually set to "None"
     >>> r.fetch_metadata()
     <Metadata for FooBar 1.1>
+
+.. XXX add proper roles to these constructs
 
 Like this, it's possible to retrieve project's releases (`fetch_releases`), 
 releases metadata (`fetch_metadata` and releases distributions

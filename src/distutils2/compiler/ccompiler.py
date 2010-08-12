@@ -191,7 +191,7 @@ class CCompiler(object):
           linker_exe    linker used to create binary executables
           archiver      static library creator
 
-        On platforms with a command-line (Unix, DOS/Windows), each of these
+        On platforms with a command line (Unix, DOS/Windows), each of these
         is a string that will be split into executable name and (optional)
         list of arguments.  (Splitting the string is done similarly to how
         Unix shells operate: words are delimited by spaces, but quotes and
@@ -597,7 +597,7 @@ class CCompiler(object):
         output debug symbols in (or alongside) the object file(s).
 
         'extra_preargs' and 'extra_postargs' are implementation- dependent.
-        On platforms that have the notion of a command-line (e.g. Unix,
+        On platforms that have the notion of a command line (e.g. Unix,
         DOS/Windows), they are most likely lists of strings: extra
         command-line arguments to prepand/append to the compiler command
         line.  On other platforms, consult the implementation class

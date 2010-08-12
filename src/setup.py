@@ -104,7 +104,7 @@ def prepare_hashlib_extensions():
         add_dir_to_list(compiler.library_dirs, '/usr/lib')
         add_dir_to_list(compiler.include_dirs, '/usr/include')
 
-    # look in command line supplied paths
+    # look in paths supplied on the command line
     if SSL_LIBDIR:
         add_dir_to_list(compiler.library_dirs, SSL_LIBDIR)
     if SSL_INCDIR:
