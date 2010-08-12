@@ -1,32 +1,13 @@
 import os, sys
 from distutils2.core import Command 
 from distutils2._backport.pkgutil import get_distribution
+from distutils2.util import resolve_dotted_name
 import unittest
 import warnings
 
-def get_loader_instance(dotted_path):
-    if dotted_path is None:
-        return None
-    module_name, rest = dotted_path.split('.')[0], dotted_path.split('.')[1:]
-    while True:
-        try:
-            ret = __import__(module_name)
-            break
-        except ImportError:
-            if rest == []:
-                return None
-            module_name += ('.' + rest[0])
-            rest = rest[1:]
-    while rest:
-        try:
-            ret = getattr(ret, rest.pop(0))
-        except AttributeError:
-            return None
-    return ret()
-
 class test(Command):
 
-    description = "" # TODO
+    description = "run the distribution's test suite"
     user_options = [
         ('test-suite=', 's',
             "Test suite to run (e.g. 'some_module.test_suite')"),
@@ -56,7 +37,7 @@ class test(Command):
                 os.chdir(self.build_lib)
             args = {"module": self.test_suite,
                     "argv": sys.argv[:1],
-                    "testLoader": get_loader_instance(self.test_loader)
+                    "testLoader": resolve_dotted_name(self.test_loader)
             }
             if args['testLoader'] is None:
                 del args['testLoader']

@@ -4,5 +4,5 @@ with us for now to support 2.x."""
 def any(seq):
     for elem in seq:
         if elem:
-            return elem
+            return True
     return False

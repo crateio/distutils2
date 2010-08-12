@@ -23,5 +23,6 @@ __all__ = ['check',
            'bdist_dumb',
            'bdist_wininst',
            'register',
+           'test',
            'upload',
           ]
