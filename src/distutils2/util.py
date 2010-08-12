@@ -655,54 +655,6 @@ def resolve_dotted_name(dotted_name):
             raise ImportError
     return ret
 
-# utility functions for 2to3 support
-
-def run_2to3(files, doctests_only=False, fixer_names=None, options=None,
-                                                            explicit=None):
-    """ Wrapper function around the refactor() class which
-    performs the conversions on a list of python files.
-    Invoke 2to3 on a list of Python files. The files should all come
-    from the build area, as the modification is done in-place."""
-
-    if not files:
-        return
-
-    # Make this class local, to delay import of 2to3
-    from lib2to3.refactor import get_fixers_from_package
-    from distutils2.converter.refactor import DistutilsRefactoringTool
-
-    if fixer_names is None:
-        fixer_names = get_fixers_from_package('lib2to3.fixes')
-
-    r = DistutilsRefactoringTool(fixer_names, options=options)
-    if doctests_only:
-        r.refactor(files, doctests_only=True, write=True)
-    else:
-        r.refactor(files, write=True)
-
-
-class Mixin2to3:
-    """ Wrapper class for commands that run 2to3.
-    To configure 2to3, setup scripts may either change
-    the class variables, or inherit from this class
-    to override how 2to3 is invoked.
-    """
-    # provide list of fixers to run.
-    # defaults to all from lib2to3.fixers
-    fixer_names = None
-
-    # options dictionary
-    options = None
-
-    # list of fixers to invoke even though they are marked as explicit
-    explicit = None
-
-    def run_2to3(self, files, doctests_only=False):
-        """ Issues a call to util.run_2to3. """
-        return run_2to3(files, doctests_only, self.fixer_names,
-                        self.options, self.explicit)
-
-
 def splitext(path):
     """Like os.path.splitext, but take off .tar too"""
     base, ext = posixpath.splitext(path)
@@ -1117,3 +1069,49 @@ def metadata_to_dict(meta):
         data['obsoletes'] = meta['Obsoletes']
 
     return data
+
+
+# utility functions for 2to3 support
+
+def run_2to3(files, doctests_only=False, fixer_names=None, options=None,
+                                                                explicit=None):
+    """ Wrapper function around the refactor() class which
+    performs the conversions on a list of python files.
+    Invoke 2to3 on a list of Python files. The files should all come
+    from the build area, as the modification is done in-place."""
+
+    if not files:
+        return
+
+    # Make this class local, to delay import of 2to3
+    from lib2to3.refactor import get_fixers_from_package, RefactoringTool
+
+    if fixer_names is None:
+        fixer_names = get_fixers_from_package('lib2to3.fixes')
+
+    r = RefactoringTool(fixer_names, options=options)
+    if doctests_only:
+        r.refactor(files, doctests_only=True, write=True)
+    else:
+        r.refactor(files, write=True)
+
+class Mixin2to3:
+    """ Wrapper class for commands that run 2to3.
+    To configure 2to3, setup scripts may either change
+    the class variables, or inherit from this class
+    to override how 2to3 is invoked.
+    """
+    # provide list of fixers to run.
+    # defaults to all from lib2to3.fixers
+    fixer_names = None
+
+    # options dictionary
+    options = None
+
+    # list of fixers to invoke even though they are marked as explicit
+    explicit = None
+
+    def run_2to3(self, files, doctests_only=False):
+        """ Issues a call to util.run_2to3. """
+        return run_2to3(files, doctests_only, self.fixer_names,
+                        self.options, self.explicit)
