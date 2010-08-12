@@ -38,9 +38,10 @@ class test(Command):
             args = {"module": self.test_suite,
                     "argv": sys.argv[:1]
             }
-            loader_instance = resolve_name(self.test_loader)
-            if loader_instance is not None:
-                args['testLoader'] = loader_instance
+            if self.test_loader:
+                loader_class = resolve_name(self.test_loader)
+                if loader_class is not None:
+                    args['testLoader'] = loader_class()
             unittest.main(**args)
         finally:
             os.chdir(prev_cwd)
