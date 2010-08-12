@@ -336,34 +336,28 @@ class DistributionMetadata(object):
                 self._write_field(fileobject, field, value)
 
     def update(self, other=None, **kwargs):
-        """Set metadata values from the given mapping
+        """Set metadata values from the given iterable `other` and kwargs.
 
-        Convert the keys to Metadata fields. Given keys that don't match a
-        metadata argument will not be used.
+        Behavior is like `dict.update`: If `other` has a ``keys`` method,
+        they are looped over and ``self[key]`` is assigned ``other[key]``.
+        Else, ``other`` is an iterable of ``(key, value)`` iterables.
 
-        If overwrite is set to False, just add metadata values that are
-        actually not defined.
-
-        If there is existing values in conflict with the dictionary ones, the
-        new values prevails.
-
-        Empty values (e.g. None and []) are not setted this way.
+        Keys that don't match a metadata field or that have an empty value are
+        dropped.
         """
         def _set(key, value):
-            if value not in ([], None, '') and key in _ATTR2FIELD:
+            if key in _ATTR2FIELD and value:
                 self.set(self._convert_name(key), value)
 
         if other is None:
             pass
-        elif hasattr(other, 'iteritems'):  # iteritems saves memory and lookups
-            for k, v in other.iteritems():
-                _set(k, v)
         elif hasattr(other, 'keys'):
             for k in other.keys():
-                _set(k, v)
+                _set(k, other[k])
         else:
             for k, v in other:
                 _set(k, v)
+
         if kwargs:
             self.update(kwargs)
 
