@@ -152,7 +152,11 @@ class DistributionMetadataTestCase(LoggingSilencer, unittest.TestCase):
         self.assertIn('Version', metadata.keys())
         self.assertIn('0.5', metadata.values())
         self.assertIn(('Version', '0.5'), metadata.items())
-        #TODO test update
+
+        metadata.update({'version': '0.6'})
+        self.assertEqual(metadata['Version'], '0.6')
+        metadata.update([('version', '0.7')])
+        self.assertEqual(metadata['Version'], '0.7')
 
     def test_versions(self):
         metadata = DistributionMetadata()

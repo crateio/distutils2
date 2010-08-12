@@ -16,7 +16,7 @@ from ConfigParser import RawConfigParser
 from distutils2.errors import (DistutilsOptionError, DistutilsArgError,
                                DistutilsModuleError, DistutilsClassError)
 from distutils2.fancy_getopt import FancyGetopt, translate_longopt
-from distutils2.util import check_environ, strtobool, resolve_dotted_name
+from distutils2.util import check_environ, strtobool, resolve_name
 from distutils2 import log
 from distutils2.metadata import DistributionMetadata
 
@@ -969,7 +969,7 @@ Common commands: (see '--help-commands' for more)
         if hooks is None:
             return
         for hook in hooks.values():
-            hook_func = resolve_dotted_name(hook)
+            hook_func = resolve_name(hook)
             hook_func(cmd_obj)
 
     # -- Distribution query methods ------------------------------------

@@ -18,7 +18,7 @@ from distutils2.util import (convert_path, change_root,
                              _find_exe_version, _MAC_OS_X_LD_VERSION,
                              byte_compile, find_packages, spawn, find_executable,
                              _nt_quote_args, get_pypirc_path, generate_pypirc,
-                             read_pypirc, resolve_dotted_name)
+                             read_pypirc, resolve_name)
 
 from distutils2 import util
 from distutils2.tests import support
@@ -342,14 +342,14 @@ class UtilTestCase(support.EnvironGuard,
         res = find_packages([root], ['pkg1.pkg2'])
         self.assertEqual(set(res), set(['pkg1', 'pkg5', 'pkg1.pkg3', 'pkg1.pkg3.pkg6']))
 
-    def test_resolve_dotted_name(self):
-        self.assertEqual(UtilTestCase, resolve_dotted_name("distutils2.tests.test_util.UtilTestCase"))
-        self.assertEqual(UtilTestCase.test_resolve_dotted_name,
-                         resolve_dotted_name("distutils2.tests.test_util.UtilTestCase.test_resolve_dotted_name"))
+    def test_resolve_name(self):
+        self.assertEqual(UtilTestCase, resolve_name("distutils2.tests.test_util.UtilTestCase"))
+        self.assertEqual(UtilTestCase.test_resolve_name,
+                         resolve_name("distutils2.tests.test_util.UtilTestCase.test_resolve_name"))
 
-        self.assertRaises(ImportError, resolve_dotted_name,
+        self.assertRaises(ImportError, resolve_name,
                           "distutils2.tests.test_util.UtilTestCaseNot")
-        self.assertRaises(ImportError, resolve_dotted_name,
+        self.assertRaises(ImportError, resolve_name,
                           "distutils2.tests.test_util.UtilTestCase.nonexistent_attribute")
 
     def test_import_nested_first_time(self):
@@ -361,12 +361,11 @@ class UtilTestCase(support.EnvironGuard,
 
         try:
             sys.path.append(tmp_dir)
-            resolve_dotted_name("a.b.c.Foo")
+            resolve_name("a.b.c.Foo")
             # assert nothing raised
         finally:
             sys.path.remove(tmp_dir)
 
-        
     @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_run_2to3_on_code(self):
         content = "print 'test'"

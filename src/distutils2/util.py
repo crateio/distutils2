@@ -636,8 +636,8 @@ def find_packages(paths=(os.curdir,), exclude=()):
                 packages.append(package_name)
     return packages
 
-def resolve_dotted_name(name):
-    """Resolves the name and returns the corresponding object."""
+def resolve_name(name):
+    """Resolve a name like ``module.object`` to an object and return it."""
     parts = name.split('.')
     cursor = len(parts)
     module_name, rest = parts[:cursor], parts[cursor:]
@@ -659,6 +659,7 @@ def resolve_dotted_name(name):
         except AttributeError:
             raise ImportError
     return ret
+
 # utility functions for 2to3 support
 
 def run_2to3(files, doctests_only=False, fixer_names=None, options=None,
