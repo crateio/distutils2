@@ -16,7 +16,7 @@ class test(Command):
     ]
     
     def initialize_options(self):
-        self.test_suite  = None
+        self.test_suite = None
         self.test_loader = None
     
     def finalize_options(self):
