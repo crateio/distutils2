@@ -7,7 +7,7 @@ import subprocess
 from copy import copy
 from os.path import join
 from StringIO import StringIO
-from distutils2.tests.support import unittest, TempdirManager
+from distutils2.tests.support import unittest, LoggingSilencer, TempdirManager
 from distutils2.command.test import test
 from distutils2.dist import Distribution
 
@@ -27,7 +27,9 @@ AssertionError: horribly
 here = os.path.dirname(os.path.abspath(__file__))
 
 
-class TestTest(TempdirManager, unittest.TestCase):
+class TestTest(TempdirManager,
+               #LoggingSilencer,
+               unittest.TestCase):
 
     def setUp(self):
         super(TestTest, self).setUp()
@@ -80,11 +82,6 @@ class TestTest(TempdirManager, unittest.TestCase):
         self.assertTrue(os.path.exists(join(self.pkg_dir, 'build')))
         self.assertTrue(any(x.startswith('lib') for x in os.listdir(join(self.pkg_dir, 'build'))))
 
-    def test_custom_test_loader(self):
-        self.pkg_dir = self.prepare_dist("custom_loader")
-        output = self.run_with_dist_cwd(self.pkg_dir)
-        self.assert_re_match(EXPECTED_OUTPUT_RE, output)
-
     def _test_works_with_2to3(self):
         pass
 
@@ -101,6 +98,25 @@ class TestTest(TempdirManager, unittest.TestCase):
             self.assertIs(warning.category, RuntimeWarning)
 
         examine_warnings(examinator)
+
+    def test_custom_runner(self):
+        dist = Distribution()
+        cmd = test(dist)
+
+        tmp_dir = self.mkdtemp()
+        try:
+            sys.path.append(tmp_dir)
+            self.write_file(os.path.join(tmp_dir, 'distutils2_tests_a.py'), '')
+            import distutils2_tests_a as a_module
+            a_module.recorder = lambda: record.append("runner called")
+            record = []
+            cmd.runner = "distutils2_tests_a.recorder"
+            cmd.ensure_finalized()
+            cmd.run()
+            self.assertEqual(["runner called"], record)
+        finally:
+            sys.path.remove(tmp_dir)
+        
 
 def test_suite():
     return unittest.makeSuite(TestTest)

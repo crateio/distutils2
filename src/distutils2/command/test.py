@@ -1,4 +1,5 @@
 import os, sys
+from distutils2 import log
 from distutils2.core import Command 
 from distutils2._backport.pkgutil import get_distribution
 from distutils2.util import resolve_name
@@ -8,16 +9,17 @@ import warnings
 class test(Command):
 
     description = "run the distribution's test suite"
+
     user_options = [
-        ('test-suite=', 's',
+        ('suite=', 's',
             "Test suite to run (e.g. 'some_module.test_suite')"),
-        ('test-loader=', None,
-            "Test loader to be used to load the test suite."),
+        ('runner=', None,
+            "Test runner to be called."),
     ]
     
     def initialize_options(self):
-        self.test_suite = None
-        self.test_loader = None
+        self.suite = None
+        self.runner = None
     
     def finalize_options(self):
         self.build_lib = self.get_finalized_command("build").build_lib
@@ -26,23 +28,23 @@ class test(Command):
                 if get_distribution(requirement) is None:
                     warnings.warn("The test dependency %s is not installed which may couse the tests to fail." % requirement,
                                   RuntimeWarning)
+        if not self.suite and not self.runner:
+            self.announce("Either 'suite' or 'runner' option must be specified", log.ERROR)
 
     def run(self):
         prev_cwd = os.getcwd()
         try:
+            # build distribution if needed
             if self.distribution.has_ext_modules():
                 build = self.get_reinitialized_command('build')
-                build.inplace = 1 # TODO - remove make sure it's needed
+                build.inplace = 1
                 self.run_command('build')
                 os.chdir(self.build_lib)
-            args = {}
-            if self.test_loader:
-                loader_class = resolve_name(self.test_loader)
-                args['testLoader'] = loader_class()
-            if self.test_suite:
-                argv = [unittest.__file__, '--verbose', self.test_suite]
-            else:
-                argv = [unittest.__file__, '--verbose']
-            unittest.main(None, None, argv, **args)
+
+            # run the tests
+            if self.runner:
+                resolve_name(self.runner)()
+            elif self.suite:
+                unittest.main(None, None, [unittest.__file__, '--verbose', self.suite])
         finally:
             os.chdir(prev_cwd)
