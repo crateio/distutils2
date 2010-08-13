@@ -13,11 +13,11 @@ try:
     import sysconfig
 except ImportError:
     from distutils2._backport import sysconfig
-from distutils2._compat import Mixin2to3
+
 # check if Python is called on the first line with this expression
 first_line_re = re.compile('^#!.*python[0-9.]*([ \t].*)?$')
 
-class build_scripts (Command, Mixin2to3):
+class build_scripts (Command):
 
     description = "\"build\" scripts (copy and fixup #! line)"
 
@@ -36,16 +36,10 @@ class build_scripts (Command, Mixin2to3):
         self.force = None
         self.executable = None
         self.outfiles = None
-        self.use_2to3 = False
-        self.convert_2to3_doctests = []
-        self.use_2to3_fixers = []
 
     def finalize_options (self):
         self.set_undefined_options('build',
                                    ('build_scripts', 'build_dir'),
-                                   ('build_scripts', 'use_2to3'),
-                                   ('build_scripts', 'convert_2to3_doctests')
-                                   ('build_scripts', 'use_2to3_fixers')
                                    'force', 'executable')
         self.scripts = self.distribution.scripts
 
@@ -55,12 +49,8 @@ class build_scripts (Command, Mixin2to3):
     def run (self):
         if not self.scripts:
             return
-        _copied_files = []
-        _copied_files = self.copy_scripts()
+        self.copy_scripts()
 
-        if self.use_2to3 and _copied_files:
-            self.run_2to3(self._copied_files, None,
-                                            self.use_2to3_fixers)
 
     def copy_scripts (self):
         """Copy each script listed in 'self.scripts'; if it's marked as a
@@ -70,7 +60,6 @@ class build_scripts (Command, Mixin2to3):
         """
         self.mkpath(self.build_dir)
         outfiles = []
-        copied_files = []
         for script in self.scripts:
             adjust = 0
             script = convert_path(script)
@@ -125,7 +114,6 @@ class build_scripts (Command, Mixin2to3):
                 if f:
                     f.close()
                 self.copy_file(script, outfile)
-                copied_files.append(outfile)
 
         if os.name == 'posix':
             for file in outfiles:
@@ -138,7 +126,7 @@ class build_scripts (Command, Mixin2to3):
                         log.info("changing mode of %s from %o to %o",
                                  file, oldmode, newmode)
                         os.chmod(file, newmode)
-        return copied_files
+
     # copy_scripts ()
 
 # class build_scripts

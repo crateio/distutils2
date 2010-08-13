@@ -4,7 +4,8 @@ import sys
 import distutils2
 from distutils2.tests import support
 from distutils2.tests.support import unittest
-from distutils2._compat import Mixin2to3
+from distutils2.command.build_py import Mixin2to3
+
 
 class Mixin2to3TestCase(support.TempdirManager, unittest.TestCase):
 
