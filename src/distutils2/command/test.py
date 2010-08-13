@@ -24,7 +24,7 @@ class test(Command):
         if self.distribution.tests_require:
             for requirement in self.distribution.tests_require:
                 if get_distribution(requirement) is None:
-                    warnings.warn("The test dependency %s is not installed which may couse the tests to fail.",
+                    warnings.warn("The test dependency %s is not installed which may couse the tests to fail." % requirement,
                                   RuntimeWarning)
 
     def run(self):
@@ -35,13 +35,14 @@ class test(Command):
                 build.inplace = 1 # TODO - remove make sure it's needed
                 self.run_command('build')
                 os.chdir(self.build_lib)
-            args = {"module": self.test_suite,
-                    "argv": sys.argv[:1]
-            }
+            args = {}
             if self.test_loader:
                 loader_class = resolve_name(self.test_loader)
-                if loader_class is not None:
-                    args['testLoader'] = loader_class()
-            unittest.main(**args)
+                args['testLoader'] = loader_class()
+            if self.test_suite:
+                argv = [unittest.__file__, '--verbose', self.test_suite]
+            else:
+                argv = [unittest.__file__, '--verbose']
+            unittest.main(None, None, argv, **args)
         finally:
             os.chdir(prev_cwd)
