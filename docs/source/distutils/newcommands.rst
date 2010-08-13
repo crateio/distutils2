@@ -12,47 +12,27 @@ Setuptools.
 When doing test-driven development, or running automated builds that need
 testing before they are deployed for downloading or use, it's often useful
 to be able to run a project's unit tests without actually deploying the project
-anywhere, even using the ``develop`` command.  The ``test`` command runs a
+anywhere.  The ``test`` command runs
 project's unit tests without actually deploying it, by temporarily putting the
-project's source on ``sys.path``, after first running ``build_ext -i`` and
-``egg_info`` to ensure that any C extensions and project metadata are
-up-to-date.
+project's source on ``sys.path``, after first running ``build_ext -i`` 
+to ensure that any C extensions are built.
 
-To use this command, your project's tests must be wrapped in a ``unittest``
-test suite by either a function, a ``TestCase`` class or method, or a module
-or package containing ``TestCase`` classes.  If the named suite is a module,
-and the module has an ``additional_tests()`` function, it is called and the
-result (which must be a ``unittest.TestSuite``) is added to the tests to be
-run.  If the named suite is a package, any submodules and subpackages are
-recursively added to the overall test suite.  (Note: if your project specifies
-a ``test_loader``, the rules for processing the chosen ``test_suite`` may
-differ; see the `test_loader`_ documentation for more details.)
+You can use this command in one of two ways: either by specifying a
+unittest-compatible test suite for your project (or any callable that returns
+it) or by passing a test runner function that will run your tests and display
+results in the console. Both options: ``suite`` and ``runner`` accept dotted
+names that will be resolved into actual objects.
 
-Note that many test systems including ``doctest`` support wrapping their
-non-``unittest`` tests in ``TestSuite`` objects.  So, if you are using a test
-package that does not support this, we suggest you encourage its developers to
-implement test suite support, as this is a convenient and standard way to
-aggregate a collection of tests to be run under a common test harness.
-
-By default, tests will be run in the "verbose" mode of the ``unittest``
-package's text test runner, but you can get the "quiet" mode (just dots) if
-you supply the ``-q`` or ``--quiet`` option, either as a global option to
-the setup script (for example ``setup.py -q test``) or as an option for the ``test``
-command itself (for example ``setup.py test -q``).  There is one other option
-available:
-
-``--test-suite=NAME, -s NAME``
+``--suite=NAME, -s NAME``
     Specify the test suite (or module, class, or method) to be run
     (for example ``some_module.test_suite``).  The default for this option can be
-    set by giving a ``test_suite`` argument to the ``setup()`` function, for example::
+    set by in your ``setup.cfg`` file. 
 
-        setup(
-            # ...
-            test_suite = "my_package.tests.test_all"
-        )
+        [test]
+            suite = my_package.tests.test_all
 
-    If you did not set a ``test_suite`` in your ``setup()`` call, and do not
-    provide a ``--test-suite`` option, an error will occur.
+``--runner=NAME, -r NAME``
+    Specify the test runner to be called. 
 
 
 ``upload`` - Upload source and/or binary distributions to PyPI
