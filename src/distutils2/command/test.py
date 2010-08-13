@@ -1,6 +1,6 @@
 import os, sys
 from distutils2 import log
-from distutils2.core import Command 
+from distutils2.core import Command
 from distutils2._backport.pkgutil import get_distribution
 from distutils2.util import resolve_name
 import unittest
@@ -16,11 +16,11 @@ class test(Command):
         ('runner=', None,
             "Test runner to be called."),
     ]
-    
+
     def initialize_options(self):
         self.suite = None
         self.runner = None
-    
+
     def finalize_options(self):
         self.build_lib = self.get_finalized_command("build").build_lib
         if self.distribution.tests_require:

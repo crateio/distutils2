@@ -14,7 +14,7 @@ testing before they are deployed for downloading or use, it's often useful
 to be able to run a project's unit tests without actually deploying the project
 anywhere.  The ``test`` command runs
 project's unit tests without actually deploying it, by temporarily putting the
-project's source on ``sys.path``, after first running ``build_ext -i`` 
+project's source on ``sys.path``, after first running ``build_ext -i``
 to ensure that any C extensions are built.
 
 You can use this command in one of two ways: either by specifying a
@@ -26,13 +26,13 @@ names that will be resolved into actual objects.
 ``--suite=NAME, -s NAME``
     Specify the test suite (or module, class, or method) to be run
     (for example ``some_module.test_suite``).  The default for this option can be
-    set by in your ``setup.cfg`` file. 
+    set by in your ``setup.cfg`` file.
 
         [test]
             suite = my_package.tests.test_all
 
 ``--runner=NAME, -r NAME``
-    Specify the test runner to be called. 
+    Specify the test runner to be called.
 
 
 ``upload`` - Upload source and/or binary distributions to PyPI

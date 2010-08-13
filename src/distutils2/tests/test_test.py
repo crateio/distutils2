@@ -68,7 +68,7 @@ class TestTest(TempdirManager,
         temp_pkg_dir = join(self.mkdtemp(), dist_name)
         shutil.copytree(pkg_dir, temp_pkg_dir)
         return temp_pkg_dir
-        
+
     def test_runs_simple_tests(self):
         self.pkg_dir = self.prepare_dist('simple_test')
         output = self.run_with_dist_cwd(self.pkg_dir)
@@ -116,7 +116,7 @@ class TestTest(TempdirManager,
             self.assertEqual(["runner called"], record)
         finally:
             sys.path.remove(tmp_dir)
-        
+
 
 def test_suite():
     return unittest.makeSuite(TestTest)
