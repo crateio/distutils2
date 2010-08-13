@@ -36,10 +36,17 @@ class build_scripts (Command):
         self.force = None
         self.executable = None
         self.outfiles = None
+        self.use_2to3 = False
+        self.convert_2to3_doctests = None
+        self.use_2to3_fixers = None
 
     def finalize_options (self):
         self.set_undefined_options('build',
                                    ('build_scripts', 'build_dir'),
+                                   ('use_2to3', 'use_2to3'),
+                                   ('use_2to3_fixers', 'use_2to3_fixers'),
+                                   ('convert_2to3_doctests', 
+                                                 'convert_2to3_doctests'),
                                    'force', 'executable')
         self.scripts = self.distribution.scripts
 

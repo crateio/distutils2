@@ -53,11 +53,16 @@ class build_py(Command, Mixin2to3):
         self._updated_files = []
         self._doctests_2to3 = []
         self.use_2to3 = False
-        self.convert_2to3_doctests = []
-        self.use_2to3_fixers = []
+        self.convert_2to3_doctests = None
+        self.use_2to3_fixers = None
         
     def finalize_options(self):
-        self.set_undefined_options('build', 'build_lib', 'force')
+        self.set_undefined_options('build',
+                                   ('use_2to3', 'use_2to3'),
+                                   ('use_2to3_fixers', 'use_2to3_fixers'),
+                                   ('convert_2to3_doctests', 
+                                        'convert_2to3_doctests'),
+                                   'build_lib', 'force')
 
         # Get the distribution options that are aliases for build_py
         # options -- list of packages and list of modules.

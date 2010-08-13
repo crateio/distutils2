@@ -43,6 +43,12 @@ class build(Command):
          "forcibly build everything (ignore file timestamps)"),
         ('executable=', 'e',
          "specify final destination interpreter path (build.py)"),
+        ('use-2to3', None,
+         "use 2to3 to make source python 3.x compatible"),
+        ('convert-2to3-doctests', None,
+         "use 2to3 to convert doctests in seperate text files"),
+        ('use-2to3-fixers', None,
+         "list additional fixers opted for during 2to3 conversion"),
         ]
 
     boolean_options = ['debug', 'force']
@@ -66,6 +72,9 @@ class build(Command):
         self.debug = None
         self.force = 0
         self.executable = None
+        self.use_2to3 = False
+        self.convert_2to3_doctests = None
+        self.use_2to3_fixers = None
 
     def finalize_options(self):
         if self.plat_name is None:

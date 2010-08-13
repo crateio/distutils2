@@ -330,7 +330,6 @@ class Command(object):
                 setattr(self, dst_option,
                         getattr(src_cmd_obj, src_option))
 
-
     def get_finalized_command(self, command, create=1):
         """Wrapper around Distribution's 'get_command_obj()' method: find
         (create if necessary and 'create' is true) the command object for
