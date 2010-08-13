@@ -1,10 +1,11 @@
 """Tests for distutils.command.build_py."""
 import sys
+import logging
 
 import distutils2
 from distutils2.tests import support
 from distutils2.tests.support import unittest
-from distutils2.command.build_py import Mixin2to3
+from distutils2.compat import Mixin2to3
 
 
 class Mixin2to3TestCase(support.TempdirManager, unittest.TestCase):
@@ -59,7 +60,8 @@ class Mixin2to3TestCase(support.TempdirManager, unittest.TestCase):
 
         mixin2to3 = Mixin2to3()
 
-        mixin2to3._run_2to3([code_name], None, ['distutils2.tests.fixer'])
+        mixin2to3._run_2to3(files=[code_name], 
+                            fixers=['distutils2.tests.fixer'])
         converted_code_content = "isinstance(x, T)"
         new_code_content = "".join(open(code_name).readlines())
         self.assertEquals(new_code_content, converted_code_content)
