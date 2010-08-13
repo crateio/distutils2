@@ -114,7 +114,7 @@ class build_py(Command, Mixin2to3):
 
         if self.use_2to3 and self._updated_files:
             self.run_2to3(self._updated_files, self._doctests_2to3,
-                                            self.distribution.use_2to3_fixers)
+                                            self.use_2to3_fixers)
 
         self.byte_compile(self.get_outputs(include_bytecode=0))
 
