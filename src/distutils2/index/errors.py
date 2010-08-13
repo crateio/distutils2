@@ -2,30 +2,26 @@
 
 All errors and exceptions raised by PyPiIndex classes.
 """
-from distutils2.errors import DistutilsError
+from distutils2.errors import DistutilsIndexError
 
 
-class IndexesError(DistutilsError):
-    """The base class for errors of the index python package."""
-
-
-class ProjectNotFound(IndexesError):
+class ProjectNotFound(DistutilsIndexError):
     """Project has not been found"""
 
 
-class DistributionNotFound(IndexesError):
+class DistributionNotFound(DistutilsIndexError):
     """The release has not been found"""
 
 
-class ReleaseNotFound(IndexesError):
+class ReleaseNotFound(DistutilsIndexError):
     """The release has not been found"""
 
 
-class CantParseArchiveName(IndexesError):
+class CantParseArchiveName(DistutilsIndexError):
     """An archive name can't be parsed to find distribution name and version"""
 
 
-class DownloadError(IndexesError):
+class DownloadError(DistutilsIndexError):
     """An error has occurs while downloading"""
 
 
@@ -33,13 +29,13 @@ class HashDoesNotMatch(DownloadError):
     """Compared hashes does not match"""
 
 
-class UnsupportedHashName(IndexesError):
+class UnsupportedHashName(DistutilsIndexError):
     """A unsupported hashname has been used"""
 
 
-class UnableToDownload(IndexesError):
+class UnableToDownload(DistutilsIndexError):
     """All mirrors have been tried, without success"""
 
 
-class InvalidSearchField(IndexesError):
+class InvalidSearchField(DistutilsIndexError):
     """An invalid search field has been used"""
