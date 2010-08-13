@@ -80,6 +80,10 @@ class DistutilsByteCompileError(DistutilsError):
     """Byte compile error."""
 
 
+class DistutilsIndexError(DistutilsError):
+    """Any problem occuring during using the indexes."""
+
+
 # Exception classes used by the CCompiler implementation classes
 class CCompilerError(Exception):
     """Some compile/link operation failed."""

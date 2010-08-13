@@ -17,7 +17,7 @@ import os
 from distutils2.index.base import BaseClient
 from distutils2.index.dist import (ReleasesList, EXTENSIONS,
                                    get_infos_from_url, MD5_HASH)
-from distutils2.index.errors import (IndexesError, DownloadError,
+from distutils2.index.errors import (DistutilsIndexError, DownloadError,
                                      UnableToDownload, CantParseArchiveName,
                                      ReleaseNotFound, ProjectNotFound)
 from distutils2.index.mirrors import get_mirrors
@@ -395,7 +395,7 @@ class Crawler(BaseClient):
             fp = urllib2.urlopen(request)
         except (ValueError, httplib.InvalidURL), v:
             msg = ' '.join([str(arg) for arg in v.args])
-            raise IndexesError('%s %s' % (url, msg))
+            raise DistutilsIndexError('%s %s' % (url, msg))
         except urllib2.HTTPError, v:
             return v
         except urllib2.URLError, v:
