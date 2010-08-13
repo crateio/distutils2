@@ -5,12 +5,12 @@ Working with versions
 Distutils2 ships with a python package capable to work with version numbers.
 It's an implementation of version specifiers `as defined in PEP 345
 <http://www.python.org/dev/peps/pep-0345/#version-specifiers>`_ about
-Metadata.
+Metadatas.
 
-`distutils2.version.NormalizedVersion`
-======================================
+NormalizedVersion 
+==================
 
-A Normalized version corresponds to a specific version of a distribution, as
+A Normalized version is a specific version of a distribution, as
 described in the PEP 345. So, you can work with the `NormalizedVersion` like
 this::
 
@@ -31,11 +31,12 @@ You can compare NormalizedVersion objects, like this::
 
 NormalizedVersion is used internally by `VersionPredicate` to do his stuff.
 
-`distutils2.version.suggest_normalized_version`
------------------------------------------------
+Suggest a normalized version
+----------------------------
 
-You also can let the normalized version be suggested to you, using the
-`suggest_normalized_version` function::
+Before this version scheme, there was existing others ones. Distutils2 provides
+a tool that suggests a normalized version: the `suggest_normalized_version` 
+function::
 
     >>> suggest_normalized_version('2.1-rc1') 
     2.1c1
@@ -46,8 +47,8 @@ return `None`::
     >>> print suggest_normalized_version('not a version')
     None
 
-`distutils2.version.VersionPredicate`
-=====================================
+Dealing with version predicates 
+===============================
 
 `VersionPredicate` knows how to parse stuff like "ProjectName (>=version)", the
 class also provides a `match` method to test if a version number is the version
@@ -59,6 +60,11 @@ predicate::
     >>> version.match("1.1.1")
     True
 
-`is_valid_predicate`
---------------------
+You could test if a predicate is a valid one, usng the `is_valid_predicate`
+function::
+
+    >>> is_valid_predicate('FooBar (1.1)')
+    True
+    >>> is_valid_predicate('FooBar (+1.1)')
+    False
 
