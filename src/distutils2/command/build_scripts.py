@@ -44,11 +44,9 @@ class build_scripts (Command, Mixin2to3):
     def finalize_options (self):
         self.set_undefined_options('build',
                                    ('build_scripts', 'build_dir'),
-                                   ('use_2to3', 'use_2to3'),
-                                   ('use_2to3_fixers', 'use_2to3_fixers'),
-                                   ('convert_2to3_doctests', 
-                                                 'convert_2to3_doctests'),
-                                   'force', 'executable')
+                                   'use_2to3', 'use_2to3_fixers',
+                                   'convert_2to3_doctests', 'force',
+                                   'executable')
         self.scripts = self.distribution.scripts
 
     def get_source_files(self):
