@@ -3,6 +3,7 @@ import re
 import sys
 import shutil
 import subprocess
+import warnings
 
 from copy import copy
 from os.path import join
@@ -120,17 +121,22 @@ class TestTest(TempdirManager,
 
     @unittest.skipUnless(sys.version > '2.6', 'Need >= 2.6')
     def test_checks_requires(self):
-        from distutils2.tests.with_support import examine_warnings
         dist = Distribution()
         cmd = test(dist)
-        def examinator(ws):
+        record = []
+        orig_showwarning = warnings.showwarning
+        def record_showwarning(*args):
+            record.append(args)
+            return orig_showwarning(*args)
+        try:
+            warnings.showwarning = record_showwarning
             cmd.tests_require = ['ohno_ohno-impossible_1234-name_stop-that!']
             cmd.ensure_finalized()
-            self.assertEqual(1, len(ws))
-            warning = ws[0]
-            self.assertIs(warning.category, RuntimeWarning)
-
-        examine_warnings(examinator)
+            self.assertEqual(1, len(record))
+            warning = record[0]
+            self.assertIs(warning[1], RuntimeWarning)
+        finally:
+            warnings.showwarning = orig_showwarning
 
     def test_custom_runner(self):
         dist = Distribution()
