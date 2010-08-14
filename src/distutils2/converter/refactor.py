@@ -1,7 +1,5 @@
 """distutils2.converter.refactor
 
-Provides DistutilsRefactoringTool, a class that register fixers used
-to refactor distutils or setuptools packages into distutils2 ones.
 """
 try:
     from lib2to3.refactor import RefactoringTool
