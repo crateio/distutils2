@@ -7,8 +7,8 @@ It's an implementation of version specifiers `as defined in PEP 345
 <http://www.python.org/dev/peps/pep-0345/#version-specifiers>`_ about
 Metadatas.
 
-NormalizedVersion 
-==================
+NormalizedVersion
+=================
 
 A Normalized version is a specific version of a distribution, as
 described in the PEP 345. So, you can work with the `NormalizedVersion` like
@@ -35,10 +35,10 @@ Suggest a normalized version
 ----------------------------
 
 Before this version scheme, there was existing others ones. Distutils2 provides
-a tool that suggests a normalized version: the `suggest_normalized_version` 
+a tool that suggests a normalized version: the `suggest_normalized_version`
 function::
 
-    >>> suggest_normalized_version('2.1-rc1') 
+    >>> suggest_normalized_version('2.1-rc1')
     2.1c1
 
 If `suggest_normalized_version` can't actually suggest you a version, it will
@@ -47,7 +47,7 @@ return `None`::
     >>> print suggest_normalized_version('not a version')
     None
 
-Dealing with version predicates 
+Dealing with version predicates
 ===============================
 
 `VersionPredicate` knows how to parse stuff like "ProjectName (>=version)", the

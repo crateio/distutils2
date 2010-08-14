@@ -1,10 +1,11 @@
 """Tests for distutils.command.build_py."""
 import sys
+import logging
 
 import distutils2
 from distutils2.tests import support
 from distutils2.tests.support import unittest
-from distutils2.command.build_py import Mixin2to3
+from distutils2.compat import Mixin2to3
 
 
 class Mixin2to3TestCase(support.TempdirManager, unittest.TestCase):
@@ -45,6 +46,25 @@ class Mixin2to3TestCase(support.TempdirManager, unittest.TestCase):
         new_doctest_content = "".join(open(doctest_name).readlines())
 
         self.assertEquals(new_doctest_content, converted_doctest_content)
+
+    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
+    def test_additional_fixers(self):
+        # used to check if use_2to3_fixers works
+        from distutils2.tests import fixer
+        code_content = "type(x) is T"
+        code_handle = self.mktempfile()
+        code_name = code_handle.name
+
+        code_handle.write(code_content)
+        code_handle.flush()
+
+        mixin2to3 = Mixin2to3()
+
+        mixin2to3._run_2to3(files=[code_name],
+                            fixers=['distutils2.tests.fixer'])
+        converted_code_content = "isinstance(x, T)"
+        new_code_content = "".join(open(code_name).readlines())
+        self.assertEquals(new_code_content, converted_code_content)
 
 def test_suite():
     return unittest.makeSuite(Mixin2to3TestCase)

@@ -13,57 +13,10 @@ import distutils2
 from distutils2.core import Command
 from distutils2.errors import DistutilsOptionError, DistutilsFileError
 from distutils2.util import convert_path
-from distutils2.converter.refactor import DistutilsRefactoringTool
+from distutils2.compat import Mixin2to3
 
 # marking public APIs
-__all__ = ['Mixin2to3', 'build_py']
-
-try:
-    from distutils2.util import Mixin2to3 as _Mixin2to3
-    from lib2to3.refactor import get_fixers_from_package
-    _CONVERT = True
-    _KLASS = _Mixin2to3
-except ImportError:
-    _CONVERT = False
-    _KLASS = object
-
-class Mixin2to3(_KLASS):
-    """ The base class which can be used for refactoring. When run under
-    Python 3.0, the run_2to3 method provided by Mixin2to3 is overridden.
-    When run on Python 2.x, it merely creates a class which overrides run_2to3,
-    yet does nothing in particular with it.
-    """
-    if _CONVERT:
-        def _run_2to3(self, files, doctests=[]):
-            """ Takes a list of files and doctests, and performs conversion
-            on those.
-              - First, the files which contain the code(`files`) are converted.
-              - Second, the doctests in `files` are converted.
-              - Thirdly, the doctests in `doctests` are converted.
-            """
-
-            # Convert the ".py" files.
-            logging.info("Converting Python code")
-            _KLASS.run_2to3(self, files)
-
-            # Convert the doctests in the ".py" files.
-            logging.info("Converting doctests with '.py' files")
-            _KLASS.run_2to3(self, files, doctests_only=True)
-
-            # If the following conditions are met, then convert:-
-            # 1. User has specified the 'convert_2to3_doctests' option. So, we
-            #    can expect that the list 'doctests' is not empty.
-            # 2. The default is allow distutils2 to allow conversion of text files
-            #    containing doctests. It is set as
-            #    distutils2.run_2to3_on_doctests
-
-            if doctests != [] and distutils2.run_2to3_on_doctests:
-                logging.info("Converting text files which contain doctests")
-                _KLASS.run_2to3(self, doctests, doctests_only=True)
-    else:
-        # If run on Python 2.x, there is nothing to do.
-        def _run_2to3(self, files, doctests=[]):
-            pass
+__all__ = ['build_py']
 
 class build_py(Command, Mixin2to3):
 
@@ -77,6 +30,12 @@ class build_py(Command, Mixin2to3):
          "also compile with optimization: -O1 for \"python -O\", "
          "-O2 for \"python -OO\", and -O0 to disable [default: -O0]"),
         ('force', 'f', "forcibly build everything (ignore file timestamps)"),
+        ('use-2to3', None,
+         "use 2to3 to make source python 3.x compatible"),
+        ('convert-2to3-doctests', None,
+         "use 2to3 to convert doctests in seperate text files"),
+        ('use-2to3-fixers', None,
+         "list additional fixers opted for during 2to3 conversion"),
         ]
 
     boolean_options = ['compile', 'force']
@@ -93,9 +52,15 @@ class build_py(Command, Mixin2to3):
         self.force = None
         self._updated_files = []
         self._doctests_2to3 = []
+        self.use_2to3 = False
+        self.convert_2to3_doctests = None
+        self.use_2to3_fixers = None
 
     def finalize_options(self):
-        self.set_undefined_options('build', 'build_lib', 'force')
+        self.set_undefined_options('build',
+                                   'use_2to3', 'use_2to3_fixers',
+                                   'convert_2to3_doctests', 'build_lib',
+                                   'force')
 
         # Get the distribution options that are aliases for build_py
         # options -- list of packages and list of modules.
@@ -145,8 +110,9 @@ class build_py(Command, Mixin2to3):
             self.build_packages()
             self.build_package_data()
 
-        if self.distribution.use_2to3 and self_updated_files:
-            self.run_2to3(self._updated_files, self._doctests_2to3)
+        if self.use_2to3 and self._updated_files:
+            self.run_2to3(self._updated_files, self._doctests_2to3,
+                                            self.use_2to3_fixers)
 
         self.byte_compile(self.get_outputs(include_bytecode=0))
 
