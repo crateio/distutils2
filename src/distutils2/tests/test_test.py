@@ -151,16 +151,6 @@ class TestTest(TempdirManager,
         finally:
             sys.path.remove(tmp_dir)
 
-    def _test_gets_unittest_discovery(self):
-        import unittest as ut1
-
-        orig_discover = getattr(ut1.TestLoader, 'discover', None)
-        try:
-            self._test_gets_unittest_discovery(ut1)
-        finally:
-            if orig_discover is not None:
-                ut1.TestLoader.discover = orig_discover
-
     @with_ut_isolated
     @with_mock_ut2_module
     def test_gets_unittest_discovery(self, ut1, mock_ut2):
