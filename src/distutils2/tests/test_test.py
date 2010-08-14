@@ -26,6 +26,40 @@ AssertionError: horribly
 
 here = os.path.dirname(os.path.abspath(__file__))
 
+def with_mock_ut2_module(func):
+    def wrapper(*args):
+        class MockUTModule(object): pass
+        class MockUTClass(object):
+            def __init__(*_, **__): pass
+            def discover(self): pass
+            def run(self, _): pass
+        ut2 = MockUTModule()
+        ut2.TestLoader = MockUTClass
+        ut2.TextTestRunner = MockUTClass
+        orig_ut2 = sys.modules.get('unittest2', None)
+        try:
+            sys.modules['unittest2'] = ut2
+            args += (ut2,)
+            func(*args)
+        finally:
+            if orig_ut2 is not None:
+                sys.modules['unittest2'] = orig_ut2
+            else:
+                del sys.modules['unittest2']
+    return wrapper
+
+def with_ut_isolated(func):
+    def wrapper(*args):
+        import unittest as ut1
+
+        orig_discover = getattr(ut1.TestLoader, 'discover', None)
+        try:
+            args += (ut1,)
+            return func(*args)
+        finally:
+            if orig_discover is not None:
+                ut1.TestLoader.discover = orig_discover
+    return wrapper
 
 class TestTest(TempdirManager,
                #LoggingSilencer,
@@ -117,6 +151,38 @@ class TestTest(TempdirManager,
         finally:
             sys.path.remove(tmp_dir)
 
+    def _test_gets_unittest_discovery(self):
+        import unittest as ut1
+
+        orig_discover = getattr(ut1.TestLoader, 'discover', None)
+        try:
+            self._test_gets_unittest_discovery(ut1)
+        finally:
+            if orig_discover is not None:
+                ut1.TestLoader.discover = orig_discover
+
+    @with_ut_isolated
+    @with_mock_ut2_module
+    def test_gets_unittest_discovery(self, ut1, mock_ut2):
+        dist = Distribution()
+        cmd = test(dist)
+        ut1.TestLoader.discover = lambda: None
+        self.assertEqual(cmd.get_ut_with_discovery(), ut1)
+
+        del ut1.TestLoader.discover
+        self.assertEqual(cmd.get_ut_with_discovery(), mock_ut2)
+
+    @with_ut_isolated
+    @with_mock_ut2_module
+    def test_calls_discover(self, ut1, mock_ut2):
+        if hasattr(ut1.TestLoader, "discover"):
+            del ut1.TestLoader.discover
+        record = []
+        mock_ut2.TestLoader.discover = lambda self, path: record.append(path)
+        dist = Distribution()
+        cmd = test(dist)
+        cmd.run()
+        self.assertEqual(record, [os.curdir])
 
 def test_suite():
     return unittest.makeSuite(TestTest)

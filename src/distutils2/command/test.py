@@ -1,4 +1,5 @@
-import os, sys
+import os
+import sys
 from distutils2 import log
 from distutils2.core import Command
 from distutils2._backport.pkgutil import get_distribution
@@ -28,8 +29,18 @@ class test(Command):
                 if get_distribution(requirement) is None:
                     warnings.warn("The test dependency %s is not installed which may couse the tests to fail." % requirement,
                                   RuntimeWarning)
-        if not self.suite and not self.runner:
-            self.announce("Either 'suite' or 'runner' option must be specified", log.ERROR)
+        if not self.suite and not self.runner and self.get_ut_with_discovery() is None:
+            self.announce("No test discovery available. Please specify the 'suite' or 'runner' option or install unittest2.", log.ERROR)
+    
+    def get_ut_with_discovery(self):
+        if hasattr(unittest.TestLoader, "discover"):
+            return unittest
+        else:
+            try:
+                import unittest2
+                return unittest2
+            except ImportError:
+                return None
 
     def run(self):
         prev_cwd = os.getcwd()
@@ -45,6 +56,10 @@ class test(Command):
             if self.runner:
                 resolve_name(self.runner)()
             elif self.suite:
-                unittest.main(None, None, [unittest.__file__, '--verbose', self.suite])
+                unittest.TextTestRunner(verbosity=self.verbose + 1).run(resolve_name(self.suite)())
+            elif self.get_ut_with_discovery():
+                discovery_ut = self.get_ut_with_discovery()
+                test_suite = discovery_ut.TestLoader().discover(os.curdir)
+                discovery_ut.TextTestRunner(verbosity=self.verbose + 1).run(test_suite)
         finally:
             os.chdir(prev_cwd)
