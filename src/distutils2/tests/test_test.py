@@ -62,7 +62,6 @@ def with_ut_isolated(func):
     return wrapper
 
 class TestTest(TempdirManager,
-               #LoggingSilencer,
                unittest.TestCase):
 
     def setUp(self):
@@ -123,9 +122,9 @@ class TestTest(TempdirManager,
     def test_checks_requires(self):
         from distutils2.tests.with_support import examine_warnings
         dist = Distribution()
-        dist.tests_require = ['ohno_ohno-impossible_1234-name_stop-that!']
         cmd = test(dist)
         def examinator(ws):
+            cmd.tests_require = ['ohno_ohno-impossible_1234-name_stop-that!']
             cmd.ensure_finalized()
             self.assertEqual(1, len(ws))
             warning = ws[0]

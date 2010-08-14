@@ -16,19 +16,21 @@ class test(Command):
             "Test suite to run (e.g. 'some_module.test_suite')"),
         ('runner=', None,
             "Test runner to be called."),
+        ('tests-require=', None,
+            "List of packages required to run the test suite."),
     ]
 
     def initialize_options(self):
         self.suite = None
         self.runner = None
+        self.tests_require = []
 
     def finalize_options(self):
         self.build_lib = self.get_finalized_command("build").build_lib
-        if self.distribution.tests_require:
-            for requirement in self.distribution.tests_require:
-                if get_distribution(requirement) is None:
-                    warnings.warn("The test dependency %s is not installed which may couse the tests to fail." % requirement,
-                                  RuntimeWarning)
+        for requirement in self.tests_require:
+            if get_distribution(requirement) is None:
+                warnings.warn("The test dependency %s is not installed which may couse the tests to fail." % requirement,
+                              RuntimeWarning)
         if not self.suite and not self.runner and self.get_ut_with_discovery() is None:
             self.announce("No test discovery available. Please specify the 'suite' or 'runner' option or install unittest2.", log.ERROR)
     
