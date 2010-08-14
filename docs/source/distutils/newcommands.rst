@@ -23,6 +23,10 @@ it) or by passing a test runner function that will run your tests and display
 results in the console. Both options: ``suite`` and ``runner`` accept dotted
 names that will be resolved into actual objects.
 
+If none of these options are specified, distutils2 will try to perform test
+discovery using either unittest2 (if installed) or unittest (if running on
+recent Python version).
+
 ``--suite=NAME, -s NAME``
     Specify the test suite (or module, class, or method) to be run
     (for example ``some_module.test_suite``).  The default for this option can be
