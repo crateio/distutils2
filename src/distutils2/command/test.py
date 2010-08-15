@@ -18,11 +18,11 @@ class test(Command):
 
     user_options = [
         ('suite=', 's',
-            "Test suite to run (e.g. 'some_module.test_suite')"),
+         "test suite to run (for example: 'some_module.test_suite')"),
         ('runner=', None,
-            "Test runner to be called."),
+         "test runner to be called."),
         ('tests-require=', None,
-            "List of packages required to run the test suite."),
+         "list of packages required to run the test suite."),
     ]
 
     def initialize_options(self):
