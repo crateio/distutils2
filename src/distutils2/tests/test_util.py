@@ -343,9 +343,13 @@ class UtilTestCase(support.EnvironGuard,
         self.assertEqual(set(res), set(['pkg1', 'pkg5', 'pkg1.pkg3', 'pkg1.pkg3.pkg6']))
 
     def test_resolve_name(self):
-        self.assertEqual(UtilTestCase, resolve_name("distutils2.tests.test_util.UtilTestCase"))
-        self.assertEqual(UtilTestCase.test_resolve_name,
-                         resolve_name("distutils2.tests.test_util.UtilTestCase.test_resolve_name"))
+        self.assertEqual(str(42), resolve_name('__builtin__.str')(42))
+        self.assertEqual(
+            UtilTestCase.__name__,
+            resolve_name("distutils2.tests.test_util.UtilTestCase").__name__)
+        self.assertEqual(
+            UtilTestCase.test_resolve_name.__name__,
+            resolve_name("distutils2.tests.test_util.UtilTestCase.test_resolve_name").__name__)
 
         self.assertRaises(ImportError, resolve_name,
                           "distutils2.tests.test_util.UtilTestCaseNot")

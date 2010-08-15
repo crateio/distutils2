@@ -637,7 +637,10 @@ def find_packages(paths=(os.curdir,), exclude=()):
     return packages
 
 def resolve_name(name):
-    """Resolve a name like ``module.object`` to an object and return it."""
+    """Resolve a name like ``module.object`` to an object and return it.
+
+    Raise ImportError if the module or name is not found.
+    """
     parts = name.split('.')
     cursor = len(parts)
     module_name, rest = parts[:cursor], parts[cursor:]
@@ -652,12 +655,14 @@ def resolve_name(name):
             cursor -= 1
             module_name = parts[:cursor]
             rest = parts[cursor:]
+            ret = ''
 
     for part in parts[1:]:
         try:
             ret = getattr(ret, part)
         except AttributeError:
             raise ImportError
+
     return ret
 
 def splitext(path):
