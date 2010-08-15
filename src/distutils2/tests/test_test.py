@@ -140,7 +140,7 @@ class TestTest(TempdirManager,
         sys.path.append(tmp_dir)
         self.addCleanup(lambda: sys.path.remove(tmp_dir))
 
-        self.write_file(os.path.join(tmp_dir, 'distutils2_tests_a.py'), '')
+        self.write_file((tmp_dir, 'distutils2_tests_a.py'), '')
         import distutils2_tests_a as a_module
         return "distutils2_tests_a", a_module
 
