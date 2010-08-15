@@ -15,6 +15,7 @@ from distutils2.tests import TESTFN, captured_stdout
 from distutils2.tests import support
 from distutils2.tests.support import unittest
 
+
 class test_dist(Command):
     """Sample distutils2 extension command."""
 
@@ -107,8 +108,8 @@ class DistributionTestCase(support.TempdirManager,
         sys.argv.append("build")
         f = open(TESTFN, "w")
         try:
-            print >>f, "[global]"
-            print >>f, "command_packages = foo.bar, splat"
+            print >> f, "[global]"
+            print >> f, "command_packages = foo.bar, splat"
             f.close()
             d = self.create_distribution([TESTFN])
             self.assertEqual(d.get_command_packages(),
@@ -141,7 +142,6 @@ class DistributionTestCase(support.TempdirManager,
                           'summary': u'Café torréfié',
                           'description': u'Héhéhé'})
 
-
         # let's make sure the file can be written
         # with Unicode fields. they are encoded with
         # PKG_INFO_ENCODING
@@ -154,7 +154,6 @@ class DistributionTestCase(support.TempdirManager,
                           'summary': 'Cafe torrefie',
                           'description': 'Hehehe'})
 
-        my_file2 = os.path.join(tmp_dir, 'f2')
         dist.metadata.write_file(open(my_file, 'w'))
 
     def test_bad_attr(self):
@@ -162,21 +161,22 @@ class DistributionTestCase(support.TempdirManager,
 
         # catching warnings
         warns = []
+
         def _warn(msg):
             warns.append(msg)
 
         old_warn = warnings.warn
         warnings.warn = _warn
         try:
-            dist = cls(attrs={'author': 'xxx',
-                              'name': 'xxx',
-                              'version': 'xxx',
-                              'url': 'xxxx',
-                              'badoptname': 'xxx'})
+            cls(attrs={'author': 'xxx',
+                       'name': 'xxx',
+                       'version': 'xxx',
+                       'url': 'xxxx',
+                       'badoptname': 'xxx'})
         finally:
             warnings.warn = old_warn
 
-        self.assertTrue(len(warns)==1 and "Unknown distribution" in warns[0])
+        self.assertTrue(len(warns) == 1 and "Unknown distribution" in warns[0])
 
     def test_empty_options(self):
         # an empty options dictionary should not stay in the
@@ -185,17 +185,18 @@ class DistributionTestCase(support.TempdirManager,
 
         # catching warnings
         warns = []
+
         def _warn(msg):
             warns.append(msg)
 
         old_warn = warnings.warn
         warnings.warn = _warn
         try:
-            dist = cls(attrs={'author': 'xxx',
-                              'name': 'xxx',
-                              'version': 'xxx',
-                              'url': 'xxxx',
-                              'options': {}})
+            cls(attrs={'author': 'xxx',
+                       'name': 'xxx',
+                       'version': 'xxx',
+                       'url': 'xxxx',
+                       'options': {}})
         finally:
             warnings.warn = old_warn
 
@@ -206,8 +207,9 @@ class DistributionTestCase(support.TempdirManager,
         # for a few cryptic comments in dist.py.  If this is to stay
         # in the public API, it deserves some better documentation.
 
-        # Here is an example of how it's used out there: 
-        # http://svn.pythonmac.org/py2app/py2app/trunk/doc/index.html#specifying-customizations
+        # Here is an example of how it's used out there:
+        # http://svn.pythonmac.org/py2app/py2app/trunk/doc/
+        # index.html#specifying-customizations
         cls = Distribution
         dist = cls(attrs={'author': 'xxx',
                           'name': 'xxx',
@@ -239,7 +241,6 @@ class DistributionTestCase(support.TempdirManager,
         dist.command_packages = 'one,two'
         cmds = dist.get_command_packages()
         self.assertEqual(cmds, ['distutils2.command', 'one', 'two'])
-
 
     def test_announce(self):
         # make sure the level is known
@@ -278,7 +279,7 @@ class DistributionTestCase(support.TempdirManager,
             os.path.expanduser = old_expander
 
         # make sure --no-user-cfg disables the user cfg file
-        self.assertEqual(len(all_files)-1, len(files))
+        self.assertEqual(len(all_files) - 1, len(files))
 
     def test_special_hooks_parsing(self):
         temp_home = self.mkdtemp()
@@ -286,15 +287,18 @@ class DistributionTestCase(support.TempdirManager,
                         os.path.join(temp_home, "config2.cfg")]
 
         # Store two aliased hooks in config files
-        self.write_file((temp_home, "config1.cfg"), '[test_dist]\npre-hook.a = type')
-        self.write_file((temp_home, "config2.cfg"), '[test_dist]\npre-hook.b = type')
+        self.write_file((temp_home, "config1.cfg"),
+                        '[test_dist]\npre-hook.a = type')
+        self.write_file((temp_home, "config2.cfg"),
+                         '[test_dist]\npre-hook.b = type')
 
         sys.argv.extend(["--command-packages",
                          "distutils2.tests",
                          "test_dist"])
-        cmd = self.create_distribution(config_files).get_command_obj("test_dist")
-        self.assertEqual(cmd.pre_hook, {"a": 'type', "b": 'type'})
+        cmd = self.create_distribution(config_files).get_command_obj(
+             "test_dist")
 
+        self.assertEqual(cmd.pre_hook, {"a": 'type', "b": 'type'})
 
     def test_hooks_get_run(self):
         temp_home = self.mkdtemp()
@@ -319,6 +323,7 @@ class DistributionTestCase(support.TempdirManager,
         sys.argv.extend(["--command-packages",
                          "distutils2.tests",
                          "test_dist"])
+
         d = self.create_distribution([config_file])
         cmd = d.get_command_obj("test_dist")
 
@@ -558,6 +563,7 @@ class MetadataTestCase(support.TempdirManager, support.EnvironGuard,
         self.assertEqual(metadata['platform'], [])
         self.assertEqual(metadata['obsoletes'], [])
         self.assertEqual(metadata['requires-dist'], ['foo'])
+
 
 def test_suite():
     suite = unittest.TestSuite()
