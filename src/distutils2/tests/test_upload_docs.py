@@ -53,7 +53,7 @@ password = long_island
 """
 
 class UploadDocsTestCase(support.TempdirManager, support.EnvironGuard,
-                         PyPIServerTestCase):
+                         support.LoggingCatcher, PyPIServerTestCase):
 
     def setUp(self):
         super(UploadDocsTestCase, self).setUp()
