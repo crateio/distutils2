@@ -48,19 +48,6 @@ def with_mock_ut2_module(func):
                 del sys.modules['unittest2']
     return wrapper
 
-def with_ut_isolated(func):
-    def wrapper(*args):
-        import unittest as ut1
-
-        orig_discover = getattr(ut1.TestLoader, 'discover', None)
-        try:
-            args += (ut1,)
-            return func(*args)
-        finally:
-            if orig_discover is not None:
-                ut1.TestLoader.discover = orig_discover
-    return wrapper
-
 class TestTest(TempdirManager,
                unittest.TestCase):
 
@@ -91,10 +78,22 @@ class TestTest(TempdirManager,
         shutil.copytree(pkg_dir, temp_pkg_dir)
         return temp_pkg_dir
 
-    def safely_replace(self, obj, attr, new_val):
-        orig_val = getattr(obj, attr)
-        setattr(obj, attr, new_val)
-        self.addCleanup(lambda: setattr(obj, attr, orig_val))
+    def safely_replace(self, obj, attr, new_val=None, delete=False):
+        orig_has_attr = hasattr(obj, attr)
+        orig_val = getattr(obj, attr, None)
+
+        if delete is False:
+            setattr(obj, attr, new_val)
+        elif hasattr(obj, attr):
+            delattr(obj, attr)
+
+        def do_cleanup():
+            if orig_has_attr:
+                setattr(obj, attr, orig_val)
+            elif hasattr(obj, attr):
+                delattr(obj, attr)
+
+        self.addCleanup(do_cleanup)
 
     def test_runs_unittest(self):
         module_name, a_module = self.prepare_a_module()
@@ -168,22 +167,21 @@ class TestTest(TempdirManager,
         cmd.run()
         self.assertEqual(["runner called"], record)
 
-    @with_ut_isolated
     @with_mock_ut2_module
-    def test_gets_unittest_discovery(self, ut1, mock_ut2):
+    def test_gets_unittest_discovery(self, mock_ut2):
         dist = Distribution()
         cmd = test(dist)
-        ut1.TestLoader.discover = lambda: None
+        import unittest as ut1
+        self.safely_replace(ut1.TestLoader, "discover", lambda: None)
         self.assertEqual(cmd.get_ut_with_discovery(), ut1)
 
         del ut1.TestLoader.discover
         self.assertEqual(cmd.get_ut_with_discovery(), mock_ut2)
 
-    @with_ut_isolated
     @with_mock_ut2_module
-    def test_calls_discover(self, ut1, mock_ut2):
-        if hasattr(ut1.TestLoader, "discover"):
-            del ut1.TestLoader.discover
+    def test_calls_discover(self, mock_ut2):
+        import unittest as ut1
+        self.safely_replace(ut1.TestLoader, "discover", delete=True)
         record = []
         mock_ut2.TestLoader.discover = lambda self, path: record.append(path)
         dist = Distribution()
