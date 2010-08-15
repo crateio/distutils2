@@ -4,7 +4,6 @@
 import os
 import StringIO
 import sys
-import warnings
 import textwrap
 
 from distutils2.dist import Distribution, fix_help_options, DistributionMetadata
@@ -172,23 +171,13 @@ class DistributionTestCase(support.TempdirManager,
         # list of attributes
         cls = Distribution
 
-        # catching warnings
-        warns = []
-        def _warn(msg):
-            warns.append(msg)
+        dist = cls(attrs={'author': 'xxx',
+                          'name': 'xxx',
+                          'version': 'xxx',
+                          'url': 'xxxx',
+                          'options': {}})
 
-        old_warn = warnings.warn
-        warnings.warn = _warn
-        try:
-            dist = cls(attrs={'author': 'xxx',
-                              'name': 'xxx',
-                              'version': 'xxx',
-                              'url': 'xxxx',
-                              'options': {}})
-        finally:
-            warnings.warn = old_warn
-
-        self.assertEqual(len(warns), 0)
+        self.assertEqual(len(self.warnings), 0)
 
     def test_non_empty_options(self):
         # TODO: how to actually use options is not documented except
@@ -314,7 +303,7 @@ class DistributionTestCase(support.TempdirManager,
                                   ('post', cmd)])
 
 class MetadataTestCase(support.TempdirManager, support.EnvironGuard,
-                       unittest.TestCase):
+                       support.LoggingSilencer, unittest.TestCase):
 
     def setUp(self):
         super(MetadataTestCase, self).setUp()

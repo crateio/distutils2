@@ -4,7 +4,6 @@ import sys
 import os
 import getpass
 import urllib2
-import warnings
 
 try:
     import docutils

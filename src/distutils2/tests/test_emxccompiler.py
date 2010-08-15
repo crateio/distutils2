@@ -1,7 +1,6 @@
 """Tests for distutils.emxccompiler."""
 import sys
 import os
-import warnings
 
 from distutils2.tests import run_unittest
 from distutils2.tests import captured_stdout

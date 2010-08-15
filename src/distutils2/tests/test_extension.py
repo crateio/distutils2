@@ -1,6 +1,5 @@
 """Tests for distutils.extension."""
 import os
-import warnings
 
 from distutils2.extension import Extension
 from distutils2.tests.support import unittest
