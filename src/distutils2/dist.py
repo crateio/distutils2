@@ -375,14 +375,13 @@ Common commands: (see '--help-commands' for more)
                         val = parser.get(section, opt)
                         opt = opt.replace('-', '_')
 
-                        # ... although practicality beats purity :(
+                        # Hooks use a suffix system to prevent being overriden
+                        # by a config file processed later (i.e. a hook set in
+                        # the user config file cannot be replaced by a hook
+                        # set in a project config file, unless they have the
+                        # same suffix).
                         if opt.startswith("pre_hook.") or opt.startswith("post_hook."):
                             hook_type, alias = opt.split(".")
-                            # Hooks are somewhat exceptional, as they are
-                            # gathered from many config files (not overriden as
-                            # other options).
-                            # The option_dict expects {"command": ("filename", # "value")}
-                            # so for hooks, we store only the last config file processed
                             hook_dict = opt_dict.setdefault(hook_type, (filename, {}))[1]
                             hook_dict[alias] = val
                         else:
@@ -963,12 +962,34 @@ Common commands: (see '--help-commands' for more)
         self.have_run[command] = 1
 
     def run_command_hooks(self, cmd_obj, hook_kind):
+        """Run hooks registered for that command and phase.
+
+        *cmd_obj* is a finalized command object; *hook_kind* is either
+        'pre_hook' or 'post_hook'.
+        """
+        if hook_kind not in ('pre_hook', 'post_hook'):
+            raise ValueError('invalid hook kind: %r' % hook_kind)
+
         hooks = getattr(cmd_obj, hook_kind)
+
         if hooks is None:
             return
-        for hook in hooks.values():
-            hook_func = resolve_name(hook)
-            hook_func(cmd_obj)
+
+        for hook in hooks.itervalues():
+            if isinstance(hook, basestring):
+                try:
+                    hook_obj = resolve_name(hook)
+                except ImportError, e:
+                    raise DistutilsModuleError(e)
+            else:
+                hook_obj = hook
+
+            if not hasattr(hook_obj, '__call__'):
+                raise DistutilsOptionError('hook %r is not callable' % hook)
+
+            log.info('running %s %s for command %s',
+                     hook_kind, hook, cmd_obj.get_command_name())
+            hook_obj(cmd_obj)
 
     # -- Distribution query methods ------------------------------------
     def has_pure_modules(self):

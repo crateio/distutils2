@@ -53,7 +53,7 @@ class Command(object):
 
     # Pre and post command hooks are run just before or just after the command
     # itself. They are simple functions that receive the command instance. They
-    # should be specified as dotted strings.
+    # are specified as callable objects or dotted strings (for lazy loading).
     pre_hook = None
     post_hook = None
 
