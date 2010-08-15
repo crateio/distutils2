@@ -2,7 +2,6 @@ import sys
 import os
 import shutil
 from StringIO import StringIO
-import warnings
 
 import distutils2.tests
 from distutils2.tests.support import unittest

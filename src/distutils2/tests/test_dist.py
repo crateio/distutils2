@@ -23,6 +23,7 @@ class test_dist(Command):
 
     def initialize_options(self):
         self.sample_option = None
+    def finalize_options(self): pass
 
 
 class TestDistribution(Distribution):
@@ -39,6 +40,7 @@ class TestDistribution(Distribution):
 
 class DistributionTestCase(support.TempdirManager,
                            support.LoggingSilencer,
+                           support.WarningsCatcher,
                            support.EnvironGuard,
                            unittest.TestCase):
 
@@ -156,23 +158,14 @@ class DistributionTestCase(support.TempdirManager,
     def test_bad_attr(self):
         cls = Distribution
 
-        # catching warnings
-        warns = []
-        def _warn(msg):
-            warns.append(msg)
+        dist = cls(attrs={'author': 'xxx',
+                          'name': 'xxx',
+                          'version': 'xxx',
+                          'url': 'xxxx',
+                          'badoptname': 'xxx'})
 
-        old_warn = warnings.warn
-        warnings.warn = _warn
-        try:
-            dist = cls(attrs={'author': 'xxx',
-                              'name': 'xxx',
-                              'version': 'xxx',
-                              'url': 'xxxx',
-                              'badoptname': 'xxx'})
-        finally:
-            warnings.warn = old_warn
-
-        self.assertTrue(len(warns)==1 and "Unknown distribution" in warns[0])
+        self.assertTrue(len(self.warnings)==1)
+        self.assertTrue("Unknown distribution" in self.warnings[0]['message'].args[0])
 
     def test_empty_options(self):
         # an empty options dictionary should not stay in the

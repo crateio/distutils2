@@ -18,7 +18,6 @@ older versions).
 
 import os
 import sys
-import warnings
 from distutils2.tests.support import unittest
 
 from test.test_support import TESTFN    # use TESTFN from stdlib/test_support.

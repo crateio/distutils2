@@ -1,7 +1,6 @@
 """Tests for distutils.cygwinccompiler."""
 import sys
 import os
-import warnings
 try:
     import sysconfig
 except ImportError:
