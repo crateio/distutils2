@@ -167,6 +167,8 @@ class RegisterTestCase(support.TempdirManager, support.EnvironGuard,
         register_module.raw_input = inputs.__call__
         try:
             # let's run the command
+            # FIXME does this send a real request? use a mock server
+            # also, silence self.announce (with LoggingCatcher)
             cmd.run()
         finally:
             del register_module.raw_input

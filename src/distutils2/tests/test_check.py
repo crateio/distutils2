@@ -6,7 +6,7 @@ from distutils2.tests import support
 from distutils2.tests.support import unittest
 from distutils2.errors import DistutilsSetupError
 
-class CheckTestCase(support.LoggingSilencer,
+class CheckTestCase(support.LoggingCatcher,
                     support.TempdirManager,
                     unittest.TestCase):
 

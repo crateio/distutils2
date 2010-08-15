@@ -13,7 +13,7 @@ from distutils2.tests.support import unittest
 
 
 class BuildPyTestCase(support.TempdirManager,
-                      support.LoggingSilencer,
+                      support.LoggingCatcher,
                       unittest.TestCase):
 
     def test_package_data(self):
@@ -37,7 +37,10 @@ class BuildPyTestCase(support.TempdirManager,
         dist.script_name = os.path.join(sources, "setup.py")
         dist.command_obj["build"] = support.DummyCommand(
             force=0,
-            build_lib=destination)
+            build_lib=destination,
+            use_2to3_fixers=None,
+            convert_2to3_doctests=None,
+            use_2to3=False)
         dist.packages = ["pkg"]
         dist.package_data = {"pkg": ["README.txt"]}
         dist.package_dir = {"pkg": sources}

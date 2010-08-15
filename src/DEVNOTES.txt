@@ -15,7 +15,8 @@ Notes for developers
 
 - Renaming to do:
 
-  - DistributionMetadata > Metadata or ReleaseMetadata
+  - DistributionMetadata > Metadata
+  - Distribution > Release or Project
   - pkgutil > pkgutil.__init__ + new pkgutil.database (or better name)
   - RationalizedVersion > Version
   - suggest_rationalized_version > suggest

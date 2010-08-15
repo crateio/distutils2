@@ -384,6 +384,7 @@ class DistributionMetadata(object):
                 if not is_valid_predicate(v.split(';')[0]):
                     warn('"%s" is not a valid predicate (field "%s")' %
                          (v, name))
+        # FIXME this rejects UNKNOWN, is that right?
         elif name in _VERSIONS_FIELDS and value is not None:
             if not is_valid_versions(value):
                 warn('"%s" is not a valid version (field "%s")' %

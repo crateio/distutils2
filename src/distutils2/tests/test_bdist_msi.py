@@ -7,7 +7,7 @@ from distutils2.tests import support
 from distutils2.tests.support import unittest
 
 class BDistMSITestCase(support.TempdirManager,
-                       support.LoggingSilencer,
+                       support.LoggingCatcher,
                        unittest.TestCase):
 
     @unittest.skipUnless(sys.platform == "win32", "runs only on win32")

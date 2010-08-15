@@ -41,7 +41,7 @@ repository:http://another.pypi/
 
 
 class UploadTestCase(support.TempdirManager, support.EnvironGuard,
-                     PyPIServerTestCase):
+                     support.LoggingCatcher, PyPIServerTestCase):
 
     def setUp(self):
         super(UploadTestCase, self).setUp()

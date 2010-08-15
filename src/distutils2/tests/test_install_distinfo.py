@@ -34,7 +34,7 @@ class DummyInstallCmd(Command):
 
 
 class InstallDistinfoTestCase(support.TempdirManager,
-                              support.LoggingSilencer,
+                              support.LoggingCatcher,
                               support.EnvironGuard,
                               unittest.TestCase):
 

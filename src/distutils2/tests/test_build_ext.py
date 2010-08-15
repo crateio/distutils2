@@ -26,7 +26,7 @@ def _get_source_filename():
     return os.path.join(CURDIR, 'xxmodule.c')
 
 class BuildExtTestCase(support.TempdirManager,
-                       support.LoggingSilencer,
+                       support.LoggingCatcher,
                        unittest.TestCase):
     def setUp(self):
         # Create a simple test environment

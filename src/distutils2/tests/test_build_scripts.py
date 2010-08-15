@@ -14,7 +14,7 @@ from distutils2.tests.support import unittest
 
 
 class BuildScriptsTestCase(support.TempdirManager,
-                           support.LoggingSilencer,
+                           support.LoggingCatcher,
                            unittest.TestCase):
 
     def test_default_settings(self):
@@ -49,7 +49,10 @@ class BuildScriptsTestCase(support.TempdirManager,
         dist.command_obj["build"] = support.DummyCommand(
             build_scripts=target,
             force=1,
-            executable=sys.executable
+            executable=sys.executable,
+            use_2to3=False,
+            use_2to3_fixers=None,
+            convert_2to3_doctests=None
             )
         return build_scripts(dist)
 

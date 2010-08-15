@@ -13,7 +13,7 @@ try:
 except ImportError:
     import StringIO
 
-class DepGraphTestCase(support.LoggingSilencer,
+class DepGraphTestCase(support.LoggingCatcher,
                        unittest.TestCase):
 
     DISTROS_DIST = ('choxie', 'grammar', 'towel-stuff')

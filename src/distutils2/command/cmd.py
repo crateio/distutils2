@@ -53,7 +53,7 @@ class Command(object):
 
     # Pre and post command hooks are run just before or just after the command
     # itself. They are simple functions that receive the command instance. They
-    # should be specified as dotted strings.
+    # are specified as callable objects or dotted strings (for lazy loading).
     pre_hook = None
     post_hook = None
 
@@ -162,13 +162,12 @@ class Command(object):
 
 
     def dump_options(self, header=None, indent=""):
-        from distutils2.fancy_getopt import longopt_xlate
         if header is None:
             header = "command options for '%s':" % self.get_command_name()
         self.announce(indent + header, level=log.INFO)
         indent = indent + "  "
         for (option, _, _) in self.user_options:
-            option = option.translate(longopt_xlate)
+            option = option.replace('-', '_')
             if option[-1] == "=":
                 option = option[:-1]
             value = getattr(self, option)
@@ -330,7 +329,6 @@ class Command(object):
             if getattr(self, dst_option) is None:
                 setattr(self, dst_option,
                         getattr(src_cmd_obj, src_option))
-
 
     def get_finalized_command(self, command, create=1):
         """Wrapper around Distribution's 'get_command_obj()' method: find

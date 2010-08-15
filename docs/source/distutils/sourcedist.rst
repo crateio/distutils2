@@ -108,6 +108,9 @@ per line, regular files (or symlinks to them) only.  If you do supply your own
 :file:`MANIFEST`, you must specify everything: the default set of files
 described above does not apply in this case.
 
+:file:`MANIFEST` files start with a comment indicating they are generated.
+Files without this comment are not overwritten or removed.
+
 See :ref:`manifest_template` section for a syntax reference.
 
 .. _manifest-options:
@@ -264,4 +267,3 @@ character, and ``[range]`` matches any of the characters in *range* (e.g.,
 ``a-z``, ``a-zA-Z``, ``a-f0-9_.``).  The definition of "regular filename
 character" is platform-specific: on Unix it is anything except slash; on Windows
 anything except backslash or colon.
-

@@ -13,11 +13,12 @@ try:
     import sysconfig
 except ImportError:
     from distutils2._backport import sysconfig
+from distutils2.compat import Mixin2to3
 
 # check if Python is called on the first line with this expression
 first_line_re = re.compile('^#!.*python[0-9.]*([ \t].*)?$')
 
-class build_scripts (Command):
+class build_scripts (Command, Mixin2to3):
 
     description = "\"build\" scripts (copy and fixup #! line)"
 
@@ -36,11 +37,16 @@ class build_scripts (Command):
         self.force = None
         self.executable = None
         self.outfiles = None
+        self.use_2to3 = False
+        self.convert_2to3_doctests = None
+        self.use_2to3_fixers = None
 
     def finalize_options (self):
         self.set_undefined_options('build',
                                    ('build_scripts', 'build_dir'),
-                                   'force', 'executable')
+                                   'use_2to3', 'use_2to3_fixers',
+                                   'convert_2to3_doctests', 'force',
+                                   'executable')
         self.scripts = self.distribution.scripts
 
     def get_source_files(self):
@@ -49,8 +55,9 @@ class build_scripts (Command):
     def run (self):
         if not self.scripts:
             return
-        self.copy_scripts()
-
+        copied_files = self.copy_scripts()
+        if self.use_2to3 and self.copied_files:
+            self._run_2to3(self.copied_files, fixers=self.use_2to3_fixers)
 
     def copy_scripts (self):
         """Copy each script listed in 'self.scripts'; if it's marked as a
@@ -126,7 +133,7 @@ class build_scripts (Command):
                         log.info("changing mode of %s from %o to %o",
                                  file, oldmode, newmode)
                         os.chmod(file, newmode)
-
+        return outfiles
     # copy_scripts ()
 
 # class build_scripts

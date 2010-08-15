@@ -7,7 +7,7 @@ from distutils2.tests import support
 from distutils2.tests.support import unittest
 
 class BuildWinInstTestCase(support.TempdirManager,
-                           support.LoggingSilencer,
+                           support.LoggingCatcher,
                            unittest.TestCase):
 
     def test_get_exe_bytes(self):

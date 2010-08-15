@@ -9,7 +9,7 @@ from distutils2.util import find_executable
 from distutils2.tests.support import unittest
 
 class BuildCLibTestCase(support.TempdirManager,
-                        support.LoggingSilencer,
+                        support.LoggingCatcher,
                         unittest.TestCase):
 
     def test_check_library_dist(self):

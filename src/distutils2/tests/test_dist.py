@@ -4,14 +4,17 @@
 import os
 import StringIO
 import sys
+import warnings
 import textwrap
 
-from distutils2.dist import Distribution, fix_help_options, DistributionMetadata
-from distutils2.command.cmd import Command
 import distutils2.dist
+from distutils2.dist import Distribution, fix_help_options
+from distutils2.command.cmd import Command
+from distutils2.errors import DistutilsModuleError, DistutilsOptionError
 from distutils2.tests import TESTFN, captured_stdout
 from distutils2.tests import support
 from distutils2.tests.support import unittest
+
 
 class test_dist(Command):
     """Sample distutils2 extension command."""
@@ -22,7 +25,9 @@ class test_dist(Command):
 
     def initialize_options(self):
         self.sample_option = None
-    def finalize_options(self): pass
+
+    def finalize_options(self):
+        pass
 
 
 class TestDistribution(Distribution):
@@ -38,7 +43,7 @@ class TestDistribution(Distribution):
 
 
 class DistributionTestCase(support.TempdirManager,
-                           support.LoggingSilencer,
+                           support.LoggingCatcher,
                            support.WarningsCatcher,
                            support.EnvironGuard,
                            unittest.TestCase):
@@ -63,7 +68,7 @@ class DistributionTestCase(support.TempdirManager,
     def test_debug_mode(self):
         f = open(TESTFN, "w")
         try:
-            f.write("[global]")
+            f.write("[global]\n")
             f.write("command_packages = foo.bar, splat")
         finally:
             f.close()
@@ -104,8 +109,8 @@ class DistributionTestCase(support.TempdirManager,
         sys.argv.append("build")
         f = open(TESTFN, "w")
         try:
-            print >>f, "[global]"
-            print >>f, "command_packages = foo.bar, splat"
+            print >> f, "[global]"
+            print >> f, "command_packages = foo.bar, splat"
             f.close()
             d = self.create_distribution([TESTFN])
             self.assertEqual(d.get_command_packages(),
@@ -137,7 +142,6 @@ class DistributionTestCase(support.TempdirManager,
                           'maintainer': u'Café Junior',
                           'summary': u'Café torréfié',
                           'description': u'Héhéhé'})
-
 
         # let's make sure the file can be written
         # with Unicode fields. they are encoded with
@@ -186,6 +190,7 @@ class DistributionTestCase(support.TempdirManager,
 
         # Here is an example of how it's used out there: 
         # http://svn.pythonmac.org/py2app/py2app/trunk/doc/index.html#specifying-customizations
+        # index.html#specifying-customizations
         cls = Distribution
         dist = cls(attrs={'author': 'xxx',
                           'name': 'xxx',
@@ -217,7 +222,6 @@ class DistributionTestCase(support.TempdirManager,
         dist.command_packages = 'one,two'
         cmds = dist.get_command_packages()
         self.assertEqual(cmds, ['distutils2.command', 'one', 'two'])
-
 
     def test_announce(self):
         # make sure the level is known
@@ -256,7 +260,7 @@ class DistributionTestCase(support.TempdirManager,
             os.path.expanduser = old_expander
 
         # make sure --no-user-cfg disables the user cfg file
-        self.assertEqual(len(all_files)-1, len(files))
+        self.assertEqual(len(all_files) - 1, len(files))
 
     def test_special_hooks_parsing(self):
         temp_home = self.mkdtemp()
@@ -264,46 +268,67 @@ class DistributionTestCase(support.TempdirManager,
                         os.path.join(temp_home, "config2.cfg")]
 
         # Store two aliased hooks in config files
-        self.write_file((temp_home, "config1.cfg"), '[test_dist]\npre-hook.a = type')
-        self.write_file((temp_home, "config2.cfg"), '[test_dist]\npre-hook.b = type')
+        self.write_file((temp_home, "config1.cfg"),
+                        '[test_dist]\npre-hook.a = type')
+        self.write_file((temp_home, "config2.cfg"),
+                        '[test_dist]\npre-hook.b = type')
 
         sys.argv.extend(["--command-packages",
                          "distutils2.tests",
                          "test_dist"])
-        cmd = self.create_distribution(config_files).get_command_obj("test_dist")
+        dist = self.create_distribution(config_files)
+        cmd = dist.get_command_obj("test_dist")
+
         self.assertEqual(cmd.pre_hook, {"a": 'type', "b": 'type'})
 
 
     def test_hooks_get_run(self):
         temp_home = self.mkdtemp()
         config_file = os.path.join(temp_home, "config1.cfg")
+        hooks_module = os.path.join(temp_home, "testhooks.py")
 
-        self.write_file((temp_home, "config1.cfg"), textwrap.dedent('''
+        self.write_file(config_file, textwrap.dedent('''
             [test_dist]
-            pre-hook.test = distutils2.tests.test_dist.DistributionTestCase.log_pre_call
-            post-hook.test = distutils2.tests.test_dist.DistributionTestCase.log_post_call'''))
+            pre-hook.test = testhooks.log_pre_call
+            post-hook.test = testhooks.log_post_call'''))
+
+        self.write_file(hooks_module, textwrap.dedent('''
+        record = []
+
+        def log_pre_call(cmd):
+            record.append('pre-%s' % cmd.get_command_name())
+
+        def log_post_call(cmd):
+            record.append('post-%s' % cmd.get_command_name())
+        '''))
 
         sys.argv.extend(["--command-packages",
                          "distutils2.tests",
                          "test_dist"])
+
         d = self.create_distribution([config_file])
         cmd = d.get_command_obj("test_dist")
 
         # prepare the call recorders
-        record = []
-        DistributionTestCase.log_pre_call = staticmethod(lambda _cmd: record.append(('pre', _cmd)))
-        DistributionTestCase.log_post_call = staticmethod(lambda _cmd: record.append(('post', _cmd)))
-        test_dist.run = lambda _cmd: record.append(('run', _cmd))
-        test_dist.finalize_options = lambda _cmd: record.append(('finalize_options', _cmd))
+        sys.path.append(temp_home)
+        from testhooks import record
+
+        self.addCleanup(setattr, cmd, 'run', cmd.run)
+        self.addCleanup(setattr, cmd, 'finalize_options',
+                        cmd.finalize_options)
+
+        cmd.run = lambda: record.append('run')
+        cmd.finalize_options = lambda: record.append('finalize')
 
         d.run_command('test_dist')
-        self.assertEqual(record, [('finalize_options', cmd),
-                                  ('pre', cmd),
-                                  ('run', cmd),
-                                  ('post', cmd)])
+
+        self.assertEqual(record, ['finalize',
+                                  'pre-test_dist',
+                                  'run',
+                                  'post-test_dist'])
 
 class MetadataTestCase(support.TempdirManager, support.EnvironGuard,
-                       support.LoggingSilencer, unittest.TestCase):
+                       support.LoggingCatcher, unittest.TestCase):
 
     def setUp(self):
         super(MetadataTestCase, self).setUp()
@@ -483,6 +508,7 @@ class MetadataTestCase(support.TempdirManager, support.EnvironGuard,
         self.assertEqual(metadata['platform'], [])
         self.assertEqual(metadata['obsoletes'], [])
         self.assertEqual(metadata['requires-dist'], ['foo'])
+
 
 def test_suite():
     suite = unittest.TestSuite()
