@@ -1,7 +1,6 @@
 import os
 import sys
 import unittest
-import warnings
 
 from distutils2 import log
 from distutils2.core import Command
@@ -34,10 +33,9 @@ class test(Command):
         self.build_lib = self.get_finalized_command("build").build_lib
         for requirement in self.tests_require:
             if get_distribution(requirement) is None:
-                warnings.warn("The test dependency %s is not installed which may couse the tests to fail." % requirement,
-                              RuntimeWarning)
+                self.announce("The test dependency %s is not installed which may couse the tests to fail." % requirement)
         if not self.suite and not self.runner and self.get_ut_with_discovery() is None:
-            self.announce("No test discovery available. Please specify the 'suite' or 'runner' option or install unittest2.", log.ERROR)
+            raise DistutilsOptionError("No test discovery available. Please specify the 'suite' or 'runner' option or install unittest2.")
     
     def get_ut_with_discovery(self):
         if hasattr(unittest.TestLoader, "discover"):

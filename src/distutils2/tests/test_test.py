@@ -3,7 +3,6 @@ import re
 import sys
 import shutil
 import subprocess
-import warnings
 
 from copy import copy
 from os.path import join
@@ -120,14 +119,16 @@ class TestTest(TempdirManager,
     def _test_works_with_2to3(self):
         pass
 
-    @unittest.skipUnless(sys.version > '2.6', 'Need >= 2.6')
     def test_checks_requires(self):
         dist = Distribution()
         cmd = test(dist)
-        cmd.tests_require = ['ohno_ohno-impossible_1234-name_stop-that!']
+        phony_project = 'ohno_ohno-impossible_1234-name_stop-that!'
+        cmd.tests_require = [phony_project]
+        record = []
+        cmd.announce = lambda *args: record.append(args)
         cmd.ensure_finalized()
-        self.assertEqual(1, len(self.warnings))
-        self.assertIs(self.warnings[0]["category"], RuntimeWarning)
+        self.assertEqual(1, len(record))
+        self.assertIn(phony_project, record[0][0])
 
     def test_custom_runner(self):
         dist = Distribution()
