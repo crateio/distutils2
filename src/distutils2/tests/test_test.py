@@ -2,11 +2,11 @@ import os
 import re
 import sys
 import shutil
-import subprocess
 
 from copy import copy
 from os.path import join
 from StringIO import StringIO
+from distutils2.core import Command
 from distutils2.tests.support import unittest, TempdirManager
 from distutils2.command.test import test
 from distutils2.dist import Distribution
@@ -85,35 +85,50 @@ class TestTest(TempdirManager,
         if not re.search(pattern, string):
             self.fail(msg)
 
-    def run_with_dist_cwd(self, pkg_dir):
-        cwd = os.getcwd()
-        command = [sys.executable, "setup.py", "test"]
-        try:
-            os.chdir(pkg_dir)
-            test_proc = subprocess.Popen(command, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-            _, errors = test_proc.communicate()
-            return errors
-        finally:
-            os.chdir(cwd)
-
     def prepare_dist(self, dist_name):
         pkg_dir = join(os.path.dirname(__file__), "dists", dist_name)
         temp_pkg_dir = join(self.mkdtemp(), dist_name)
         shutil.copytree(pkg_dir, temp_pkg_dir)
         return temp_pkg_dir
 
-    def test_runs_simple_tests(self):
-        self.pkg_dir = self.prepare_dist('simple_test')
-        output = self.run_with_dist_cwd(self.pkg_dir)
-        self.assert_re_match(EXPECTED_OUTPUT_RE, output)
-        self.assertFalse(os.path.exists(join(self.pkg_dir, 'build')))
+    def safely_replace(self, obj, attr, new_val):
+        orig_val = getattr(obj, attr)
+        setattr(obj, attr, new_val)
+        self.addCleanup(lambda: setattr(obj, attr, orig_val))
 
-    def test_builds_extensions(self):
-        self.pkg_dir = self.prepare_dist("extensions_test")
-        output = self.run_with_dist_cwd(self.pkg_dir)
-        self.assert_re_match(EXPECTED_OUTPUT_RE, output)
-        self.assertTrue(os.path.exists(join(self.pkg_dir, 'build')))
-        self.assertTrue(any(x.startswith('lib') for x in os.listdir(join(self.pkg_dir, 'build'))))
+    def test_runs_unittest(self):
+        module_name, a_module = self.prepare_a_module()
+        record = []
+        a_module.recorder = lambda *args: record.append("suite")
+
+        class MockTextTestRunner(object):
+            def __init__(*_, **__): pass
+            def run(_self, suite):
+                record.append("run")
+        import unittest as ut1
+        self.safely_replace(ut1, "TextTestRunner", MockTextTestRunner)
+
+        dist = Distribution()
+        cmd = test(dist)
+        cmd.suite = "%s.recorder" % module_name
+        cmd.run()
+        self.assertEqual(record, ["suite", "run"])
+
+    def test_builds_before_running_tests(self):
+        dist = Distribution()
+        cmd = test(dist)
+        cmd.runner = self.prepare_named_function(lambda: None)
+        record = []
+        class MockBuildCmd(Command):
+            build_lib = "mock build lib"
+            def initialize_options(self): pass
+            def finalize_options(self): pass
+            def run(self): record.append("build run")
+        dist.cmdclass['build'] = MockBuildCmd
+
+        cmd.ensure_finalized()
+        cmd.run()
+        self.assertEqual(record, ['build run'])
 
     def _test_works_with_2to3(self):
         pass
@@ -129,23 +144,29 @@ class TestTest(TempdirManager,
         self.assertEqual(1, len(record))
         self.assertIn(phony_project, record[0][0])
 
+    def prepare_a_module(self):
+        tmp_dir = self.mkdtemp()
+        sys.path.append(tmp_dir)
+        self.addCleanup(lambda: sys.path.remove(tmp_dir))
+
+        self.write_file(os.path.join(tmp_dir, 'distutils2_tests_a.py'), '')
+        import distutils2_tests_a as a_module
+        return "distutils2_tests_a", a_module
+
+    def prepare_named_function(self, func):
+        module_name, a_module = self.prepare_a_module()
+        a_module.recorder = func
+        return "%s.recorder" % module_name
+
     def test_custom_runner(self):
         dist = Distribution()
         cmd = test(dist)
 
-        tmp_dir = self.mkdtemp()
-        try:
-            sys.path.append(tmp_dir)
-            self.write_file(os.path.join(tmp_dir, 'distutils2_tests_a.py'), '')
-            import distutils2_tests_a as a_module
-            a_module.recorder = lambda: record.append("runner called")
-            record = []
-            cmd.runner = "distutils2_tests_a.recorder"
-            cmd.ensure_finalized()
-            cmd.run()
-            self.assertEqual(["runner called"], record)
-        finally:
-            sys.path.remove(tmp_dir)
+        record = []
+        cmd.runner = self.prepare_named_function(lambda: record.append("runner called"))
+        cmd.ensure_finalized()
+        cmd.run()
+        self.assertEqual(["runner called"], record)
 
     @with_ut_isolated
     @with_mock_ut2_module
