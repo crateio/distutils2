@@ -1,11 +1,16 @@
 import os
 import sys
-from distutils2 import log
-from distutils2.core import Command
-from distutils2._backport.pkgutil import get_distribution
-from distutils2.util import resolve_name
 import unittest
 import warnings
+
+from distutils2 import log
+from distutils2.core import Command
+from distutils2.util import resolve_name
+
+try:
+    from pkgutil import get_distribution
+except ImportError:
+    from distutils2._backport.pkgutil import get_distribution
 
 class test(Command):
 

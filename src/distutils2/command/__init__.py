@@ -6,6 +6,7 @@ commands."""
 __revision__ = "$Id: __init__.py 71473 2009-04-11 14:55:07Z tarek.ziade $"
 
 __all__ = ['check',
+           'test',
            'build',
            'build_py',
            'build_ext',
@@ -23,6 +24,5 @@ __all__ = ['check',
            'bdist_dumb',
            'bdist_wininst',
            'register',
-           'test',
            'upload',
           ]
