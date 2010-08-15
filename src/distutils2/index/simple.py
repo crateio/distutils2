@@ -160,12 +160,12 @@ class Crawler(BaseClient):
         the results.
         """
         predicate = get_version_predicate(requirements)
-        if self._projects.has_key(predicate.name.lower()) and not force_update:
+        if predicate.name.lower() in self._projects and not force_update:
             return self._projects.get(predicate.name.lower())
         prefer_final = self._get_prefer_final(prefer_final)
         self._process_index_page(predicate.name)
 
-        if not self._projects.has_key(predicate.name.lower()):
+        if predicate.name.lower() not in self._projects:
             raise ProjectNotFound()
 
         releases = self._projects.get(predicate.name.lower())
