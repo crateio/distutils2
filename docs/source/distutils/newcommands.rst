@@ -29,11 +29,13 @@ recent Python version).
 
 ``--suite=NAME, -s NAME``
     Specify the test suite (or module, class, or method) to be run
-    (for example ``some_module.test_suite``).  The default for this option can be
+    (for example ``my_package.tests.all_tests``).  The default for this option can be
     set by in your ``setup.cfg`` file.
 
-        [test]
-            suite = my_package.tests.test_all
+.. code-block:: ini
+
+    [test]
+        suite = my_package.tests.all_tests
 
 ``--runner=NAME, -r NAME``
     Specify the test runner to be called.
@@ -117,7 +119,7 @@ command::
 
     python setup.py upload_docs --upload-dir=docs/build/html
 
-As with any other ``setuptools`` based command, you can define useful
+As with any other command, you can define useful
 defaults in the ``setup.cfg`` of your Python project, for example:
 
 .. code-block:: ini
