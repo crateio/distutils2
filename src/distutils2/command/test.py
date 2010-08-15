@@ -48,14 +48,12 @@ class test(Command):
                 return None
 
     def run(self):
-        prev_cwd = os.getcwd()
+        prev_syspath = sys.path[:]
         try:
-            # build distribution if needed
-            if self.distribution.has_ext_modules():
-                build = self.get_reinitialized_command('build')
-                build.inplace = 1
-                self.run_command('build')
-                os.chdir(self.build_lib)
+            # build release
+            build = self.get_reinitialized_command('build')
+            self.run_command('build')
+            sys.path.insert(0, build.build_lib)
 
             # run the tests
             if self.runner:
@@ -67,4 +65,4 @@ class test(Command):
                 test_suite = discovery_ut.TestLoader().discover(os.curdir)
                 discovery_ut.TextTestRunner(verbosity=self.verbose + 1).run(test_suite)
         finally:
-            os.chdir(prev_cwd)
+            sys.path[:] = prev_syspath
