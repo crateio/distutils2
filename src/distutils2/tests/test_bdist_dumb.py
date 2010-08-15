@@ -27,7 +27,7 @@ setup(name='foo', version='0.1', py_modules=['foo'],
 """
 
 class BuildDumbTestCase(support.TempdirManager,
-                        support.LoggingSilencer,
+                        support.LoggingCatcher,
                         support.EnvironGuard,
                         unittest.TestCase):
 

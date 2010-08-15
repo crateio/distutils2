@@ -11,7 +11,7 @@ except ImportError:
     from distutils2._backport.sysconfig import get_platform
 
 class BuildTestCase(support.TempdirManager,
-                    support.LoggingSilencer,
+                    support.LoggingCatcher,
                     unittest.TestCase):
 
     def test_finalize_options(self):

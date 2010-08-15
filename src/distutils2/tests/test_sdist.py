@@ -58,7 +58,7 @@ somecode%(sep)sdoc.dat
 somecode%(sep)sdoc.txt
 """
 
-class SDistTestCase(support.TempdirManager, support.LoggingSilencer,
+class SDistTestCase(support.TempdirManager, support.LoggingCatcher,
                     support.EnvironGuard, unittest.TestCase):
 
     def setUp(self):

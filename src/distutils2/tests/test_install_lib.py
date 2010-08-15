@@ -16,7 +16,7 @@ except AttributeError:
     bytecode_support = False
 
 class InstallLibTestCase(support.TempdirManager,
-                         support.LoggingSilencer,
+                         support.LoggingCatcher,
                          support.EnvironGuard,
                          unittest.TestCase):
 

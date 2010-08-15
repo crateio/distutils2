@@ -25,7 +25,7 @@ from distutils2.tests.support import unittest
 
 class InstallTestCase(support.TempdirManager,
                       support.EnvironGuard,
-                      support.LoggingSilencer,
+                      support.LoggingCatcher,
                       unittest.TestCase):
 
     def test_home_installation_scheme(self):

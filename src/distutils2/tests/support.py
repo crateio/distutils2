@@ -4,14 +4,14 @@ Always import unittest from this module, it will be the right version
 (standard library unittest for 3.2 and higher, third-party unittest2
 release for older versions).
 
-Four helper classes are provided: LoggingSilencer, TempdirManager,
+Four helper classes are provided: LoggingCatcher, TempdirManager,
 EnvironGuard and WarningsCatcher. They are written to be used as mixins,
 e.g. ::
 
     from distutils2.tests.support import unittest
-    from distutils2.tests.support import LoggingSilencer
+    from distutils2.tests.support import LoggingCatcher
 
-    class SomeTestCase(LoggingSilencer, unittest.TestCase):
+    class SomeTestCase(LoggingCatcher, unittest.TestCase):
 
 If you need to define a setUp method on your test class, you have to
 call the mixin class' setUp method or it won't work (same thing for
@@ -44,11 +44,11 @@ else:
     # external release of same package for older versions
     import unittest2 as unittest
 
-__all__ = ['LoggingSilencer', 'WarningsCatcher', 'TempdirManager',
+__all__ = ['LoggingCatcher', 'WarningsCatcher', 'TempdirManager',
            'EnvironGuard', 'DummyCommand', 'unittest']
 
 
-class LoggingSilencer(object):
+class LoggingCatcher(object):
     """TestCase-compatible mixin to catch logging calls.
 
     Every log message that goes through distutils2.log will get appended to
@@ -58,7 +58,7 @@ class LoggingSilencer(object):
     """
 
     def setUp(self):
-        super(LoggingSilencer, self).setUp()
+        super(LoggingCatcher, self).setUp()
         self.threshold = log.set_threshold(FATAL)
         # when log is replaced by logging we won't need
         # such monkey-patching anymore
@@ -69,7 +69,7 @@ class LoggingSilencer(object):
     def tearDown(self):
         log.set_threshold(self.threshold)
         log.Log._log = self._old_log
-        super(LoggingSilencer, self).tearDown()
+        super(LoggingCatcher, self).tearDown()
 
     def _log(self, level, msg, args):
         if level not in (DEBUG, INFO, WARN, ERROR, FATAL):
@@ -91,6 +91,13 @@ class LoggingSilencer(object):
     def clear_logs(self):
         """Empty the internal list of caught messages."""
         del self.logs[:]
+
+
+class LoggingSilencer(object):
+    "Class that raises an exception to make sure the renaming is noticed."
+
+    def __init__(self, *args):
+        raise DeprecationWarning("LoggingSilencer renamed to LoggingCatcher")
 
 
 class WarningsCatcher(object):

@@ -13,7 +13,7 @@ from distutils2.tests.support import unittest
 
 
 class BuildPyTestCase(support.TempdirManager,
-                      support.LoggingSilencer,
+                      support.LoggingCatcher,
                       unittest.TestCase):
 
     def test_package_data(self):

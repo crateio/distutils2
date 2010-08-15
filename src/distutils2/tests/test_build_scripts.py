@@ -14,7 +14,7 @@ from distutils2.tests.support import unittest
 
 
 class BuildScriptsTestCase(support.TempdirManager,
-                           support.LoggingSilencer,
+                           support.LoggingCatcher,
                            unittest.TestCase):
 
     def test_default_settings(self):

@@ -38,7 +38,7 @@ class TestDistribution(Distribution):
 
 
 class DistributionTestCase(support.TempdirManager,
-                           support.LoggingSilencer,
+                           support.LoggingCatcher,
                            support.EnvironGuard,
                            unittest.TestCase):
 

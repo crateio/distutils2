@@ -8,7 +8,7 @@ from distutils2.tests import support
 from distutils2.tests.support import unittest
 
 class InstallDataTestCase(support.TempdirManager,
-                          support.LoggingSilencer,
+                          support.LoggingCatcher,
                           support.EnvironGuard,
                           unittest.TestCase):
 
