@@ -65,9 +65,10 @@ class DistributionTestCase(support.TempdirManager,
         return d
 
     def test_debug_mode(self):
+        self.addCleanup(os.unlink, TESTFN)
         f = open(TESTFN, "w")
         try:
-            f.write("[global]")
+            f.write("[global]\n")
             f.write("command_packages = foo.bar, splat")
         finally:
             f.close()
