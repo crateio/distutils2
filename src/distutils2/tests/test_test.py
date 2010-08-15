@@ -79,6 +79,10 @@ class TestTest(TempdirManager,
         return temp_pkg_dir
 
     def safely_replace(self, obj, attr, new_val=None, delete=False):
+        """Replace a object's attribute returning to its original state at the
+        end of the test run. Creates the attribute if not present before
+        (deleting afterwards). When delete=True, makes sure the value is del'd
+        for the test run."""
         orig_has_attr = hasattr(obj, attr)
         orig_val = getattr(obj, attr, None)
 
