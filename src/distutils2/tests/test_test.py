@@ -7,7 +7,7 @@ import subprocess
 from copy import copy
 from os.path import join
 from StringIO import StringIO
-from distutils2.tests.support import unittest, WarningsCatcher, TempdirManager
+from distutils2.tests.support import unittest, TempdirManager
 from distutils2.command.test import test
 from distutils2.dist import Distribution
 
@@ -62,7 +62,6 @@ def with_ut_isolated(func):
     return wrapper
 
 class TestTest(TempdirManager,
-               WarningsCatcher,
                unittest.TestCase):
 
     def setUp(self):
