@@ -4,8 +4,9 @@ Always import unittest from this module, it will be the right version
 (standard library unittest for 3.2 and higher, third-party unittest2
 release for older versions).
 
-Three helper classes are provided: LoggingSilencer, TempdirManager and
-EnvironGuard. They are written to be used as mixins, e.g. ::
+Four helper classes are provided: LoggingSilencer, TempdirManager,
+EnvironGuard and WarningsCatcher. They are written to be used as mixins,
+e.g. ::
 
     from distutils2.tests.support import unittest
     from distutils2.tests.support import LoggingSilencer
@@ -30,6 +31,7 @@ import os
 import sys
 import shutil
 import tempfile
+import warnings
 from copy import deepcopy
 
 from distutils2 import log
@@ -42,8 +44,8 @@ else:
     # external release of same package for older versions
     import unittest2 as unittest
 
-__all__ = ['LoggingSilencer', 'TempdirManager', 'EnvironGuard',
-           'DummyCommand', 'unittest']
+__all__ = ['LoggingSilencer', 'WarningsCatcher', 'TempdirManager',
+           'EnvironGuard', 'DummyCommand', 'unittest']
 
 
 class LoggingSilencer(object):
@@ -58,7 +60,6 @@ class LoggingSilencer(object):
     def setUp(self):
         super(LoggingSilencer, self).setUp()
         self.threshold = log.set_threshold(FATAL)
-        # catching warnings
         # when log is replaced by logging we won't need
         # such monkey-patching anymore
         self._old_log = log.Log._log
@@ -90,6 +91,23 @@ class LoggingSilencer(object):
     def clear_logs(self):
         """Empty the internal list of caught messages."""
         del self.logs[:]
+
+
+class WarningsCatcher(object):
+
+    def setUp(self):
+        self._orig_showwarning = warnings.showwarning
+        warnings.showwarning = self._record_showwarning
+        self.warnings = []
+
+    def _record_showwarning(self, message, category, filename, lineno,
+                            file=None, line=None):
+        self.warnings.append({"message": message, "category": category,
+                              "filename": filename, "lineno": lineno,
+                              "file": file, "line": line})
+
+    def tearDown(self):
+        warnings.showwarning = self._orig_showwarning
 
 
 class TempdirManager(object):
