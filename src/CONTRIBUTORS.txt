@@ -12,6 +12,7 @@ Thanks to:
 - Ali Afshar
 - Éric Araujo
 - Pior Bastida
+- Anthony Baxter
 - Titus Brown
 - Nicolas Cadou
 - Konrad Delong

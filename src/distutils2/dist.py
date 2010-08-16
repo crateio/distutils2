@@ -15,7 +15,7 @@ from ConfigParser import RawConfigParser
 
 from distutils2.errors import (DistutilsOptionError, DistutilsArgError,
                                DistutilsModuleError, DistutilsClassError)
-from distutils2.fancy_getopt import FancyGetopt, translate_longopt
+from distutils2.fancy_getopt import FancyGetopt
 from distutils2.util import check_environ, strtobool, resolve_name
 from distutils2 import log
 from distutils2.metadata import DistributionMetadata
@@ -115,8 +115,7 @@ Common commands: (see '--help-commands' for more)
         ('convert-2to3-doctests', None,
          "use 2to3 to convert doctests in seperate text files"),
         ]
-    display_option_names = map(lambda x: translate_longopt(x[0]),
-                               display_options)
+    display_option_names = [x[0].replace('-', '_') for x in display_options]
 
     # negative options are options that exclude other options
     negative_opt = {'quiet': 'verbose'}
@@ -452,6 +451,7 @@ Common commands: (see '--help-commands' for more)
         # for display options we return immediately
         if self.handle_display_options(option_order):
             return
+
         while args:
             args = self._parse_command_opts(parser, args)
             if args is None:            # user asked for help (and got it)
@@ -557,7 +557,7 @@ Common commands: (see '--help-commands' for more)
             isinstance(cmd_class.help_options, list)):
             help_option_found = 0
             for (help_option, short, desc, func) in cmd_class.help_options:
-                if hasattr(opts, parser.get_attr_name(help_option)):
+                if hasattr(opts, help_option.replace('-', '_')):
                     help_option_found = 1
                     if hasattr(func, '__call__'):
                         func()
@@ -666,7 +666,7 @@ Common commands: (see '--help-commands' for more)
 
         for opt, val in option_order:
             if val and is_display_option.get(opt):
-                opt = translate_longopt(opt)
+                opt = opt.replace('-', '_')
                 value = self.metadata[opt]
                 if opt in ['keywords', 'platform']:
                     print(','.join(value))
@@ -864,7 +864,8 @@ Common commands: (see '--help-commands' for more)
             log.debug("    %s = %s (from %s)" % (option, value,
                                                          source))
             try:
-                bool_opts = map(translate_longopt, command_obj.boolean_options)
+                bool_opts = [x.replace('-', '_')
+                             for x in command_obj.boolean_options]
             except AttributeError:
                 bool_opts = []
             try:
