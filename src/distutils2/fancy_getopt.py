@@ -106,12 +106,6 @@ class FancyGetopt(object):
         option with long name 'long_option'."""
         return long_option in self.option_index
 
-    def get_attr_name (self, long_option):
-        """Translate long option name 'long_option' to the form it
-        has as an attribute of some object: ie., translate hyphens
-        to underscores."""
-        return long_option.replace('-', '_')
-
     def _check_alias_dict (self, aliases, what):
         assert isinstance(aliases, dict)
         for (alias, opt) in aliases.items():
@@ -217,7 +211,7 @@ class FancyGetopt(object):
                       ("invalid long option name '%s' " +
                        "(must be letters, numbers, hyphens only") % long
 
-            self.attr_name[long] = self.get_attr_name(long)
+            self.attr_name[long] = long.replace('-', '_')
             if short:
                 self.short_opts.append(short)
                 self.short2long[short[0]] = long
@@ -460,13 +454,6 @@ def wrap_text (text, width):
     # while chunks
 
     return lines
-
-
-def translate_longopt(opt):
-    """Convert a long option name to a valid Python identifier by
-    changing "-" to "_".
-    """
-    return opt.replace('-', '_')
 
 
 class OptionDummy(object):

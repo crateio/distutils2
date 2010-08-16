@@ -74,6 +74,7 @@ class FakePopen(object):
 
 class UtilTestCase(support.EnvironGuard,
                    support.TempdirManager,
+                   support.LoggingCatcher,
                    unittest.TestCase):
 
     def setUp(self):
