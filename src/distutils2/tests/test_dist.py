@@ -327,6 +327,43 @@ class DistributionTestCase(support.TempdirManager,
                                   'run',
                                   'post-test_dist'])
 
+    def test_hooks_importable(self):
+        temp_home = self.mkdtemp()
+        config_file = os.path.join(temp_home, "config1.cfg")
+
+        self.write_file(config_file, textwrap.dedent('''
+            [test_dist]
+            pre-hook.test = nonexistent.dotted.name'''))
+
+        sys.argv.extend(["--command-packages",
+                         "distutils2.tests",
+                         "test_dist"])
+
+        d = self.create_distribution([config_file])
+        cmd = d.get_command_obj("test_dist")
+        cmd.ensure_finalized()
+
+        self.assertRaises(DistutilsModuleError, d.run_command, 'test_dist')
+
+    def test_hooks_callable(self):
+        temp_home = self.mkdtemp()
+        config_file = os.path.join(temp_home, "config1.cfg")
+
+        self.write_file(config_file, textwrap.dedent('''
+            [test_dist]
+            pre-hook.test = distutils2.tests.test_dist.__doc__'''))
+
+        sys.argv.extend(["--command-packages",
+                         "distutils2.tests",
+                         "test_dist"])
+
+        d = self.create_distribution([config_file])
+        cmd = d.get_command_obj("test_dist")
+        cmd.ensure_finalized()
+
+        self.assertRaises(DistutilsOptionError, d.run_command, 'test_dist')
+
+
 class MetadataTestCase(support.TempdirManager, support.EnvironGuard,
                        support.LoggingCatcher, unittest.TestCase):
 
