@@ -50,7 +50,7 @@ class register(Command):
             self.realm = DEFAULT_REALM
         # setting options for the `check` subcommand
         check_options = {'strict': ('register', self.strict),
-                         'restructuredtext': ('register', 1)}
+                         'all': ('register', 1)}
         self.distribution.command_options['check'] = check_options
 
     def run(self):
@@ -74,7 +74,7 @@ class register(Command):
         check = self.distribution.get_command_obj('check')
         check.ensure_finalized()
         check.strict = self.strict
-        check.restructuredtext = 1
+        check.all = 1
         check.run()
 
     def _set_config(self):

@@ -35,6 +35,7 @@ import warnings
 from copy import deepcopy
 
 from distutils2 import log
+from distutils2.dist import Distribution
 from distutils2.log import DEBUG, INFO, WARN, ERROR, FATAL
 
 if sys.version_info >= (3, 2):
@@ -210,3 +211,25 @@ class DummyCommand(object):
 
     def ensure_finalized(self):
         pass
+
+
+class TestDistribution(Distribution):
+    """Distribution subclasses that avoids the default search for
+    configuration files.
+
+    The ._config_files attribute must be set before
+    .parse_config_files() is called.
+    """
+
+    def find_config_files(self):
+        return self._config_files
+
+
+def create_distribution(configfiles=()):
+    """Prepares a distribution with given config files parsed."""
+    d = TestDistribution()
+    d._config_files = configfiles
+    d.parse_config_files()
+    d.parse_command_line()
+    return d
+

@@ -47,9 +47,8 @@ class CheckTestCase(support.LoggingCatcher,
         cmd = self._run(metadata, strict=1)
         self.assertEqual(len(cmd._warnings), 0)
 
+    @unittest.skipUnless(_HAS_DOCUTILS, "requires docutils")
     def test_check_restructuredtext(self):
-        if not _HAS_DOCUTILS: # won't test without docutils
-            return
         # let's see if it detects broken rest in long_description
         broken_rest = 'title\n===\n\ntest'
         pkg_info, dist = self.create_dist(description=broken_rest)
@@ -57,18 +56,9 @@ class CheckTestCase(support.LoggingCatcher,
         cmd.check_restructuredtext()
         self.assertEqual(len(cmd._warnings), 1)
 
-        # let's see if we have an error with strict=1
-        metadata = {'home_page': 'xxx', 'author': 'xxx',
-                    'author_email': 'xxx',
-                    'name': 'xxx', 'version': 'xxx',
-                    'description': broken_rest}
-
-        self.assertRaises(DistutilsSetupError, self._run, metadata,
-                          **{'strict': 1, 'restructuredtext': 1})
-
-        # and non-broken rest
-        metadata['description'] = 'title\n=====\n\ntest'
-        cmd = self._run(metadata, strict=1, restructuredtext=1)
+        pkg_info, dist = self.create_dist(description='title\n=====\n\ntest')
+        cmd = check(dist)
+        cmd.check_restructuredtext()
         self.assertEqual(len(cmd._warnings), 0)
 
     def test_check_all(self):
@@ -76,7 +66,17 @@ class CheckTestCase(support.LoggingCatcher,
         metadata = {'home_page': 'xxx', 'author': 'xxx'}
         self.assertRaises(DistutilsSetupError, self._run,
                           {}, **{'strict': 1,
-                                 'restructuredtext': 1})
+                                 'all': 1})
+
+    def test_check_hooks(self):
+        pkg_info, dist = self.create_dist()
+        dist.command_options['install'] = {
+            'pre_hook': ('file', {"a": 'some.nonextistant.hook.ghrrraarrhll'}),
+        }
+        cmd = check(dist)
+        cmd.check_hooks_resolvable()
+        self.assertEqual(len(cmd._warnings), 1)
+        
 
 def test_suite():
     return unittest.makeSuite(CheckTestCase)

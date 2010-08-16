@@ -13,7 +13,7 @@ from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsModuleError, DistutilsOptionError
 from distutils2.tests import TESTFN, captured_stdout
 from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests.support import unittest, create_distribution
 
 
 class test_dist(Command):
@@ -28,18 +28,6 @@ class test_dist(Command):
 
     def finalize_options(self):
         pass
-
-
-class TestDistribution(Distribution):
-    """Distribution subclasses that avoids the default search for
-    configuration files.
-
-    The ._config_files attribute must be set before
-    .parse_config_files() is called.
-    """
-
-    def find_config_files(self):
-        return self._config_files
 
 
 class DistributionTestCase(support.TempdirManager,
@@ -58,13 +46,6 @@ class DistributionTestCase(support.TempdirManager,
         sys.argv[:] = self.argv[1]
         super(DistributionTestCase, self).tearDown()
 
-    def create_distribution(self, configfiles=()):
-        d = TestDistribution()
-        d._config_files = configfiles
-        d.parse_config_files()
-        d.parse_command_line()
-        return d
-
     def test_debug_mode(self):
         f = open(TESTFN, "w")
         try:
@@ -76,18 +57,18 @@ class DistributionTestCase(support.TempdirManager,
         files = [TESTFN]
         sys.argv.append("build")
 
-        __, stdout = captured_stdout(self.create_distribution, files)
+        __, stdout = captured_stdout(create_distribution, files)
         self.assertEqual(stdout, '')
         distutils2.dist.DEBUG = True
         try:
-            __, stdout = captured_stdout(self.create_distribution, files)
+            __, stdout = captured_stdout(create_distribution, files)
             self.assertEqual(stdout, '')
         finally:
             distutils2.dist.DEBUG = False
 
     def test_command_packages_unspecified(self):
         sys.argv.append("build")
-        d = self.create_distribution()
+        d = create_distribution()
         self.assertEqual(d.get_command_packages(), ["distutils2.command"])
 
     def test_command_packages_cmdline(self):
@@ -97,7 +78,7 @@ class DistributionTestCase(support.TempdirManager,
                          "test_dist",
                          "-Ssometext",
                          ])
-        d = self.create_distribution()
+        d = create_distribution()
         # let's actually try to load our test command:
         self.assertEqual(d.get_command_packages(),
                          ["distutils2.command", "foo.bar", "distutils2.tests"])
@@ -112,20 +93,20 @@ class DistributionTestCase(support.TempdirManager,
             print >> f, "[global]"
             print >> f, "command_packages = foo.bar, splat"
             f.close()
-            d = self.create_distribution([TESTFN])
+            d = create_distribution([TESTFN])
             self.assertEqual(d.get_command_packages(),
                              ["distutils2.command", "foo.bar", "splat"])
 
             # ensure command line overrides config:
             sys.argv[1:] = ["--command-packages", "spork", "build"]
-            d = self.create_distribution([TESTFN])
+            d = create_distribution([TESTFN])
             self.assertEqual(d.get_command_packages(),
                              ["distutils2.command", "spork"])
 
             # Setting --command-packages to '' should cause the default to
             # be used even if a config file specified something else:
             sys.argv[1:] = ["--command-packages", "", "build"]
-            d = self.create_distribution([TESTFN])
+            d = create_distribution([TESTFN])
             self.assertEqual(d.get_command_packages(), ["distutils2.command"])
 
         finally:
@@ -276,7 +257,7 @@ class DistributionTestCase(support.TempdirManager,
         sys.argv.extend(["--command-packages",
                          "distutils2.tests",
                          "test_dist"])
-        dist = self.create_distribution(config_files)
+        dist = create_distribution(config_files)
         cmd = dist.get_command_obj("test_dist")
 
         self.assertEqual(cmd.pre_hook, {"a": 'type', "b": 'type'})
@@ -306,7 +287,7 @@ class DistributionTestCase(support.TempdirManager,
                          "distutils2.tests",
                          "test_dist"])
 
-        d = self.create_distribution([config_file])
+        d = create_distribution([config_file])
         cmd = d.get_command_obj("test_dist")
 
         # prepare the call recorders
@@ -339,7 +320,7 @@ class DistributionTestCase(support.TempdirManager,
                          "distutils2.tests",
                          "test_dist"])
 
-        d = self.create_distribution([config_file])
+        d = create_distribution([config_file])
         cmd = d.get_command_obj("test_dist")
         cmd.ensure_finalized()
 
@@ -357,7 +338,7 @@ class DistributionTestCase(support.TempdirManager,
                          "distutils2.tests",
                          "test_dist"])
 
-        d = self.create_distribution([config_file])
+        d = create_distribution([config_file])
         cmd = d.get_command_obj("test_dist")
         cmd.ensure_finalized()
 

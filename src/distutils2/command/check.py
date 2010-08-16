@@ -6,23 +6,23 @@ __revision__ = "$Id: check.py 75266 2009-10-05 22:32:48Z andrew.kuchling $"
 
 from distutils2.core import Command
 from distutils2.errors import DistutilsSetupError
+from distutils2.util import resolve_name
 
 class check(Command):
     """This command checks the metadata of the package.
     """
     description = ("perform some checks on the package")
     user_options = [('metadata', 'm', 'Verify metadata'),
-                    ('restructuredtext', 'r',
-                     ('Checks if long string metadata syntax '
-                      'is reStructuredText-compliant')),
+                    ('all', 'a',
+                     ('runs extended set of checks')),
                     ('strict', 's',
                      'Will exit with an error if a check fails')]
 
-    boolean_options = ['metadata', 'restructuredtext', 'strict']
+    boolean_options = ['metadata', 'all', 'strict']
 
     def initialize_options(self):
         """Sets default values for options."""
-        self.restructuredtext = 0
+        self.all = 0
         self.metadata = 1
         self.strict = 0
         self._warnings = []
@@ -40,11 +40,9 @@ class check(Command):
         # perform the various tests
         if self.metadata:
             self.check_metadata()
-        if self.restructuredtext:
-            if self.distribution.metadata.docutils_support:
-                self.check_restructuredtext()
-            elif self.strict:
-                raise DistutilsSetupError('The docutils package is needed.')
+        if self.all:
+            self.check_restructuredtext()
+            self.check_hooks_resolvable()
 
         # let's raise an error in strict mode, if we have at least
         # one warning
@@ -67,11 +65,24 @@ class check(Command):
     def check_restructuredtext(self):
         """Checks if the long string fields are reST-compliant."""
         missing, warnings = self.distribution.metadata.check()
-        for warning in warnings:
-            line = warning[-1].get('line')
-            if line is None:
-                warning = warning[1]
-            else:
-                warning = '%s (line %s)' % (warning[1], line)
-            self.warn(warning)
+        if self.distribution.metadata.docutils_support:
+            for warning in warnings:
+                line = warning[-1].get('line')
+                if line is None:
+                    warning = warning[1]
+                else:
+                    warning = '%s (line %s)' % (warning[1], line)
+                self.warn(warning)
+        elif self.strict:
+            raise DistutilsSetupError('The docutils package is needed.')
 
+    def check_hooks_resolvable(self):
+        for options in self.distribution.command_options.values():
+            for hook_kind in ("pre_hook", "post_hook"):
+                if hook_kind not in options:
+                    break
+                for hook_name in options[hook_kind][1].values():
+                    try:
+                        resolve_name(hook_name)
+                    except ImportError:
+                        self.warn("Name '%s' cannot be resolved." % hook_name)
