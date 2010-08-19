@@ -140,13 +140,11 @@ class DistributionTestCase(support.TempdirManager,
         dist.metadata.write_file(open(my_file, 'w'))
 
     def test_bad_attr(self):
-        cls = Distribution
-
-        dist = cls(attrs={'author': 'xxx',
-                          'name': 'xxx',
-                          'version': 'xxx',
-                          'url': 'xxxx',
-                          'badoptname': 'xxx'})
+        Distribution(attrs={'author': 'xxx',
+                            'name': 'xxx',
+                            'version': 'xxx',
+                            'url': 'xxxx',
+                            'badoptname': 'xxx'})
 
         self.assertEqual(len(self.warnings), 1)
         self.assertIn("Unknown distribution",
@@ -155,13 +153,11 @@ class DistributionTestCase(support.TempdirManager,
     def test_empty_options(self):
         # an empty options dictionary should not stay in the
         # list of attributes
-        cls = Distribution
-
-        dist = cls(attrs={'author': 'xxx',
-                          'name': 'xxx',
-                          'version': 'xxx',
-                          'url': 'xxxx',
-                          'options': {}})
+        Distribution(attrs={'author': 'xxx',
+                            'name': 'xxx',
+                            'version': 'xxx',
+                            'url': 'xxxx',
+                            'options': {}})
 
         self.assertEqual(len(self.warnings), 0)
 
@@ -173,12 +169,12 @@ class DistributionTestCase(support.TempdirManager,
         # Here is an example of how it's used out there:
         # http://svn.pythonmac.org/py2app/py2app/trunk/doc/
         # index.html#specifying-customizations
-        cls = Distribution
-        dist = cls(attrs={'author': 'xxx',
-                          'name': 'xxx',
-                          'version': 'xxx',
-                          'url': 'xxxx',
-                          'options': dict(sdist=dict(owner="root"))})
+        dist = Distribution(attrs={'author': 'xxx',
+                                   'name': 'xxx',
+                                   'version': 'xxx',
+                                   'url': 'xxxx',
+                                   'options': {'sdist': {'owner': 'root'}}})
+
         self.assertIn('owner', dist.get_option_dict('sdist'))
 
     def test_finalize_options(self):
