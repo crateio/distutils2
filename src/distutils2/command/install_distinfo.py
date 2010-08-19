@@ -26,7 +26,7 @@ except ImportError:
 
 class install_distinfo(Command):
 
-    description = 'install a .dist-info directory for the distribution'
+    description = 'create a .dist-info directory for the distribution'
 
     user_options = [
         ('distinfo-dir=', None,
