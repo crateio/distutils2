@@ -4,6 +4,7 @@ import unittest
 
 from distutils2 import log
 from distutils2.core import Command
+from distutils2.errors import DistutilsOptionError
 from distutils2.util import resolve_name
 
 try:
@@ -21,7 +22,7 @@ class test(Command):
         ('runner=', None,
          "test runner to be called."),
         ('tests-require=', None,
-         "list of packages required to run the test suite."),
+         "list of distributions required to run the test suite."),
     ]
 
     def initialize_options(self):

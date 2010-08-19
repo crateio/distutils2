@@ -47,6 +47,7 @@ class DistributionTestCase(support.TempdirManager,
         super(DistributionTestCase, self).tearDown()
 
     def test_debug_mode(self):
+        self.addCleanup(os.unlink, TESTFN)
         f = open(TESTFN, "w")
         try:
             f.write("[global]\n")
@@ -136,7 +137,6 @@ class DistributionTestCase(support.TempdirManager,
                           'summary': 'Cafe torrefie',
                           'description': 'Hehehe'})
 
-        my_file2 = os.path.join(tmp_dir, 'f2')
         dist.metadata.write_file(open(my_file, 'w'))
 
     def test_bad_attr(self):
@@ -169,8 +169,8 @@ class DistributionTestCase(support.TempdirManager,
         # for a few cryptic comments in dist.py.  If this is to stay
         # in the public API, it deserves some better documentation.
 
-        # Here is an example of how it's used out there: 
-        # http://svn.pythonmac.org/py2app/py2app/trunk/doc/index.html#specifying-customizations
+        # Here is an example of how it's used out there:
+        # http://svn.pythonmac.org/py2app/py2app/trunk/doc/
         # index.html#specifying-customizations
         cls = Distribution
         dist = cls(attrs={'author': 'xxx',
