@@ -4,7 +4,6 @@
 import os
 import StringIO
 import sys
-import warnings
 import textwrap
 
 import distutils2.dist
@@ -258,7 +257,6 @@ class DistributionTestCase(support.TempdirManager,
         cmd = dist.get_command_obj("test_dist")
 
         self.assertEqual(cmd.pre_hook, {"a": 'type', "b": 'type'})
-
 
     def test_hooks_get_run(self):
         temp_home = self.mkdtemp()

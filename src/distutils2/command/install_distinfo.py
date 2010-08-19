@@ -116,8 +116,8 @@ class install_distinfo(Command):
                 f = open(record_path, 'wb')
                 try:
                     writer = csv.writer(f, delimiter=',',
-                                           lineterminator=os.linesep,
-                                           quotechar='"')
+                                        lineterminator=os.linesep,
+                                        quotechar='"')
 
                     install = self.get_finalized_command('install')
 

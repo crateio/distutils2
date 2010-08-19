@@ -2,7 +2,6 @@ import os
 import sys
 import unittest
 
-from distutils2 import log
 from distutils2.core import Command
 from distutils2.errors import DistutilsOptionError
 from distutils2.util import resolve_name
@@ -11,6 +10,7 @@ try:
     from pkgutil import get_distribution
 except ImportError:
     from distutils2._backport.pkgutil import get_distribution
+
 
 class test(Command):
 
@@ -34,13 +34,14 @@ class test(Command):
         self.build_lib = self.get_finalized_command("build").build_lib
         for requirement in self.tests_require:
             if get_distribution(requirement) is None:
-        if not self.suite and not self.runner and self.get_ut_with_discovery() is None:
-    
                 self.announce("test dependency %s is not installed, "
                               "tests may fail" % requirement)
+        if (not self.suite and not self.runner and
+            self.get_ut_with_discovery() is None):
             raise DistutilsOptionError(
                 "no test discovery available, please give a 'suite' or "
                 "'runner' option or install unittest2")
+
     def get_ut_with_discovery(self):
         if hasattr(unittest.TestLoader, "discover"):
             return unittest
@@ -63,10 +64,12 @@ class test(Command):
             if self.runner:
                 resolve_name(self.runner)()
             elif self.suite:
-                unittest.TextTestRunner(verbosity=self.verbose + 1).run(resolve_name(self.suite)())
+                runner = unittest.TextTestRunner(verbosity=self.verbose + 1)
+                runner.run(resolve_name(self.suite)())
             elif self.get_ut_with_discovery():
-                discovery_ut = self.get_ut_with_discovery()
-                test_suite = discovery_ut.TestLoader().discover(os.curdir)
-                discovery_ut.TextTestRunner(verbosity=self.verbose + 1).run(test_suite)
+                ut = self.get_ut_with_discovery()
+                test_suite = ut.TestLoader().discover(os.curdir)
+                runner = ut.TextTestRunner(verbosity=self.verbose + 1)
+                runner.run(test_suite)
         finally:
             sys.path[:] = prev_syspath
