@@ -148,8 +148,9 @@ class DistributionTestCase(support.TempdirManager,
                           'url': 'xxxx',
                           'badoptname': 'xxx'})
 
-        self.assertTrue(len(self.warnings)==1)
-        self.assertTrue("Unknown distribution" in self.warnings[0]['message'].args[0])
+        self.assertEqual(len(self.warnings), 1)
+        self.assertIn("Unknown distribution",
+                      self.warnings[0]['message'].args[0])
 
     def test_empty_options(self):
         # an empty options dictionary should not stay in the
@@ -178,7 +179,7 @@ class DistributionTestCase(support.TempdirManager,
                           'version': 'xxx',
                           'url': 'xxxx',
                           'options': dict(sdist=dict(owner="root"))})
-        self.assertTrue("owner" in dist.get_option_dict("sdist"))
+        self.assertIn('owner', dist.get_option_dict('sdist'))
 
     def test_finalize_options(self):
 
