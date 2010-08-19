@@ -90,12 +90,12 @@ class install_distinfo(Command):
             self.execute(os.makedirs, (target,), "Creating " + target)
 
             metadata_path = os.path.join(self.distinfo_dir, 'METADATA')
-            log.info('Creating %s' % (metadata_path,))
+            log.info('creating %s', metadata_path)
             self.distribution.metadata.write(metadata_path)
             self.outputs.append(metadata_path)
 
             installer_path = os.path.join(self.distinfo_dir, 'INSTALLER')
-            log.info('Creating %s' % (installer_path,))
+            log.info('creating %s', installer_path)
             f = open(installer_path, 'w')
             try:
                 f.write(self.installer)
@@ -105,14 +105,14 @@ class install_distinfo(Command):
 
             if self.requested:
                 requested_path = os.path.join(self.distinfo_dir, 'REQUESTED')
-                log.info('Creating %s' % (requested_path,))
+                log.info('creating %s', requested_path)
                 f = open(requested_path, 'w')
                 f.close()
                 self.outputs.append(requested_path)
 
             if not self.no_record:
                 record_path = os.path.join(self.distinfo_dir, 'RECORD')
-                log.info('Creating %s' % (record_path,))
+                log.info('creating %s', record_path)
                 f = open(record_path, 'wb')
                 try:
                     writer = csv.writer(f, delimiter=',',
