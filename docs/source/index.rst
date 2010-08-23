@@ -33,7 +33,7 @@ If you’re looking for information on how to contribute, head to
 
 
 Documentation
-=============
+-------------
 
 These documents are the in-development version of Distutils2's documentation,
 started from the existing Distutils documentation and updated by the
@@ -71,7 +71,7 @@ The documentation is split in three sections, as in the standard Python docs:
 
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`

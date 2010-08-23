@@ -86,7 +86,7 @@ exclude_trees = []
 pygments_style = 'sphinx'
 
 # A list of ignored prefixes for module index sorting.
-#modindex_common_prefix = []
+modindex_common_prefix = ['distutils2.', 'distutils2.command.']
 
 
 # -- Options for HTML output ---------------------------------------------------
