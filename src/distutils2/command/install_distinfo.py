@@ -78,6 +78,9 @@ class install_distinfo(Command):
         self.outputs = []
 
     def run(self):
+        # FIXME dry-run should be used at a finer level, so that people get
+        # useful logging output and can have an idea of what the command would
+        # have done
         if not self.dry_run:
             target = self.distinfo_dir
 
@@ -85,9 +88,9 @@ class install_distinfo(Command):
                 rmtree(target)
             elif os.path.exists(target):
                 self.execute(os.unlink, (self.distinfo_dir,),
-                             "Removing " + target)
+                             "removing " + target)
 
-            self.execute(os.makedirs, (target,), "Creating " + target)
+            self.execute(os.makedirs, (target,), "creating " + target)
 
             metadata_path = os.path.join(self.distinfo_dir, 'METADATA')
             log.info('creating %s', metadata_path)
