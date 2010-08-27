@@ -11,7 +11,7 @@ CHANGES
 ------------------
 
 - Initial import from the stdlib [tarek]
-- Added support for PEP 376 in distutils2.version [tarek]
+- Added support for PEP 386 in distutils2.version [tarek]
 - Added support for PEP 345 in distutils2.metadata [tarek]
-- Added distutils2.util.find_package [tarek]
+- Added distutils2.util.find_packages [tarek]
 
