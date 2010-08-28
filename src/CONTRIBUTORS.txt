@@ -17,7 +17,7 @@ Thanks to:
 - Nicolas Cadou
 - Konrad Delong
 - Josip Djolonga
-- Yannick Gringas
+- Yannick Gingras
 - Jeremy Kloth
 - Martin von Löwis
 - Carl Meyer
