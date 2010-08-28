@@ -1,4 +1,4 @@
-# -*- encoding: utf8 -*-
+# -*- encoding: utf-8 -*-
 """Tests for distutils.command.upload_docs."""
 import os
 import sys
