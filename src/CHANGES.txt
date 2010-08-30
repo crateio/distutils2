@@ -3,15 +3,36 @@ CHANGES
 =======
 
 1.0a2 - ?
---------
+---------
 
--
+- Add a converter for distutils/setuptools-based setup scripts [tarek]
+- Factor out MANIFEST[.in] support into disutils2.manifest [tarek]
+- Implement pkgutil APIs described in PEP 376 [josip]
+- Add PEP 376 .dist-info support in Distribute [josip]
+- Add distutils2.depgraph, a dependency graph builder [josip]
+- Add a mock server to test network-using code [alexis, konrad]
+- Add distutils2.index, a comprehensive subpackage to query PyPI [alexis]
+- Add 2to3 support to the build command [zubin]
+- Enhance the check command (sanity tests) [konrad]
+- Make sdist include source files used by other commands [jeremy]
+- Change install_egg_info to install_distinfo (PEP 376) [josip]
+- Import the upload_docs command from distribute [konrad]
+- Add a test command [konrad]
+- Add post and pre-hooks for build and install [konrad]
+- Remove PyPIRCCommand, move its helper code into util [tarek]
+- Remove Mac OS 9 support [éric]
+- Start adding docstrings to interface methods [jeremy]
+- Move documentation from the stdlib [ali, éric]
+- Lots of bug fixes, cleanups, tests [everyone]
+
 
 1.0a1 - 2010-05-06
 ------------------
 
 - Initial import from the stdlib [tarek]
-- Added support for PEP 386 in distutils2.version [tarek]
-- Added support for PEP 345 in distutils2.metadata [tarek]
-- Added distutils2.util.find_packages [tarek]
-
+- Add support for PEP 386 in distutils2.version [tarek]
+- Add support for PEP 345 in distutils2.metadata [tarek]
+- Add mkpkg, a helper script to create a setup.py [sean]
+- Remove bdist_rpm command [tarek]
+- Add some PEP 376 functions to pkgutil [michael]
+- Add distutils2.util.find_packages [tarek]

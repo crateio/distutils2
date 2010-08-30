@@ -26,6 +26,7 @@ Thanks to:
 - Michael Mulich
 - George Peristerakis
 - Sean Reifschneider
+- Antoine Reversat
 - Luis Rojas
 - Erik Rose
 - Brian Rosner
