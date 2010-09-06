@@ -4,7 +4,7 @@
 import sys
 import os
 import re
-from os.path import pardir, abspath
+from os.path import pardir, realpath
 from ConfigParser import RawConfigParser
 
 _PREFIX = os.path.normpath(sys.prefix)
@@ -53,16 +53,21 @@ _PY_VERSION_SHORT = sys.version[:3]
 _PY_VERSION_SHORT_NO_DOT = _PY_VERSION[0] + _PY_VERSION[2]
 _CONFIG_VARS = None
 _USER_BASE = None
-_PROJECT_BASE = abspath(os.path.dirname(sys.executable))
+if sys.executable:
+    _PROJECT_BASE = os.path.dirname(realpath(sys.executable))
+else:
+    # sys.executable can be empty if argv[0] has been changed and Python is
+    # unable to retrieve the real program name
+    _PROJECT_BASE = realpath(os.getcwd())
 
 if os.name == "nt" and "pcbuild" in _PROJECT_BASE[-8:].lower():
-    _PROJECT_BASE = abspath(os.path.join(_PROJECT_BASE, pardir))
+    _PROJECT_BASE = realpath(os.path.join(_PROJECT_BASE, pardir))
 # PC/VS7.1
 if os.name == "nt" and "\\pc\\v" in _PROJECT_BASE[-10:].lower():
-    _PROJECT_BASE = abspath(os.path.join(_PROJECT_BASE, pardir, pardir))
+    _PROJECT_BASE = realpath(os.path.join(_PROJECT_BASE, pardir, pardir))
 # PC/AMD64
 if os.name == "nt" and "\\pcbuild\\amd64" in _PROJECT_BASE[-14:].lower():
-    _PROJECT_BASE = abspath(os.path.join(_PROJECT_BASE, pardir, pardir))
+    _PROJECT_BASE = realpath(os.path.join(_PROJECT_BASE, pardir, pardir))
 
 def is_python_build():
     for fn in ("Setup.dist", "Setup.local"):
@@ -74,8 +79,8 @@ _PYTHON_BUILD = is_python_build()
 
 if _PYTHON_BUILD:
     for scheme in ('posix_prefix', 'posix_home'):
-        _SCHEMES.set(scheme, 'include', '{projectbase}/Include')
-        _SCHEMES.set(scheme, 'platinclude', '{srcdir}')
+        _SCHEMES.set(scheme, 'include', '{srcdir}/Include')
+        _SCHEMES.set(scheme, 'platinclude', '{projectbase}/.')
 
 
 def _subst_vars(path, local_vars):
@@ -131,6 +136,15 @@ def _getuserbase():
         else:
             return joinuser(base, "Python")
 
+    if sys.platform == "darwin":
+        framework = get_config_var("PYTHONFRAMEWORK")
+        if framework:
+            if env_base:
+                return env_base
+            else:
+                return joinuser("~", "Library", framework, "%d.%d" %
+                                sys.version_info[:2])
+
     if env_base:
         return env_base
     else:
@@ -184,11 +198,19 @@ def _parse_makefile(filename, vars=None):
                     done[n] = v
 
     # do variable interpolation here
-    while notdone:
-        for name in notdone.keys():
+    variables = notdone.keys()
+
+    # Variables with a 'PY_' prefix in the makefile. These need to
+    # be made available without that prefix through sysconfig.
+    # Special care is needed to ensure that variable expansion works, even
+    # if the expansion uses the name without a prefix.
+    renamed_variables = ('CFLAGS', 'LDFLAGS', 'CPPFLAGS')
+
+    while len(variables) > 0:
+        for name in tuple(variables):
             value = notdone[name]
             m = _findvar1_rx.search(value) or _findvar2_rx.search(value)
-            if m:
+            if m is not None:
                 n = m.group(1)
                 found = True
                 if n in done:
@@ -199,23 +221,46 @@ def _parse_makefile(filename, vars=None):
                 elif n in os.environ:
                     # do it like make: fall back to environment
                     item = os.environ[n]
+
+                elif n in renamed_variables:
+                    if name.startswith('PY_') and name[3:] in renamed_variables:
+                        item = ""
+
+                    elif 'PY_' + n in notdone:
+                        found = False
+
+                    else:
+                        item = str(done['PY_' + n])
+
                 else:
                     done[n] = item = ""
+
                 if found:
                     after = value[m.end():]
                     value = value[:m.start()] + item + after
                     if "$" in after:
                         notdone[name] = value
                     else:
-                        try: value = int(value)
+                        try:
+                            value = int(value)
                         except ValueError:
                             done[name] = value.strip()
                         else:
                             done[name] = value
-                        del notdone[name]
+                        variables.remove(name)
+
+                        if name.startswith('PY_') \
+                                and name[3:] in renamed_variables:
+
+                            name = name[3:]
+                            if name not in done:
+                                done[name] = value
+
+
             else:
                 # bogus variable reference; just drop it since we can't deal
-                del notdone[name]
+                variables.remove(name)
+
     # save the results in the global dictionary
     vars.update(done)
     return vars
@@ -279,7 +324,7 @@ def _init_non_posix(vars):
     vars['SO'] = '.pyd'
     vars['EXE'] = '.exe'
     vars['VERSION'] = _PY_VERSION_SHORT_NO_DOT
-    vars['BINDIR'] = os.path.dirname(os.path.abspath(sys.executable))
+    vars['BINDIR'] = os.path.dirname(realpath(sys.executable))
 
 #
 # public APIs
@@ -328,9 +373,7 @@ def get_config_h_filename():
 
 def get_scheme_names():
     """Returns a tuple containing the schemes names."""
-    schemes = _SCHEMES.sections()
-    schemes.sort()
-    return tuple(schemes)
+    return tuple(sorted(_SCHEMES.sections()))
 
 def get_path_names():
     """Returns a tuple containing the paths names."""
@@ -379,7 +422,6 @@ def get_config_vars(*args):
         _CONFIG_VARS['py_version_nodot'] = _PY_VERSION[0] + _PY_VERSION[2]
         _CONFIG_VARS['base'] = _PREFIX
         _CONFIG_VARS['platbase'] = _EXEC_PREFIX
-        _CONFIG_VARS['userbase'] = _getuserbase()
         _CONFIG_VARS['projectbase'] = _PROJECT_BASE
 
         if os.name in ('nt', 'os2'):
@@ -387,8 +429,17 @@ def get_config_vars(*args):
         if os.name == 'posix':
             _init_posix(_CONFIG_VARS)
 
+        # Setting 'userbase' is done below the call to the
+        # init function to enable using 'get_config_var' in
+        # the init-function.
+        if sys.version >= '2.6':
+            _CONFIG_VARS['userbase'] = _getuserbase()
+
         if 'srcdir' not in _CONFIG_VARS:
             _CONFIG_VARS['srcdir'] = _PROJECT_BASE
+        else:
+            _CONFIG_VARS['srcdir'] = realpath(_CONFIG_VARS['srcdir'])
+
 
         # Convert srcdir into an absolute path if it appears necessary.
         # Normally it is relative to the build directory.  However, during
@@ -608,8 +659,7 @@ def get_platform():
                 cflags = get_config_vars().get('CFLAGS')
 
                 archs = re.findall('-arch\s+(\S+)', cflags)
-                archs.sort()
-                archs = tuple(archs)
+                archs = tuple(sorted(set(archs)))
 
                 if len(archs) == 1:
                     machine = archs[0]
@@ -647,3 +697,22 @@ def get_platform():
 
 def get_python_version():
     return _PY_VERSION_SHORT
+
+def _print_dict(title, data):
+    for index, (key, value) in enumerate(sorted(data.items())):
+        if index == 0:
+            print '%s: ' % (title)
+        print '\t%s = "%s"' % (key, value)
+
+def _main():
+    """Display all information sysconfig detains."""
+    print 'Platform: "%s"' % get_platform()
+    print 'Python version: "%s"' % get_python_version()
+    print 'Current installation scheme: "%s"' % _get_default_scheme()
+    print ''
+    _print_dict('Paths', get_paths())
+    print
+    _print_dict('Variables', get_config_vars())
+
+if __name__ == '__main__':
+    _main()

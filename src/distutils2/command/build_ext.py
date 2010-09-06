@@ -11,7 +11,8 @@ from warnings import warn
 
 from distutils2.util import get_platform
 from distutils2.core import Command
-from distutils2.errors import *
+from distutils2.errors import (CCompilerError, CompileError, DistutilsError,
+                               DistutilsPlatformError, DistutilsSetupError)
 from distutils2.compiler.ccompiler import customize_compiler
 from distutils2.util import newer_group
 from distutils2.extension import Extension
@@ -173,7 +174,8 @@ class build_ext(Command):
         self.swig = None
         self.swig_cpp = None
         self.swig_opts = None
-        self.user = None
+        if HAS_USER_SITE:
+            self.user = None
 
     def finalize_options(self):
         self.set_undefined_options('build',
@@ -323,7 +325,7 @@ class build_ext(Command):
             self.swig_opts = self.swig_opts.split(' ')
 
         # Finally add the user include and library directories if requested
-        if self.user:
+        if HAS_USER_SITE and self.user:
             user_include = os.path.join(USER_BASE, "include")
             user_lib = os.path.join(USER_BASE, "lib")
             if os.path.isdir(user_include):

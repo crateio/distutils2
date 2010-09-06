@@ -1,11 +1,8 @@
 """Tests for distutils.command.install."""
 
 import os
-import os.path
 import sys
-import site
 
-from distutils2._backport import sysconfig
 from distutils2._backport.sysconfig import (get_scheme_names,
                                             get_config_vars,
                                             _SCHEMES,
@@ -174,11 +171,12 @@ class InstallTestCase(support.TempdirManager,
         cmd.home = 'home'
         self.assertRaises(DistutilsOptionError, cmd.finalize_options)
 
-        # can't combine user with with prefix/exec_prefix/home or
-        # install_(plat)base
-        cmd.prefix = None
-        cmd.user = 'user'
-        self.assertRaises(DistutilsOptionError, cmd.finalize_options)
+        if sys.version >= '2.6':
+            # can't combine user with with prefix/exec_prefix/home or
+            # install_(plat)base
+            cmd.prefix = None
+            cmd.user = 'user'
+            self.assertRaises(DistutilsOptionError, cmd.finalize_options)
 
     def test_record(self):
 

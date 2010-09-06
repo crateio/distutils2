@@ -18,6 +18,13 @@ from distutils2.util import write_file
 from distutils2.util import convert_path, change_root, get_platform
 from distutils2.errors import DistutilsOptionError
 
+# compatibility with 2.4 and 2.5
+if sys.version < '2.6':
+    HAS_USER_SITE = False
+else:
+    HAS_USER_SITE = True
+
+
 class install(Command):
 
     description = "install everything from build directory"
@@ -98,10 +105,10 @@ class install(Command):
     boolean_options = ['compile', 'force', 'skip-build', 'no-distinfo',
                        'requested', 'no-record']
 
-    if sys.version >= '2.6':
+    if HAS_USER_SITE:
         user_options.append(
             ('user', None,
-             "install in user site-package [%s]" %
+             "install in user site-packages directory [%s]" %
              get_path('purelib', '%s_user' % os.name)))
 
         boolean_options.append('user')
@@ -114,9 +121,8 @@ class install(Command):
         self.prefix = None
         self.exec_prefix = None
         self.home = None
-        # This attribute is used all over the place, so it's best to
-        # define it even in < 2.6
-        self.user = 0
+        if HAS_USER_SITE:
+            self.user = 0
 
         # These select only the installation base; it's up to the user to
         # specify the installation scheme (currently, that means supplying
@@ -135,8 +141,9 @@ class install(Command):
         self.install_lib = None         # set to either purelib or platlib
         self.install_scripts = None
         self.install_data = None
-        self.install_userbase = get_config_var('userbase')
-        self.install_usersite = get_path('purelib', '%s_user' % os.name)
+        if HAS_USER_SITE:
+            self.install_userbase = get_config_var('userbase')
+            self.install_usersite = get_path('purelib', '%s_user' % os.name)
 
         self.compile = None
         self.optimize = None
@@ -216,8 +223,9 @@ class install(Command):
             raise DistutilsOptionError(
                 "must supply either home or prefix/exec-prefix -- not both")
 
-        if self.user and (self.prefix or self.exec_prefix or self.home or
-                          self.install_base or self.install_platbase):
+        if HAS_USER_SITE and self.user and (
+                self.prefix or self.exec_prefix or self.home or
+                self.install_base or self.install_platbase):
             raise DistutilsOptionError(
                 "can't combine user with prefix/exec_prefix/home or "
                 "install_base/install_platbase")
@@ -251,8 +259,8 @@ class install(Command):
         # about needing recursive variable expansion (shudder).
 
         py_version = sys.version.split()[0]
-        prefix, exec_prefix, srcdir = get_config_vars('prefix', 'exec_prefix',
-                                                      'srcdir')
+        prefix, exec_prefix, srcdir, projectbase = get_config_vars(
+            'prefix', 'exec_prefix', 'srcdir', 'projectbase')
 
         metadata = self.distribution.metadata
         self.config_vars = {
@@ -267,10 +275,13 @@ class install(Command):
             'sys_exec_prefix': exec_prefix,
             'exec_prefix': exec_prefix,
             'srcdir': srcdir,
+            'projectbase': projectbase,
             }
 
-        self.config_vars['userbase'] = self.install_userbase
-        self.config_vars['usersite'] = self.install_usersite
+        if HAS_USER_SITE:
+            self.config_vars['userbase'] = self.install_userbase
+            self.config_vars['usersite'] = self.install_usersite
+
         self.expand_basedirs()
 
         self.dump_dirs("post-expand_basedirs()")
@@ -287,7 +298,7 @@ class install(Command):
         self.dump_dirs("post-expand_dirs()")
 
         # Create directories in the home dir:
-        if self.user:
+        if HAS_USER_SITE and self.user:
             self.create_home_path()
 
         # Pick the actual directory to install all modules to: either
@@ -303,8 +314,9 @@ class install(Command):
         # Convert directories from Unix /-separated syntax to the local
         # convention.
         self.convert_paths('lib', 'purelib', 'platlib',
-                           'scripts', 'data', 'headers',
-                           'userbase', 'usersite')
+                           'scripts', 'data', 'headers')
+        if HAS_USER_SITE:
+            self.convert_paths('userbase', 'usersite')
 
         # Well, we're not actually fully completely finalized yet: we still
         # have to deal with 'extra_path', which is the hack for allowing
@@ -345,7 +357,7 @@ class install(Command):
                     "installation scheme is incomplete")
             return
 
-        if self.user:
+        if HAS_USER_SITE and self.user:
             if self.install_userbase is None:
                 raise DistutilsPlatformError(
                     "user base directory is not specified")
@@ -373,7 +385,7 @@ class install(Command):
 
     def finalize_other(self):
         """Finalize options for non-posix platforms"""
-        if self.user:
+        if HAS_USER_SITE and self.user:
             if self.install_userbase is None:
                 raise DistutilsPlatformError(
                     "user base directory is not specified")
@@ -486,7 +498,7 @@ class install(Command):
 
     def create_home_path(self):
         """Create directories under ~."""
-        if not self.user:
+        if HAS_USER_SITE and not self.user:
             return
         home = convert_path(os.path.expanduser("~"))
         for name, path in self.config_vars.iteritems():
