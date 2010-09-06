@@ -133,4 +133,10 @@ if __name__ == "__main__":
     except ImportError:
         sys.stderr.write('Error: You have to install unittest2')
         sys.exit(1)
+    if sys.version < '2.5':
+        try:
+            from distutils2._backport import hashlib
+        except ImportError:
+            import subprocess
+            subprocess.call([sys.executable, 'setup.py', 'build_ext'])
     sys.exit(test_main())
