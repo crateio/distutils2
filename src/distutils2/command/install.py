@@ -192,7 +192,6 @@ class install(Command):
     # array of user input is decided.  Yes, it's quite complex!)
 
     def finalize_options(self):
-        """Finalizes options."""
         # This method (and its pliant slaves, like 'finalize_unix()',
         # 'finalize_other()', and 'select_scheme()') is where the default
         # installation directories for modules, extension modules, and
