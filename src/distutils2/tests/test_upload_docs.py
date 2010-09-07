@@ -186,26 +186,13 @@ class UploadDocsTestCase(support.TempdirManager, support.EnvironGuard,
         self.assertRaises(DistutilsOptionError, self.cmd.ensure_finalized)
 
     def test_show_response(self):
-        orig_stdout = sys.stdout
-        write_args = []
+        self.prepare_command()
+        self.cmd.show_response = True
+        self.cmd.run()
+        record = self.logs[-1][1]
 
-        class MockStdIn(object):
-            def write(self, arg):
-                write_args.append(arg)
-            def flush(self):
-                pass
-
-        sys.stdout = MockStdIn()
-        try:
-            self.prepare_command()
-            self.cmd.show_response = True
-            self.cmd.run()
-        finally:
-            sys.stdout = orig_stdout
-
-        self.assertTrue(write_args[0], "should report the response")
-        self.assertIn(self.pypi.default_response_data + "\n",
-                      '\n'.join(write_args))
+        self.assertTrue(record, "should report the response")
+        self.assertIn(self.pypi.default_response_data, record)
 
 def test_suite():
     return unittest.makeSuite(UploadDocsTestCase)

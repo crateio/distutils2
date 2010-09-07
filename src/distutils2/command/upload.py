@@ -7,7 +7,10 @@ import platform
 from urllib2 import urlopen, Request, HTTPError
 from base64 import standard_b64encode
 import urlparse
-import StringIO as StringIO
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 try:
     from hashlib import md5
 except ImportError:
@@ -135,7 +138,7 @@ class upload(Command):
         boundary = '--------------GHSKFJDLGDS7543FJKLFHRE75642756743254'
         sep_boundary = '\n--' + boundary
         end_boundary = sep_boundary + '--'
-        body = StringIO.StringIO()
+        body = StringIO()
         file_fields = ('content', 'gpg_signature')
 
         for key, values in data.items():
@@ -198,5 +201,7 @@ class upload(Command):
         else:
             self.announce('Upload failed (%s): %s' % (status, reason),
                           log.ERROR)
+
         if self.show_response:
-            self.announce('-'*75, result.read(), '-'*75)
+            msg = '\n'.join(('-' * 75, result.read(), '-' * 75))
+            self.announce(msg, log.INFO)

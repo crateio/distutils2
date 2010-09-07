@@ -1,5 +1,13 @@
-import base64, httplib, os.path, socket, urlparse, zipfile
-from cStringIO import StringIO
+import os
+import base64
+import httplib
+import socket
+import urlparse
+import zipfile
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 from distutils2 import log
 from distutils2.command.upload import upload
@@ -144,4 +152,5 @@ class upload_docs(Command):
                           log.ERROR)
 
         if self.show_response:
-            print "\n".join(['-'*75, r.read(), '-'*75])
+            msg = '\n'.join(('-' * 75, r.read(), '-' * 75))
+            self.announce(msg, log.INFO)
