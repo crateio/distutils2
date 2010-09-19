@@ -17,7 +17,7 @@ without causing the other modules to be imported:
 __all__ = ['__version__']
 
 __revision__ = "$Id: __init__.py 78020 2010-02-06 16:37:32Z benjamin.peterson $"
-__version__ = "1.0a2"
+__version__ = "1.0a3"
 
 
 # when set to True, converts doctests by default too

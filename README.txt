@@ -13,3 +13,9 @@ See the documentation at http://packages.python.org/Distutils2 for more info.
 **Beware that Distutils2 is in its early stage and should not be used in
 production. Its API is subject to changes**
 
+Useful further links:
+
+Mailing list: http://mail.python.org/mailman/listinfo/distutils-sig/
+Documentation: http://packages.python.org/Distutils2
+Repository: http://hg.python.org/distutils2
+Bug tracker: http://bugs.python.org
