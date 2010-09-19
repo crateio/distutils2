@@ -784,14 +784,15 @@ class Distribution(object):
         Returns a file located under the ``.dist-info`` directory. Returns a
         ``file`` instance for the file pointed by *path*.
 
-        :parameter path: a ``'/'``-separated path relative to the ``.dist-info``
-                         directory or an absolute path; If *path* is an
-                         absolute path and doesn't start with the ``.dist-info``
-                         directory path, a :class:`DistutilsError` is raised
+        :parameter path: a ``'/'``-separated path relative to the
+                         ``.dist-info`` directory or an absolute path;
+                         If *path* is an absolute path and doesn't start
+                         with the ``.dist-info`` directory path,
+                         a :class:`DistutilsError` is raised
         :type path: string
         :parameter binary: If *binary* is ``True``, opens the file in read-only
-                           binary mode (``rb``), otherwise opens it in read-only
-                           mode (``r``).
+                           binary mode (``rb``), otherwise opens it in
+                           read-only mode (``r``).
         :rtype: file object
         """
         open_flags = 'r'
@@ -865,7 +866,8 @@ class EggInfoDistribution(object):
 
         # reused from Distribute's pkg_resources
         def yield_lines(strs):
-            """Yield non-empty/non-comment lines of a ``basestring`` or sequence"""
+            """Yield non-empty/non-comment lines of a ``basestring``
+            or sequence"""
             if isinstance(strs, basestring):
                 for s in strs.splitlines():
                     s = s.strip()
@@ -918,7 +920,8 @@ class EggInfoDistribution(object):
         if requires is not None:
             for line in yield_lines(requires):
                 if line[0] == '[':
-                    warnings.warn('distutils2 does not support extensions in requires.txt')
+                    warnings.warn('distutils2 does not support extensions '
+                                  'in requires.txt')
                     break
                 else:
                     match = self._REQUIREMENT.match(line.strip())
@@ -928,8 +931,9 @@ class EggInfoDistribution(object):
                                          (self.name, line))
                     else:
                         if match.group('extras'):
-                            s = 'Distribution %s uses extra requirements which'\
-                                ' are not supported in distutils' % (self.name)
+                            s = (('Distribution %s uses extra requirements '
+                                  'which are not supported in distutils') \
+                                         % (self.name))
                             warnings.warn(s)
                         name = match.group('name')
                         version = None
@@ -973,18 +977,18 @@ def _normalize_dist_name(name):
 def distinfo_dirname(name, version):
     """
     The *name* and *version* parameters are converted into their
-    filename-escaped form, i.e. any ``'-'`` characters are replaced with ``'_'``
-    other than the one in ``'dist-info'`` and the one separating the name from
-    the version number.
+    filename-escaped form, i.e. any ``'-'`` characters are replaced
+    with ``'_'`` other than the one in ``'dist-info'`` and the one
+    separating the name from the version number.
 
     :parameter name: is converted to a standard distribution name by replacing
                      any runs of non- alphanumeric characters with a single
                      ``'-'``.
     :type name: string
-    :parameter version: is converted to a standard version string. Spaces become
-                        dots, and all other non-alphanumeric characters (except
-                        dots) become dashes, with runs of multiple dashes
-                        condensed to a single dash.
+    :parameter version: is converted to a standard version string. Spaces
+                        become dots, and all other non-alphanumeric characters
+                        (except dots) become dashes, with runs of multiple
+                        dashes condensed to a single dash.
     :type version: string
     :returns: directory name
     :rtype: string"""
@@ -1007,7 +1011,8 @@ def get_distributions(use_egg_info=False):
     files and directores are iterated as well.
 
     :rtype: iterator of :class:`Distribution` and :class:`EggInfoDistribution`
-            instances"""
+            instances
+    """
     if not _cache_enabled:
         for dist in _yield_distributions(True, use_egg_info):
             yield dist
@@ -1024,10 +1029,10 @@ def get_distributions(use_egg_info=False):
 
 def get_distribution(name, use_egg_info=False):
     """
-    Scans all elements in ``sys.path`` and looks for all directories ending with
-    ``.dist-info``. Returns a :class:`Distribution` corresponding to the
-    ``.dist-info`` directory that contains the ``METADATA`` that matches *name*
-    for the *name* metadata field.
+    Scans all elements in ``sys.path`` and looks for all directories
+    ending with ``.dist-info``. Returns a :class:`Distribution`
+    corresponding to the ``.dist-info`` directory that contains the
+    ``METADATA`` that matches *name* for the *name* metadata field.
     If no distribution exists with the given *name* and the parameter
     *use_egg_info* is set to ``True``, then all files and directories ending
     with ``.egg-info`` are scanned. A :class:`EggInfoDistribution` instance is
@@ -1037,7 +1042,8 @@ def get_distribution(name, use_egg_info=False):
     This function only returns the first result found, as no more than one
     value is expected. If the directory is not found, ``None`` is returned.
 
-    :rtype: :class:`Distribution` or :class:`EggInfoDistribution` or None"""
+    :rtype: :class:`Distribution` or :class:`EggInfoDistribution` or None
+    """
     if not _cache_enabled:
         for dist in _yield_distributions(True, use_egg_info):
             if dist.name == name:
@@ -1055,7 +1061,9 @@ def get_distribution(name, use_egg_info=False):
 
 def obsoletes_distribution(name, version=None, use_egg_info=False):
     """
-    Iterates over all distributions to find which distributions obsolete *name*.
+    Iterates over all distributions to find which distributions obsolete
+    *name*.
+
     If a *version* is provided, it will be used to filter the results.
     If the argument *use_egg_info* is set to ``True``, then ``.egg-info``
     distributions will be considered as well.
@@ -1065,7 +1073,8 @@ def obsoletes_distribution(name, version=None, use_egg_info=False):
     :parameter name:
     """
     for dist in get_distributions(use_egg_info):
-        obsoleted = dist.metadata['Obsoletes-Dist'] + dist.metadata['Obsoletes']
+        obsoleted = (dist.metadata['Obsoletes-Dist'] +
+                     dist.metadata['Obsoletes'])
         for obs in obsoleted:
             o_components = obs.split(' ', 1)
             if len(o_components) == 1 or version is None:
@@ -1139,7 +1148,8 @@ def get_file_users(path):
     :parameter path: can be a local absolute path or a relative
                      ``'/'``-separated path.
     :type path: string
-    :rtype: iterator of :class:`Distribution` instances"""
+    :rtype: iterator of :class:`Distribution` instances
+    """
     for dist in get_distributions():
         if dist.uses(path):
             yield dist
