@@ -2,8 +2,17 @@
 CHANGES
 =======
 
-1.0a2 - ?
+1.0a3 - ?
 ---------
+
+- Provided a Tox configuration for cross-python testing [holger]
+- Fixed the installation when using easy_install and Pip by switching
+  setup.py to distutils1 [holger/tarek]
+- Added missing c/h files in the MANIFEST so they are always present
+  no matter which python version was used to build it. [holger/tarek]
+
+1.0a2 - 2010-09-10
+------------------
 
 - Add a converter for distutils/setuptools-based setup scripts [tarek]
 - Factor out MANIFEST[.in] support into disutils2.manifest [tarek]
