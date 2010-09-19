@@ -6,12 +6,12 @@ import os
 import re
 
 from distutils2 import __version__ as VERSION
-from distutils2 import log
-from distutils2.core import setup, Extension
-from distutils2.compiler.ccompiler import new_compiler
-from distutils2.command.sdist import sdist
-from distutils2.command.install import install
 from distutils2.util import find_packages
+from distutils import log
+from distutils.core import setup, Extension
+from distutils.ccompiler import new_compiler
+from distutils.command.sdist import sdist
+from distutils.command.install import install
 
 f = open('README.txt')
 try:
@@ -221,10 +221,4 @@ setup(name="Distutils2",
       packages=find_packages(),
       cmdclass={'sdist_hg': sdist_hg, 'install_hg': install_hg},
       package_data={'distutils2._backport': ['sysconfig.cfg']},
-      project_url=[('Mailing list',
-                    'http://mail.python.org/mailman/listinfo/distutils-sig/'),
-                   ('Documentation',
-                    'http://packages.python.org/Distutils2'),
-                   ('Repository', 'http://hg.python.org/distutils2'),
-                   ('Bug tracker', 'http://bugs.python.org')],
       **setup_kwargs)

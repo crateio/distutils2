@@ -9,3 +9,4 @@ dist/
 _static/
 *.swp
 .coverage
+.tox
