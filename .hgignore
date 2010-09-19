@@ -10,3 +10,6 @@ _static/
 *.swp
 .coverage
 .tox
+lib
+include
+bin
