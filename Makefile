@@ -11,7 +11,6 @@ build:
 
 release:
 	hg tag `python setup.py --version`
-	hg ci -m "Release tagged"
 	cd docs; make html
 	$(PYTHON) setup.py upload_docs
 	$(PYTHON) setup.py register sdist upload
