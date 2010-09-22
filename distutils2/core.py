@@ -137,6 +137,9 @@ def setup(**attrs):
     if _setup_stop_after == "commandline":
         return dist
 
+    # run the hook if we have one
+    dist.config.run_hook()
+
     # And finally, run all the commands found on the command line.
     if ok:
         try:

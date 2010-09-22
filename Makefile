@@ -2,6 +2,8 @@ EZ = bin/easy_install
 VIRTUALENV = virtualenv
 PYTHON = bin/python
 HG = hg
+NOSE = bin/nosetests --with-xunit -s
+TESTS = distutils2/tests
 
 .PHONY: release build
 
@@ -15,3 +17,6 @@ release:
 	cd docs; make html
 	$(PYTHON) setup.py upload_docs
 	$(PYTHON) setup.py register sdist upload
+
+test:
+	$(NOSE) $(TESTS)

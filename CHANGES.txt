@@ -10,6 +10,7 @@ CHANGES
   setup.py to distutils1 [holger/tarek]
 - Added missing c/h files in the MANIFEST so they are always present
   no matter which python version was used to build it. [holger/tarek]
+- Added the new setup reunner that uses only setup.cfg
 
 1.0a2 - 2010-09-10
 ------------------

@@ -228,6 +228,7 @@ class TestDistribution(Distribution):
 def create_distribution(configfiles=()):
     """Prepares a distribution with given config files parsed."""
     d = TestDistribution()
+    d.config.find_config_files = d.find_config_files
     d._config_files = configfiles
     d.parse_config_files()
     d.parse_command_line()
