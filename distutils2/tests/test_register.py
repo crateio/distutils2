@@ -68,7 +68,7 @@ class FakeOpener(object):
         return 'xxx'
 
 class RegisterTestCase(support.TempdirManager, support.EnvironGuard,
-                       unittest.TestCase):
+                       support.LoggingCatcher, unittest.TestCase):
 
     def setUp(self):
         super(RegisterTestCase, self).setUp()
