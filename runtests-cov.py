@@ -83,8 +83,15 @@ def coverage_report(opts):
         # that module is also completely optional
         pass
 
-    cov.report(morfs, omit_prefixes=prefixes, show_missing=opts.show_missing)
-
+    try: 
+        cov.report(morfs, 
+                   omit_prefixes=prefixes, 
+                   show_missing=opts.show_missing)
+    except TypeError:
+        # Coverage 3.4 turned `omit_prefixes` into a list of globbing patterns
+        cov.report(morfs, 
+                   omit=[p+"*" for p in prefixes], 
+                   show_missing=opts.show_missing)
 
 def test_main():
     opts, args = parse_opts()
