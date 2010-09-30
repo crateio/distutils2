@@ -13,6 +13,9 @@ Dependencies
 ~~~~~~~~~~~~
 
 * unittest2
+* If your operating system splits core python and a python-dev (or -devel)
+  packages, install the dev package too: It contains header files needed by
+  tests.
 
 Issue Tracker
 ~~~~~~~~~~~~~
