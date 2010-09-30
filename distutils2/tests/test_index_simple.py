@@ -20,7 +20,7 @@ class SimpleCrawlerTestCase(support.TempdirManager, unittest.TestCase):
         urls
         """
         if hosts is None:
-            hosts = (server.full_address.strip("http://"),)
+            hosts = (server.full_address.replace("http://", ""),)
         kwargs['hosts'] = hosts
         return Crawler(server.full_address + base_url, *args,
             **kwargs)

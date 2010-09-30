@@ -131,7 +131,7 @@ class NormalizedVersion(object):
                        pad_zeros_length=0):
         """Parse 'N.N.N' sequences, return a list of ints.
 
-        @param s {str} 'N.N.N..." sequence to be parsed
+        @param s {str} 'N.N.N...' sequence to be parsed
         @param full_ver_str {str} The full version string from which this
             comes. Used for error strings.
         @param drop_trailing_zeros {bool} Whether to drop trailing zeros
@@ -206,7 +206,8 @@ class NormalizedVersion(object):
         return self.__eq__(other) or self.__gt__(other)
 
     # See http://docs.python.org/reference/datamodel#object.__hash__
-    __hash__ = object.__hash__
+    def __hash__(self):
+        return hash(self.parts)
 
 
 def suggest_normalized_version(s):
