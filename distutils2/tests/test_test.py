@@ -12,6 +12,7 @@ from distutils2.core import Command
 from distutils2.tests.support import unittest, TempdirManager
 from distutils2.command.test import test
 from distutils2.dist import Distribution
+from distutils2._backport import pkgutil
 
 try:
     any
@@ -39,6 +40,7 @@ class TestTest(TempdirManager,
         os.environ['PYTHONPATH'] = distutils2path + os.pathsep + self.old_pythonpath
 
     def tearDown(self):
+        pkgutil.clear_cache()
         os.environ['PYTHONPATH'] = self.old_pythonpath
         super(TestTest, self).tearDown()
 
