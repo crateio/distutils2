@@ -136,8 +136,8 @@ def run_tests(verbose):
 
 if __name__ == "__main__":
     try:
-        from distutils2.tests.support import unittest
+        import unittest2
     except ImportError:
-        sys.stderr.write('Error: You have to install unittest2')
+        sys.stderr.write('Error: You have to install unittest2\n')
         sys.exit(1)
     sys.exit(test_main())

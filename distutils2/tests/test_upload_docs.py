@@ -76,6 +76,19 @@ class UploadDocsTestCase(support.TempdirManager, support.EnvironGuard,
         finally:
             os.chdir(previous)
 
+    def test_default_uploaddir_looks_for_doc_also(self):
+        sandbox = self.mkdtemp()
+        previous = os.getcwd()
+        os.chdir(sandbox)
+        try:
+            os.mkdir("build")
+            self.prepare_sample_dir("build")
+            os.rename(os.path.join("build", "docs"), os.path.join("build", "doc"))
+            self.cmd.ensure_finalized()
+            self.assertEqual(self.cmd.upload_dir, os.path.join("build", "doc"))
+        finally:
+            os.chdir(previous)
+
     def prepare_sample_dir(self, sample_dir=None):
         if sample_dir is None:
             sample_dir = self.mkdtemp()

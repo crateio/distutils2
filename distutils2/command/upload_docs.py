@@ -84,6 +84,8 @@ class upload_docs(Command):
         if self.upload_dir is None:
             build = self.get_finalized_command('build')
             self.upload_dir = os.path.join(build.build_base, "docs")
+            if not os.path.isdir(self.upload_dir):
+                self.upload_dir = os.path.join(build.build_base, "doc")
         self.announce('Using upload directory %s' % self.upload_dir)
         self.verify_upload_dir(self.upload_dir)
         config = read_pypirc(self.repository, self.realm)
