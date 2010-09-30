@@ -1,8 +1,7 @@
 """Tests for the distutils2.index.xmlrpc module."""
 
 from distutils2.tests.pypi_server import use_xmlrpc_server
-from distutils2.tests import run_unittest
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, run_unittest
 from distutils2.index.xmlrpc import Client, InvalidSearchField, ProjectNotFound
 
 

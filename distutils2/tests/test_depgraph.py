@@ -1,7 +1,6 @@
 """Tests for distutils.depgraph """
 
-from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support
 from distutils2 import depgraph
 from distutils2._backport import pkgutil
 

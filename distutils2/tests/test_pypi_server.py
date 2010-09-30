@@ -4,7 +4,7 @@ import urllib2
 import os.path
 
 from distutils2.tests.pypi_server import PyPIServer, PYPI_DEFAULT_STATIC_PATH
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest
 
 
 class PyPIServerTest(unittest.TestCase):

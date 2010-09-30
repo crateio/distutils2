@@ -3,8 +3,7 @@ import sys
 import os
 import copy
 
-from distutils2.tests import support, run_unittest
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support, run_unittest
 
 
 SETUP_CFG = """

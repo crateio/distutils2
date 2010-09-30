@@ -3,8 +3,7 @@ import os
 import sys
 
 from distutils2.command.build import build
-from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support
 try:
     from sysconfig import get_platform
 except ImportError:

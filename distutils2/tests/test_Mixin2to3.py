@@ -3,8 +3,7 @@ import sys
 import logging
 
 import distutils2
-from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support
 from distutils2.compat import Mixin2to3
 
 

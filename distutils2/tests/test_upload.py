@@ -6,9 +6,8 @@ import sys
 from distutils2.command.upload import upload
 from distutils2.core import Distribution
 
-from distutils2.tests import support
+from distutils2.tests import unittest, support
 from distutils2.tests.pypi_server import PyPIServer, PyPIServerTestCase
-from distutils2.tests.support import unittest
 
 
 PYPIRC_NOPASSWORD = """\

@@ -9,8 +9,7 @@ try:
 except ImportError:
     from distutils2._backport import sysconfig
 
-from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support
 
 
 class BuildScriptsTestCase(support.TempdirManager,

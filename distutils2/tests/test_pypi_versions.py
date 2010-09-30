@@ -18,8 +18,7 @@ except ImportError:
    import pickle
 
 from distutils2.version import suggest_normalized_version
-from distutils2.tests import run_unittest
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, run_unittest
 
 def test_pypi():
     # FIXME need a better way to do that

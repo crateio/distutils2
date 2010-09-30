@@ -3,8 +3,7 @@ import sys
 import os
 
 from distutils2.errors import DistutilsPlatformError
-from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support
 
 _MANIFEST = """\
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>

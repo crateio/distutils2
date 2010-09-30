@@ -11,8 +11,8 @@ from distutils2.dist import Distribution, fix_help_options
 from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsModuleError, DistutilsOptionError
 from distutils2.tests import TESTFN, captured_stdout
-from distutils2.tests import support
-from distutils2.tests.support import unittest, create_distribution
+from distutils2.tests import support, unittest
+from distutils2.tests.support import create_distribution
 
 
 class test_dist(Command):

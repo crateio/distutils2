@@ -3,8 +3,7 @@ import os
 import sys
 
 from distutils2.command.config import dump_file, config
-from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support
 from distutils2 import log
 
 class ConfigTestCase(support.LoggingCatcher,

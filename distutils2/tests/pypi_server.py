@@ -40,7 +40,7 @@ from BaseHTTPServer import HTTPServer
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest
 
 PYPI_DEFAULT_STATIC_PATH = os.path.dirname(os.path.abspath(__file__)) + "/pypiserver"
 

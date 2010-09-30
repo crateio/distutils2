@@ -5,8 +5,7 @@ import os
 from distutils2.command.install_scripts import install_scripts
 from distutils2.core import Distribution
 
-from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support
 
 
 class InstallScriptsTestCase(support.TempdirManager,

@@ -7,8 +7,7 @@ import csv
 from distutils2.command.install_distinfo import install_distinfo
 from distutils2.core import Command
 from distutils2.metadata import DistributionMetadata
-from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support
 
 try:
     import hashlib

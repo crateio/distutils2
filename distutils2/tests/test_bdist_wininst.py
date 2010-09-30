@@ -1,10 +1,7 @@
 """Tests for distutils.command.bdist_wininst."""
 
-from distutils2.tests import run_unittest
-
+from distutils2.tests import unittest, support, run_unittest
 from distutils2.command.bdist_wininst import bdist_wininst
-from distutils2.tests import support
-from distutils2.tests.support import unittest
 
 class BuildWinInstTestCase(support.TempdirManager,
                            support.LoggingCatcher,

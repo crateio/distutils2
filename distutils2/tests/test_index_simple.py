@@ -6,8 +6,7 @@ import os
 import urllib2
 
 from distutils2.index.simple import Crawler
-from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support
 from distutils2.tests.pypi_server import (use_pypi_server, PyPIServer,
                                           PYPI_DEFAULT_STATIC_PATH)
 

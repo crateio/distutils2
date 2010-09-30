@@ -4,9 +4,8 @@ import os
 
 from distutils2.command.install_lib import install_lib
 from distutils2.extension import Extension
-from distutils2.tests import support
+from distutils2.tests import unittest, support
 from distutils2.errors import DistutilsOptionError
-from distutils2.tests.support import unittest
 
 try:
     no_bytecode = sys.dont_write_bytecode

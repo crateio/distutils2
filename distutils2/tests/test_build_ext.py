@@ -4,7 +4,7 @@ import shutil
 from StringIO import StringIO
 
 import distutils2.tests
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest
 from distutils2.core import Extension, Distribution
 from distutils2.command.build_ext import build_ext
 from distutils2.tests import support
