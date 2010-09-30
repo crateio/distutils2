@@ -31,6 +31,15 @@ class VersionTestCase(unittest.TestCase):
         for v, s in self.versions:
             self.assertEqual(str(v), s)
 
+    def test_hash(self):
+
+        for v, s in self.versions:
+            self.assertEqual(hash(v), hash(V(s)))
+
+        versions = set([v for v,s in self.versions])
+        for v, s in self.versions:
+            self.assertIn(v, versions)
+
     def test_from_parts(self):
 
         for v, s in self.versions:
