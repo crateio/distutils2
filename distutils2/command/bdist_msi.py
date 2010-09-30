@@ -10,11 +10,11 @@ import sys, os
 from sysconfig import get_python_version
 
 from distutils2.core import Command
-from distutils2.dir_util import remove_tree
 from distutils2.version import StrictVersion
 from distutils2.errors import DistutilsOptionError
 from distutils2 import log
 from distutils2.util import get_platform
+from distutils2._backport.shutil import rmtree
 
 import msilib
 from msilib import schema, sequence, text
@@ -259,7 +259,10 @@ class bdist_msi (Command):
             self.distribution.dist_files.append(tup)
 
         if not self.keep_temp:
-            remove_tree(self.bdist_dir, dry_run=self.dry_run)
+            if self.dry_run:
+                pass # XXX
+            else:
+                rmtree(self.bdist_dir)
 
     def add_files(self):
         db = self.db
