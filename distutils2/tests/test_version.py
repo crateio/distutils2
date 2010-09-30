@@ -40,6 +40,8 @@ class VersionTestCase(unittest.TestCase):
         for v, s in self.versions:
             self.assertIn(v, versions)
 
+        self.assertEqual(set([V('1.0')]), set([V('1.0'), V('1.0')]))
+
     def test_from_parts(self):
 
         for v, s in self.versions:
