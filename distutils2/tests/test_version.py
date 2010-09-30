@@ -197,6 +197,10 @@ class VersionTestCase(unittest.TestCase):
         # XXX need to silent the micro version in this case
         #assert not VersionPredicate('Ho (<3.0,!=2.6)').match('2.6.3')
 
+        # test repr
+        for predicate in predicates:
+            self.assertEqual(str(VersionPredicate(predicate)), predicate)
+
     def test_predicate_name(self):
         # Test that names are parsed the right way
 
