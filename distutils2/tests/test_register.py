@@ -65,7 +65,9 @@ class FakeOpener(object):
     def read(self):
         return 'xxx'
 
-class RegisterTestCase(support.TempdirManager, support.EnvironGuard,
+class RegisterTestCase(support.TempdirManager,
+                       support.EnvironGuard,
+                       support.LoggingCatcher,
                        unittest.TestCase):
 
     def setUp(self):

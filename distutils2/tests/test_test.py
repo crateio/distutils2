@@ -10,7 +10,7 @@ from operator import getitem, setitem, delitem
 from StringIO import StringIO
 from distutils2.core import Command
 from distutils2.tests import unittest
-from distutils2.tests.support import TempdirManager
+from distutils2.tests.support import TempdirManager, LoggingCatcher
 from distutils2.command.test import test
 from distutils2.dist import Distribution
 from distutils2._backport import pkgutil
@@ -31,6 +31,7 @@ AssertionError: horribly
 here = os.path.dirname(os.path.abspath(__file__))
 
 class TestTest(TempdirManager,
+               LoggingCatcher,
                unittest.TestCase):
 
     def setUp(self):
@@ -76,7 +77,7 @@ class TestTest(TempdirManager,
 
         orig_has_attr = _hasattr(obj, attr)
         if orig_has_attr:
-            orig_val = _getattr(obj, attr) 
+            orig_val = _getattr(obj, attr)
 
         if delete is False:
             _setattr(obj, attr, new_val)

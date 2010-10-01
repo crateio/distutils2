@@ -501,7 +501,7 @@ All the files that match ``package_data`` will be added to the ``MANIFEST``
 file if no template is provided. See :ref:`manifest`.
 
 
-.. _distutils2-additional-files:
+.. _distutils-additional-files:
 
 Installing Additional Files
 ===========================
