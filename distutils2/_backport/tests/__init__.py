@@ -1,7 +1,7 @@
 import os
 import sys
 
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest
 
 
 here = os.path.dirname(__file__) or os.curdir

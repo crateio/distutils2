@@ -24,8 +24,12 @@ if sys.version_info >= (3, 2):
     # improved unittest package from 3.2's standard library
     import unittest
 else:
-    # external release of same package for older versions
-    import unittest2 as unittest
+    try:
+        # external release of same package for older versions
+        import unittest2 as unittest
+    except ImportError:
+        sys.exit('Error: You have to install unittest2')
+
 
 from test.test_support import TESTFN    # use TESTFN from stdlib/test_support.
 

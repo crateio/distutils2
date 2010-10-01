@@ -8,8 +8,8 @@ import sys
 
 
 def test_main():
-    import distutils2.tests
-    from distutils2.tests import run_unittest, reap_children, TestFailed
+    from distutils2.tests import (run_unittest, reap_children,
+                                  test_suite, TestFailed)
     from distutils2._backport.tests import test_suite as btest_suite
     # XXX just supporting -q right now to enable detailed/quiet output
     if len(sys.argv) > 1:
@@ -18,8 +18,7 @@ def test_main():
         verbose = 1
     try:
         try:
-            run_unittest([distutils2.tests.test_suite(), btest_suite()],
-                         verbose_=verbose)
+            run_unittest([test_suite(), btest_suite()], verbose_=verbose)
             return 0
         except TestFailed:
             return 1
@@ -28,11 +27,6 @@ def test_main():
 
 
 if __name__ == "__main__":
-    try:
-        from distutils2.tests.support import unittest
-    except ImportError:
-        sys.stderr.write('Error: You have to install unittest2')
-        sys.exit(1)
     if sys.version < '2.5':
         try:
             from distutils2._backport import hashlib

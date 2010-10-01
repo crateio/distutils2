@@ -83,14 +83,14 @@ def coverage_report(opts):
         # that module is also completely optional
         pass
 
-    try: 
-        cov.report(morfs, 
-                   omit_prefixes=prefixes, 
+    try:
+        cov.report(morfs,
+                   omit_prefixes=prefixes,
                    show_missing=opts.show_missing)
     except TypeError:
         # Coverage 3.4 turned `omit_prefixes` into a list of globbing patterns
-        cov.report(morfs, 
-                   omit=[p+"*" for p in prefixes], 
+        cov.report(morfs,
+                   omit=[p + "*" for p in prefixes],
                    show_missing=opts.show_missing)
 
 def test_main():
@@ -115,18 +115,13 @@ def test_main():
 
 
 def run_tests(verbose):
-    import distutils2.tests
-    from distutils2.tests import run_unittest, reap_children, TestFailed
+    # do NOT import those at the top level, coverage will be inaccurate if
+    # modules are imported before its magic is started
+    from distutils2.tests import run_unittest, test_suite, reap_children, TestFailed
     from distutils2._backport.tests import test_suite as btest_suite
-    # XXX just supporting -q right now to enable detailed/quiet output
-    if len(sys.argv) > 1:
-        verbose = sys.argv[-1] != '-q'
-    else:
-        verbose = 1
     try:
         try:
-            run_unittest([distutils2.tests.test_suite(), btest_suite()],
-                         verbose_=verbose)
+            run_unittest([test_suite(), btest_suite()], verbose_=verbose)
             return 0
         except TestFailed:
             return 1
@@ -135,11 +130,6 @@ def run_tests(verbose):
 
 
 if __name__ == "__main__":
-    try:
-        from distutils2.tests import unittest
-    except ImportError:
-        sys.stderr.write('Error: You have to install unittest2\n')
-        sys.exit(1)
     if sys.version < '2.5':
         try:
             from distutils2._backport import hashlib
