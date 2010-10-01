@@ -33,6 +33,7 @@ class DepGraphTestCase(support.LoggingCatcher,
         path = os.path.abspath(path)
         self.sys_path = sys.path[:]
         sys.path[0:0] = [path]
+        pkgutil.disable_cache()
 
     def test_generate_graph(self):
         dists = []
@@ -178,6 +179,7 @@ class DepGraphTestCase(support.LoggingCatcher,
 
     def tearDown(self):
         super(DepGraphTestCase, self).tearDown()
+        pkgutil.enable_cache()
         sys.path = self.sys_path
 
 def test_suite():
