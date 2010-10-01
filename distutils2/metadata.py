@@ -179,6 +179,7 @@ _ELEMENTSFIELD = ('Keywords',)
 
 _UNICODEFIELDS = ('Author', 'Maintainer', 'Summary', 'Description')
 
+_MISSING = object()
 
 class DistributionMetadata(object):
     """The metadata of a release.
@@ -228,8 +229,16 @@ class DistributionMetadata(object):
         return self.set(name, value)
 
     def __delitem__(self, name):
-        del self._fields[name]
+        field_name = self._convert_name(name)
+        try:
+            del self._fields[field_name]
+        except KeyError:
+            raise KeyError(name)
         self._set_best_version()
+
+    def __contains__(self, name):
+        return (name in self._fields or
+                self._convert_name(name) in self._fields)
 
     def _convert_name(self, name):
         if name in _ALL_FIELDS:
@@ -305,7 +314,7 @@ class DistributionMetadata(object):
             else:
                 # single line
                 value = msg[field]
-                if value is not None:
+                if value is not None and value != 'UNKNOWN':
                     self.set(field, value)
 
     def write(self, filepath):
@@ -376,7 +385,7 @@ class DistributionMetadata(object):
             if isinstance(value, str):
                 value = [value]
             else:
-                value = None
+                value = []
 
         if name in _PREDICATE_FIELDS and value is not None:
             for v in value:
@@ -402,11 +411,13 @@ class DistributionMetadata(object):
         self._fields[name] = value
         self._set_best_version()
 
-    def get(self, name):
+    def get(self, name, default=_MISSING):
         """Get a metadata field."""
         name = self._convert_name(name)
         if name not in self._fields:
-            return self._default_value(name)
+            if default is _MISSING:
+                default = self._default_value(name)
+            return default
         if name in _UNICODEFIELDS:
             value = self._fields[name]
             return self._encode_field(value)
@@ -442,8 +453,7 @@ class DistributionMetadata(object):
         # XXX should check the versions (if the file was loaded)
         missing, warnings = [], []
         for attr in ('Name', 'Version', 'Home-page'):
-            value = self[attr]
-            if value == 'UNKNOWN':
+            if attr not in self:
                 missing.append(attr)
 
         if _HAS_DOCUTILS:
@@ -463,11 +473,8 @@ class DistributionMetadata(object):
                                    (_VERSIONS_FIELDS, is_valid_versions),
                                    (_VERSION_FIELDS, is_valid_version)):
             for field in fields:
-                value = self[field]
-                if value == 'UNKNOWN':
-                    continue
-
-                if not controller(value):
+                value = self.get(field, None)
+                if value is not None and not controller(value):
                     warnings.append('Wrong value for %r: %s' % (field, value))
 
         return missing, warnings
