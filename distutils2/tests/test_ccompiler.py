@@ -4,8 +4,7 @@ from distutils2.tests import captured_stdout
 
 from distutils2.compiler.ccompiler import (gen_lib_options, CCompiler,
                                  get_default_compiler, customize_compiler)
-from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support
 
 class FakeCompiler(object):
     def library_dir_option(self, dir):

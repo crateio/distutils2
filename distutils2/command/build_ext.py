@@ -31,7 +31,7 @@ else:
     HAS_USER_SITE = True
 
 if os.name == 'nt':
-    from distutils2.msvccompiler import get_build_version
+    from distutils2.compiler.msvccompiler import get_build_version
     MSVC_VERSION = int(get_build_version())
 
 # An extension name is just a dot-separated list of Python NAMEs (ie.

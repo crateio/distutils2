@@ -6,7 +6,7 @@ from distutils2.version import NormalizedVersion as V
 from distutils2.version import HugeMajorVersionNumError, IrrationalVersionError
 from distutils2.version import suggest_normalized_version as suggest
 from distutils2.version import VersionPredicate
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest
 
 class VersionTestCase(unittest.TestCase):
 
@@ -30,6 +30,17 @@ class VersionTestCase(unittest.TestCase):
 
         for v, s in self.versions:
             self.assertEqual(str(v), s)
+
+    def test_hash(self):
+
+        for v, s in self.versions:
+            self.assertEqual(hash(v), hash(V(s)))
+
+        versions = set([v for v,s in self.versions])
+        for v, s in self.versions:
+            self.assertIn(v, versions)
+
+        self.assertEqual(set([V('1.0')]), set([V('1.0'), V('1.0')]))
 
     def test_from_parts(self):
 
@@ -187,6 +198,10 @@ class VersionTestCase(unittest.TestCase):
 
         # XXX need to silent the micro version in this case
         #assert not VersionPredicate('Ho (<3.0,!=2.6)').match('2.6.3')
+
+        # test repr
+        for predicate in predicates:
+            self.assertEqual(str(VersionPredicate(predicate)), predicate)
 
     def test_predicate_name(self):
         # Test that names are parsed the right way

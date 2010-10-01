@@ -9,6 +9,7 @@ If you did, please add your name below in alphabetical order!
 
 Thanks to:
 
+- Rajiv Abraham
 - Ali Afshar
 - Éric Araujo
 - Pior Bastida
@@ -19,12 +20,15 @@ Thanks to:
 - Josip Djolonga
 - Yannick Gingras
 - Jeremy Kloth
+- Amos Latteier
 - Martin von Löwis
 - Carl Meyer
 - Alexis Métaireau
 - Zubin Mithra
+- Derek McTavish Mounce
 - Michael Mulich
 - George Peristerakis
+- Mathieu Perreault
 - Sean Reifschneider
 - Antoine Reversat
 - Luis Rojas

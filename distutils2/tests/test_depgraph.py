@@ -1,7 +1,6 @@
 """Tests for distutils.depgraph """
 
-from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support
 from distutils2 import depgraph
 from distutils2._backport import pkgutil
 
@@ -33,6 +32,7 @@ class DepGraphTestCase(support.LoggingCatcher,
         path = os.path.abspath(path)
         self.sys_path = sys.path[:]
         sys.path[0:0] = [path]
+        pkgutil.disable_cache()
 
     def test_generate_graph(self):
         dists = []
@@ -178,6 +178,7 @@ class DepGraphTestCase(support.LoggingCatcher,
 
     def tearDown(self):
         super(DepGraphTestCase, self).tearDown()
+        pkgutil.enable_cache()
         sys.path = self.sys_path
 
 def test_suite():

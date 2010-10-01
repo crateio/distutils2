@@ -10,8 +10,7 @@ try:
 except ImportError:
     zlib = None
 
-from distutils2.tests import run_unittest
-from distutils2.tests.support import unittest
+from distutils2.tests import run_unittest, unittest
 
 from distutils2.core import Distribution
 from distutils2.command.bdist_dumb import bdist_dumb

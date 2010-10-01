@@ -16,9 +16,8 @@ from distutils2.command.upload_docs import (upload_docs, zip_dir,
 from distutils2.core import Distribution
 from distutils2.errors import DistutilsFileError, DistutilsOptionError
 
-from distutils2.tests import support
+from distutils2.tests import unittest, support
 from distutils2.tests.pypi_server import PyPIServer, PyPIServerTestCase
-from distutils2.tests.support import unittest
 
 
 EXPECTED_MULTIPART_OUTPUT = "\r\n".join([

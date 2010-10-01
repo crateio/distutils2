@@ -4,8 +4,7 @@ import os
 import getpass
 
 from distutils2.command.install_data import install_data
-from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support
 
 class InstallDataTestCase(support.TempdirManager,
                           support.LoggingCatcher,

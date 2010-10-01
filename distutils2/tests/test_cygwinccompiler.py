@@ -15,8 +15,7 @@ from distutils2.compiler.cygwinccompiler import (CygwinCCompiler, check_config_h
                                        CONFIG_H_UNCERTAIN, get_versions,
                                        get_msvcr, RE_VERSION)
 from distutils2.util import get_compiler_versions
-from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support
 
 class CygwinCCompilerTestCase(support.TempdirManager,
                               unittest.TestCase):

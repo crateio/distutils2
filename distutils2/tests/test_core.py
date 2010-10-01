@@ -6,8 +6,7 @@ import os
 import shutil
 import sys
 from distutils2.tests import captured_stdout
-from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support
 
 # setup script that uses __file__
 setup_using___file__ = """\

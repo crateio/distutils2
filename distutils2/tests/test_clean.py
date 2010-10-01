@@ -1,11 +1,8 @@
 """Tests for distutils.command.clean."""
-import sys
 import os
-import getpass
 
 from distutils2.command.clean import clean
-from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support
 
 class cleanTestCase(support.TempdirManager,
                     support.LoggingCatcher,

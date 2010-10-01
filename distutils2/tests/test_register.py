@@ -16,9 +16,7 @@ from distutils2.command.register import register
 from distutils2.core import Distribution
 from distutils2.errors import DistutilsSetupError
 
-from distutils2.tests import support
-from distutils2.tests.support import unittest
-
+from distutils2.tests import unittest, support
 
 PYPIRC_NOPASSWORD = """\
 [distutils]
@@ -67,7 +65,9 @@ class FakeOpener(object):
     def read(self):
         return 'xxx'
 
-class RegisterTestCase(support.TempdirManager, support.EnvironGuard,
+class RegisterTestCase(support.TempdirManager,
+                       support.EnvironGuard,
+                       support.LoggingCatcher,
                        unittest.TestCase):
 
     def setUp(self):

@@ -10,15 +10,26 @@ included in distutils2.tests as well, instead of using a separate
 distutils2.command.tests package, since command identification is done
 by import rather than matching pre-defined names.
 
-Utility code is included in distutils2.tests.support.  Always import
-unittest from that module, it will be the right version (standard
-library unittest for 2.7 and higher, third-party unittest2 release for
-older versions).
+Always import unittest from this module, it will be the right version
+(standard library unittest for 3.2 and higher, third-party unittest2
+release for older versions).
+
+Utility code is included in distutils2.tests.support.  
 """
 
 import os
 import sys
-from distutils2.tests.support import unittest
+
+if sys.version_info >= (3, 2):
+    # improved unittest package from 3.2's standard library
+    import unittest
+else:
+    try:
+        # external release of same package for older versions
+        import unittest2 as unittest
+    except ImportError:
+        sys.exit('Error: You have to install unittest2')
+
 
 from test.test_support import TESTFN    # use TESTFN from stdlib/test_support.
 

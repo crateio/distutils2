@@ -1,14 +1,10 @@
 """Support code for distutils2 test cases.
 
-Always import unittest from this module, it will be the right version
-(standard library unittest for 3.2 and higher, third-party unittest2
-release for older versions).
-
 Four helper classes are provided: LoggingCatcher, TempdirManager,
 EnvironGuard and WarningsCatcher. They are written to be used as mixins,
 e.g. ::
 
-    from distutils2.tests.support import unittest
+    from distutils2.tests import unittest
     from distutils2.tests.support import LoggingCatcher
 
     class SomeTestCase(LoggingCatcher, unittest.TestCase):
@@ -37,13 +33,7 @@ from copy import deepcopy
 from distutils2 import log
 from distutils2.dist import Distribution
 from distutils2.log import DEBUG, INFO, WARN, ERROR, FATAL
-
-if sys.version_info >= (3, 2):
-    # improved unittest package from 3.2's standard library
-    import unittest
-else:
-    # external release of same package for older versions
-    import unittest2 as unittest
+from distutils2.tests import unittest
 
 __all__ = ['LoggingCatcher', 'WarningsCatcher', 'TempdirManager',
            'EnvironGuard', 'DummyCommand', 'unittest']

@@ -17,8 +17,7 @@ from distutils2.command import install as install_module
 from distutils2.core import Distribution
 from distutils2.errors import DistutilsOptionError
 
-from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support
 
 class InstallTestCase(support.TempdirManager,
                       support.EnvironGuard,

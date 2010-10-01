@@ -7,7 +7,7 @@ import subprocess
 import time
 
 from distutils2.tests import captured_stdout
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest
 from distutils2.errors import (DistutilsPlatformError,
                                DistutilsByteCompileError,
                                DistutilsFileError,
@@ -21,8 +21,7 @@ from distutils2.util import (convert_path, change_root,
                              read_pypirc, resolve_name)
 
 from distutils2 import util
-from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support
 
 
 PYPIRC = """\

@@ -2,7 +2,7 @@
 import os
 
 from distutils2.extension import Extension
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest
 
 class ExtensionTestCase(unittest.TestCase):
 

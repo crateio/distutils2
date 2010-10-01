@@ -4,7 +4,8 @@ import os
 
 from distutils2.tests.pypi_server import use_pypi_server
 from distutils2.tests import run_unittest
-from distutils2.tests.support import unittest, TempdirManager
+from distutils2.tests import unittest
+from distutils2.tests.support import TempdirManager
 from distutils2.version import VersionPredicate
 from distutils2.index.errors import HashDoesNotMatch, UnsupportedHashName
 from distutils2.index.dist import (ReleaseInfo, ReleasesList, DistInfo,

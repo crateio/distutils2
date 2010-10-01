@@ -1,11 +1,10 @@
 # -*- encoding: utf8 -*-
 """Tests for distutils.config."""
-import sys
 import os
-import copy
+import sys
+from StringIO import StringIO
 
-from distutils2.tests import support, run_unittest
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support, run_unittest
 
 
 SETUP_CFG = """
@@ -76,26 +75,28 @@ sdist_extra =
 class ConfigTestCase(support.TempdirManager,
                      unittest.TestCase):
 
+    def setUp(self):
+        super(ConfigTestCase, self).setUp()
+        self.addCleanup(setattr, sys, 'stdout', sys.stdout)
+        self.addCleanup(os.chdir, os.getcwd())
+
     def test_config(self):
         tempdir = self.mkdtemp()
-        setup_cfg = os.path.join(tempdir, 'setup.cfg')
-        f = open(setup_cfg, 'w')
-        try:
-            f.write(SETUP_CFG)
-        finally:
-            f.close()
-
-        # trying to load the metadata now
-        old_args = copy.copy(sys.argv)
-        sys.argv[:] = ['setup.py', '--version']
-        old_wd = os.getcwd()
         os.chdir(tempdir)
+        self.write_file('setup.cfg', SETUP_CFG)
+
+        # try to load the metadata now
+        sys.stdout = StringIO()
+        sys.argv[:] = ['setup.py', '--version']
+        old_sys = sys.argv[:]
         try:
             from distutils2.core import setup
             dist = setup()
         finally:
-            os.chdir(old_wd)
-            sys.argv[:] = old_args
+            sys.argv[:] = old_sys
+
+        # sanity check
+        self.assertEqual(sys.stdout.getvalue(), '0.6.4' + os.linesep)
 
         # check what was done
         self.assertEqual(dist.metadata['Author'], 'Carl Meyer')

@@ -12,7 +12,9 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import os
+import sys
+import sphinx
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -98,7 +100,8 @@ html_theme = 'default'
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
-html_theme_options = {'collapsiblesidebar': True}
+if sphinx.__version__[:3] >= '1.0':
+    html_theme_options = {'collapsiblesidebar': True}
 
 # Add any paths that contain custom themes here, relative to this directory.
 #html_theme_path = []

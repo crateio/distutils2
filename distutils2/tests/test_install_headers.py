@@ -4,8 +4,7 @@ import os
 import getpass
 
 from distutils2.command.install_headers import install_headers
-from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support
 
 class InstallHeadersTestCase(support.TempdirManager,
                              support.LoggingCatcher,

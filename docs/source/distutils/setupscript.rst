@@ -5,12 +5,12 @@ Writing the Setup Script
 ************************
 
 The setup script is the center of all activity in building, distributing, and
-installing modules using the Distutils.  The main purpose of the setup script is
-to describe your module distribution to the Distutils, so that the various
+installing modules using Distutils.  The main purpose of the setup script is
+to describe your module distribution to Distutils, so that the various
 commands that operate on your modules do the right thing.  As we saw in section
-:ref:`distutils-simple-example` above, the setup script consists mainly of a
-call to :func:`setup`, and most information supplied to the Distutils by the
-module developer is supplied as keyword arguments to :func:`setup`.
+:ref:`distutils-simple-example`, the setup script consists mainly of a
+call to :func:`setup` where the most information is supplied as 
+keyword arguments to :func:`setup`.
 
 Here's a slightly more involved example, which we'll follow for the next couple
 of sections: a setup script that could be used for Distutils2 itself::
@@ -32,8 +32,8 @@ of sections: a setup script that could be used for Distutils2 itself::
 
 There are only two differences between this and the trivial one-file
 distribution presented in section :ref:`distutils-simple-example`: more
-metadata, and the specification of pure Python modules by package, rather than
-by module.  This is important since the Distutils consist of a couple of dozen
+metadata and the specification of pure Python modules by package rather than
+by module.  This is important since Ristutils consist of a couple of dozen
 modules split into (so far) two packages; an explicit list of every module
 would be tedious to generate and difficult to maintain.  For more information
 on the additional metadata, see section :ref:`metadata`.
@@ -501,7 +501,7 @@ All the files that match ``package_data`` will be added to the ``MANIFEST``
 file if no template is provided. See :ref:`manifest`.
 
 
-.. _distutils2-additional-files:
+.. _distutils-additional-files:
 
 Installing Additional Files
 ===========================

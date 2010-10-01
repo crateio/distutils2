@@ -26,7 +26,7 @@ from distutils2.tests import captured_stdout
 from distutils2.command.sdist import sdist
 from distutils2.command.sdist import show_formats
 from distutils2.core import Distribution
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest
 from distutils2.errors import DistutilsExecError, DistutilsOptionError
 from distutils2.util import find_executable
 from distutils2.tests import support

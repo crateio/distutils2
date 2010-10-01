@@ -654,6 +654,6 @@ class MSVCCompiler (CCompiler) :
 if get_build_version() >= 8.0:
     log.debug("Importing new compiler from distutils.msvc9compiler")
     OldMSVCCompiler = MSVCCompiler
-    from distutils2.msvc9compiler import MSVCCompiler
+    from distutils2.compiler.msvc9compiler import MSVCCompiler
     # get_build_architecture not really relevant now we support cross-compile
-    from distutils2.msvc9compiler import MacroExpander
+    from distutils2.compiler.msvc9compiler import MacroExpander

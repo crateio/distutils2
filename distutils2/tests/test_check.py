@@ -2,8 +2,7 @@
 
 from distutils2.command.check import check
 from distutils2.metadata import _HAS_DOCUTILS
-from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support
 from distutils2.errors import DistutilsSetupError
 
 class CheckTestCase(support.LoggingCatcher,

@@ -7,8 +7,7 @@ from distutils2.tests import captured_stdout
 
 from distutils2.compiler.emxccompiler import get_versions
 from distutils2.util import get_compiler_versions
-from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support
 
 class EmxCCompilerTestCase(support.TempdirManager,
                            unittest.TestCase):

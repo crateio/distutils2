@@ -3,8 +3,7 @@ import sys
 
 from distutils2.tests import run_unittest
 
-from distutils2.tests import support
-from distutils2.tests.support import unittest
+from distutils2.tests import unittest, support
 
 class BDistMSITestCase(support.TempdirManager,
                        support.LoggingCatcher,

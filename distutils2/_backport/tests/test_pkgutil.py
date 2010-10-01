@@ -12,8 +12,8 @@ try:
 except ImportError:
     from distutils2._backport.hashlib import md5
 
-from test.test_support import run_unittest, TESTFN
-from distutils2.tests.support import unittest
+from test.test_support import TESTFN
+from distutils2.tests import unittest, run_unittest
 
 from distutils2._backport import pkgutil
 
@@ -39,10 +39,12 @@ class TestPkgUtilData(unittest.TestCase):
         super(TestPkgUtilData, self).setUp()
         self.dirname = tempfile.mkdtemp()
         sys.path.insert(0, self.dirname)
+        pkgutil.disable_cache()
 
     def tearDown(self):
         super(TestPkgUtilData, self).tearDown()
         del sys.path[0]
+        pkgutil.enable_cache()
         shutil.rmtree(self.dirname)
 
     def test_getdata_filesys(self):
@@ -139,10 +141,12 @@ class TestPkgUtilPEP302(unittest.TestCase):
 
     def setUp(self):
         super(TestPkgUtilPEP302, self).setUp()
+        pkgutil.disable_cache()
         sys.meta_path.insert(0, self.MyTestImporter())
 
     def tearDown(self):
         del sys.meta_path[0]
+        pkgutil.enable_cache()
         super(TestPkgUtilPEP302, self).tearDown()
 
     def test_getdata_pep302(self):
@@ -168,6 +172,7 @@ class TestPkgUtilDistribution(unittest.TestCase):
         super(TestPkgUtilDistribution, self).setUp()
         self.fake_dists_path = os.path.abspath(
             os.path.join(os.path.dirname(__file__), 'fake_dists'))
+        pkgutil.disable_cache()
 
         self.distinfo_dirs = [os.path.join(self.fake_dists_path, dir)
             for dir in os.listdir(self.fake_dists_path)
@@ -214,6 +219,7 @@ class TestPkgUtilDistribution(unittest.TestCase):
         for distinfo_dir in self.distinfo_dirs:
             record_file = os.path.join(distinfo_dir, 'RECORD')
             open(record_file, 'w').close()
+        pkgutil.enable_cache()
         super(TestPkgUtilDistribution, self).tearDown()
 
     def test_instantiation(self):
@@ -322,6 +328,7 @@ class TestPkgUtilPEP376(unittest.TestCase):
 
     def setUp(self):
         super(TestPkgUtilPEP376, self).setUp()
+        pkgutil.disable_cache()
         # Setup the path environment with our fake distributions
         current_path = os.path.abspath(os.path.dirname(__file__))
         self.sys_path = sys.path[:]
@@ -330,6 +337,7 @@ class TestPkgUtilPEP376(unittest.TestCase):
 
     def tearDown(self):
         sys.path[:] = self.sys_path
+        pkgutil.enable_cache()
         super(TestPkgUtilPEP376, self).tearDown()
 
     def test_distinfo_dirname(self):
