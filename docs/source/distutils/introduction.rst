@@ -4,7 +4,7 @@
 An Introduction to Distutils2
 *****************************
 
-This document covers using Distutils2 to distribute your Python modules
+This document covers using Distutils2 to distribute your Python modules,
 concentrating on the role of developer/distributor.  If you're looking for
 information on installing Python modules you should refer to the
 :ref:`install-index` chapter.
@@ -28,16 +28,17 @@ code, of course!) are:
 
 * creating a source distribution
 
-* (optional) creating one or more "built" (binary) distributions of your project
+* (optional) creating one or more "built" (binary) distributions of your
+  project
 
-Each of these tasks are covered in this document.
+All of these tasks are covered in this document.
 
 Not all module developers have access to multiple platforms, so one cannot 
-expect them to create builds for every platform.  To remedy this, it is hoped 
-that intermediaries called *packagers* will arise to address this need.  
-Packagers take source distributions released by module developers, 
+expect them to create buildt distributions for every platform.  To remedy
+this, it is hoped that intermediaries called *packagers* will arise to address
+this need.  Packagers take source distributions released by module developers,
 build them on one or more platforms and release the resulting built 
-distributions.  Thus users on a greater range of platforms will be able to 
+distributions.  Thus, users on a greater range of platforms will be able to 
 install the most popular Python modules in the most natural way for their 
 platform without having to run a setup script or compile a single line of code.
 
