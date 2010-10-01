@@ -259,9 +259,8 @@ class bdist_msi (Command):
             self.distribution.dist_files.append(tup)
 
         if not self.keep_temp:
-            if self.dry_run:
-                pass # XXX
-            else:
+            log.info("removing temporary build directory %s", self.bdist_dir)
+            if not self.dry_run:
                 rmtree(self.bdist_dir)
 
     def add_files(self):
