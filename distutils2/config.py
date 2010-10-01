@@ -75,16 +75,58 @@ class Config(object):
         # XXX
         return value
 
+    def _multiline(self, value):
+        if '\n' in value:
+            value = [v for v in
+                        [v.strip() for v in value.split('\n')]
+                        if v != '']
+        return value
+
     def _read_metadata(self, parser):
         if parser.has_option('global', 'setup_hook'):
             self.setup_hook = parser.get('global', 'setup_hook')
 
         metadata = self.dist.metadata
+
         # setting the metadata values
         if 'metadata' in parser.sections():
             for key, value in parser.items('metadata'):
+                key = key.replace('_', '-')
+                value = self._multiline(value)
+                if key == 'project-url':
+                    value = [(label.strip(), url.strip())
+                             for label, url in
+                             [v.split(',') for v in value]]
                 if metadata.is_metadata_field(key):
                     metadata[key] = self._convert_metadata(key, value)
+        if 'files' in parser.sections():
+            files = dict([(key, self._multiline(value))
+                          for key, value in parser.items('files')])
+            self.dist.packages = files.get('packages', [])
+            self.dist.py_modules = files.get('py_modules', [])
+            if isinstance(self.dist.py_modules, str):
+                self.dist.py_modules = [self.dist.py_modules]
+            self.dist.scripts = files.get('scripts', [])
+
+            self.dist.package_data = {}
+            for data in files.get('package_data', []):
+                data = data.split('=')
+                if len(data) != 2:
+                    continue
+                key, value = data
+                self.dist.package_data[key.strip()] = value.strip()
+
+            self.dist.data_files = []
+            for data in files.get('data_files', []):
+                data = data.split('=')
+                if len(data) != 2:
+                    continue
+                key, value = data
+                values = [v.strip() for v in value.split(',')]
+                self.dist.data_files.append((key, values))
+
+            # manifest template
+            # XXX see later
 
     def parse_config_files(self, filenames=None):
         if filenames is None:

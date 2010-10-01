@@ -368,7 +368,7 @@ class DistributionMetadata(object):
         if ((name in _ELEMENTSFIELD or name == 'Platform') and
             not isinstance(value, (list, tuple))):
             if isinstance(value, str):
-                value = value.split(',')
+                value = [v.strip() for v in value.split(',')]
             else:
                 value = []
         elif (name in _LISTFIELDS and
