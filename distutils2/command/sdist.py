@@ -197,7 +197,6 @@ class sdist(Command):
     def add_defaults(self):
         """Add all the default files to self.filelist:
           - README or README.txt
-          - setup.py
           - test/test*.py
           - all pure Python modules mentioned in setup script
           - all files pointed by package_data (build_py)
@@ -208,8 +207,7 @@ class sdist(Command):
         Warns if (README or README.txt) or setup.py are missing; everything
         else is optional.
         """
-
-        standards = [('README', 'README.txt'), self.distribution.script_name]
+        standards = [('README', 'README.txt')]
         for fn in standards:
             if isinstance(fn, tuple):
                 alts = fn
@@ -236,8 +234,12 @@ class sdist(Command):
                 self.filelist.extend(files)
 
         for cmd_name in self.distribution.get_command_names():
-            cmd_obj = self.get_finalized_command(cmd_name)
-            self.filelist.extend(cmd_obj.get_source_files())
+            try:
+                cmd_obj = self.get_finalized_command(cmd_name)
+            except DistutilsOptionError:
+                pass
+            else:
+                self.filelist.extend(cmd_obj.get_source_files())
 
     def prune_file_list(self):
         """Prune off branches that might slip into the file list as created
