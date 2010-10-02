@@ -48,8 +48,9 @@ project_url =
 
 [files]
 packages = one
-           two
-           three
+           src:two
+           src2:three
+
 py_modules = haven
 
 scripts =
@@ -138,6 +139,7 @@ class ConfigTestCase(support.TempdirManager,
             [('bitmaps ', ['bm/b1.gif', 'bm/b2.gif']),
              ('config ', ['cfg/data.cfg']),
              ('/etc/init.d ', ['init-script'])])
+        self.assertEqual(dist.package_dir['two'], 'src')
 
 
 def test_suite():

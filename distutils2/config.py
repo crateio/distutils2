@@ -102,11 +102,21 @@ class Config(object):
         if 'files' in parser.sections():
             files = dict([(key, self._multiline(value))
                           for key, value in parser.items('files')])
-            self.dist.packages = files.get('packages', [])
+            self.dist.packages = []
+            self.dist.package_dir = {}
+
+            for package in files.get('packages', []):
+                if ':' in package:
+                    dir_, package = package.split(':')
+                    self.dist.package_dir[package] = dir_
+                self.dist.packages.append(package)
+
             self.dist.py_modules = files.get('py_modules', [])
             if isinstance(self.dist.py_modules, str):
                 self.dist.py_modules = [self.dist.py_modules]
             self.dist.scripts = files.get('scripts', [])
+            if isinstance(self.dist.scripts, str):
+                self.dist.scripts = [self.dist.scripts]
 
             self.dist.package_data = {}
             for data in files.get('package_data', []):
