@@ -32,6 +32,7 @@ from textwrap import dedent
 # dict form or another structures for all purposes
 from distutils2._trove import all_classifiers as _CLASSIFIERS_LIST
 
+_FILENAME = 'setup.cfg'
 
 _helptext = {
     'name': '''
@@ -213,7 +214,7 @@ class MainProgram(object):
 
         for root, dirs, files in os.walk(os.curdir):
             for filename in files:
-                if root == os.curdir and filename == 'setup.py':
+                if root == os.curdir and filename == _FILENAME:
                     continue
                 self.inspect_file(os.path.join(root, filename))
 
@@ -361,45 +362,39 @@ class MainProgram(object):
         return modified_pkgs
 
     def write_setup_script(self):
-        if os.path.exists('setup.py'):
-            if os.path.exists('setup.py.old'):
-                print ("ERROR: setup.py.old backup exists, please check that "
-                        "current setup.py is correct and remove setup.py.old")
+        if os.path.exists(_FILENAME):
+            if os.path.exists('%s.old' % _FILENAME):
+                print("ERROR: %(name)s.old backup exists, please check that "
+                    "current %(name)s is correct and remove %(name)s.old" % \
+                    {'name': _FILENAME})
                 return
-            shutil.move('setup.py', 'setup.py.old')
+            shutil.move(_FILENAME, '%s.old' % _FILENAME)
 
-        fp = open('setup.py', 'w')
+        fp = open(_FILENAME, 'w')
         try:
-            # XXX do LFs work on all platforms?
-            fp.write('#!/usr/bin/env python\n\n')
-            fp.write('from distutils2.core import setup\n\n')
-            fp.write('setup(name=%s,\n' % repr(self.data['name']))
-            fp.write('      version=%s,\n' % repr(self.data['version']))
-            fp.write('      description=%s,\n'
-                    % repr(self.data['description']))
-            fp.write('      author=%s,\n' % repr(self.data['author']))
-            fp.write('      author_email=%s,\n'
-                    % repr(self.data['author_email']))
-            if self.data['url']:
-                fp.write('      url=%s,\n' % repr(self.data['url']))
-            if self.data['classifier']:
-                fp.write('      classifier=[\n')
-                for classifier in sorted(self.data['classifier'].keys()):
-                    fp.write('            %s,\n' % repr(classifier))
-                fp.write('         ],\n')
-            if self.data['packages']:
-                fp.write('      packages=%s,\n'
-                        % repr(self._dotted_packages(self.data['packages'])))
-                fp.write('      package_dir=%s,\n'
-                        % repr(self.data['packages']))
-            fp.write('      #scripts=[\'path/to/script\']\n')
+            fp.write('[metadata]\n')
+            fp.write('name = %s\n' % self.data['name'])
+            fp.write('version = %s\n' % self.data['version'])
+            fp.write('author = %s\n' % self.data['author'])
+            fp.write('author_email = %s\n' % self.data['author_email'])
+            fp.write('description = %s\n' % self.data['description'])
+            fp.write('home_url = %s\n' % self.data['url'])
+            fp.write('\n')
+            classifiers = '\n'.join(['    %s' % clas for clas in
+                                     self.data['classifier']])
+            fp.write('classifier = %s\n' % classifiers.strip())
 
-            fp.write('      )\n')
+
+            fp.write('[files]\n')
+            packages = '\n'.join(['    %s' % pkg for pkg in
+                                  self.data['packages']])
+            fp.write('\n')
+            fp.write('packages = %s\n' % packages.strip())
         finally:
             fp.close()
-        os.chmod('setup.py', 0755)
 
-        print 'Wrote "setup.py".'
+        os.chmod(_FILENAME, 0755)
+        print 'Wrote "%s".' % _FILENAME
 
 
 def main():
@@ -410,7 +405,7 @@ def main():
     program.inspect_directory()
     program.query_user()
     program.update_config_file()
-    program.write_setup()
+    program.write_setup_script()
 
 
 if __name__ == '__main__':
