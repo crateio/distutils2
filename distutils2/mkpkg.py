@@ -60,7 +60,11 @@ intended audience by saying things like "Beta software with a text UI
 for Linux under the PSF license.  However, this can be a somewhat involved
 process.
 ''',
-    'url': '''
+    'package': '''
+You can provide a package name contained in your project.
+''',
+
+    'home_page': '''
 The home page for the package, typically starting with "http://".
 ''',
     'trove_license': '''
@@ -78,6 +82,7 @@ human language, programming language, user interface, etc...
 
 
 def ask_yn(question, default=None, helptext=None):
+    question += ' (y/n)'
     while True:
         answer = ask(question, default, helptext, required=True)
         if answer and answer[0].lower() in 'yn':
@@ -143,7 +148,7 @@ class MainProgram(object):
         self.classifiers = {}
         self.data = {}
         self.data['classifier'] = self.classifiers
-        self.data['packages'] = {}
+        self.data['packages'] = []
         self.load_config_file()
 
     def lookup_option(self, key):
@@ -212,24 +217,8 @@ class MainProgram(object):
             self.data['name'] = m.group(1)
             self.data['version'] = m.group(2)
 
-        for root, dirs, files in os.walk(os.curdir):
-            for filename in files:
-                if root == os.curdir and filename == _FILENAME:
-                    continue
-                self.inspect_file(os.path.join(root, filename))
-
-                if filename == '__init__.py':
-                    trySrc = os.path.join(os.curdir, 'src')
-                    tmpRoot = root
-                    if tmpRoot.startswith(trySrc):
-                        tmpRoot = tmpRoot[len(trySrc):]
-                    if tmpRoot.startswith(os.path.sep):
-                        tmpRoot = tmpRoot[len(os.path.sep):]
-
-                    self.data['packages'][tmpRoot] = root[1 + len(os.path.sep):]
-
     def query_user(self):
-        self.data['name'] = ask('Package name', self.data['name'],
+        self.data['name'] = ask('Project name', self.data['name'],
               _helptext['name'])
         self.data['version'] = ask('Current version number',
               self.data.get('version'), _helptext['version'])
@@ -240,12 +229,25 @@ class MainProgram(object):
               self.data.get('author'), _helptext['author'])
         self.data['author_email'] = ask('Author e-mail address',
               self.data.get('author_email'), _helptext['author_email'])
-        self.data['url'] = ask('Project URL',
-              self.data.get('url'), _helptext['url'], required=False)
+        self.data['home_page'] = ask('Project Home Page',
+              self.data.get('home_page'), _helptext['home_page'],
+              required=False)
+
+        while ask_yn('Do you want to add a package ?',
+                  helptext=_helptext['package']) == 'y':
+            self.set_package()
 
         if ask_yn('Do you want to set Trove classifiers?',
                   helptext=_helptext['do_classifier']) == 'y':
             self.set_classifier()
+
+    def set_package(self):
+        packages = self.data['packages']
+        name = ask('Package name', helptext=_helptext['package']).strip()
+        if name == '':
+            return
+        if name not in packages:
+            packages.append(name)
 
     def set_classifier(self):
         self.set_devel_status(self.classifiers)
@@ -378,12 +380,13 @@ class MainProgram(object):
             fp.write('author = %s\n' % self.data['author'])
             fp.write('author_email = %s\n' % self.data['author_email'])
             fp.write('description = %s\n' % self.data['description'])
-            fp.write('home_url = %s\n' % self.data['url'])
+            fp.write('home_page = %s\n' % self.data['home_page'])
             fp.write('\n')
-            classifiers = '\n'.join(['    %s' % clas for clas in
-                                     self.data['classifier']])
-            fp.write('classifier = %s\n' % classifiers.strip())
-
+            if len(self.data['classifier']) > 0:
+                classifiers = '\n'.join(['    %s' % clas for clas in
+                                         self.data['classifier']])
+                fp.write('classifier = %s\n' % classifiers.strip())
+                fp.write('\n')
 
             fp.write('[files]\n')
             packages = '\n'.join(['    %s' % pkg for pkg in
