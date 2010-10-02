@@ -105,7 +105,11 @@ class Config(object):
             self.dist.packages = []
             self.dist.package_dir = {}
 
-            for package in files.get('packages', []):
+            packages = files.get('packages', [])
+            if isinstance(packages, str):
+                packages = [packages]
+
+            for package in packages:
                 if ':' in package:
                     dir_, package = package.split(':')
                     self.dist.package_dir[package] = dir_
