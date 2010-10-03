@@ -17,6 +17,8 @@ class DepGraphTestCase(support.LoggingCatcher,
 
     DISTROS_DIST = ('choxie', 'grammar', 'towel-stuff')
     DISTROS_EGG  = ('bacon', 'banana', 'strawberry', 'cheese')
+    BAD_EGGS = ('nut',)
+
     EDGE = re.compile(
            r'"(?P<from>.*)" -> "(?P<to>.*)" \[label="(?P<label>.*)"\]'
            )
@@ -53,7 +55,7 @@ class DepGraphTestCase(support.LoggingCatcher,
         deps = [(x.name, y) for (x,y) in graph.adjacency_list[choxie]]
         self.checkLists([('towel-stuff', 'towel-stuff (0.1)')], deps)
         self.assertTrue(choxie in graph.reverse_list[towel])
-        self.checkLists(graph.missing[choxie], [])
+        self.checkLists(graph.missing[choxie], ['nut'])
 
         deps = [(x.name, y) for (x,y) in graph.adjacency_list[grammar]]
         self.checkLists([], deps)
@@ -77,7 +79,7 @@ class DepGraphTestCase(support.LoggingCatcher,
         deps = [(x.name, y) for (x,y) in graph.adjacency_list[choxie]]
         self.checkLists([('towel-stuff', 'towel-stuff (0.1)')], deps)
         self.assertTrue(choxie in graph.reverse_list[towel])
-        self.checkLists(graph.missing[choxie], [])
+        self.checkLists(graph.missing[choxie], ['nut'])
 
         deps = [(x.name, y) for (x,y) in graph.adjacency_list[grammar]]
         self.checkLists([('bacon', 'truffles (>=1.2)')], deps)
@@ -162,6 +164,35 @@ class DepGraphTestCase(support.LoggingCatcher,
 
         dists = []
         for name in self.DISTROS_DIST + self.DISTROS_EGG:
+            dist = pkgutil.get_distribution(name, use_egg_info=True)
+            self.assertNotEqual(dist, None)
+            dists.append(dist)
+
+        graph = depgraph.generate_graph(dists)
+        buf = StringIO.StringIO()
+        depgraph.graph_to_dot(graph, buf)
+        buf.seek(0)
+        matches = []
+        lines = buf.readlines()
+        for line in lines[1:-1]: # skip the first and the last lines
+            if line[-1] == '\n':
+                line = line[:-1]
+            match = self.EDGE.match(line.strip())
+            self.assertTrue(match is not None)
+            matches.append(match.groups())
+
+        self.checkLists(matches, expected)
+
+    def test_graph_bad_version_to_dot(self):
+        expected = (
+            ('towel-stuff', 'bacon', 'bacon (<=0.2)'),
+            ('grammar', 'bacon', 'truffles (>=1.2)'),
+            ('choxie', 'towel-stuff', 'towel-stuff (0.1)'),
+            ('banana', 'strawberry', 'strawberry (>=0.5)')
+        )
+
+        dists = []
+        for name in self.DISTROS_DIST + self.DISTROS_EGG + self.BAD_EGGS:
             dist = pkgutil.get_distribution(name, use_egg_info=True)
             self.assertNotEqual(dist, None)
             dists.append(dist)

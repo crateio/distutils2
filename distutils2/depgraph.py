@@ -4,7 +4,7 @@ and generate a dependency graph.
 import sys
 from StringIO import StringIO
 from distutils2.errors import DistutilsError
-from distutils2.version import VersionPredicate
+from distutils2.version import VersionPredicate, IrrationalVersionError
 
 __all__ = ['DependencyGraph', 'generate_graph', 'dependent_dists',
            'graph_to_dot']
@@ -156,8 +156,17 @@ def generate_graph(dists):
                 graph.add_missing(dist, req)
             else:
                 matched = False
-                for (version, provider) in provided[name]:
-                    if predicate.match(version):
+                for version, provider in provided[name]:
+                    try:
+                        match = predicate.match(version)
+                    except IrrationalVersionError:
+                        # XXX small compat-mode
+                        if version.split(' ' ) == 1:
+                            match = True
+                        else:
+                            match = False
+
+                    if match:
                         graph.add_edge(dist, provider, req)
                         matched = True
                         break
