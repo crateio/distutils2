@@ -21,6 +21,11 @@ class DepGraphTestCase(support.LoggingCatcher,
            r'"(?P<from>.*)" -> "(?P<to>.*)" \[label="(?P<label>.*)"\]'
            )
 
+    def tearDown(self):
+        super(DepGraphTestCase, self).tearDown()
+        pkgutil.enable_cache()
+        sys.path = self.sys_path
+
     def checkLists(self, l1, l2):
         """ Compare two lists without taking the order into consideration """
         self.assertListEqual(sorted(l1), sorted(l2))
@@ -176,10 +181,26 @@ class DepGraphTestCase(support.LoggingCatcher,
 
         self.checkLists(matches, expected)
 
-    def tearDown(self):
-        super(DepGraphTestCase, self).tearDown()
-        pkgutil.enable_cache()
-        sys.path = self.sys_path
+    def test_main(self):
+        tempout = StringIO.StringIO()
+        old = sys.stdout
+        sys.stdout = tempout
+        oldargv = sys.argv[:]
+        sys.argv[:] = ['script.py']
+        try:
+            try:
+                depgraph.main()
+            except SystemExit:
+                pass
+        finally:
+            sys.stdout = old
+            sys.argv[:] = oldargv
+
+        # checks what main did XXX could do more here
+        tempout.seek(0)
+        res = tempout.read()
+        self.assertTrue('towel' in res)
+
 
 def test_suite():
     return unittest.makeSuite(DepGraphTestCase)

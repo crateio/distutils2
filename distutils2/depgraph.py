@@ -1,7 +1,8 @@
 """Analyse the relationships between the distributions in the system
 and generate a dependency graph.
 """
-
+import sys
+from StringIO import StringIO
 from distutils2.errors import DistutilsError
 from distutils2.version import VersionPredicate
 
@@ -64,6 +65,20 @@ class DependencyGraph(object):
         :type requirement: ``str``
         """
         self.missing[distribution].append(requirement)
+
+    def __repr__(self):
+        """Representation of the graph"""
+        def _repr_dist(dist):
+            return '%s %s' % (dist.name, dist.metadata['Version'])
+        output = []
+        for dist, adjs in self.adjacency_list.iteritems():
+            output.append(_repr_dist(dist))
+            for other, label in adjs:
+                dist = _repr_dist(other)
+                if label is not None:
+                    dist = '%s [%s]' % (dist, label)
+                output.append('    %s' % dist)
+        return '\n'.join(output)
 
 
 def graph_to_dot(graph, f, skip_disconnected=True):
@@ -176,13 +191,52 @@ def dependent_dists(dists, dist):
     dep.pop(0) # remove dist from dep, was there to prevent infinite loops
     return dep
 
-if __name__ == '__main__':
+def main():
     from distutils2._backport.pkgutil import get_distributions
-    dists = list(get_distributions(use_egg_info=True))
-    graph = generate_graph(dists)
+    tempout = StringIO()
+    try:
+        old = sys.stderr
+        sys.stderr = tempout
+        try:
+            dists = list(get_distributions(use_egg_info=True))
+            graph = generate_graph(dists)
+        finally:
+            sys.stderr = old
+    except Exception, e:
+        tempout.seek(0)
+        tempout = tempout.read()
+        print('Could not generate the graph\n%s\n%s\n' % (tempout, str(e)))
+        sys.exit(1)
+
     for dist, reqs in graph.missing.iteritems():
         if len(reqs) > 0:
-            print("Missing dependencies for %s: %s" % (dist.name,
+            print("Warning: Missing dependencies for %s: %s" % (dist.name,
                                                        ", ".join(reqs)))
-    f = open('output.dot', 'w')
-    graph_to_dot(graph, f, True)
+    # XXX replace with argparse
+    if len(sys.argv) == 1:
+        print('Dependency graph:')
+        print('    ' + repr(graph).replace('\n', '\n    '))
+        sys.exit(0)
+    elif len(sys.argv) > 1 and sys.argv[1] in ('-d', '--dot'):
+        if len(sys.argv) > 2:
+            filename = sys.argv[2]
+        else:
+            filename = 'depgraph.dot'
+
+        f = open(filename, 'w')
+        try:
+            graph_to_dot(graph, f, True)
+        finally:
+            f.close()
+        tempout.seek(0)
+        tempout = tempout.read()
+        print(tempout)
+        print('Dot file written at "%s"' % filename)
+        sys.exit(0)
+    else:
+        print('Supported option: -d [filename]')
+        sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()
