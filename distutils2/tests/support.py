@@ -24,7 +24,6 @@ tests of another command that needs them (see docstring).
 """
 
 import os
-import sys
 import shutil
 import tempfile
 import warnings
