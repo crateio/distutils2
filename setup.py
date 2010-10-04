@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- encoding: utf8 -*-
-__revision__ = "$Id$"
 import sys
 import os
 import re
