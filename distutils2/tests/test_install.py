@@ -1,219 +1,158 @@
-"""Tests for distutils.command.install."""
+"""Tests for the distutils2.index.xmlrpc module."""
 
-import os
-import sys
+from distutils2.tests.pypi_server import use_xmlrpc_server
+from distutils2.tests import unittest, run_unittest
+from distutils2.index.xmlrpc import Client
+from distutils2.install import (get_infos, InstallationException)
+from distutils2.metadata import DistributionMetadata
 
-from distutils2._backport.sysconfig import (get_scheme_names,
-                                            get_config_vars,
-                                            _SCHEMES,
-                                            get_config_var, get_path)
 
-_CONFIG_VARS = get_config_vars()
+class FakeDist(object):
+    """A fake distribution object, for tests"""
+    def __init__(self, name, version, deps):
+        self.name = name
+        self.version = version
+        self.metadata = DistributionMetadata()
+        self.metadata['Requires-Dist'] = deps
+        self.metadata['Provides-Dist'] = ['%s (%s)' % (name, version)]
 
-from distutils2.tests import captured_stdout
+    def __repr__(self):
+        return '<FakeDist %s>' % self.name
 
-from distutils2.command.install import install
-from distutils2.command import install as install_module
-from distutils2.core import Distribution
-from distutils2.errors import DistutilsOptionError
 
-from distutils2.tests import unittest, support
+def get_fake_dists(dists):
+    objects = []
+    for (name, version, deps) in dists:
+        objects.append(FakeDist(name, version, deps))
+    return objects
 
-class InstallTestCase(support.TempdirManager,
-                      support.EnvironGuard,
-                      support.LoggingCatcher,
-                      unittest.TestCase):
 
-    def test_home_installation_scheme(self):
-        # This ensure two things:
-        # - that --home generates the desired set of directory names
-        # - test --home is supported on all platforms
-        builddir = self.mkdtemp()
-        destination = os.path.join(builddir, "installation")
+class TestInstallWithDeps(unittest.TestCase):
+    def _get_client(self, server, *args, **kwargs):
+        return Client(server.full_address, *args, **kwargs)
 
-        dist = Distribution({"name": "foopkg"})
-        # script_name need not exist, it just need to be initialized
-        dist.script_name = os.path.join(builddir, "setup.py")
-        dist.command_obj["build"] = support.DummyCommand(
-            build_base=builddir,
-            build_lib=os.path.join(builddir, "lib"),
-            )
+    def _get_results(self, output):
+        """return a list of results"""
+        installed = [(o.name, '%s' % o.version) for o in output['install']]
+        remove = [(o.name, '%s' % o.version) for o in output['remove']]
+        conflict = [(o.name, '%s' % o.version) for o in output['conflict']]
+        return (installed, remove, conflict)
 
-        old_posix_prefix = _SCHEMES.get('posix_prefix', 'platinclude')
-        old_posix_home = _SCHEMES.get('posix_home', 'platinclude')
+    @use_xmlrpc_server()
+    def test_existing_deps(self, server):
+        # Test that the installer get the dependencies from the metadatas
+        # and ask the index for this dependencies.
+        # In this test case, we have choxie that is dependent from towel-stuff
+        # 0.1, which is in-turn dependent on bacon <= 0.2:
+        # choxie -> towel-stuff -> bacon.
+        # Each release metadata is not provided in metadata 1.2.
+        client = self._get_client(server)
+        archive_path = '%s/distribution.tar.gz' % server.full_address
+        server.xmlrpc.set_distributions([
+            {'name':'choxie',
+             'version': '2.0.0.9',
+             'requires_dist': ['towel-stuff (0.1)',],
+             'url': archive_path},
+            {'name':'towel-stuff',
+             'version': '0.1',
+             'requires_dist': ['bacon (<= 0.2)',],
+             'url': archive_path},
+            {'name':'bacon',
+             'version': '0.1',
+             'requires_dist': [],
+             'url': archive_path},
+            ])
+        installed = get_fake_dists([('bacon', '0.1', []),])
+        output = get_infos("choxie", index=client,
+                           installed=installed)
 
-        new_path = '{platbase}/include/python{py_version_short}'
-        _SCHEMES.set('posix_prefix', 'platinclude', new_path)
-        _SCHEMES.set('posix_home', 'platinclude', '{platbase}/include/python')
+        # we dont have installed bacon as it's already installed on the system.
+        self.assertEqual(0, len(output['remove']))
+        self.assertEqual(2, len(output['install']))
+        readable_output = [(o.name, '%s' % o.version)
+                           for o in output['install']]
+        self.assertIn(('towel-stuff', '0.1'), readable_output)
+        self.assertIn(('choxie', '2.0.0.9'), readable_output)
 
-        try:
-            cmd = install(dist)
-            cmd.home = destination
-            cmd.ensure_finalized()
-        finally:
-            _SCHEMES.set('posix_prefix', 'platinclude', old_posix_prefix)
-            _SCHEMES.set('posix_home', 'platinclude', old_posix_home)
+    @use_xmlrpc_server()
+    def test_upgrade_existing_deps(self, server):
+        # Tests that the existing distributions can be upgraded if needed.
+        client = self._get_client(server)
+        archive_path = '%s/distribution.tar.gz' % server.full_address
+        server.xmlrpc.set_distributions([
+            {'name':'choxie',
+             'version': '2.0.0.9',
+             'requires_dist': ['towel-stuff (0.1)',],
+             'url': archive_path},
+            {'name':'towel-stuff',
+             'version': '0.1',
+             'requires_dist': ['bacon (>= 0.2)',],
+             'url': archive_path},
+            {'name':'bacon',
+             'version': '0.2',
+             'requires_dist': [],
+             'url': archive_path},
+            ])
 
-        self.assertEqual(cmd.install_base, destination)
-        self.assertEqual(cmd.install_platbase, destination)
+        output = get_infos("choxie", index=client, installed=
+                           get_fake_dists([('bacon', '0.1', []),]))
+        installed = [(o.name, '%s' % o.version) for o in output['install']]
 
-        def check_path(got, expected):
-            got = os.path.normpath(got)
-            expected = os.path.normpath(expected)
-            self.assertEqual(got, expected)
+        # we need bacon 0.2, but 0.1 is installed.
+        # So we expect to remove 0.1 and to install 0.2 instead.
+        remove = [(o.name, '%s' % o.version) for o in output['remove']]
+        self.assertIn(('choxie', '2.0.0.9'), installed)
+        self.assertIn(('towel-stuff', '0.1'), installed)
+        self.assertIn(('bacon', '0.2'), installed)
+        self.assertIn(('bacon', '0.1'), remove)
+        self.assertEqual(0, len(output['conflict']))
 
-        libdir = os.path.join(destination, "lib", "python")
-        check_path(cmd.install_lib, libdir)
-        check_path(cmd.install_platlib, libdir)
-        check_path(cmd.install_purelib, libdir)
-        check_path(cmd.install_headers,
-                   os.path.join(destination, "include", "python", "foopkg"))
-        check_path(cmd.install_scripts, os.path.join(destination, "bin"))
-        check_path(cmd.install_data, destination)
+    @use_xmlrpc_server()
+    def test_conflicts(self, server):
+        # Tests that conflicts are detected
+        client = self._get_client(server)
+        archive_path = '%s/distribution.tar.gz' % server.full_address
+        server.xmlrpc.set_distributions([
+            {'name':'choxie',
+             'version': '2.0.0.9',
+             'requires_dist': ['towel-stuff (0.1)',],
+             'url': archive_path},
+            {'name':'towel-stuff',
+             'version': '0.1',
+             'requires_dist': ['bacon (>= 0.2)',],
+             'url': archive_path},
+            {'name':'bacon',
+             'version': '0.2',
+             'requires_dist': [],
+             'url': archive_path},
+            ])
+        already_installed = [('bacon', '0.1', []),
+                             ('chicken', '1.1', ['bacon (0.1)'])]
+        output = get_infos("choxie", index=client, installed=
+                           get_fake_dists(already_installed))
 
-    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
-    def test_user_site(self):
-        # test install with --user
-        # preparing the environment for the test
-        self.old_user_base = get_config_var('userbase')
-        self.old_user_site = get_path('purelib', '%s_user' % os.name)
-        self.tmpdir = self.mkdtemp()
-        self.user_base = os.path.join(self.tmpdir, 'B')
-        self.user_site = os.path.join(self.tmpdir, 'S')
-        _CONFIG_VARS['userbase'] = self.user_base
-        scheme = '%s_user' % os.name
-        _SCHEMES.set(scheme, 'purelib', self.user_site)
-        def _expanduser(path):
-            if path[0] == '~':
-                path = os.path.normpath(self.tmpdir) + path[1:]
-            return path
-        self.old_expand = os.path.expanduser
-        os.path.expanduser = _expanduser
+        # we need bacon 0.2, but 0.1 is installed.
+        # So we expect to remove 0.1 and to install 0.2 instead.
+        installed, remove, conflict = self._get_results(output)
+        self.assertIn(('choxie', '2.0.0.9'), installed)
+        self.assertIn(('towel-stuff', '0.1'), installed)
+        self.assertIn(('bacon', '0.2'), installed)
+        self.assertIn(('bacon', '0.1'), remove)
+        self.assertIn(('chicken', '1.1'), conflict)
 
-        try:
-            # this is the actual test
-            self._test_user_site()
-        finally:
-            _CONFIG_VARS['userbase'] = self.old_user_base
-            _SCHEMES.set(scheme, 'purelib', self.old_user_site)
-            os.path.expanduser = self.old_expand
+    @use_xmlrpc_server()
+    def test_installation_unexisting_project(self, server):
+        # Test that the isntalled raises an exception if the project does not
+        # exists.
+        client = self._get_client(server)
+        self.assertRaises(InstallationException, get_infos,
+                          'unexistant project', index=client)
 
-    def _test_user_site(self):
-        schemes = get_scheme_names()
-        for key in ('nt_user', 'posix_user', 'os2_home'):
-            self.assertTrue(key in schemes)
-
-        dist = Distribution({'name': 'xx'})
-        cmd = install(dist)
-        # making sure the user option is there
-        options = [name for name, short, lable in
-                   cmd.user_options]
-        self.assertTrue('user' in options)
-
-        # setting a value
-        cmd.user = 1
-
-        # user base and site shouldn't be created yet
-        self.assertTrue(not os.path.exists(self.user_base))
-        self.assertTrue(not os.path.exists(self.user_site))
-
-        # let's run finalize
-        cmd.ensure_finalized()
-
-        # now they should
-        self.assertTrue(os.path.exists(self.user_base))
-        self.assertTrue(os.path.exists(self.user_site))
-
-        self.assertTrue('userbase' in cmd.config_vars)
-        self.assertTrue('usersite' in cmd.config_vars)
-
-    def test_handle_extra_path(self):
-        dist = Distribution({'name': 'xx', 'extra_path': 'path,dirs'})
-        cmd = install(dist)
-
-        # two elements
-        cmd.handle_extra_path()
-        self.assertEqual(cmd.extra_path, ['path', 'dirs'])
-        self.assertEqual(cmd.extra_dirs, 'dirs')
-        self.assertEqual(cmd.path_file, 'path')
-
-        # one element
-        cmd.extra_path = ['path']
-        cmd.handle_extra_path()
-        self.assertEqual(cmd.extra_path, ['path'])
-        self.assertEqual(cmd.extra_dirs, 'path')
-        self.assertEqual(cmd.path_file, 'path')
-
-        # none
-        dist.extra_path = cmd.extra_path = None
-        cmd.handle_extra_path()
-        self.assertEqual(cmd.extra_path, None)
-        self.assertEqual(cmd.extra_dirs, '')
-        self.assertEqual(cmd.path_file, None)
-
-        # three elements (no way !)
-        cmd.extra_path = 'path,dirs,again'
-        self.assertRaises(DistutilsOptionError, cmd.handle_extra_path)
-
-    def test_finalize_options(self):
-        dist = Distribution({'name': 'xx'})
-        cmd = install(dist)
-
-        # must supply either prefix/exec-prefix/home or
-        # install-base/install-platbase -- not both
-        cmd.prefix = 'prefix'
-        cmd.install_base = 'base'
-        self.assertRaises(DistutilsOptionError, cmd.finalize_options)
-
-        # must supply either home or prefix/exec-prefix -- not both
-        cmd.install_base = None
-        cmd.home = 'home'
-        self.assertRaises(DistutilsOptionError, cmd.finalize_options)
-
-        if sys.version >= '2.6':
-            # can't combine user with with prefix/exec_prefix/home or
-            # install_(plat)base
-            cmd.prefix = None
-            cmd.user = 'user'
-            self.assertRaises(DistutilsOptionError, cmd.finalize_options)
-
-    def test_record(self):
-
-        install_dir = self.mkdtemp()
-        pkgdir, dist = self.create_dist()
-
-        dist = Distribution()
-        cmd = install(dist)
-        dist.command_obj['install'] = cmd
-        cmd.root = install_dir
-        cmd.record = os.path.join(pkgdir, 'RECORD')
-        cmd.ensure_finalized()
-        cmd.run()
-
-        # let's check the RECORD file was created with four
-        # lines, one for each .dist-info entry: METADATA,
-        # INSTALLER, REQUSTED, RECORD
-        f = open(cmd.record)
-        try:
-            self.assertEqual(len(f.readlines()), 4)
-        finally:
-            f.close()
-
-        # XXX test that fancy_getopt is okay with options named
-        # record and no-record but unrelated
-
-    def _test_debug_mode(self):
-        # this covers the code called when DEBUG is set
-        old_logs_len = len(self.logs)
-        install_module.DEBUG = True
-        try:
-            __, stdout = captured_stdout(self.test_record)
-        finally:
-            install_module.DEBUG = False
-        self.assertTrue(len(self.logs) > old_logs_len)
 
 def test_suite():
-    return unittest.makeSuite(InstallTestCase)
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(TestInstallWithDeps))
+    return suite
 
-if __name__ == "__main__":
-    unittest.main(defaultTest="test_suite")
+if __name__ == '__main__':
+    run_unittest(test_suite())
