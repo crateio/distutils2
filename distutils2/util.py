@@ -3,7 +3,6 @@
 Miscellaneous utility functions.
 """
 
-__revision__ = "$Id: util.py 77761 2010-01-26 22:46:15Z tarek.ziade $"
 
 import os
 import posixpath

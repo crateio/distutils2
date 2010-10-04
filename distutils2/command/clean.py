@@ -4,7 +4,6 @@ Implements the Distutils 'clean' command."""
 
 # contributed by Bastian Kleineidam <calvin@cs.uni-sb.de>, added 2000-03-18
 
-__revision__ = "$Id: clean.py 70886 2009-03-31 20:50:59Z tarek.ziade $"
 
 import os
 from shutil import rmtree

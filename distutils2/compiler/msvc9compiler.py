@@ -12,7 +12,6 @@ for older versions of VS in distutils.msvccompiler.
 #   finding DevStudio (through the registry)
 # ported to VS2005 and VS 2008 by Christian Heimes
 
-__revision__ = "$Id: msvc9compiler.py 77761 2010-01-26 22:46:15Z tarek.ziade $"
 
 import os
 import subprocess

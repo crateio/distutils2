@@ -13,7 +13,6 @@ the "typical" Unix-style command-line C compiler:
   * link shared library handled by 'cc -shared'
 """
 
-__revision__ = "$Id: unixccompiler.py 77704 2010-01-23 09:23:15Z tarek.ziade $"
 
 import os, sys
 from types import StringType, NoneType

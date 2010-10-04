@@ -3,7 +3,6 @@
 Implements the Distutils 'bdist_wininst' command: create a windows installer
 exe-program."""
 
-__revision__ = "$Id: bdist_wininst.py 77761 2010-01-26 22:46:15Z tarek.ziade $"
 
 import sys
 import os

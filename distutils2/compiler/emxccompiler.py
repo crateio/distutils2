@@ -19,7 +19,6 @@ handles the EMX port of the GNU C compiler to OS/2.
 #
 # * EMX gcc 2.81/EMX 0.9d fix03
 
-__revision__ = "$Id: emxccompiler.py 76956 2009-12-21 01:22:46Z tarek.ziade $"
 
 import os, sys, copy
 from warnings import warn

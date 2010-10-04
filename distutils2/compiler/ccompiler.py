@@ -3,7 +3,6 @@
 Contains CCompiler, an abstract base class that defines the interface
 for the Distutils compiler abstraction model."""
 
-__revision__ = "$Id: ccompiler.py 77704 2010-01-23 09:23:15Z tarek.ziade $"
 
 import sys
 import os

@@ -7,7 +7,6 @@ although they are really defined in other modules: Distribution, Command,
 PyPIRCommand, Extension, find_packages.
 """
 
-__revision__ = "$Id: core.py 77704 2010-01-23 09:23:15Z tarek.ziade $"
 
 import sys
 import os

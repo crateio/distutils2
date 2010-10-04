@@ -2,7 +2,6 @@
 
 Implements the Distutils 'install' command."""
 
-__revision__ = "$Id: install.py 77949 2010-02-03 15:38:12Z tarek.ziade $"
 
 import sys
 import os

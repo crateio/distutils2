@@ -45,7 +45,6 @@ cygwin in no-cygwin mode).
 # * mingw gcc 3.2/ld 2.13 works
 #   (ld supports -shared)
 
-__revision__ = "$Id: cygwinccompiler.py 77704 2010-01-23 09:23:15Z tarek.ziade $"
 
 import os
 import sys
