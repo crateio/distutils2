@@ -5,13 +5,17 @@ from distutils2.depgraph import generate_graph
 from distutils2._backport.pkgutil import get_distributions
 
 
-"""Provides installations scripts.
+"""Provides the installation script.
 
 The goal of this script is to install a release from the indexes (eg.
 PyPI), including the dependencies of the releases if needed.
 
 It uses the work made in pkgutil and by the index crawlers to browse the
-installed distributions, and rely on the instalation commands to install.
+installed distributions, and rely on the instalation command to install.
+
+Please note that this installation *script* iis different of the installation
+*command*. While the command only install one distribution, the script installs
+all the dependencies from a distribution, in a secure way.
 """
 
 
