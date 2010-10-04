@@ -678,7 +678,7 @@ class build_ext(Command):
         # to need it mentioned explicitly, though, so that's what we do.
         # Append '_d' to the python import library on debug builds.
         if sys.platform == "win32":
-            from distutils2.msvccompiler import MSVCCompiler
+            from distutils2.compiler.msvccompiler import MSVCCompiler
             if not isinstance(self.compiler_obj, MSVCCompiler):
                 template = "python%d%d"
                 if self.debug:

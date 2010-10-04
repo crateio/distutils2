@@ -68,11 +68,11 @@ class msvc9compilerTestCase(support.TempdirManager,
         # makes sure query_vcvarsall throws
         # a DistutilsPlatformError if the compiler
         # is not found
-        from distutils2.msvccompiler import get_build_version
+        from distutils2.compiler.msvccompiler import get_build_version
         if get_build_version() < 8.0:
             # this test is only for MSVC8.0 or above
             return
-        from distutils2.msvc9compiler import query_vcvarsall
+        from distutils2.compiler.msvc9compiler import query_vcvarsall
         def _find_vcvarsall(version):
             return None
 
@@ -87,12 +87,11 @@ class msvc9compilerTestCase(support.TempdirManager,
 
     @unittest.skipUnless(sys.platform == "win32", "runs only on win32")
     def test_reg_class(self):
-        from distutils2.msvccompiler import get_build_version
+        from distutils2.compiler.msvccompiler import get_build_version
         if get_build_version() < 8.0:
-            # this test is only for MSVC8.0 or above
-            return
+            raise unittest.SkipTest("requires MSVC 8.0 or later")
 
-        from distutils2.msvc9compiler import Reg
+        from distutils2.compiler.msvc9compiler import Reg
         self.assertRaises(KeyError, Reg.get_value, 'xxx', 'xxx')
 
         # looking for values that should exist on all
@@ -111,7 +110,11 @@ class msvc9compilerTestCase(support.TempdirManager,
 
     @unittest.skipUnless(sys.platform == "win32", "runs only on win32")
     def test_remove_visual_c_ref(self):
-        from distutils2.msvc9compiler import MSVCCompiler
+        from distutils2.compiler.msvccompiler import get_build_version
+        if get_build_version() < 8.0:
+            raise unittest.SkipTest("requires MSVC 8.0 or later")
+
+        from distutils2.compiler.msvc9compiler import MSVCCompiler
         tempdir = self.mkdtemp()
         manifest = os.path.join(tempdir, 'manifest')
         f = open(manifest, 'w')
