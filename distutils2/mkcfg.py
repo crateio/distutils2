@@ -6,9 +6,9 @@
 #  Available as either a stand-alone file or callable from the distutils2
 #  package:
 #
-#     python -m distutils2.mkpkg
+#     python -m distutils2.mkcfg
 #  or:
-#     python mkpkg.py
+#     python mkcfg.py
 #
 #  Written by Sean Reifschneider <jafo@tummy.com>
 #
@@ -159,7 +159,7 @@ class MainProgram(object):
     def load_config_file(self):
         self.configparser = RawConfigParser()
         # TODO replace with section in distutils config file
-        self.configparser.read(os.path.expanduser('~/.mkpkgpy'))
+        self.configparser.read(os.path.expanduser('~/.mkcfg'))
         self.data['author'] = self.lookup_option('author')
         self.data['author_email'] = self.lookup_option('author_email')
 
@@ -175,7 +175,7 @@ class MainProgram(object):
         if not valuesDifferent:
             return
 
-        fp = open(os.path.expanduser('~/.mkpkgpy'), 'w')
+        fp = open(os.path.expanduser('~/.mkcfgpy'), 'w')
         try:
             self.configparser.write(fp)
         finally:
