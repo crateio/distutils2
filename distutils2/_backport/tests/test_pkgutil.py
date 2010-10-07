@@ -395,7 +395,7 @@ class TestPkgUtilPEP376(unittest.TestCase):
         # Now, test if the egg-info distributions are found correctly as well
         fake_dists += [('bacon', '0.1'), ('cheese', '2.0.2'),
                        ('banana', '0.4'), ('strawberry', '0.6'),
-                       ('truffles', '5.0')]
+                       ('truffles', '5.0'), ('nut', 'funkyversion')]
         found_dists = []
 
         dists = [dist for dist in get_distributions(use_egg_info=True)]
@@ -578,7 +578,8 @@ class TestPkgUtilPEP376(unittest.TestCase):
         checkLists = lambda x, y: self.assertListEqual(sorted(x), sorted(y))
 
         eggs = [('bacon', '0.1'), ('banana', '0.4'), ('strawberry', '0.6'),
-                ('truffles', '5.0'), ('cheese', '2.0.2')]
+                ('truffles', '5.0'), ('cheese', '2.0.2'),
+                ('nut', 'funkyversion')]
         dists = [('choxie', '2.0.0.9'), ('grammar', '1.0a4'),
                  ('towel-stuff', '0.1')]
 
