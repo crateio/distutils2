@@ -11,6 +11,8 @@ CHANGES
 - Added missing c/h files in the MANIFEST so they are always present
   no matter which python version was used to build it. [holger/tarek]
 - Added the new setup runner that uses only setup.cfg
+- Renamed mkpkg to mkcfg [tarek]
+- Renamed install_tools to install [alexis]
 
 1.0a2 - 2010-09-10
 ------------------
