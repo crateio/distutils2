@@ -192,7 +192,7 @@ def prepare_hashlib_extensions():
 
 setup_kwargs = {}
 if sys.version < '2.6':
-    setup_kwargs['scripts'] = ['distutils2/mkpkg.py']
+    setup_kwargs['scripts'] = ['distutils2/mkcfg.py']
 
 if sys.version < '2.5':
     setup_kwargs['ext_modules'] = prepare_hashlib_extensions()
