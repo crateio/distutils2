@@ -24,4 +24,5 @@ __all__ = ['check',
            'bdist_wininst',
            'register',
            'upload',
+           'upload_docs'
           ]
