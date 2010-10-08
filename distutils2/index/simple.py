@@ -146,8 +146,12 @@ class Crawler(BaseClient):
         Return a list of names.
         """
         index = self._open_url(self.index_url)
-        projectname = re.compile("""<a[^>]*>(.?[^<]*%s.?[^<]*)</a>""" % name,
-                                 flags=re.I)
+        if '*' in name:
+            name.replace('*', '.*')
+        else:
+            name = "%s%s%s" % ('*.?', name, '*.?')
+        name = name.replace('*', '[^<]*')  # avoid matching of the tag's end
+        projectname = re.compile("""<a[^>]*>(%s)</a>""" % name, flags=re.I)
         matching_projects = []
         for match in projectname.finditer(index.read()):
             project_name = match.group(1)
