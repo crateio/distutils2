@@ -124,8 +124,20 @@ Searching in the simple index
 +++++++++++++++++++++++++++++
 
 It's possible to search for projects with specific names in the package index.
-Assuming you want to find all projects containing the "Grail" keyword::
+Assuming you want to find all projects containing the "pelican" keyword::
 
-    >>> client.search(name="grail")
-    ["holy grail", "unholy grail", "grail"]
+    >>> c.search_projects("distutils")
+    [<Project "collective.recipe.distutils">, <Project "Distutils">, <Project
+    "Distutils2">, <Project "distutilscross">, <Project "lpdistutils">, <Project
+    "taras.recipe.distutils">, <Project "zerokspot.recipe.distutils">]
 
+You can also search the projects starting with a specific text, or ending with
+that text, using a wildcard.::
+
+    >>> c.search_projects("distutils*")
+    [<Project "Distutils">, <Project "Distutils2">, <Project "distutilscross">]
+
+    >>> c.search_projects("*distutils")
+    [<Project "collective.recipe.distutils">, <Project "Distutils">, <Project
+    "lpdistutils">, <Project "taras.recipe.distutils">, <Project
+    "zerokspot.recipe.distutils">]
