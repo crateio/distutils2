@@ -27,7 +27,7 @@ your project, as defined in PEP 345, but also declare what your project
 contains.
 
 Let's say you have a project called *CLVault* containing one package called
-*clvault*,and a few scripts insde. You can use the *mkcfg* script to create 
+*clvault*, and a few scripts inside. You can use the *mkcfg* script to create 
 a *setup.cfg* file for the project. The script will ask you a few questions::
 
     $ mkdir CLVault
