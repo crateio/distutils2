@@ -42,11 +42,14 @@ Distutils2 group (GSoC students, mentors, volunteers).
 Please remember that this is a work in progress. The documentation is not
 complete, not spell-checked, and uses different styles.
 
-The documentation is split in three sections, as in the standard Python docs:
+The documentation is split in four sections, as in the standard Python docs:
 
 :doc:`install/index`
   A guide for for end-users wanting to install a Python application or
   library.
+
+:doc:`tutorial`
+  A tutorial for Python developers to discover Distutils2 main features.
 
 :doc:`distutils/index`
   A guide for Python developers wanting to package and distribute their
@@ -65,6 +68,7 @@ The documentation is split in three sections, as in the standard Python docs:
 
    devresources
    install/index
+   tutorial
    distutils/index
    library/distutils2
    library/pkgutil
