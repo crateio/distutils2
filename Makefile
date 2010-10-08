@@ -12,9 +12,9 @@ build:
 	$(PYTHON) setup.py build
 
 release:
-	hg tag `python setup.py --version`
+	hg tag -f `python setup.py --version`
 	cd docs; make html
-	$(PYTHON) setup.py upload_docs
+	$(PYTHON) -m distutils2.run upload_docs
 	$(PYTHON) setup.py register sdist upload
 
 test:
