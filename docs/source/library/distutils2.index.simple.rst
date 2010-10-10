@@ -124,7 +124,7 @@ Searching in the simple index
 +++++++++++++++++++++++++++++
 
 It's possible to search for projects with specific names in the package index.
-Assuming you want to find all projects containing the "pelican" keyword::
+Assuming you want to find all projects containing the "distutils" keyword::
 
     >>> c.search_projects("distutils")
     [<Project "collective.recipe.distutils">, <Project "Distutils">, <Project
