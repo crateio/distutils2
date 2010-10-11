@@ -425,9 +425,11 @@ Common commands: (see '--help-commands' for more)
 
         # Require that the command class be derived from Command -- want
         # to be sure that the basic "command" interface is implemented.
-        if not issubclass(cmd_class, Command):
+        for meth in ('initialize_options', 'finalize_options', 'run'):
+            if hasattr(cmd_class, meth):
+                continue
             raise DistutilsClassError(
-                  "command class %s must subclass Command" % cmd_class)
+                  'command "%s" must implement "%s"' % (cmd_class. meth))
 
         # Also make sure that the command object provides a list of its
         # known options.
