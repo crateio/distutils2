@@ -7,7 +7,7 @@ import sys
 from ConfigParser import RawConfigParser
 
 from distutils2 import log
-from distutils2.util import check_environ
+from distutils2.util import check_environ, resolve_name
 
 
 class Config(object):
@@ -17,12 +17,11 @@ class Config(object):
         self.dist = dist
         self.setup_hook = None
 
-    def run_hook(self):
+    def run_hook(self, config):
         if self.setup_hook is None:
             return
-        # transform the hook name into a callable
-        # then run it !
-        # XXX
+        # the hook gets only the config
+        self.setup_hook(config)
 
     def find_config_files(self):
         """Find as many configuration files as should be processed for this
@@ -82,15 +81,37 @@ class Config(object):
                         if v != '']
         return value
 
-    def _read_metadata(self, parser):
-        if parser.has_option('global', 'setup_hook'):
-            self.setup_hook = parser.get('global', 'setup_hook')
+    def _read_setup_cfg(self, parser):
+        content = {}
+        for section in parser.sections():
+            content[section] = dict(parser.items(section))
+
+        # global:setup_hook is called *first*
+        if 'global' in content:
+            if 'setup_hook' in content['global']:
+                setup_hook = content['global']['setup_hook']
+                self.setup_hook = resolve_name(setup_hook)
+                self.run_hook(content)
+
+            if 'commands' in content['global']:
+                commands = self._multiline(content['global']['commands'])
+                if isinstance(commands, str):
+                    commands = [commands]
+
+                for command in commands:
+                    command = command.split('=')
+                    if len(command) != 2:
+                        # Issue XXX a warning
+                        continue
+                    name, location = command[0].strip(), command[1].strip()
+                    self.dist.cmdclass[name] = resolve_name(location)
+
 
         metadata = self.dist.metadata
 
         # setting the metadata values
-        if 'metadata' in parser.sections():
-            for key, value in parser.items('metadata'):
+        if 'metadata' in content:
+            for key, value in content['metadata'].items():
                 key = key.replace('_', '-')
                 value = self._multiline(value)
                 if key == 'project-url':
@@ -99,9 +120,10 @@ class Config(object):
                              [v.split(',') for v in value]]
                 if metadata.is_metadata_field(key):
                     metadata[key] = self._convert_metadata(key, value)
-        if 'files' in parser.sections():
+
+        if 'files' in content:
             files = dict([(key, self._multiline(value))
-                          for key, value in parser.items('files')])
+                          for key, value in content['files'].items()])
             self.dist.packages = []
             self.dist.package_dir = {}
 
@@ -154,7 +176,7 @@ class Config(object):
             parser.read(filename)
 
             if os.path.split(filename)[-1] == 'setup.cfg':
-                self._read_metadata(parser)
+                self._read_setup_cfg(parser)
 
             for section in parser.sections():
                 options = parser.options(section)

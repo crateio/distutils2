@@ -71,7 +71,24 @@ sdist_extra =
   include THANKS HACKING
   recursive-include examples *.txt *.py
   prune examples/sample?/build
+
+[global]
+commands =
+    foo = distutils2.tests.test_config.Foo
+
+setup_hook = distutils2.tests.test_config.hook
 """
+
+
+def hook(content):
+    content['metadata']['version'] += '.dev1'
+
+
+class Foo(object):
+    def run(self):
+        pass
+    finalize_options = initialize_options = run
+
 
 class ConfigTestCase(support.TempdirManager,
                      unittest.TestCase):
@@ -97,12 +114,14 @@ class ConfigTestCase(support.TempdirManager,
             sys.argv[:] = old_sys
 
         # sanity check
-        self.assertEqual(sys.stdout.getvalue(), '0.6.4' + os.linesep)
+        self.assertEqual(sys.stdout.getvalue(), '0.6.4.dev1' + os.linesep)
 
         # check what was done
         self.assertEqual(dist.metadata['Author'], 'Carl Meyer')
         self.assertEqual(dist.metadata['Author-Email'], 'carl@oddbird.net')
-        self.assertEqual(dist.metadata['Version'], '0.6.4')
+
+        # the hook adds .dev1
+        self.assertEqual(dist.metadata['Version'], '0.6.4.dev1')
 
         wanted = ['Development Status :: 4 - Beta',
                 'Environment :: Console (Text Based)',
@@ -140,6 +159,9 @@ class ConfigTestCase(support.TempdirManager,
              ('config ', ['cfg/data.cfg']),
              ('/etc/init.d ', ['init-script'])])
         self.assertEqual(dist.package_dir['two'], 'src')
+
+        # make sure we get the foo command loaded !
+        self.assertEquals(dist.cmdclass['foo'], Foo)
 
 
 def test_suite():

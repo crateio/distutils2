@@ -635,6 +635,7 @@ def find_packages(paths=(os.curdir,), exclude=()):
                 packages.append(package_name)
     return packages
 
+
 def resolve_name(name):
     """Resolve a name like ``module.object`` to an object and return it.
 
