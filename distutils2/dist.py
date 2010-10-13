@@ -883,7 +883,7 @@ Common commands: (see '--help-commands' for more)
         if hook_kind not in ('pre_hook', 'post_hook'):
             raise ValueError('invalid hook kind: %r' % hook_kind)
 
-        hooks = getattr(cmd_obj, hook_kind)
+        hooks = getattr(cmd_obj, hook_kind, None)
 
         if hooks is None:
             return
