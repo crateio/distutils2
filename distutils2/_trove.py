@@ -1,4 +1,4 @@
-# Temporary helper for mkpkg.
+# Temporary helper for mkcfg.
 
 # XXX get the list from PyPI and cache it instead of hardcoding
 

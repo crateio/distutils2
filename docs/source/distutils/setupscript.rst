@@ -597,7 +597,7 @@ Notes:
 
 (4)
     The list of classifiers is available from the `PyPI website
-    <http://pypi.python.org/pypi>`_. See also :mod:`distutils2.mkpkg`.
+    <http://pypi.python.org/pypi>`_. See also :mod:`distutils2.mkcfg`.
 
 (5)
     The ``description`` field is used by PyPI when you are registering a
