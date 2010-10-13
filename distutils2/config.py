@@ -118,6 +118,20 @@ class Config(object):
                     value = [(label.strip(), url.strip())
                              for label, url in
                              [v.split(',') for v in value]]
+
+                if key == 'description-file':
+                    if 'description' in content['metadata']:
+                        msg = ("description and description-file' are "
+                               "mutually exclusive")
+                        raise DistutilsOptionError(msg)
+
+                    f = open(value)    # will raise if file not found
+                    try:
+                        value = f.read()
+                    finally:
+                        f.close()
+                    key = 'description'
+
                 if metadata.is_metadata_field(key):
                     metadata[key] = self._convert_metadata(key, value)
 

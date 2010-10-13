@@ -16,7 +16,7 @@ author_email = carl@oddbird.net
 maintainer = Éric Araujo
 maintainer_email = merwok@netwok.org
 summary = A sample project demonstrating distutils2 packaging
-description = README
+description-file = README
 keywords = distutils2, packaging, sample project
 
 classifier =
@@ -102,6 +102,7 @@ class ConfigTestCase(support.TempdirManager,
         tempdir = self.mkdtemp()
         os.chdir(tempdir)
         self.write_file('setup.cfg', SETUP_CFG)
+        self.write_file('README', 'yeah')
 
         # try to load the metadata now
         sys.stdout = StringIO()
@@ -163,6 +164,8 @@ class ConfigTestCase(support.TempdirManager,
         # make sure we get the foo command loaded !
         self.assertEquals(dist.cmdclass['foo'], Foo)
 
+        # did the README got loaded ?
+        self.assertEquals(dist.metadata['description'], 'yeah')
 
 def test_suite():
     return unittest.makeSuite(ConfigTestCase)
