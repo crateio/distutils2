@@ -643,7 +643,7 @@ def resolve_name(name):
     """
     parts = name.split('.')
     cursor = len(parts)
-    module_name, rest = parts[:cursor], parts[cursor:]
+    module_name = parts[:cursor]
 
     while cursor > 0:
         try:
@@ -654,7 +654,6 @@ def resolve_name(name):
                 raise
             cursor -= 1
             module_name = parts[:cursor]
-            rest = parts[cursor:]
             ret = ''
 
     for part in parts[1:]:
@@ -735,7 +734,7 @@ def untar_file(filename, location):
             else:
                 try:
                     fp = tar.extractfile(member)
-                except (KeyError, AttributeError), e:
+                except (KeyError, AttributeError):
                     # Some corrupt tar files seem to produce this
                     # (specifically bad symlinks)
                     continue
