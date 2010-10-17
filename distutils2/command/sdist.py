@@ -1,8 +1,6 @@
 """distutils.command.sdist
 
 Implements the Distutils 'sdist' command (create a source distribution)."""
-
-
 import os
 import string
 import sys
@@ -10,6 +8,7 @@ from glob import glob
 from warnings import warn
 from shutil import rmtree
 import re
+from StringIO import StringIO
 
 try:
     from shutil import get_archive_formats
@@ -44,8 +43,6 @@ class sdist(Command):
     description = "create a source distribution (tarball, zip file, etc.)"
 
     user_options = [
-        ('template=', 't',
-         "name of manifest template file [default: MANIFEST.in]"),
         ('manifest=', 'm',
          "name of manifest file [default: MANIFEST]"),
         ('use-defaults', None,
@@ -93,9 +90,6 @@ class sdist(Command):
                       'nt': 'zip' }
 
     def initialize_options(self):
-        # 'template' and 'manifest' are, respectively, the names of
-        # the manifest template and manifest file.
-        self.template = None
         self.manifest = None
 
         # 'use_defaults': if true, we will include the default file set
@@ -123,8 +117,6 @@ class sdist(Command):
     def finalize_options(self):
         if self.manifest is None:
             self.manifest = "MANIFEST"
-        if self.template is None:
-            self.template = "MANIFEST.in"
 
         self.ensure_string_list('formats')
         if self.formats is None:
@@ -176,18 +168,16 @@ class sdist(Command):
         reading the manifest, or just using the default file set -- it all
         depends on the user's options.
         """
-        template_exists = os.path.isfile(self.template)
+        template_exists = len(self.distribution.extra_files) > 0
         if not template_exists:
-            self.warn(("manifest template '%s' does not exist " +
-                        "(using default file list)") %
-                        self.template)
-
+            self.warn('Using default file list')
         self.filelist.findall()
 
         if self.use_defaults:
             self.add_defaults()
         if template_exists:
-            self.filelist.read_template(self.template)
+            template = '\n'.join(self.distribution.extra_files)
+            self.filelist.read_template(StringIO(template))
         if self.prune:
             self.prune_file_list()
 
