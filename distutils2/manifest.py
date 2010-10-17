@@ -66,12 +66,17 @@ class Manifest(object):
             if self.files[i] == self.files[i - 1]:
                 del self.files[i]
 
-    def read_template(self, path):
+    def read_template(self, path_or_file):
         """Read and parse a manifest template file.
+        'path' can be a path or a file-like object.
 
         Updates the list accordingly.
         """
-        f = open(path)
+        if isinstance(path_or_file, str):
+            f = open(path_or_file)
+        else:
+            f = path_or_file
+
         try:
             content = f.read()
             # first, let's unwrap collapsed lines
@@ -89,7 +94,7 @@ class Manifest(object):
             try:
                 self._process_template_line(line)
             except DistutilsTemplateError, msg:
-                logging.warning("%s, %s" % (path, msg))
+                logging.warning("%s, %s" % (path_or_file, msg))
 
     def write(self, path):
         """Write the file list in 'self.filelist' (presumably as filled in
