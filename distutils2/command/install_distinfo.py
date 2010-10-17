@@ -7,7 +7,7 @@ distutils.command.install_distinfo
 This module implements the ``install_distinfo`` command that creates the
 ``.dist-info`` directory for the distribution, as specified in :pep:`376`.
 Usually, you do not have to call this command directly, it gets called
-automatically by the ``install`` command.
+automatically by the ``install_dist`` command.
 """
 
 # This file was created from the code for the former command install_egg_info
@@ -52,7 +52,7 @@ class install_distinfo(Command):
         self.no_record = None
 
     def finalize_options(self):
-        self.set_undefined_options('install',
+        self.set_undefined_options('install_dist',
                                    'installer', 'requested', 'no_record')
 
         self.set_undefined_options('install_lib',
@@ -122,7 +122,7 @@ class install_distinfo(Command):
                                         lineterminator=os.linesep,
                                         quotechar='"')
 
-                    install = self.get_finalized_command('install')
+                    install = self.get_finalized_command('install_dist')
 
                     for fpath in install.get_outputs():
                         if fpath.endswith('.pyc') or fpath.endswith('.pyo'):

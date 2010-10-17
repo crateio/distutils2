@@ -16,7 +16,7 @@ class InstallScriptsTestCase(support.TempdirManager,
         dist = Distribution()
         dist.command_obj["build"] = support.DummyCommand(
             build_scripts="/foo/bar")
-        dist.command_obj["install"] = support.DummyCommand(
+        dist.command_obj["install_dist"] = support.DummyCommand(
             install_scripts="/splat/funk",
             force=1,
             skip_build=1,
@@ -59,7 +59,7 @@ class InstallScriptsTestCase(support.TempdirManager,
         target = self.mkdtemp()
         dist = Distribution()
         dist.command_obj["build"] = support.DummyCommand(build_scripts=source)
-        dist.command_obj["install"] = support.DummyCommand(
+        dist.command_obj["install_dist"] = support.DummyCommand(
             install_scripts=target,
             force=1,
             skip_build=1,

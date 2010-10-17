@@ -69,7 +69,7 @@ class CheckTestCase(support.LoggingCatcher,
 
     def test_check_hooks(self):
         pkg_info, dist = self.create_dist()
-        dist.command_options['install'] = {
+        dist.command_options['install_dist'] = {
             'pre_hook': ('file', {"a": 'some.nonextistant.hook.ghrrraarrhll'}),
         }
         cmd = check(dist)

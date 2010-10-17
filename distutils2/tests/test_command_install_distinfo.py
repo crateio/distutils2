@@ -45,7 +45,7 @@ class InstallDistinfoTestCase(support.TempdirManager,
         install_dir = self.mkdtemp()
 
         install = DummyInstallCmd(dist)
-        dist.command_obj['install'] = install
+        dist.command_obj['install_dist'] = install
 
         cmd = install_distinfo(dist)
         dist.command_obj['install_distinfo'] = cmd
@@ -73,7 +73,7 @@ class InstallDistinfoTestCase(support.TempdirManager,
         install_dir = self.mkdtemp()
 
         install = DummyInstallCmd(dist)
-        dist.command_obj['install'] = install
+        dist.command_obj['install_dist'] = install
 
         cmd = install_distinfo(dist)
         dist.command_obj['install_distinfo'] = cmd
@@ -94,7 +94,7 @@ class InstallDistinfoTestCase(support.TempdirManager,
         install_dir = self.mkdtemp()
 
         install = DummyInstallCmd(dist)
-        dist.command_obj['install'] = install
+        dist.command_obj['install_dist'] = install
 
         cmd = install_distinfo(dist)
         dist.command_obj['install_distinfo'] = cmd
@@ -115,7 +115,7 @@ class InstallDistinfoTestCase(support.TempdirManager,
         install_dir = self.mkdtemp()
 
         install = DummyInstallCmd(dist)
-        dist.command_obj['install'] = install
+        dist.command_obj['install_dist'] = install
 
         cmd = install_distinfo(dist)
         dist.command_obj['install_distinfo'] = cmd
@@ -136,7 +136,7 @@ class InstallDistinfoTestCase(support.TempdirManager,
         install_dir = self.mkdtemp()
 
         install = DummyInstallCmd(dist)
-        dist.command_obj['install'] = install
+        dist.command_obj['install_dist'] = install
 
         fake_dists = os.path.join(os.path.dirname(__file__), '..',
                                   '_backport', 'tests', 'fake_dists')

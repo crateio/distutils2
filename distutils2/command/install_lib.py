@@ -52,7 +52,7 @@ class install_lib(Command):
     negative_opt = {'no-compile' : 'compile'}
 
     def initialize_options(self):
-        # let the 'install' command dictate our installation directory
+        # let the 'install_dist' command dictate our installation directory
         self.install_dir = None
         self.build_dir = None
         self.force = 0
@@ -62,9 +62,9 @@ class install_lib(Command):
 
     def finalize_options(self):
         # Get all the information we need to install pure Python modules
-        # from the umbrella 'install' command -- build (source) directory,
+        # from the umbrella 'install_dist' command -- build (source) directory,
         # install (target) directory, and whether to compile .py files.
-        self.set_undefined_options('install',
+        self.set_undefined_options('install_dist',
                                    ('build_lib', 'build_dir'),
                                    ('install_lib', 'install_dir'),
                                    'force', 'compile', 'optimize', 'skip_build')
@@ -121,11 +121,11 @@ class install_lib(Command):
 
         from distutils2.util import byte_compile
 
-        # Get the "--root" directory supplied to the "install" command,
+        # Get the "--root" directory supplied to the "install_dist" command,
         # and use it as a prefix to strip off the purported filename
         # encoded in bytecode files.  This is far from complete, but it
         # should at least generate usable bytecode in RPM distributions.
-        install_root = self.get_finalized_command('install').root
+        install_root = self.get_finalized_command('install_dist').root
 
         if self.compile:
             byte_compile(files, optimize=0,

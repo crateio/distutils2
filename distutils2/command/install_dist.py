@@ -1,6 +1,6 @@
 """distutils.command.install
 
-Implements the Distutils 'install' command."""
+Implements the Distutils 'install_dist' command."""
 
 
 import sys
@@ -24,7 +24,7 @@ else:
     HAS_USER_SITE = True
 
 
-class install(Command):
+class install_dist(Command):
 
     description = "install everything from build directory"
 
@@ -513,7 +513,7 @@ class install(Command):
             self.run_command('build')
             # If we built for any other platform, we can't install.
             build_plat = self.distribution.get_command_obj('build').plat_name
-            # check warn_dir - it is a clue that the 'install' is happening
+            # check warn_dir - it is a clue that the 'install_dist' is happening
             # internally, and not to sys.path, so we don't check the platform
             # matches what we are running.
             if self.warn_dir and build_plat != get_platform():

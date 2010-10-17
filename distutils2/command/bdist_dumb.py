@@ -82,13 +82,13 @@ class bdist_dumb (Command):
         if not self.skip_build:
             self.run_command('build')
 
-        install = self.get_reinitialized_command('install', reinit_subcommands=1)
+        install = self.get_reinitialized_command('install_dist', reinit_subcommands=1)
         install.root = self.bdist_dir
         install.skip_build = self.skip_build
         install.warn_dir = 0
 
         log.info("installing to %s" % self.bdist_dir)
-        self.run_command('install')
+        self.run_command('install_dist')
 
         # And make an archive relative to the root of the
         # pseudo-installation tree.

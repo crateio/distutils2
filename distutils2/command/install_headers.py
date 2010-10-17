@@ -26,7 +26,7 @@ class install_headers(Command):
         self.outfiles = []
 
     def finalize_options(self):
-        self.set_undefined_options('install',
+        self.set_undefined_options('install_dist',
                                    ('install_headers', 'install_dir'),
                                    'force')
 

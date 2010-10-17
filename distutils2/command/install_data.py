@@ -34,7 +34,7 @@ class install_data(Command):
         self.warn_dir = 1
 
     def finalize_options(self):
-        self.set_undefined_options('install',
+        self.set_undefined_options('install_dist',
                                    ('install_data', 'install_dir'),
                                    'root', 'force')
 

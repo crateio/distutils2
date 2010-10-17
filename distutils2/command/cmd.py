@@ -35,7 +35,7 @@ class Command(object):
     """
 
     # 'sub_commands' formalizes the notion of a "family" of commands,
-    # eg. "install" as the parent with sub-commands "install_lib",
+    # eg. "install_dist" as the parent with sub-commands "install_lib",
     # "install_headers", etc.  The parent of a family of commands
     # defines 'sub_commands' as a class attribute; it's a list of
     #    (command_name : string, predicate : unbound_method | string | None)
@@ -47,7 +47,7 @@ class Command(object):
     #
     # 'sub_commands' is usually defined at the *end* of a class, because
     # predicates can be unbound methods, so they must already have been
-    # defined.  The canonical example is the "install" command.
+    # defined.  The canonical example is the "install_dist" command.
     sub_commands = []
 
     # Pre and post command hooks are run just before or just after the command
@@ -478,7 +478,7 @@ class install_misc(Command):
         self.outfiles = []
 
     def _install_dir_from(self, dirname):
-        self.set_undefined_options('install', (dirname, 'install_dir'))
+        self.set_undefined_options('install_dist', (dirname, 'install_dir'))
 
     def _copy_files(self, filelist):
         self.outfiles = []

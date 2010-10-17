@@ -184,7 +184,7 @@ class InstallTestCase(support.TempdirManager,
 
         dist = Distribution()
         cmd = install(dist)
-        dist.command_obj['install'] = cmd
+        dist.command_obj['install_dist'] = cmd
         cmd.root = install_dir
         cmd.record = os.path.join(pkgdir, 'RECORD')
         cmd.ensure_finalized()

@@ -813,7 +813,7 @@ Common commands: (see '--help-commands' for more)
         'command' should be a command name (string) or command object.  If
         'reinit_subcommands' is true, also reinitializes the command's
         sub-commands, as declared by the 'sub_commands' class attribute (if
-        it has one).  See the "install" command for an example.  Only
+        it has one).  See the "install_dist" command for an example.  Only
         reinitializes the sub-commands that actually matter, ie. those
         whose test predicates return true.
 
