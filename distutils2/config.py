@@ -176,7 +176,7 @@ class Config(object):
                 self.dist.data_files.append((key, values))
 
             # manifest template
-            # XXX see later
+            self.dist.extra_files = files.get('extra_files', [])
 
     def parse_config_files(self, filenames=None):
         if filenames is None:

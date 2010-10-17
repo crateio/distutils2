@@ -202,6 +202,7 @@ Common commands: (see '--help-commands' for more)
         self.password = ''
         self.use_2to3 = False
         self.convert_2to3_doctests = []
+        self.extra_files = []
 
         # And now initialize bookkeeping stuff that can't be supplied by
         # the caller at all.  'command_obj' maps command names to

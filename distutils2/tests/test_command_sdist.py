@@ -279,7 +279,6 @@ class SDistTestCase(support.TempdirManager, support.LoggingCatcher,
 
         # default options set by finalize
         self.assertEqual(cmd.manifest, 'MANIFEST')
-        self.assertEqual(cmd.template, 'MANIFEST.in')
         self.assertEqual(cmd.dist_dir, 'dist')
 
         # formats has to be a string splitable on (' ', ',') or
@@ -414,6 +413,21 @@ class SDistTestCase(support.TempdirManager, support.LoggingCatcher,
             f.close()
 
         self.assertEqual(manifest, ['README.manual'])
+
+    def test_template(self):
+        dist, cmd = self.get_cmd()
+        dist.extra_files = ['include yeah']
+        cmd.ensure_finalized()
+        self.write_file((self.tmp_dir, 'yeah'), 'xxx')
+        cmd.run()
+        f = open(cmd.manifest)
+        try:
+            content = f.read()
+        finally:
+            f.close()
+
+        self.assertIn('yeah', content)
+
 
 def test_suite():
     return unittest.makeSuite(SDistTestCase)

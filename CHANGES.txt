@@ -2,8 +2,13 @@
 CHANGES
 =======
 
-1.0a3 - ?
+1.0a4 - ?
 ---------
+
+- The setup runner supports more options:
+
+1.0a3 - 2010-10-08
+------------------
 
 - Provided a Tox configuration for cross-python testing [holger]
 - Fixed the installation when using easy_install and Pip by switching
