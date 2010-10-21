@@ -194,7 +194,7 @@ class DistributionTestCase(support.TempdirManager,
         cmds = dist.get_command_packages()
         self.assertEqual(cmds, ['distutils2.command'])
         self.assertEqual(dist.command_packages,
-                          ['distutils2.command'])
+                         ['distutils2.command'])
 
         dist.command_packages = 'one,two'
         cmds = dist.get_command_packages()
@@ -231,7 +231,7 @@ class DistributionTestCase(support.TempdirManager,
             all_files = d.find_config_files()
 
             d = distutils2.dist.Distribution(attrs={'script_args':
-                                            ['--no-user-cfg']})
+                                             ['--no-user-cfg']})
             files = d.find_config_files()
         finally:
             os.path.expanduser = old_expander
@@ -444,24 +444,20 @@ class MetadataTestCase(support.TempdirManager, support.EnvironGuard,
         finally:
             f.close()
 
-        try:
-            dist = Distribution()
+        dist = Distribution()
 
-            # linux-style
-            if sys.platform in ('linux', 'darwin'):
-                os.environ['HOME'] = temp_dir
-                files = dist.find_config_files()
-                self.assertTrue(user_filename in files)
+        # linux-style
+        if sys.platform in ('linux', 'darwin'):
+            os.environ['HOME'] = temp_dir
+            files = dist.find_config_files()
+            self.assertTrue(user_filename in files)
 
-            # win32-style
-            if sys.platform == 'win32':
-                # home drive should be found
-                os.environ['HOME'] = temp_dir
-                files = dist.find_config_files()
-                self.assertTrue(user_filename in files,
-                             '%r not found in %r' % (user_filename, files))
-        finally:
-            os.remove(user_filename)
+        # win32-style
+        if sys.platform == 'win32':
+            # home drive should be found
+            os.environ['HOME'] = temp_dir
+            files = dist.find_config_files()
+            self.assertIn(user_filename, files)
 
     def test_fix_help_options(self):
         help_tuples = [('a', 'b', 'c', 'd'), (1, 2, 3, 4)]
