@@ -44,15 +44,15 @@ Version number of the software, typically 2 or 3 numbers separated by dots
 such as "1.00", "0.6", or "3.02.01".  "0.1.0" is recommended for initial
 development.
 ''',
-    'description': '''
-A short summary of what this package is or does, typically a sentence 80
+    'summary': '''
+A one-line summary of what this project is or does, typically a sentence 80
 characters or less in length.
 ''',
     'author': '''
 The full name of the author (typically you).
 ''',
     'author_email': '''
-E-mail address of the package author (typically you).
+E-mail address of the project author (typically you).
 ''',
     'do_classifier': '''
 Trove classifiers are optional identifiers that allow you to specify the
@@ -60,12 +60,19 @@ intended audience by saying things like "Beta software with a text UI
 for Linux under the PSF license.  However, this can be a somewhat involved
 process.
 ''',
-    'package': '''
+    'packages': '''
 You can provide a package name contained in your project.
+''',
+    'modules': '''
+You can provide a python module contained in your project.
+''',
+    'extra_files': '''
+You can provide extra files/dirs contained in your project.
+It has to follow the template syntax. XXX add help here.
 ''',
 
     'home_page': '''
-The home page for the package, typically starting with "http://".
+The home page for the project, typically starting with "http://".
 ''',
     'trove_license': '''
 Optionally you can specify a license.  Type a string that identifies a common
@@ -149,6 +156,8 @@ class MainProgram(object):
         self.data = {}
         self.data['classifier'] = self.classifiers
         self.data['packages'] = []
+        self.data['modules'] = []
+        self.data['extra_files'] = []
         self.load_config_file()
 
     def lookup_option(self, key):
@@ -222,8 +231,8 @@ class MainProgram(object):
               _helptext['name'])
         self.data['version'] = ask('Current version number',
               self.data.get('version'), _helptext['version'])
-        self.data['description'] = ask('Package description',
-              self.data.get('description'), _helptext['description'],
+        self.data['summary'] = ask('Package summary',
+              self.data.get('summary'), _helptext['summary'],
               lengthy=True)
         self.data['author'] = ask('Author name',
               self.data.get('author'), _helptext['author'])
@@ -233,21 +242,31 @@ class MainProgram(object):
               self.data.get('home_page'), _helptext['home_page'],
               required=False)
 
+        while ask_yn('Do you want to add a single module ?'
+                     ' (you will be able to add full packages next)',
+                  helptext=_helptext['modules']) == 'y':
+            self._set_multi('Module name', 'modules')
+
         while ask_yn('Do you want to add a package ?',
-                  helptext=_helptext['package']) == 'y':
-            self.set_package()
+                  helptext=_helptext['packages']) == 'y':
+            self._set_multi('Package name', 'packages')
+
+        while ask_yn('Do you want to add an extra file ?',
+                     helptext=_helptext['extra_files']) == 'y':
+            self._set_multi('Extra file/dir name', 'extra_files')
+
 
         if ask_yn('Do you want to set Trove classifiers?',
                   helptext=_helptext['do_classifier']) == 'y':
             self.set_classifier()
 
-    def set_package(self):
-        packages = self.data['packages']
-        name = ask('Package name', helptext=_helptext['package']).strip()
-        if name == '':
+    def _set_multi(self, question, name):
+        existing_values = self.data[name]
+        value = ask(question, helptext=_helptext[name]).strip()
+        if value == '':
             return
-        if name not in packages:
-            packages.append(name)
+        if value not in existing_values:
+            existing_values.append(value)
 
     def set_classifier(self):
         self.set_devel_status(self.classifiers)
@@ -379,7 +398,7 @@ class MainProgram(object):
             fp.write('version = %s\n' % self.data['version'])
             fp.write('author = %s\n' % self.data['author'])
             fp.write('author_email = %s\n' % self.data['author_email'])
-            fp.write('description = %s\n' % self.data['description'])
+            fp.write('summary = %s\n' % self.data['summary'])
             fp.write('home_page = %s\n' % self.data['home_page'])
             fp.write('\n')
             if len(self.data['classifier']) > 0:
@@ -389,10 +408,14 @@ class MainProgram(object):
                 fp.write('\n')
 
             fp.write('[files]\n')
-            packages = '\n'.join(['    %s' % pkg for pkg in
-                                  self.data['packages']])
+            for element in ('packages', 'modules', 'extra_files'):
+                if len(self.data[element]) == 0:
+                    continue
+                items = '\n'.join(['    %s' % item for item in
+                                  self.data[element]])
+                fp.write('%s = %s\n' % (element, items.strip()))
+
             fp.write('\n')
-            fp.write('packages = %s\n' % packages.strip())
         finally:
             fp.close()
 
