@@ -2,6 +2,7 @@
 import os
 import sys
 import logging
+from StringIO import StringIO
 
 from distutils2.tests import run_unittest
 from distutils2.tests import unittest, support
@@ -16,6 +17,12 @@ recursive-include foo *.py   # ok
 recursive-include bar \\
   *.dat   *.txt
 """
+
+_MANIFEST2 = """\
+README
+file1
+"""
+
 
 class ManifestTestCase(support.TempdirManager,
                        unittest.TestCase):
@@ -60,6 +67,19 @@ class ManifestTestCase(support.TempdirManager,
         # and 3 warnings issued (we ddidn't provided the files)
         self.assertEqual(len(warns), 6)
 
+    def test_default_actions(self):
+        tmpdir = self.mkdtemp()
+        old_dir = os.getcwd()
+        os.chdir(tmpdir)
+        try:
+            self.write_file('README', 'xxx')
+            self.write_file('file1', 'xxx')
+            content = StringIO(_MANIFEST2)
+            manifest = Manifest()
+            manifest.read_template(content)
+            self.assertEqual(manifest.files, ['README', 'file1'])
+        finally:
+            os.chdir(old_dir)
 
 def test_suite():
     return unittest.makeSuite(ManifestTestCase)

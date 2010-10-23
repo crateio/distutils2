@@ -22,7 +22,7 @@ __all__ = ['Manifest']
 
 # a \ followed by some spaces + EOL
 _COLLAPSE_PATTERN = re.compile('\\\w*\n', re.M)
-_COMMENTED_LINE = re.compile('#.*?(?=\n)|^\w*\n|\n(?=$)', re.M | re.S)
+_COMMENTED_LINE = re.compile('#.*?(?=\n)|\n(?=$)', re.M | re.S)
 
 class Manifest(object):
     """A list of files built by on exploring the filesystem and filtered by
@@ -81,7 +81,6 @@ class Manifest(object):
             content = f.read()
             # first, let's unwrap collapsed lines
             content = _COLLAPSE_PATTERN.sub('', content)
-
             # next, let's remove commented lines and empty lines
             content = _COMMENTED_LINE.sub('', content)
 
@@ -91,6 +90,8 @@ class Manifest(object):
             f.close()
 
         for line in lines:
+            if line == '':
+                continue
             try:
                 self._process_template_line(line)
             except DistutilsTemplateError, msg:
@@ -156,8 +157,11 @@ class Manifest(object):
 
     def _parse_template_line(self, line):
         words = line.split()
-        action = words[0]
+        if len(words) == 1:
+            # no action given, let's use the default 'include'
+            words.insert(0, 'include')
 
+        action = words[0]
         patterns = dir = dir_pattern = None
 
         if action in ('include', 'exclude',
