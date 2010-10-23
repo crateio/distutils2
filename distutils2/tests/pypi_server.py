@@ -106,7 +106,7 @@ class PyPIServer(threading.Thread):
 
         #TODO allow to serve XMLRPC and HTTP static files at the same time.
         if not self._serve_xmlrpc:
-            self.server = HTTPServer(('', 0), PyPIRequestHandler)
+            self.server = HTTPServer(('127.0.0.1', 0), PyPIRequestHandler)
             self.server.RequestHandlerClass.pypi_server = self
 
             self.request_queue = Queue.Queue()
@@ -123,7 +123,7 @@ class PyPIServer(threading.Thread):
                 for path in static_filesystem_paths]
         else:
             # XMLRPC server
-            self.server = PyPIXMLRPCServer(('', 0))
+            self.server = PyPIXMLRPCServer(('127.0.0.1', 0))
             self.xmlrpc = XMLRPCMockIndex()
             # register the xmlrpc methods
             self.server.register_introspection_functions()
