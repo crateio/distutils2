@@ -12,7 +12,7 @@ _CONFIG_VARS = get_config_vars()
 
 from distutils2.tests import captured_stdout
 
-from distutils2.command.install import install
+from distutils2.command.install_dist import install_dist
 from distutils2.command import install as install_module
 from distutils2.core import Distribution
 from distutils2.errors import DistutilsOptionError
@@ -47,7 +47,7 @@ class InstallTestCase(support.TempdirManager,
         _SCHEMES.set('posix_home', 'platinclude', '{platbase}/include/python')
 
         try:
-            cmd = install(dist)
+            cmd = install_dist(dist)
             cmd.home = destination
             cmd.ensure_finalized()
         finally:
@@ -104,7 +104,7 @@ class InstallTestCase(support.TempdirManager,
             self.assertTrue(key in schemes)
 
         dist = Distribution({'name': 'xx'})
-        cmd = install(dist)
+        cmd = install_dist(dist)
         # making sure the user option is there
         options = [name for name, short, lable in
                    cmd.user_options]
@@ -129,7 +129,7 @@ class InstallTestCase(support.TempdirManager,
 
     def test_handle_extra_path(self):
         dist = Distribution({'name': 'xx', 'extra_path': 'path,dirs'})
-        cmd = install(dist)
+        cmd = install_dist(dist)
 
         # two elements
         cmd.handle_extra_path()
@@ -157,7 +157,7 @@ class InstallTestCase(support.TempdirManager,
 
     def test_finalize_options(self):
         dist = Distribution({'name': 'xx'})
-        cmd = install(dist)
+        cmd = install_dist(dist)
 
         # must supply either prefix/exec-prefix/home or
         # install-base/install-platbase -- not both
@@ -183,7 +183,7 @@ class InstallTestCase(support.TempdirManager,
         pkgdir, dist = self.create_dist()
 
         dist = Distribution()
-        cmd = install(dist)
+        cmd = install_dist(dist)
         dist.command_obj['install_dist'] = cmd
         cmd.root = install_dir
         cmd.record = os.path.join(pkgdir, 'RECORD')
