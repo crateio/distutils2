@@ -151,7 +151,7 @@ class Config(object):
                     self.dist.package_dir[package] = dir_
                 self.dist.packages.append(package)
 
-            self.dist.py_modules = files.get('py_modules', [])
+            self.dist.py_modules = files.get('modules', [])
             if isinstance(self.dist.py_modules, str):
                 self.dist.py_modules = [self.dist.py_modules]
             self.dist.scripts = files.get('scripts', [])

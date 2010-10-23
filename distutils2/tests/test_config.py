@@ -51,7 +51,7 @@ packages = one
            src:two
            src2:three
 
-py_modules = haven
+modules = haven
 
 scripts =
   script1.py
