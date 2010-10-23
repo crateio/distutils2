@@ -13,7 +13,7 @@ _CONFIG_VARS = get_config_vars()
 from distutils2.tests import captured_stdout
 
 from distutils2.command.install_dist import install_dist
-from distutils2.command import install as install_module
+from distutils2.command import install_dist as install_module
 from distutils2.core import Distribution
 from distutils2.errors import DistutilsOptionError
 
