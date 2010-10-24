@@ -242,23 +242,94 @@ class MainProgram(object):
               self.data.get('home_page'), _helptext['home_page'],
               required=False)
 
-        while ask_yn('Do you want to add a single module ?'
-                     ' (you will be able to add full packages next)',
-                  helptext=_helptext['modules']) == 'y':
-            self._set_multi('Module name', 'modules')
+        if ask_yn('Do you want me to automatically build the file list '
+              'with everything I can find in the current directory ? '
+              'If you say no, you will have to define them manually.') == 'y':
+            self._find_files()
+        else:
+            while ask_yn('Do you want to add a single module ?'
+                        ' (you will be able to add full packages next)',
+                    helptext=_helptext['modules']) == 'y':
+                self._set_multi('Module name', 'modules')
 
-        while ask_yn('Do you want to add a package ?',
-                  helptext=_helptext['packages']) == 'y':
-            self._set_multi('Package name', 'packages')
+            while ask_yn('Do you want to add a package ?',
+                    helptext=_helptext['packages']) == 'y':
+                self._set_multi('Package name', 'packages')
 
-        while ask_yn('Do you want to add an extra file ?',
-                     helptext=_helptext['extra_files']) == 'y':
-            self._set_multi('Extra file/dir name', 'extra_files')
+            while ask_yn('Do you want to add an extra file ?',
+                        helptext=_helptext['extra_files']) == 'y':
+                self._set_multi('Extra file/dir name', 'extra_files')
 
 
         if ask_yn('Do you want to set Trove classifiers?',
                   helptext=_helptext['do_classifier']) == 'y':
             self.set_classifier()
+
+    def _find_files(self):
+        # we are looking for python modules and packages,
+        # other stuff are added as regular files
+        pkgs = self.data['packages']
+        modules = self.data['modules']
+        extra_files = self.data['extra_files']
+
+        def is_package(path):
+            return os.path.exists(os.path.join(path, '__init__.py'))
+
+        curdir = os.getcwd()
+        scanned = []
+        _pref = ['lib', 'include', 'dist', 'build', '.', '~']
+        _suf = ['.pyc']
+
+
+        def to_skip(path):
+            path = relative(path)
+
+            if any([path.startswith(pref) for pref in _pref]):
+                return True
+
+            if any([path.endswith(suf) for suf in _suf]):
+                return True
+            return False
+
+        def relative(path):
+            return path[len(curdir) + 1:]
+
+        def dotted(path):
+            res = relative(path).replace(os.path.sep, '.')
+            if res.endswith('.py'):
+                res = res[:-len('.py')]
+            return res
+
+        # first pass : packages
+        for root, dirs, files in os.walk(curdir):
+            if to_skip(root):
+                continue
+            for dir_ in dirs:
+                if to_skip(dir_):
+                    continue
+                fullpath = os.path.join(root, dir_)
+                dotted_name = dotted(fullpath)
+                if is_package(fullpath) and dotted_name not in pkgs:
+                    pkgs.append(dotted_name)
+                    scanned.append(fullpath)
+
+        # modules and extra files
+        for root, dirs, files in os.walk(curdir):
+            if to_skip(root):
+                continue
+
+            if any([root.startswith(path) for path in scanned]):
+                continue
+
+            for file in files:
+                fullpath = os.path.join(root, file)
+                if to_skip(fullpath):
+                    continue
+                # single module ?
+                if os.path.splitext(file)[-1] == '.py':
+                    modules.append(dotted(fullpath))
+                else:
+                    extra_files.append(relative(fullpath))
 
     def _set_multi(self, question, name):
         existing_values = self.data[name]
