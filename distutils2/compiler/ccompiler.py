@@ -7,12 +7,13 @@ for the Distutils compiler abstraction model."""
 import sys
 import os
 import re
+from shutil import move
 
 from distutils2.errors import (CompileError, LinkError, UnknownFileError,
                                DistutilsPlatformError, DistutilsModuleError)
 from distutils2.util import split_quoted, execute, newer_group, spawn
-from distutils2 import log
-from shutil import move
+from distutils2 import logger
+
 
 try:
     import sysconfig
@@ -911,8 +912,8 @@ main (int argc, char **argv) {
 
     # -- Utility methods -----------------------------------------------
 
-    def announce(self, msg, level=1):
-        log.debug(msg)
+    def announce(self, msg, level=None):
+        logger.debug(msg)
 
     def debug_print(self, msg):
         from distutils2.debug import DEBUG
@@ -940,7 +941,7 @@ main (int argc, char **argv) {
         if self.dry_run:
             head = ''
             for part in name.split(os.sep):
-                log.info("created directory %s%s", head, part)
+                logger.info("created directory %s%s", head, part)
                 head += part + os.sep
             return
         os.makedirs(name, mode)

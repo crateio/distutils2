@@ -19,7 +19,7 @@ from distutils2.errors import (DistutilsExecError, CompileError, LibError,
 from distutils2.compiler.ccompiler import CCompiler, gen_preprocess_options
 from distutils2.file_util import write_file
 from distutils2.dep_util import newer
-from distutils2 import log
+from distutils2 import logger
 
 class BCPPCompiler(CCompiler) :
     """Concrete class that implements an interface to the Borland C/C++
@@ -162,7 +162,7 @@ class BCPPCompiler(CCompiler) :
             except DistutilsExecError, msg:
                 raise LibError, msg
         else:
-            log.debug("skipping %s (up-to-date)", output_filename)
+            logger.debug("skipping %s (up-to-date)", output_filename)
 
     # create_static_lib ()
 
@@ -190,7 +190,8 @@ class BCPPCompiler(CCompiler) :
             self._fix_lib_args (libraries, library_dirs, runtime_library_dirs)
 
         if runtime_library_dirs:
-            log.warn("I don't know what to do with 'runtime_library_dirs': %s",
+            logger.warning(("I don't know what to do with "
+                            "'runtime_library_dirs': %s"),
                      str(runtime_library_dirs))
 
         if output_dir is not None:
@@ -297,7 +298,7 @@ class BCPPCompiler(CCompiler) :
                 raise LinkError, msg
 
         else:
-            log.debug("skipping %s (up-to-date)", output_filename)
+            logger.debug("skipping %s (up-to-date)", output_filename)
 
     # link ()
 

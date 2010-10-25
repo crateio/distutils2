@@ -22,7 +22,7 @@ from distutils2.compiler.ccompiler import (CCompiler, gen_preprocess_options,
                                            gen_lib_options)
 from distutils2.errors import (DistutilsExecError, CompileError,
                                LibError, LinkError)
-from distutils2 import log
+from distutils2 import logger
 
 try:
     import sysconfig
@@ -102,9 +102,9 @@ def _darwin_compiler_fixup(compiler_so, cc_args):
         sysroot = compiler_so[idx+1]
 
     if sysroot and not os.path.isdir(sysroot):
-        log.warn("Compiling with an SDK that doesn't seem to exist: %s",
+        logger.warning("Compiling with an SDK that doesn't seem to exist: %s",
                 sysroot)
-        log.warn("Please check your Xcode installation")
+        logger.warning("Please check your Xcode installation")
 
     return compiler_so
 
@@ -207,7 +207,7 @@ class UnixCCompiler(CCompiler):
                 except DistutilsExecError, msg:
                     raise LibError, msg
         else:
-            log.debug("skipping %s (up-to-date)", output_filename)
+            logger.debug("skipping %s (up-to-date)", output_filename)
 
     def link(self, target_desc, objects,
              output_filename, output_dir=None, libraries=None,
@@ -261,7 +261,7 @@ class UnixCCompiler(CCompiler):
             except DistutilsExecError, msg:
                 raise LinkError, msg
         else:
-            log.debug("skipping %s (up-to-date)", output_filename)
+            logger.debug("skipping %s (up-to-date)", output_filename)
 
     # -- Miscellaneous methods -----------------------------------------
     # These are all used by the 'gen_lib_options() function, in

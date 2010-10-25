@@ -21,7 +21,7 @@ import re
 from distutils2.errors import (DistutilsExecError, DistutilsPlatformError,
                                CompileError, LibError, LinkError)
 from distutils2.compiler.ccompiler import CCompiler, gen_lib_options
-from distutils2 import log
+from distutils2 import logger
 from distutils2.util import get_platform
 
 import _winreg
@@ -215,7 +215,7 @@ def find_vcvarsall(version):
         productdir = Reg.get_value(r"%s\Setup\VC" % vsbase,
                                    "productdir")
     except KeyError:
-        log.debug("Unable to find productdir in registry")
+        logger.debug("Unable to find productdir in registry")
         productdir = None
 
     if not productdir or not os.path.isdir(productdir):
@@ -226,17 +226,17 @@ def find_vcvarsall(version):
             productdir = os.path.join(toolsdir, os.pardir, os.pardir, "VC")
             productdir = os.path.abspath(productdir)
             if not os.path.isdir(productdir):
-                log.debug("%s is not a valid directory" % productdir)
+                logger.debug("%s is not a valid directory" % productdir)
                 return None
         else:
-            log.debug("Env var %s is not set or invalid" % toolskey)
+            logger.debug("Env var %s is not set or invalid" % toolskey)
     if not productdir:
-        log.debug("No productdir found")
+        logger.debug("No productdir found")
         return None
     vcvarsall = os.path.join(productdir, "vcvarsall.bat")
     if os.path.isfile(vcvarsall):
         return vcvarsall
-    log.debug("Unable to find vcvarsall.bat")
+    logger.debug("Unable to find vcvarsall.bat")
     return None
 
 def query_vcvarsall(version, arch="x86"):
@@ -248,7 +248,7 @@ def query_vcvarsall(version, arch="x86"):
 
     if vcvarsall is None:
         raise DistutilsPlatformError("Unable to find vcvarsall.bat")
-    log.debug("Calling 'vcvarsall.bat %s' (version=%s)", arch, version)
+    logger.debug("Calling 'vcvarsall.bat %s' (version=%s)", arch, version)
     popen = subprocess.Popen('"%s" %s & set' % (vcvarsall, arch),
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
@@ -547,7 +547,7 @@ class MSVCCompiler(CCompiler) :
             except DistutilsExecError, msg:
                 raise LibError(msg)
         else:
-            log.debug("skipping %s (up-to-date)", output_filename)
+            logger.debug("skipping %s (up-to-date)", output_filename)
 
 
     def link(self,
@@ -653,7 +653,7 @@ class MSVCCompiler(CCompiler) :
             except DistutilsExecError, msg:
                 raise LinkError(msg)
         else:
-            log.debug("skipping %s (up-to-date)", output_filename)
+            logger.debug("skipping %s (up-to-date)", output_filename)
 
     def _remove_visual_c_ref(self, manifest_file):
         try:
