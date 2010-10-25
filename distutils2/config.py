@@ -6,7 +6,7 @@ import os
 import sys
 from ConfigParser import RawConfigParser
 
-from distutils2 import log
+from distutils2 import logger
 from distutils2.util import check_environ, resolve_name
 
 
@@ -66,7 +66,7 @@ class Config(object):
         if os.path.isfile(local_file):
             files.append(local_file)
 
-        log.debug("using config files: %s" % ', '.join(files))
+        logger.debug("using config files: %s" % ', '.join(files))
         return files
 
     def _convert_metadata(self, name, value):
@@ -182,11 +182,11 @@ class Config(object):
         if filenames is None:
             filenames = self.find_config_files()
 
-        log.debug("Distribution.parse_config_files():")
+        logger.debug("Distribution.parse_config_files():")
 
         parser = RawConfigParser()
         for filename in filenames:
-            log.debug("  reading %s" % filename)
+            logger.debug("  reading %s" % filename)
             parser.read(filename)
 
             if os.path.split(filename)[-1] == 'setup.cfg':
