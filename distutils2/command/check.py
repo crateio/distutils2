@@ -3,7 +3,7 @@
 Implements the Distutils 'check' command.
 """
 
-from distutils2.core import Command
+from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsSetupError
 from distutils2.util import resolve_name
 

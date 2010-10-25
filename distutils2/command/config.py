@@ -13,7 +13,7 @@ this header file lives".
 import os
 import re
 
-from distutils2.core import Command
+from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsExecError
 from distutils2.compiler.ccompiler import customize_compiler
 from distutils2 import log

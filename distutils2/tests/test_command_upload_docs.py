@@ -13,7 +13,7 @@ except ImportError:
 from distutils2.command import upload_docs as upload_docs_mod
 from distutils2.command.upload_docs import (upload_docs, zip_dir,
                                             encode_multipart)
-from distutils2.core import Distribution
+from distutils2.dist import Distribution
 from distutils2.errors import DistutilsFileError, DistutilsOptionError
 
 from distutils2.tests import unittest, support

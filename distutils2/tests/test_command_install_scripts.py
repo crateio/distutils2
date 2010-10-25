@@ -3,7 +3,7 @@
 import os
 
 from distutils2.command.install_scripts import install_scripts
-from distutils2.core import Distribution
+from distutils2.dist import Distribution
 
 from distutils2.tests import unittest, support
 

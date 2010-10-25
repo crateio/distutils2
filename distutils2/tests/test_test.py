@@ -8,7 +8,8 @@ from copy import copy
 from os.path import join
 from operator import getitem, setitem, delitem
 from StringIO import StringIO
-from distutils2.core import Command
+
+from distutils2.command.cmd import Command
 from distutils2.tests import unittest
 from distutils2.tests.support import TempdirManager, LoggingCatcher
 from distutils2.command.test import test

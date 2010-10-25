@@ -11,7 +11,7 @@ from distutils2._backport.sysconfig import (get_config_vars, get_paths,
                                             get_path, get_config_var)
 
 from distutils2 import log
-from distutils2.core import Command
+from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsPlatformError
 from distutils2.util import write_file
 from distutils2.util import convert_path, change_root, get_platform

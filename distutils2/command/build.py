@@ -6,7 +6,7 @@ Implements the Distutils 'build' command."""
 import sys, os
 
 from distutils2.util import get_platform
-from distutils2.core import Command
+from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsOptionError
 
 def show_compilers():

@@ -4,7 +4,7 @@ import os
 import sys
 
 from distutils2.command.upload import upload
-from distutils2.core import Distribution
+from distutils2.dist import Distribution
 
 from distutils2.tests import unittest, support
 from distutils2.tests.pypi_server import PyPIServer, PyPIServerTestCase
@@ -128,7 +128,7 @@ class UploadTestCase(support.TempdirManager, support.EnvironGuard,
         handler, request_data = self.pypi.requests[-1]
         action, name, content =\
             request_data.split("----------------GHSKFJDLGDS7543FJKLFHRE75642756743254")[1:4]
-        
+
         self.assertIn('name=":action"', action)
         self.assertIn("doc_upload", action)
 

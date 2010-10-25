@@ -12,12 +12,12 @@ except ImportError:
 
 from distutils2.tests import run_unittest, unittest
 
-from distutils2.core import Distribution
+from distutils2.dist import Distribution
 from distutils2.command.bdist_dumb import bdist_dumb
 from distutils2.tests import support
 
 SETUP_PY = """\
-from distutils.core import setup
+from distutils.run import setup
 import foo
 
 setup(name='foo', version='0.1', py_modules=['foo'],

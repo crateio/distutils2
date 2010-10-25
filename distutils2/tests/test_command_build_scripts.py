@@ -3,7 +3,7 @@
 import os
 
 from distutils2.command.build_scripts import build_scripts
-from distutils2.core import Distribution
+from distutils2.dist import Distribution
 try:
     import sysconfig
 except ImportError:

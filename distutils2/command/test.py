@@ -2,7 +2,7 @@ import os
 import sys
 import unittest
 
-from distutils2.core import Command
+from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsOptionError
 from distutils2.util import resolve_name
 

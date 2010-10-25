@@ -12,7 +12,7 @@ try:
     from sysconfig import get_python_version
 except ImportError:
     from distutils2._backport.sysconfig import get_python_version
-from distutils2.core import Command
+from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsOptionError, DistutilsPlatformError
 from distutils2 import log
 from distutils2.util import get_platform

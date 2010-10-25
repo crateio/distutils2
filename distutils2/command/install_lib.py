@@ -7,7 +7,7 @@ Implements the Distutils 'install_lib' command
 import os
 import sys
 
-from distutils2.core import Command
+from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsOptionError
 
 

@@ -5,7 +5,8 @@ Implements the Distutils 'build_scripts' command."""
 
 import os, re
 from stat import ST_MODE
-from distutils2.core import Command
+
+from distutils2.command.cmd import Command
 from distutils2.util import convert_path, newer
 from distutils2 import log
 try:

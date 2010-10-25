@@ -9,7 +9,7 @@ import logging
 from glob import glob
 
 import distutils2
-from distutils2.core import Command
+from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsOptionError, DistutilsFileError
 from distutils2.util import convert_path
 from distutils2.compat import Mixin2to3

@@ -2,12 +2,10 @@
 
 Implements the Distutils 'bdist' command (create a built [binary]
 distribution)."""
-
-
 import os
 
 from distutils2.util import get_platform
-from distutils2.core import Command
+from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsPlatformError, DistutilsOptionError
 
 

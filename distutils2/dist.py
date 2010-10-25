@@ -36,7 +36,7 @@ class Distribution(object):
     Distribution for some specialized purpose, and then pass the subclass
     to 'setup()' as the 'distclass' keyword argument.  If so, it is
     necessary to respect the expectations that 'setup' has of Distribution.
-    See the code for 'setup()', in core.py, for details.
+    See the code for 'setup()', in run.py, for details.
     """
 
     # 'global_options' describes the command-line options that may be
@@ -322,7 +322,7 @@ Common commands: (see '--help-commands' for more)
     def parse_command_line(self):
         """Parse the setup script's command line, taken from the
         'script_args' instance attribute (which defaults to 'sys.argv[1:]'
-        -- see 'setup()' in core.py).  This list is first processed for
+        -- see 'setup()' in run.py).  This list is first processed for
         "global options" -- options that set attributes of the Distribution
         instance.  Then, it is alternately scanned for Distutils commands
         and options for that command.  Each new command terminates the
@@ -517,7 +517,7 @@ Common commands: (see '--help-commands' for more)
         in 'commands'.
         """
         # late import because of mutual dependence between these modules
-        from distutils2.core import gen_usage
+        from distutils2.run import gen_usage
         from distutils2.command.cmd import Command
 
         if global_options:
@@ -558,7 +558,7 @@ Common commands: (see '--help-commands' for more)
         line, display the requested info and return true; else return
         false.
         """
-        from distutils2.core import gen_usage
+        from distutils2.run import gen_usage
 
         # User just wants a list of commands -- we'll print it out and stop
         # processing now (ie. if they ran "setup --help-commands foo bar",

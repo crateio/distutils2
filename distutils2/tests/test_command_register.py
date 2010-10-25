@@ -13,7 +13,7 @@ except ImportError:
 
 from distutils2.command import register as register_module
 from distutils2.command.register import register
-from distutils2.core import Distribution
+from distutils2.dist import Distribution
 from distutils2.errors import DistutilsSetupError
 
 from distutils2.tests import unittest, support

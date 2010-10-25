@@ -5,7 +5,7 @@ import sys
 import StringIO
 
 from distutils2.command.build_py import build_py
-from distutils2.core import Distribution
+from distutils2.dist import Distribution
 from distutils2.errors import DistutilsFileError
 
 from distutils2.tests import unittest, support

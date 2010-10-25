@@ -7,7 +7,7 @@ Implements the Distutils 'clean' command."""
 
 import os
 from shutil import rmtree
-from distutils2.core import Command
+from distutils2.command.cmd import Command
 from distutils2 import log
 
 class clean(Command):

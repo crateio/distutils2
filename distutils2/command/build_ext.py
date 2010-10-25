@@ -9,7 +9,7 @@ import sys, os, re
 from warnings import warn
 
 from distutils2.util import get_platform
-from distutils2.core import Command
+from distutils2.command.cmd import Command
 from distutils2.errors import (CCompilerError, CompileError, DistutilsError,
                                DistutilsPlatformError, DistutilsSetupError)
 from distutils2.compiler.ccompiler import customize_compiler
