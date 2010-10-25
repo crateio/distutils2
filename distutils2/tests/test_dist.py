@@ -205,7 +205,7 @@ class DistributionTestCase(support.TempdirManager,
         dist = Distribution()
         args = ('ok',)
         kwargs = {'level': 'ok2'}
-        self.assertRaises(ValueError, dist.announce, args, kwargs)
+        self.assertRaises(TypeError, dist.announce, args, kwargs)
 
     def test_find_config_files_disable(self):
         # Bug #1180: Allow users to disable their own config file.

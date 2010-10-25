@@ -9,12 +9,13 @@ import sys
 import os
 import re
 import warnings
+import logging
 
 from distutils2.errors import (DistutilsOptionError, DistutilsArgError,
                                DistutilsModuleError, DistutilsClassError)
 from distutils2.fancy_getopt import FancyGetopt
 from distutils2.util import strtobool, resolve_name
-from distutils2 import log
+from distutils2 import logger
 from distutils2.metadata import DistributionMetadata
 from distutils2.config import Config
 
@@ -357,7 +358,14 @@ Common commands: (see '--help-commands' for more)
         parser.set_aliases({'licence': 'license'})
         args = parser.getopt(args=self.script_args, object=self)
         option_order = parser.get_option_order()
-        log.set_verbosity(self.verbose)
+
+        handler = logging.StreamHandler()
+        logger.addHandler(handler)
+
+        if self.verbose:
+            handler.setLevel(logging.DEBUG)
+        else:
+            handler.setLevel(logging.INFO)
 
         # for display options we return immediately
         if self.handle_display_options(option_order):
@@ -740,8 +748,8 @@ Common commands: (see '--help-commands' for more)
         """
         cmd_obj = self.command_obj.get(command)
         if not cmd_obj and create:
-            log.debug("Distribution.get_command_obj(): " \
-                      "creating '%s' command object" % command)
+            logger.debug("Distribution.get_command_obj(): " \
+                         "creating '%s' command object" % command)
 
             cls = self.get_command_class(command)
             cmd_obj = self.command_obj[command] = cls(self)
@@ -771,11 +779,10 @@ Common commands: (see '--help-commands' for more)
         if option_dict is None:
             option_dict = self.get_option_dict(command_name)
 
-        log.debug("  setting options for '%s' command:" % command_name)
+        logger.debug("  setting options for '%s' command:" % command_name)
 
         for (option, (source, value)) in option_dict.items():
-            log.debug("    %s = %s (from %s)" % (option, value,
-                                                         source))
+            logger.debug("    %s = %s (from %s)" % (option, value, source))
             try:
                 bool_opts = [x.replace('-', '_')
                              for x in command_obj.boolean_options]
@@ -842,8 +849,8 @@ Common commands: (see '--help-commands' for more)
 
     # -- Methods that operate on the Distribution ----------------------
 
-    def announce(self, msg, level=log.INFO):
-        log.log(level, msg)
+    def announce(self, msg, level=logging.INFO):
+        logger.log(level, msg)
 
     def run_commands(self):
         """Run each command that was seen on the setup script command line.
@@ -870,7 +877,7 @@ Common commands: (see '--help-commands' for more)
         cmd_obj = self.get_command_obj(command)
         cmd_obj.ensure_finalized()
         self.run_command_hooks(cmd_obj, 'pre_hook')
-        log.info("running %s", command)
+        logger.info("running %s", command)
         cmd_obj.run()
         self.run_command_hooks(cmd_obj, 'post_hook')
         self.have_run[command] = 1
@@ -901,8 +908,8 @@ Common commands: (see '--help-commands' for more)
             if not hasattr(hook_obj, '__call__'):
                 raise DistutilsOptionError('hook %r is not callable' % hook)
 
-            log.info('running %s %s for command %s',
-                     hook_kind, hook, cmd_obj.get_command_name())
+            logger.info('running %s %s for command %s',
+                        hook_kind, hook, cmd_obj.get_command_name())
             hook_obj(cmd_obj)
 
     # -- Distribution query methods ------------------------------------
