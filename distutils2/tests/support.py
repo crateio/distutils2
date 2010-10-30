@@ -147,7 +147,7 @@ class TempdirManager(object):
         finally:
             f.close()
 
-    def create_dist(self, pkg_name='foo', **kw):
+    def create_dist(self, **kw):
         """Create a stub distribution object and files.
 
         This function creates a Distribution instance (use keyword arguments
@@ -155,17 +155,19 @@ class TempdirManager(object):
         (currently an empty directory).
 
         It returns the path to the directory and the Distribution instance.
-        You can use TempdirManager.write_file to write any file in that
+        You can use self.write_file to write any file in that
         directory, e.g. setup scripts or Python modules.
         """
         # Late import so that third parties can import support without
         # loading a ton of distutils2 modules in memory.
         from distutils2.dist import Distribution
+        if 'name' not in kw:
+            kw['name'] = 'foo'
         tmp_dir = self.mkdtemp()
-        pkg_dir = os.path.join(tmp_dir, pkg_name)
-        os.mkdir(pkg_dir)
+        project_dir = os.path.join(tmp_dir, kw['name'])
+        os.mkdir(project_dir)
         dist = Distribution(attrs=kw)
-        return pkg_dir, dist
+        return project_dir, dist
 
 
 class EnvironGuard(object):
@@ -222,4 +224,3 @@ def create_distribution(configfiles=()):
     d.parse_config_files()
     d.parse_command_line()
     return d
-
