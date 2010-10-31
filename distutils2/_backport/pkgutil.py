@@ -966,12 +966,6 @@ class EggInfoDistribution(object):
     __hash__ = object.__hash__
 
 
-def _normalize_dist_name(name):
-    """Returns a normalized name from the given *name*.
-    :rtype: string"""
-    return name.replace('-', '_')
-
-
 def distinfo_dirname(name, version):
     """
     The *name* and *version* parameters are converted into their
@@ -991,7 +985,7 @@ def distinfo_dirname(name, version):
     :returns: directory name
     :rtype: string"""
     file_extension = '.dist-info'
-    name = _normalize_dist_name(name)
+    name = name.replace('-', '_')
     normalized_version = suggest_normalized_version(version)
     # Because this is a lookup procedure, something will be returned even if
     #   it is a version that cannot be normalized
