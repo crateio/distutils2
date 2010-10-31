@@ -216,7 +216,7 @@ class TestPkgUtilDistribution(unittest.TestCase):
                 record_writer.writerow(record_pieces(
                     os.path.join(distinfo_dir, file)))
             record_writer.writerow([relpath(record_file, sys.prefix)])
-            del record_writer # causes the RECORD file to close
+            del record_writer  # causes the RECORD file to close
             record_reader = csv.reader(open(record_file, 'rb'))
             record_data = []
             for row in record_reader:
@@ -346,7 +346,7 @@ class TestPkgUtilPEP376(unittest.TestCase):
         # Given a name and a version, we expect the distinfo_dirname function
         # to return a standard distribution information directory name.
 
-        items = [# (name, version, standard_dirname)
+        items = [  # (name, version, standard_dirname)
             # Test for a very simple single word name and decimal
             # version number
             ('docutils', '0.5', 'docutils-0.5.dist-info'),
@@ -411,7 +411,7 @@ class TestPkgUtilPEP376(unittest.TestCase):
     def test_get_distribution(self):
         # Test for looking up a distribution by name.
         # Test the lookup of the towel-stuff distribution
-        name = 'towel-stuff' # Note: This is different from the directory name
+        name = 'towel-stuff'  # Note: This is different from the directory name
 
         # Lookup the distribution
         dist = get_distribution(name)
@@ -508,11 +508,9 @@ class TestPkgUtilPEP376(unittest.TestCase):
                                                          use_egg_info=True)]
         checkLists(l, ['strawberry'])
 
-
         l = [dist.name for dist in provides_distribution('strawberry', '>0.6',
                                                          use_egg_info=True)]
         checkLists(l, [])
-
 
         l = [dist.name for dist in provides_distribution('banana', '0.4',
                                                          use_egg_info=True)]
@@ -521,7 +519,6 @@ class TestPkgUtilPEP376(unittest.TestCase):
         l = [dist.name for dist in provides_distribution('banana', '>=0.3',
                                                          use_egg_info=True)]
         checkLists(l, ['banana'])
-
 
         l = [dist.name for dist in provides_distribution('banana', '!=0.4',
                                                          use_egg_info=True)]
@@ -537,7 +534,6 @@ class TestPkgUtilPEP376(unittest.TestCase):
         l = [dist.name for dist in obsoletes_distribution('truffles', '1.0',
                                                           use_egg_info=True)]
         checkLists(l, ['cheese', 'bacon'])
-
 
         l = [dist.name for dist in obsoletes_distribution('truffles', '0.8')]
         checkLists(l, ['choxie'])

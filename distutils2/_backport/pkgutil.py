@@ -1,8 +1,5 @@
 """Utilities to support packages."""
 
-# NOTE: This module must remain compatible with Python 2.3, as it is shared
-# by setuptools for distribution with Python 2.3 and up.
-
 import os
 import sys
 import imp
@@ -30,6 +27,10 @@ __all__ = [
 ]
 
 
+##########################
+# PEP 302 Implementation #
+##########################
+
 def read_code(stream):
     # This helper is needed in order for the :pep:`302` emulation to
     # correctly handle compiled files
@@ -39,7 +40,7 @@ def read_code(stream):
     if magic != imp.get_magic():
         return None
 
-    stream.read(4) # Skip timestamp
+    stream.read(4)  # Skip timestamp
     return marshal.load(stream)
 
 
@@ -171,7 +172,6 @@ def iter_modules(path=None, prefix=''):
 
 #@simplegeneric
 def iter_importer_modules(importer, prefix=''):
-    ""
     if not hasattr(importer, 'iter_modules'):
         return []
     return importer.iter_modules(prefix)
@@ -329,9 +329,9 @@ class ImpLoader(object):
     def get_filename(self, fullname=None):
         fullname = self._fix_name(fullname)
         mod_type = self.etc[2]
-        if self.etc[2] == imp.PKG_DIRECTORY:
+        if mod_type == imp.PKG_DIRECTORY:
             return self._get_delegate().get_filename()
-        elif self.etc[2] in (imp.PY_SOURCE, imp.PY_COMPILED, imp.C_EXTENSION):
+        elif mod_type in (imp.PY_SOURCE, imp.PY_COMPILED, imp.C_EXTENSION):
             return self.filename
         return None
 
@@ -430,7 +430,8 @@ def iter_importers(fullname=""):
     import mechanism will find the latter.
 
     Items of the following types can be affected by this discrepancy:
-        ``imp.C_EXTENSION, imp.PY_SOURCE, imp.PY_COMPILED, imp.PKG_DIRECTORY``
+    :data:`imp.C_EXTENSION`, :data:`imp.PY_SOURCE`, :data:`imp.PY_COMPILED`,
+    :data:`imp.PKG_DIRECTORY`
     """
     if fullname.startswith('.'):
         raise ImportError("Relative module names not supported")
@@ -532,13 +533,13 @@ def extend_path(path, name):
         # frozen package.  Return the path unchanged in that case.
         return path
 
-    pname = os.path.join(*name.split('.')) # Reconstitute as relative path
+    pname = os.path.join(*name.split('.'))  # Reconstitute as relative path
     # Just in case os.extsep != '.'
     sname = os.extsep.join(name.split('.'))
     sname_pkg = sname + os.extsep + "pkg"
     init_py = "__init__" + os.extsep + "py"
 
-    path = path[:] # Start with a copy of the existing path
+    path = path[:]  # Start with a copy of the existing path
 
     for dir in sys.path:
         if not isinstance(dir, basestring) or not os.path.isdir(dir):
@@ -563,7 +564,7 @@ def extend_path(path, name):
                     line = line.rstrip('\n')
                     if not line or line.startswith('#'):
                         continue
-                    path.append(line) # Don't check for existence!
+                    path.append(line)  # Don't check for existence!
                 f.close()
 
     return path
@@ -607,6 +608,7 @@ def get_data(package, resource):
     resource_name = os.path.join(*parts)
     return loader.get_data(resource_name)
 
+
 ##########################
 # PEP 376 Implementation #
 ##########################
@@ -614,12 +616,12 @@ def get_data(package, resource):
 DIST_FILES = ('INSTALLER', 'METADATA', 'RECORD', 'REQUESTED',)
 
 # Cache
-_cache_name = {} # maps names to Distribution instances
-_cache_name_egg = {} # maps names to EggInfoDistribution instances
-_cache_path = {} # maps paths to Distribution instances
-_cache_path_egg = {} # maps paths to EggInfoDistribution instances
-_cache_generated = False # indicates if .dist-info distributions are cached
-_cache_generated_egg = False # indicates if .dist-info and .egg are cached
+_cache_name = {}  # maps names to Distribution instances
+_cache_name_egg = {}  # maps names to EggInfoDistribution instances
+_cache_path = {}  # maps paths to Distribution instances
+_cache_path_egg = {}  # maps paths to EggInfoDistribution instances
+_cache_generated = False  # indicates if .dist-info distributions are cached
+_cache_generated_egg = False  # indicates if .dist-info and .egg are cached
 _cache_enabled = True
 
 
@@ -634,6 +636,7 @@ def enable_cache():
 
     _cache_enabled = True
 
+
 def disable_cache():
     """
     Disables the internal cache.
@@ -644,6 +647,7 @@ def disable_cache():
     global _cache_enabled
 
     _cache_enabled = False
+
 
 def clear_cache():
     """ Clears the internal cache. """
@@ -868,7 +872,8 @@ class EggInfoDistribution(object):
             if isinstance(strs, basestring):
                 for s in strs.splitlines():
                     s = s.strip()
-                    if s and not s.startswith('#'): # skip blank lines/comments
+                    # skip blank lines/comments
+                    if s and not s.startswith('#'):
                         yield s
             else:
                 for ss in strs:
@@ -939,7 +944,7 @@ class EggInfoDistribution(object):
                             version = match.group('first')
                             if match.group('rest'):
                                 version += match.group('rest')
-                            version = version.replace(' ', '') # trim spaces
+                            version = version.replace(' ', '')  # trim spaces
                         if version is None:
                             reqs.append(name)
                         else:
@@ -1126,7 +1131,7 @@ def provides_distribution(name, version=None, use_egg_info=False):
                     raise DistutilsError(('Distribution %s has invalid ' +
                                           'provides field: %s') \
                                            % (dist.name, p))
-                p_ver = p_ver[1:-1] # trim off the parenthesis
+                p_ver = p_ver[1:-1]  # trim off the parenthesis
                 if p_name == name and predicate.match(p_ver):
                     yield dist
                     break
