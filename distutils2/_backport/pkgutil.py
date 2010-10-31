@@ -650,7 +650,7 @@ def disable_cache():
 
 def clear_cache():
     """ Clears the internal cache. """
-    global _cache_name, _cache_name_egg, cache_path, _cache_path_egg, \
+    global _cache_name, _cache_name_egg, _cache_path, _cache_path_egg, \
            _cache_generated, _cache_generated_egg
 
     _cache_name = {}
