@@ -6,19 +6,17 @@
 import os
 import sys
 import imp
-import os.path
+import re
+import warnings
 from csv import reader as csv_reader
 from types import ModuleType
 from distutils2.errors import DistutilsError
 from distutils2.metadata import DistributionMetadata
 from distutils2.version import suggest_normalized_version, VersionPredicate
-import zipimport
 try:
     import cStringIO as StringIO
 except ImportError:
     import StringIO
-import re
-import warnings
 
 
 __all__ = [
@@ -28,7 +26,7 @@ __all__ = [
     'Distribution', 'EggInfoDistribution', 'distinfo_dirname',
     'get_distributions', 'get_distribution', 'get_file_users',
     'provides_distribution', 'obsoletes_distribution',
-    'enable_cache', 'disable_cache', 'clear_cache'
+    'enable_cache', 'disable_cache', 'clear_cache',
 ]
 
 
@@ -888,6 +886,7 @@ class EggInfoDistribution(object):
                 except IOError:
                     requires = None
             else:
+                # FIXME handle the case where zipfile is not available
                 zipf = zipimport.zipimporter(path)
                 fileobj = StringIO.StringIO(zipf.get_data('EGG-INFO/PKG-INFO'))
                 self.metadata = DistributionMetadata(fileobj=fileobj)

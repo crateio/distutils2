@@ -12,10 +12,15 @@ try:
 except ImportError:
     from distutils2._backport.hashlib import md5
 
-from test.test_support import TESTFN
+from distutils2.errors import DistutilsError
+from distutils2.metadata import DistributionMetadata
 from distutils2.tests import unittest, run_unittest
 
 from distutils2._backport import pkgutil
+from distutils2._backport.pkgutil import (
+    Distribution, EggInfoDistribution, get_distribution, get_distributions,
+    provides_distribution, obsoletes_distribution, get_file_users,
+    distinfo_dirname, _yield_distributions)
 
 try:
     from os.path import relpath
@@ -231,9 +236,6 @@ class TestPkgUtilDistribution(unittest.TestCase):
     def test_instantiation(self):
         # Test the Distribution class's instantiation provides us with usable
         # attributes.
-        # Import the Distribution class
-        from distutils2._backport.pkgutil import distinfo_dirname, Distribution
-
         here = os.path.abspath(os.path.dirname(__file__))
         name = 'choxie'
         version = '2.0.0.9'
@@ -242,7 +244,6 @@ class TestPkgUtilDistribution(unittest.TestCase):
         dist = Distribution(dist_path)
 
         self.assertEqual(dist.name, name)
-        from distutils2.metadata import DistributionMetadata
         self.assertTrue(isinstance(dist.metadata, DistributionMetadata))
         self.assertEqual(dist.metadata['version'], version)
         self.assertTrue(isinstance(dist.requested, type(bool())))
@@ -250,7 +251,6 @@ class TestPkgUtilDistribution(unittest.TestCase):
     def test_installed_files(self):
         # Test the iteration of installed files.
         # Test the distribution's installed files
-        from distutils2._backport.pkgutil import Distribution
         for distinfo_dir in self.distinfo_dirs:
             dist = Distribution(distinfo_dir)
             for path, md5_, size in dist.get_installed_files():
@@ -273,14 +273,12 @@ class TestPkgUtilDistribution(unittest.TestCase):
         false_path = relpath(os.path.join(*false_path), sys.prefix)
 
         # Test if the distribution uses the file in question
-        from distutils2._backport.pkgutil import Distribution
         dist = Distribution(distinfo_dir)
         self.assertTrue(dist.uses(true_path))
         self.assertFalse(dist.uses(false_path))
 
     def test_get_distinfo_file(self):
         # Test the retrieval of dist-info file objects.
-        from distutils2._backport.pkgutil import Distribution
         distinfo_name = 'choxie-2.0.0.9'
         other_distinfo_name = 'grammar-1.0a4'
         distinfo_dir = os.path.join(self.fake_dists_path,
@@ -301,7 +299,6 @@ class TestPkgUtilDistribution(unittest.TestCase):
             # Is it the correct file?
             self.assertEqual(value.name, os.path.join(distinfo_dir, distfile))
 
-        from distutils2.errors import DistutilsError
         # Test an absolute path that is part of another distributions dist-info
         other_distinfo_file = os.path.join(self.fake_dists_path,
             other_distinfo_name + '.dist-info', 'REQUESTED')
@@ -313,7 +310,6 @@ class TestPkgUtilDistribution(unittest.TestCase):
 
     def test_get_distinfo_files(self):
         # Test for the iteration of RECORD path entries.
-        from distutils2._backport.pkgutil import Distribution
         distinfo_name = 'towel_stuff-0.1'
         distinfo_dir = os.path.join(self.fake_dists_path,
             distinfo_name + '.dist-info')
@@ -362,7 +358,6 @@ class TestPkgUtilPEP376(unittest.TestCase):
             ]
 
         # Import the function in question
-        from distutils2._backport.pkgutil import distinfo_dirname
 
         # Loop through the items to validate the results
         for name, version, standard_dirname in items:
@@ -375,11 +370,6 @@ class TestPkgUtilPEP376(unittest.TestCase):
         fake_dists = [('grammar', '1.0a4'), ('choxie', '2.0.0.9'),
             ('towel-stuff', '0.1')]
         found_dists = []
-
-        # Import the function in question
-        from distutils2._backport.pkgutil import get_distributions, \
-                                                 Distribution, \
-                                                 EggInfoDistribution
 
         # Verify the fake dists have been found.
         dists = [dist for dist in get_distributions()]
@@ -423,11 +413,6 @@ class TestPkgUtilPEP376(unittest.TestCase):
         # Test the lookup of the towel-stuff distribution
         name = 'towel-stuff' # Note: This is different from the directory name
 
-        # Import the function in question
-        from distutils2._backport.pkgutil import get_distribution, \
-                                                 Distribution, \
-                                                 EggInfoDistribution
-
         # Lookup the distribution
         dist = get_distribution(name)
         self.assertTrue(isinstance(dist, Distribution))
@@ -466,7 +451,6 @@ class TestPkgUtilPEP376(unittest.TestCase):
 
     def test_get_file_users(self):
         # Test the iteration of distributions that use a file.
-        from distutils2._backport.pkgutil import get_file_users, Distribution
         name = 'towel_stuff-0.1'
         path = os.path.join(self.fake_dists_path, name,
             'towel_stuff', '__init__.py')
@@ -476,9 +460,6 @@ class TestPkgUtilPEP376(unittest.TestCase):
 
     def test_provides(self):
         # Test for looking up distributions by what they provide
-        from distutils2._backport.pkgutil import provides_distribution
-        from distutils2.errors import DistutilsError
-
         checkLists = lambda x, y: self.assertListEqual(sorted(x), sorted(y))
 
         l = [dist.name for dist in provides_distribution('truffles')]
@@ -548,9 +529,6 @@ class TestPkgUtilPEP376(unittest.TestCase):
 
     def test_obsoletes(self):
         # Test looking for distributions based on what they obsolete
-        from distutils2._backport.pkgutil import obsoletes_distribution
-        from distutils2.errors import DistutilsError
-
         checkLists = lambda x, y: self.assertListEqual(sorted(x), sorted(y))
 
         l = [dist.name for dist in obsoletes_distribution('truffles', '1.0')]
@@ -580,7 +558,6 @@ class TestPkgUtilPEP376(unittest.TestCase):
 
     def test_yield_distribution(self):
         # tests the internal function _yield_distributions
-        from distutils2._backport.pkgutil import _yield_distributions
         checkLists = lambda x, y: self.assertListEqual(sorted(x), sorted(y))
 
         eggs = [('bacon', '0.1'), ('banana', '0.4'), ('strawberry', '0.6'),
