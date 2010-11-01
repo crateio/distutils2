@@ -285,7 +285,7 @@ def rmtree(path, ignore_errors=False, onerror=None):
         else:
             try:
                 os.remove(fullname)
-            except os.error, err:
+            except os.error:
                 onerror(os.remove, fullname, sys.exc_info())
     try:
         os.rmdir(path)
