@@ -284,11 +284,14 @@ class MainProgram(object):
         def to_skip(path):
             path = relative(path)
 
-            if any([path.startswith(pref) for pref in _pref]):
-                return True
+            for pref in _pref:
+                if path.startswith(pref):
+                    return True
 
-            if any([path.endswith(suf) for suf in _suf]):
-                return True
+            for suf in _suf:
+                if path.endswith(suf):
+                    return True
+
             return False
 
         def relative(path):
@@ -318,7 +321,7 @@ class MainProgram(object):
             if to_skip(root):
                 continue
 
-            if any([root.startswith(path) for path in scanned]):
+            if True in [root.startswith(path) for path in scanned]:
                 continue
 
             for file in files:
