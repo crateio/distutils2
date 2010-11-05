@@ -8,7 +8,7 @@ from stat import ST_MODE
 
 from distutils2.command.cmd import Command
 from distutils2.util import convert_path, newer
-from distutils2 import log
+from distutils2 import logger
 try:
     import sysconfig
 except ImportError:
@@ -74,7 +74,7 @@ class build_scripts (Command, Mixin2to3):
             outfiles.append(outfile)
 
             if not self.force and not newer(script, outfile):
-                log.debug("not copying %s (up-to-date)", script)
+                logger.debug("not copying %s (up-to-date)", script)
                 continue
 
             # Always open the file, but ignore failures in dry-run mode --
@@ -98,7 +98,7 @@ class build_scripts (Command, Mixin2to3):
                     post_interp = match.group(1) or ''
 
             if adjust:
-                log.info("copying and adjusting %s -> %s", script,
+                logger.info("copying and adjusting %s -> %s", script,
                          self.build_dir)
                 if not self.dry_run:
                     outf = open(outfile, "w")
@@ -125,12 +125,12 @@ class build_scripts (Command, Mixin2to3):
         if os.name == 'posix':
             for file in outfiles:
                 if self.dry_run:
-                    log.info("changing mode of %s", file)
+                    logger.info("changing mode of %s", file)
                 else:
                     oldmode = os.stat(file)[ST_MODE] & 07777
                     newmode = (oldmode | 0555) & 07777
                     if newmode != oldmode:
-                        log.info("changing mode of %s from %o to %o",
+                        logger.info("changing mode of %s from %o to %o",
                                  file, oldmode, newmode)
                         os.chmod(file, newmode)
         return outfiles

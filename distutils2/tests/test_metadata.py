@@ -7,11 +7,12 @@ from StringIO import StringIO
 from distutils2.metadata import (DistributionMetadata, _interpret,
                                  PKG_INFO_PREFERRED_VERSION)
 from distutils2.tests import run_unittest, unittest
-from distutils2.tests.support import LoggingCatcher
+from distutils2.tests.support import LoggingCatcher, WarningsCatcher
 from distutils2.errors import (MetadataConflictError,
                                MetadataUnrecognizedVersionError)
 
-class DistributionMetadataTestCase(LoggingCatcher, unittest.TestCase):
+class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
+                                   unittest.TestCase):
 
     def test_instantiation(self):
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
@@ -195,49 +196,21 @@ class DistributionMetadataTestCase(LoggingCatcher, unittest.TestCase):
         values = (('Requires-Dist', 'Funky (Groovie)'),
                   ('Requires-Python', '1-4'))
 
-        from distutils2 import metadata as m
-        old = m.warn
-        m.warns = 0
-
-        def _warn(*args):
-            m.warns += 1
-
-        m.warn = _warn
-
-        try:
-            for name, value in values:
-                metadata.set(name, value)
-        finally:
-            m.warn = old
-            res = m.warns
-            del m.warns
+        for name, value in values:
+            metadata.set(name, value)
 
         # we should have a certain amount of warnings
-        num_wanted = len(values)
-        self.assertEqual(num_wanted, res)
+        self.assertEqual(len(self.logs), 2)
 
     def test_multiple_predicates(self):
         metadata = DistributionMetadata()
 
-        from distutils2 import metadata as m
-        old = m.warn
-        m.warns = 0
-
-        def _warn(*args):
-            m.warns += 1
-
         # see for "3" instead of "3.0"  ???
         # its seems like the MINOR VERSION can be omitted
-        m.warn = _warn
-        try:
-            metadata['Requires-Python'] = '>=2.6, <3.0'
-            metadata['Requires-Dist'] = ['Foo (>=2.6, <3.0)']
-        finally:
-            m.warn = old
-            res = m.warns
-            del m.warns
+        metadata['Requires-Python'] = '>=2.6, <3.0'
+        metadata['Requires-Dist'] = ['Foo (>=2.6, <3.0)']
 
-        self.assertEqual(res, 0)
+        self.assertEqual(len(self.warnings), 0)
 
     def test_project_url(self):
         metadata = DistributionMetadata()

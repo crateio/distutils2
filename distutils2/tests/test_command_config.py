@@ -4,25 +4,10 @@ import sys
 
 from distutils2.command.config import dump_file, config
 from distutils2.tests import unittest, support
-from distutils2 import log
 
 class ConfigTestCase(support.LoggingCatcher,
                      support.TempdirManager,
                      unittest.TestCase):
-
-    def _info(self, msg, *args):
-        for line in msg.splitlines():
-            self._logs.append(line)
-
-    def setUp(self):
-        super(ConfigTestCase, self).setUp()
-        self._logs = []
-        self.old_log = log.info
-        log.info = self._info
-
-    def tearDown(self):
-        log.info = self.old_log
-        super(ConfigTestCase, self).tearDown()
 
     def test_dump_file(self):
         this_file = os.path.splitext(__file__)[0] + '.py'
@@ -33,7 +18,11 @@ class ConfigTestCase(support.LoggingCatcher,
             f.close()
 
         dump_file(this_file, 'I am the header')
-        self.assertEqual(len(self._logs), numlines+1)
+        logs = []
+        for log in self.logs:
+            log = log[1]
+            logs.extend([log for log in log.split('\n')])
+        self.assertEqual(len(logs), numlines+2)
 
     def test_search_cpp(self):
         if sys.platform == 'win32':

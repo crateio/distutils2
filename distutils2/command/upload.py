@@ -4,6 +4,7 @@ Implements the Distutils 'upload' subcommand (upload package to PyPI)."""
 import os
 import socket
 import platform
+import logging
 from urllib2 import urlopen, Request, HTTPError
 from base64 import standard_b64encode
 import urlparse
@@ -18,9 +19,7 @@ except ImportError:
 
 from distutils2.errors import DistutilsOptionError
 from distutils2.util import spawn
-from distutils2 import log
 from distutils2.command.cmd import Command
-from distutils2 import log
 from distutils2.util import (metadata_to_dict, read_pypirc,
                              DEFAULT_REPOSITORY, DEFAULT_REALM)
 
@@ -173,7 +172,7 @@ class upload(Command):
         body = body.getvalue()
 
         self.announce("Submitting %s to %s" % (filename, self.repository),
-                      log.INFO)
+                      logging.INFO)
 
         # build the Request
         headers = {'Content-type':
@@ -189,7 +188,7 @@ class upload(Command):
             status = result.code
             reason = result.msg
         except socket.error, e:
-            self.announce(str(e), log.ERROR)
+            self.announce(str(e), logging.ERROR)
             return
         except HTTPError, e:
             status = e.code
@@ -197,11 +196,11 @@ class upload(Command):
 
         if status == 200:
             self.announce('Server response (%s): %s' % (status, reason),
-                          log.INFO)
+                          logging.INFO)
         else:
             self.announce('Upload failed (%s): %s' % (status, reason),
-                          log.ERROR)
+                          logging.ERROR)
 
         if self.show_response:
             msg = '\n'.join(('-' * 75, result.read(), '-' * 75))
-            self.announce(msg, log.INFO)
+            self.announce(msg, logging.INFO)

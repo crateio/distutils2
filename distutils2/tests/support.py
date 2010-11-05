@@ -28,10 +28,10 @@ import shutil
 import tempfile
 import warnings
 from copy import deepcopy
+import logging
 
-from distutils2 import log
+from distutils2 import logger
 from distutils2.dist import Distribution
-from distutils2.log import DEBUG, INFO, WARN, ERROR, FATAL
 from distutils2.tests import unittest
 
 __all__ = ['LoggingCatcher', 'WarningsCatcher', 'TempdirManager',
@@ -49,22 +49,17 @@ class LoggingCatcher(object):
 
     def setUp(self):
         super(LoggingCatcher, self).setUp()
-        self.threshold = log.set_threshold(FATAL)
-        # when log is replaced by logging we won't need
-        # such monkey-patching anymore
-        self._old_log = log.Log._log
-        log.Log._log = self._log
+        self.old_log = logger._log
+        logger._log = self._log
+        logger.setLevel(logging.INFO)
         self.logs = []
 
-    def tearDown(self):
-        log.set_threshold(self.threshold)
-        log.Log._log = self._old_log
-        super(LoggingCatcher, self).tearDown()
+    def _log(self, *args, **kw):
+        self.logs.append(args)
 
-    def _log(self, level, msg, args):
-        if level not in (DEBUG, INFO, WARN, ERROR, FATAL):
-            raise ValueError('%s wrong log level' % level)
-        self.logs.append((level, msg, args))
+    def tearDown(self):
+        logger._log = self.old_log
+        super(LoggingCatcher, self).tearDown()
 
     def get_logs(self, *levels):
         """Return a list of caught messages with level in `levels`.

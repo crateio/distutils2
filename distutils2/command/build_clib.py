@@ -19,7 +19,7 @@ import os
 from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsSetupError
 from distutils2.compiler.ccompiler import customize_compiler
-from distutils2 import log
+from distutils2 import logger
 
 def show_compilers():
     from distutils2.compiler.ccompiler import show_compilers
@@ -185,7 +185,7 @@ class build_clib(Command):
                        "a list of source filenames") % lib_name
             sources = list(sources)
 
-            log.info("building '%s' library", lib_name)
+            logger.info("building '%s' library", lib_name)
 
             # First, compile the source code to object files in the library
             # directory.  (This should probably change to putting object

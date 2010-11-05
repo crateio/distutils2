@@ -16,7 +16,7 @@ import re
 from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsExecError
 from distutils2.compiler.ccompiler import customize_compiler
-from distutils2 import log
+from distutils2 import logger
 
 LANG_EXT = {'c': '.c', 'c++': '.cxx'}
 
@@ -156,7 +156,7 @@ class config(Command):
         if not filenames:
             filenames = self.temp_files
             self.temp_files = []
-        log.info("removing: %s", ' '.join(filenames))
+        logger.info("removing: %s", ' '.join(filenames))
         for filename in filenames:
             try:
                 os.remove(filename)
@@ -233,7 +233,7 @@ class config(Command):
         except CompileError:
             ok = 0
 
-        log.info(ok and "success!" or "failure.")
+        logger.info(ok and "success!" or "failure.")
         self._clean()
         return ok
 
@@ -252,7 +252,7 @@ class config(Command):
         except (CompileError, LinkError):
             ok = 0
 
-        log.info(ok and "success!" or "failure.")
+        logger.info(ok and "success!" or "failure.")
         self._clean()
         return ok
 
@@ -272,7 +272,7 @@ class config(Command):
         except (CompileError, LinkError, DistutilsExecError):
             ok = 0
 
-        log.info(ok and "success!" or "failure.")
+        logger.info(ok and "success!" or "failure.")
         self._clean()
         return ok
 
@@ -346,11 +346,11 @@ def dump_file(filename, head=None):
     If head is not None, will be dumped before the file content.
     """
     if head is None:
-        log.info('%s' % filename)
+        logger.info('%s' % filename)
     else:
-        log.info(head)
+        logger.info(head)
     file = open(filename)
     try:
-        log.info(file.read())
+        logger.info(file.read())
     finally:
         file.close()

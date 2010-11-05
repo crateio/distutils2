@@ -18,7 +18,7 @@ from ConfigParser import RawConfigParser
 
 from distutils2.errors import (DistutilsPlatformError, DistutilsFileError,
                                DistutilsByteCompileError, DistutilsExecError)
-from distutils2 import log
+from distutils2 import logger
 from distutils2._backport import sysconfig as _sysconfig
 
 _PLATFORM = None
@@ -286,7 +286,7 @@ def execute(func, args, msg=None, verbose=0, dry_run=0):
         if msg[-2:] == ',)':        # correct for singleton tuple
             msg = msg[0:-2] + ')'
 
-    log.info(msg)
+    logger.info(msg)
     if not dry_run:
         func(*args)
 
@@ -360,7 +360,7 @@ def byte_compile(py_files, optimize=0, force=0, prefix=None, base_dir=None,
     if not direct:
         from tempfile import mkstemp
         script_fd, script_name = mkstemp(".py")
-        log.info("writing byte-compilation script '%s'", script_name)
+        logger.info("writing byte-compilation script '%s'", script_name)
         if not dry_run:
             if script_fd is not None:
                 script = os.fdopen(script_fd, "w")
@@ -441,11 +441,11 @@ byte_compile(files, optimize=%r, force=%r,
             cfile_base = os.path.basename(cfile)
             if direct:
                 if force or newer(file, cfile):
-                    log.info("byte-compiling %s to %s", file, cfile_base)
+                    logger.info("byte-compiling %s to %s", file, cfile_base)
                     if not dry_run:
                         compile(file, cfile, dfile)
                 else:
-                    log.debug("skipping byte-compilation of %s to %s",
+                    logger.debug("skipping byte-compilation of %s to %s",
                               file, cfile_base)
 
 
@@ -831,7 +831,7 @@ def _spawn_nt(cmd, search_path=1, verbose=0, dry_run=0, env=None):
     if search_path:
         # either we find one or it stays the same
         executable = find_executable(executable) or executable
-    log.info(' '.join([executable] + cmd[1:]))
+    logger.info(' '.join([executable] + cmd[1:]))
     if not dry_run:
         # spawn for NT requires a full path to the .exe
         try:
@@ -855,7 +855,7 @@ def _spawn_os2(cmd, search_path=1, verbose=0, dry_run=0, env=None):
     if search_path:
         # either we find one or it stays the same
         executable = find_executable(executable) or executable
-    log.info(' '.join([executable] + cmd[1:]))
+    logger.info(' '.join([executable] + cmd[1:]))
     if not dry_run:
         # spawnv for OS/2 EMX requires a full path to the .exe
         try:
@@ -870,13 +870,13 @@ def _spawn_os2(cmd, search_path=1, verbose=0, dry_run=0, env=None):
                   "command '%s' failed: %s" % (cmd[0], exc[-1]))
         if rc != 0:
             # and this reflects the command running but failing
-            log.debug("command '%s' failed with exit status %d" % (cmd[0], rc))
+            logger.debug("command '%s' failed with exit status %d" % (cmd[0], rc))
             raise DistutilsExecError(
                   "command '%s' failed with exit status %d" % (cmd[0], rc))
 
 
 def _spawn_posix(cmd, search_path=1, verbose=0, dry_run=0, env=None):
-    log.info(' '.join(cmd))
+    logger.info(' '.join(cmd))
     if dry_run:
         return
 

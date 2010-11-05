@@ -10,7 +10,7 @@ from distutils2._backport import sysconfig
 from distutils2._backport.sysconfig import (get_config_vars, get_paths,
                                             get_path, get_config_var)
 
-from distutils2 import log
+from distutils2 import logger
 from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsPlatformError
 from distutils2.util import write_file
@@ -406,7 +406,7 @@ class install_dist(Command):
 
     def dump_dirs(self, msg):
         """Dump the list of user options."""
-        log.debug(msg + ":")
+        logger.debug(msg + ":")
         for opt in self.user_options:
             opt_name = opt[0]
             if opt_name[-1] == "=":
@@ -418,7 +418,7 @@ class install_dist(Command):
             else:
                 opt_name = opt_name.replace('-', '_')
                 val = getattr(self, opt_name)
-            log.debug("  %s: %s" % (opt_name, val))
+            logger.debug("  %s: %s" % (opt_name, val))
 
     def select_scheme(self, name):
         """Set the install directories by applying the install schemes."""
@@ -545,7 +545,7 @@ class install_dist(Command):
         if (self.warn_dir and
             not (self.path_file and self.install_path_file) and
             install_lib not in sys_path):
-            log.debug(("modules installed to '%s', which is not in "
+            logger.debug(("modules installed to '%s', which is not in "
                        "Python's module search path (sys.path) -- "
                        "you'll have to change the search path yourself"),
                        self.install_lib)

@@ -14,7 +14,6 @@ __all__ = ['__version__', 'logger']
 __version__ = "1.0a3"
 logger = getLogger('distutils2')
 
-
 # when set to True, converts doctests by default too
 run_2to3_on_doctests = True
 # Standard package names for fixer packages

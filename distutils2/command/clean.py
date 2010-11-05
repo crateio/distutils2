@@ -8,7 +8,7 @@ Implements the Distutils 'clean' command."""
 import os
 from shutil import rmtree
 from distutils2.command.cmd import Command
-from distutils2 import log
+from distutils2 import logger
 
 class clean(Command):
 
@@ -48,11 +48,11 @@ class clean(Command):
         # gone)
         if os.path.exists(self.build_temp):
             if self.dry_run:
-                log.info('Removing %s' % self.build_temp)
+                logger.info('Removing %s' % self.build_temp)
             else:
                 rmtree(self.build_temp)
         else:
-            log.debug("'%s' does not exist -- can't clean it",
+            logger.debug("'%s' does not exist -- can't clean it",
                       self.build_temp)
 
         if self.all:
@@ -62,19 +62,19 @@ class clean(Command):
                               self.build_scripts):
                 if os.path.exists(directory):
                     if self.dry_run:
-                        log.info('Removing %s' % directory)
+                        logger.info('Removing %s' % directory)
                     else:
                         rmtree(directory)
                 else:
-                    log.warn("'%s' does not exist -- can't clean it",
-                             directory)
+                    logger.warn("'%s' does not exist -- can't clean it",
+                                directory)
 
         # just for the heck of it, try to remove the base build directory:
         # we might have emptied it right now, but if not we don't care
         if not self.dry_run:
             try:
                 os.rmdir(self.build_base)
-                log.info("removing '%s'", self.build_base)
+                logger.info("removing '%s'", self.build_base)
             except OSError:
                 pass
 

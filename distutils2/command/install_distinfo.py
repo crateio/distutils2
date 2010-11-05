@@ -16,7 +16,7 @@ import os
 import csv
 import re
 from distutils2.command.cmd import Command
-from distutils2 import log
+from distutils2 import logger
 from distutils2._backport.shutil import rmtree
 try:
     import hashlib
@@ -93,12 +93,12 @@ class install_distinfo(Command):
             self.execute(os.makedirs, (target,), "creating " + target)
 
             metadata_path = os.path.join(self.distinfo_dir, 'METADATA')
-            log.info('creating %s', metadata_path)
+            logger.info('creating %s', metadata_path)
             self.distribution.metadata.write(metadata_path)
             self.outputs.append(metadata_path)
 
             installer_path = os.path.join(self.distinfo_dir, 'INSTALLER')
-            log.info('creating %s', installer_path)
+            logger.info('creating %s', installer_path)
             f = open(installer_path, 'w')
             try:
                 f.write(self.installer)
@@ -108,14 +108,14 @@ class install_distinfo(Command):
 
             if self.requested:
                 requested_path = os.path.join(self.distinfo_dir, 'REQUESTED')
-                log.info('creating %s', requested_path)
+                logger.info('creating %s', requested_path)
                 f = open(requested_path, 'w')
                 f.close()
                 self.outputs.append(requested_path)
 
             if not self.no_record:
                 record_path = os.path.join(self.distinfo_dir, 'RECORD')
-                log.info('creating %s', record_path)
+                logger.info('creating %s', record_path)
                 f = open(record_path, 'wb')
                 try:
                     writer = csv.writer(f, delimiter=',',

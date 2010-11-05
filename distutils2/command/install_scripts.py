@@ -8,7 +8,7 @@ Python scripts."""
 
 import os
 from distutils2.command.cmd import Command
-from distutils2 import log
+from distutils2 import logger
 from stat import ST_MODE
 
 class install_scripts (Command):
@@ -46,10 +46,10 @@ class install_scripts (Command):
             # all the scripts we just installed.
             for file in self.get_outputs():
                 if self.dry_run:
-                    log.info("changing mode of %s", file)
+                    logger.info("changing mode of %s", file)
                 else:
                     mode = ((os.stat(file)[ST_MODE]) | 0555) & 07777
-                    log.info("changing mode of %s to %o", file, mode)
+                    logger.info("changing mode of %s to %o", file, mode)
                     os.chmod(file, mode)
 
     def get_inputs (self):

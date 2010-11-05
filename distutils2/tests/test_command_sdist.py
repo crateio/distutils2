@@ -3,6 +3,7 @@ import os
 import shutil
 import zipfile
 import tarfile
+import logging
 
 # zlib is not used here, but if it's not available
 # the tests that use zipfile may fail
@@ -30,7 +31,6 @@ from distutils2.tests import unittest
 from distutils2.errors import DistutilsExecError, DistutilsOptionError
 from distutils2.util import find_executable
 from distutils2.tests import support
-from distutils2.log import WARN
 try:
     from shutil import get_archive_formats
 except ImportError:
@@ -247,7 +247,7 @@ class SDistTestCase(support.TempdirManager, support.LoggingCatcher,
         # with the `check` subcommand
         cmd.ensure_finalized()
         cmd.run()
-        warnings = self.get_logs(WARN)
+        warnings = self.get_logs(logging.WARN)
         self.assertEqual(len(warnings), 1)
 
         # trying with a complete set of metadata
@@ -256,7 +256,7 @@ class SDistTestCase(support.TempdirManager, support.LoggingCatcher,
         cmd.ensure_finalized()
         cmd.metadata_check = 0
         cmd.run()
-        warnings = self.get_logs(WARN)
+        warnings = self.get_logs(logging.WARN)
         # removing manifest generated warnings
         warnings = [warn for warn in warnings if
                     not warn.endswith('-- skipping')]

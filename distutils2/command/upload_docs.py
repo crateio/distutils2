@@ -4,12 +4,13 @@ import httplib
 import socket
 import urlparse
 import zipfile
+import logging
 try:
     from cStringIO import StringIO
 except ImportError:
     from StringIO import StringIO
 
-from distutils2 import log
+from distutils2 import logger
 from distutils2.command.upload import upload
 from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsFileError
@@ -114,8 +115,7 @@ class upload_docs(Command):
         credentials = self.username + ':' + self.password
         auth = "Basic " + base64.encodestring(credentials).strip()
 
-        self.announce("Submitting documentation to %s" % (self.repository),
-                      log.INFO)
+        self.announce("Submitting documentation to %s" % (self.repository))
 
         schema, netloc, url, params, query, fragments = \
             urlparse.urlparse(self.repository)
@@ -135,24 +135,22 @@ class upload_docs(Command):
             conn.endheaders()
             conn.send(body)
         except socket.error, e:
-            self.announce(str(e), log.ERROR)
+            self.announce(str(e), logging.ERROR)
             return
 
         r = conn.getresponse()
 
         if r.status == 200:
-            self.announce('Server response (%s): %s' % (r.status, r.reason),
-                          log.INFO)
+            self.announce('Server response (%s): %s' % (r.status, r.reason))
         elif r.status == 301:
             location = r.getheader('Location')
             if location is None:
                 location = 'http://packages.python.org/%s/' % name
-            self.announce('Upload successful. Visit %s' % location,
-                          log.INFO)
+            self.announce('Upload successful. Visit %s' % location)
         else:
             self.announce('Upload failed (%s): %s' % (r.status, r.reason),
-                          log.ERROR)
+                          logging.ERROR)
 
         if self.show_response:
             msg = '\n'.join(('-' * 75, r.read(), '-' * 75))
-            self.announce(msg, log.INFO)
+            self.announce(msg)

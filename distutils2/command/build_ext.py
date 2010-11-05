@@ -15,7 +15,7 @@ from distutils2.errors import (CCompilerError, CompileError, DistutilsError,
 from distutils2.compiler.ccompiler import customize_compiler
 from distutils2.util import newer_group
 from distutils2.extension import Extension
-from distutils2 import log
+from distutils2 import logger
 try:
     import sysconfig
 except ImportError:
@@ -449,10 +449,10 @@ class build_ext(Command):
         ext_path = self.get_ext_fullpath(ext.name)
         depends = sources + ext.depends
         if not (self.force or newer_group(depends, ext_path, 'newer')):
-            log.debug("skipping '%s' extension (up-to-date)", ext.name)
+            logger.debug("skipping '%s' extension (up-to-date)", ext.name)
             return
         else:
-            log.info("building '%s' extension", ext.name)
+            logger.info("building '%s' extension", ext.name)
 
         # First, scan the sources for SWIG definition files (.i), run
         # SWIG on 'em to create .c files, and modify the sources list
@@ -536,7 +536,7 @@ class build_ext(Command):
         # the temp dir.
 
         if self.swig_cpp:
-            log.warn("--swig-cpp is deprecated - use --swig-opts=-c++")
+            logger.warn("--swig-cpp is deprecated - use --swig-opts=-c++")
 
         if self.swig_cpp or ('-c++' in self.swig_opts) or \
            ('-c++' in extension.swig_opts):
@@ -569,7 +569,7 @@ class build_ext(Command):
 
         for source in swig_sources:
             target = swig_targets[source]
-            log.info("swigging %s to %s", source, target)
+            logger.info("swigging %s to %s", source, target)
             self.spawn(swig_cmd + ["-o", target, source])
 
         return new_sources

@@ -10,10 +10,11 @@ import urllib2
 import getpass
 import urlparse
 import StringIO
+import logging
 from warnings import warn
 
 from distutils2.command.cmd import Command
-from distutils2 import log
+from distutils2 import logger
 from distutils2.util import (metadata_to_dict, read_pypirc, generate_pypirc,
                              DEFAULT_REPOSITORY, DEFAULT_REALM,
                              get_pypirc_path)
@@ -97,14 +98,14 @@ class register(Command):
         ''' Fetch the list of classifiers from the server.
         '''
         response = urllib2.urlopen(self.repository+'?:action=list_classifiers')
-        log.info(response.read())
+        logger.info(response.read())
 
     def verify_metadata(self):
         ''' Send the metadata to the package index server to be checked.
         '''
         # send the info to the server and report the result
-        (code, result) = self.post_to_server(self.build_post_data('verify'))
-        log.info('Server response (%s): %s' % (code, result))
+        code, result = self.post_to_server(self.build_post_data('verify'))
+        logger.info('Server response (%s): %s' % (code, result))
 
 
     def send_metadata(self):
@@ -154,7 +155,7 @@ We need to know who you are, so please choose either:
  2. register as a new user,
  3. have the server generate a new password for you (and email it to you), or
  4. quit
-Your selection [default 1]: ''', log.INFO)
+Your selection [default 1]: ''', logging.INFO)
 
             choice = raw_input()
             if not choice:
@@ -177,7 +178,7 @@ Your selection [default 1]: ''', log.INFO)
             code, result = self.post_to_server(self.build_post_data('submit'),
                 auth)
             self.announce('Server response (%s): %s' % (code, result),
-                          log.INFO)
+                          logging.INFO)
 
             # possibly save the login
             if code == 200:
@@ -187,9 +188,10 @@ Your selection [default 1]: ''', log.INFO)
                     self.distribution.password = password
                 else:
                     self.announce(('I can store your PyPI login so future '
-                                   'submissions will be faster.'), log.INFO)
+                                   'submissions will be faster.'),
+                                   logging.INFO)
                     self.announce('(the login will be stored in %s)' % \
-                                  get_pypirc_path(), log.INFO)
+                                  get_pypirc_path(), logging.INFO)
                     choice = 'X'
                     while choice.lower() not in 'yn':
                         choice = raw_input('Save your login (y/N)?')
@@ -217,18 +219,18 @@ Your selection [default 1]: ''', log.INFO)
                 data['email'] = raw_input('   EMail: ')
             code, result = self.post_to_server(data)
             if code != 200:
-                log.info('Server response (%s): %s' % (code, result))
+                logger.info('Server response (%s): %s' % (code, result))
             else:
-                log.info('You will receive an email shortly.')
-                log.info(('Follow the instructions in it to '
-                          'complete registration.'))
+                logger.info('You will receive an email shortly.')
+                logger.info(('Follow the instructions in it to '
+                             'complete registration.'))
         elif choice == '3':
             data = {':action': 'password_reset'}
             data['email'] = ''
             while not data['email']:
                 data['email'] = raw_input('Your email address: ')
             code, result = self.post_to_server(data)
-            log.info('Server response (%s): %s' % (code, result))
+            logger.info('Server response (%s): %s' % (code, result))
 
     def build_post_data(self, action):
         # figure the data to send - the metadata plus some additional
@@ -244,7 +246,7 @@ Your selection [default 1]: ''', log.INFO)
         if 'name' in data:
             self.announce('Registering %s to %s' % (data['name'],
                                                    self.repository),
-                                                   log.INFO)
+                                                   logging.INFO)
         # Build up the MIME payload for the urllib2 POST data
         boundary = '--------------GHSKFJDLGDS7543FJKLFHRE75642756743254'
         sep_boundary = '\n--' + boundary

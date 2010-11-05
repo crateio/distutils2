@@ -14,7 +14,7 @@ except ImportError:
     from distutils2._backport.sysconfig import get_python_version
 from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsOptionError, DistutilsPlatformError
-from distutils2 import log
+from distutils2 import logger
 from distutils2.util import get_platform
 
 class bdist_wininst (Command):
@@ -160,7 +160,7 @@ class bdist_wininst (Command):
                     'install_' + key,
                     value)
 
-        log.info("installing to %s", self.bdist_dir)
+        logger.info("installing to %s", self.bdist_dir)
         install.ensure_finalized()
 
         # avoid warning of 'install_lib' about installing
@@ -187,12 +187,12 @@ class bdist_wininst (Command):
         self.distribution.dist_files.append(('bdist_wininst', pyversion,
                                              self.get_installer_filename(fullname)))
         # remove the zip-file again
-        log.debug("removing temporary file '%s'", arcname)
+        logger.debug("removing temporary file '%s'", arcname)
         os.remove(arcname)
 
         if not self.keep_temp:
             if self.dry_run:
-                log.info('Removing %s' % self.bdist_dir)
+                logger.info('Removing %s' % self.bdist_dir)
             else:
                 rmtree(self.bdist_dir)
 

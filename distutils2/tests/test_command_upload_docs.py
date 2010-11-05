@@ -176,7 +176,7 @@ class UploadDocsTestCase(support.TempdirManager, support.EnvironGuard,
         self.pypi.default_response_status = '301 Moved Permanently'
         self.pypi.default_response_headers.append(("Location", "brand_new_location"))
         self.cmd.run()
-        message, _ = calls[-1]
+        message = calls[-1][0]
         self.assertIn('brand_new_location', message)
 
     def test_reads_pypirc_data(self):

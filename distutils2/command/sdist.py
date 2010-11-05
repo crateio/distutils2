@@ -19,7 +19,7 @@ from distutils2.command.cmd import Command
 from distutils2.errors import (DistutilsPlatformError, DistutilsOptionError,
                                DistutilsTemplateError)
 from distutils2.manifest import Manifest
-from distutils2 import log
+from distutils2 import logger
 from distutils2.util import convert_path
 
 def show_formats():
@@ -287,12 +287,12 @@ class sdist(Command):
             msg = "copying files to %s..." % base_dir
 
         if not files:
-            log.warn("no files to distribute -- empty manifest?")
+            logger.warn("no files to distribute -- empty manifest?")
         else:
-            log.info(msg)
+            logger.info(msg)
         for file in files:
             if not os.path.isfile(file):
-                log.warn("'%s' not a regular file -- skipping" % file)
+                logger.warn("'%s' not a regular file -- skipping" % file)
             else:
                 dest = os.path.join(base_dir, file)
                 self.copy_file(file, dest, link=link)
@@ -328,7 +328,7 @@ class sdist(Command):
 
         if not self.keep_temp:
             if self.dry_run:
-                log.info('Removing %s' % base_dir)
+                logger.info('Removing %s' % base_dir)
             else:
                 rmtree(base_dir)
 

@@ -3,12 +3,13 @@
 Provides the Command class, the base class for the command classes
 in the distutils.command package.
 """
+import os
+import re
+import logging
 
-
-import os, re
 from distutils2.errors import DistutilsOptionError
 from distutils2 import util
-from distutils2 import log
+from distutils2 import logger
 
 # XXX see if we want to backport this
 from distutils2._backport.shutil import copytree, copyfile, move
@@ -163,7 +164,7 @@ class Command(object):
     def dump_options(self, header=None, indent=""):
         if header is None:
             header = "command options for '%s':" % self.get_command_name()
-        self.announce(indent + header, level=log.INFO)
+        self.announce(indent + header, level=logging.INFO)
         indent = indent + "  "
         for (option, _, _) in self.user_options:
             option = option.replace('-', '_')
@@ -171,7 +172,7 @@ class Command(object):
                 option = option[:-1]
             value = getattr(self, option)
             self.announce(indent + "%s = %s" % (option, value),
-                          level=log.INFO)
+                          level=logging.INFO)
 
     def run(self):
         """A command's raison d'etre: carry out the action it exists to
@@ -186,11 +187,11 @@ class Command(object):
         raise RuntimeError, \
               "abstract method -- subclass %s must override" % self.__class__
 
-    def announce(self, msg, level=1):
+    def announce(self, msg, level=logging.INFO):
         """If the current verbosity level is of greater than or equal to
         'level' print 'msg' to stdout.
         """
-        log.log(level, msg)
+        logger.log(level, msg)
 
     # -- External interface --------------------------------------------
     # (called by outsiders)
@@ -367,7 +368,7 @@ class Command(object):
     # -- External world manipulation -----------------------------------
 
     def warn(self, msg):
-        log.warn("warning: %s: %s\n" %
+        logger.warning("warning: %s: %s\n" %
                 (self.get_command_name(), msg))
 
     def execute(self, func, args, msg=None, level=1):
@@ -382,7 +383,7 @@ class Command(object):
         if dry_run:
             head = ''
             for part in name.split(os.sep):
-                log.info("created directory %s%s", head, part)
+                logger.info("created directory %s%s", head, part)
                 head += part + os.sep
             return
         os.makedirs(name, mode)
@@ -459,7 +460,7 @@ class Command(object):
 
         # Otherwise, print the "skip" message
         else:
-            log.debug(skip_msg)
+            logger.debug(skip_msg)
 
 # XXX 'install_misc' class not currently used -- it was the base class for
 # both 'install_scripts' and 'install_data', but they outgrew it.  It might

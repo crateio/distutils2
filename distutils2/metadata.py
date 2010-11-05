@@ -11,7 +11,7 @@ from StringIO import StringIO
 from email import message_from_file
 from tokenize import tokenize, NAME, OP, STRING, ENDMARKER
 
-from distutils2.log import warn
+from distutils2 import logger
 from distutils2.version import (is_valid_predicate, is_valid_version,
                                 is_valid_versions)
 from distutils2.errors import (MetadataConflictError,
@@ -391,16 +391,16 @@ class DistributionMetadata(object):
             for v in value:
                 # check that the values are valid predicates
                 if not is_valid_predicate(v.split(';')[0]):
-                    warn('"%s" is not a valid predicate (field "%s")' %
+                    logger.warn('"%s" is not a valid predicate (field "%s")' %
                          (v, name))
         # FIXME this rejects UNKNOWN, is that right?
         elif name in _VERSIONS_FIELDS and value is not None:
             if not is_valid_versions(value):
-                warn('"%s" is not a valid version (field "%s")' %
+                logger.warn('"%s" is not a valid version (field "%s")' %
                      (value, name))
         elif name in _VERSION_FIELDS and value is not None:
             if not is_valid_version(value):
-                warn('"%s" is not a valid version (field "%s")' %
+                logger.warn('"%s" is not a valid version (field "%s")' %
                      (value, name))
 
         if name in _UNICODEFIELDS:

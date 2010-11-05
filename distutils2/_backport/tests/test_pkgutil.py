@@ -13,8 +13,8 @@ except ImportError:
     from distutils2._backport.hashlib import md5
 
 from test.test_support import TESTFN
-from distutils2.tests import unittest, run_unittest
 
+from distutils2.tests import unittest, run_unittest, support
 from distutils2._backport import pkgutil
 
 try:
@@ -323,7 +323,8 @@ class TestPkgUtilDistribution(unittest.TestCase):
         self.assertEqual(sorted(found), sorted(distinfo_record_paths))
 
 
-class TestPkgUtilPEP376(unittest.TestCase):
+class TestPkgUtilPEP376(support.LoggingCatcher, support.WarningsCatcher,
+                        unittest.TestCase):
     # Tests for the new functionality added in PEP 376.
 
     def setUp(self):

@@ -7,7 +7,8 @@ from distutils2.tests import unittest, support
 from distutils2.compat import Mixin2to3
 
 
-class Mixin2to3TestCase(support.TempdirManager, unittest.TestCase):
+class Mixin2to3TestCase(support.TempdirManager, support.WarningsCatcher,
+                        unittest.TestCase):
 
     @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_convert_code_only(self):

@@ -14,7 +14,7 @@ except ImportError:
 from distutils2.util import get_platform
 from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsPlatformError
-from distutils2 import log
+from distutils2 import logger
 
 class bdist_dumb (Command):
 
@@ -87,7 +87,7 @@ class bdist_dumb (Command):
         install.skip_build = self.skip_build
         install.warn_dir = 0
 
-        log.info("installing to %s" % self.bdist_dir)
+        logger.info("installing to %s" % self.bdist_dir)
         self.run_command('install_dist')
 
         # And make an archive relative to the root of the
@@ -129,7 +129,7 @@ class bdist_dumb (Command):
 
         if not self.keep_temp:
             if self.dry_run:
-                log.info('Removing %s' % self.bdist_dir)
+                logger.info('Removing %s' % self.bdist_dir)
             else:
                 rmtree(self.bdist_dir)
 
