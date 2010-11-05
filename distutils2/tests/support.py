@@ -78,13 +78,6 @@ class LoggingCatcher(object):
         del self.logs[:]
 
 
-class LoggingSilencer(object):
-    "Class that raises an exception to make sure the renaming is noticed."
-
-    def __init__(self, *args):
-        raise DeprecationWarning("LoggingSilencer renamed to LoggingCatcher")
-
-
 class WarningsCatcher(object):
 
     def setUp(self):
