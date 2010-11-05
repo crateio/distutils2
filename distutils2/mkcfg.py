@@ -321,8 +321,9 @@ class MainProgram(object):
             if to_skip(root):
                 continue
 
-            if True in [root.startswith(path) for path in scanned]:
-                continue
+            for path in scanned:
+                if root.startswith(path):
+                    continue
 
             for file in files:
                 fullpath = os.path.join(root, file)
