@@ -1,45 +1,36 @@
-"""distutils.command.x
+"""Implementation of the 'x' command."""
 
-Implements the Distutils 'x' command.
-"""
-
-# created 2000/mm/dd, John Doe
-
-__revision__ = "$Id$"
-
-from distutils.core import Command
+import logging
+from distutils2.command.cmd import Command
 
 
-class x (Command):
+class x(Command):
 
     # Brief (40-50 characters) description of the command
     description = ""
 
     # List of option tuples: long name, short name (None if no short
     # name), and help string.
-    user_options = [('', '',
-                     ""),
-                   ]
+    user_options = [
+        ('', '', # long option, short option (one letter) or None
+         ""), # help text
+        ]
 
 
-    def initialize_options (self):
+    def initialize_options(self):
         self. = None
         self. = None
         self. = None
 
-    # initialize_options()
-
-
-    def finalize_options (self):
+    def finalize_options(self):
         if self.x is None:
-            self.x = 
+            self.x = ...
 
-    # finalize_options()
+    def run(self):
+        ...
+        logging.info(...)
 
+        if not self.dry_run:
+            ...
 
-    def run (self):
-
-
-    # run()
-
-# class x
+        self.execute(..., dry_run=self.dry_run)

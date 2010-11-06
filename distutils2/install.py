@@ -63,13 +63,14 @@ def get_infos(requirements, index=None, installed=None,
     # Get all the releases that match the requirements
     try:
         releases = index.get_releases(requirements)
-    except (ReleaseNotFound, ProjectNotFound), e:
+    except (ReleaseNotFound, ProjectNotFound):
         raise InstallationException('Release not found: "%s"' % requirements)
 
     # Pick up a release, and try to get the dependency tree
     release = releases.get_last(requirements, prefer_final=prefer_final)
 
     # Iter since we found something without conflicts
+    # XXX the metadata object is not used, remove the call or the binding
     metadata = release.fetch_metadata()
 
     # Get the distributions already_installed on the system

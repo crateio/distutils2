@@ -415,9 +415,6 @@ Common commands: (see '--help-commands' for more)
         list if there are no more commands on the command line.  Returns
         None if the user asked for help on this command.
         """
-        # late import because of mutual dependence between these modules
-        from distutils2.command.cmd import Command
-
         # Pull the current command from the head of the command line
         command = args[0]
         if not command_re.match(command):
@@ -668,7 +665,7 @@ Common commands: (see '--help-commands' for more)
                 description = cls.description
             except AttributeError:
                 description = "(no description available)"
-            rv.append((cmd, description))
+            rv.append((cls, description))
         return rv
 
     # -- Command class/object methods ----------------------------------
