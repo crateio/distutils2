@@ -56,6 +56,10 @@ somecode%(sep)sdoc.dat
 somecode%(sep)sdoc.txt
 """
 
+def builder(filelist):
+    filelist.append('bah')
+
+
 class SDistTestCase(support.TempdirManager, support.LoggingCatcher,
                     support.EnvironGuard, unittest.TestCase):
 
@@ -427,6 +431,13 @@ class SDistTestCase(support.TempdirManager, support.LoggingCatcher,
             f.close()
 
         self.assertIn('yeah', content)
+
+    def test_manifest_builder(self):
+        dist, cmd = self.get_cmd()
+        cmd.manifest_builders = 'distutils2.tests.test_command_sdist.builder'
+        cmd.ensure_finalized()
+        cmd.run()
+        self.assertIn('bah', cmd.filelist.files)
 
 
 def test_suite():

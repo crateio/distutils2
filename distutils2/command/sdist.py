@@ -17,10 +17,10 @@ except ImportError:
 
 from distutils2.command.cmd import Command
 from distutils2.errors import (DistutilsPlatformError, DistutilsOptionError,
-                               DistutilsTemplateError)
+                               DistutilsTemplateError, DistutilsModuleError)
 from distutils2.manifest import Manifest
 from distutils2 import logger
-from distutils2.util import convert_path
+from distutils2.util import convert_path, resolve_name
 
 def show_formats():
     """Print all possible values for the 'formats' option (used by
@@ -73,6 +73,8 @@ class sdist(Command):
          "Owner name used when creating a tar file [default: current user]"),
         ('group=', 'g',
          "Group name used when creating a tar file [default: current group]"),
+        ('manifest-builders=', None,
+         "manifest builders (comma-separated list)"),
         ]
 
     boolean_options = ['use-defaults', 'prune',
@@ -88,6 +90,7 @@ class sdist(Command):
 
     default_format = {'posix': 'gztar',
                       'nt': 'zip' }
+
 
     def initialize_options(self):
         self.manifest = None
@@ -106,6 +109,7 @@ class sdist(Command):
         self.owner = None
         self.group = None
         self.filelist = None
+        self.manifest_builders = None
 
     def _check_archive_formats(self, formats):
         supported_formats = [name for name, desc in get_archive_formats()]
@@ -137,6 +141,25 @@ class sdist(Command):
 
         if self.filelist is None:
             self.filelist = Manifest()
+
+        if self.manifest_builders is None:
+            self.manifest_builders = []
+        else:
+            if isinstance(self.manifest_builders, str):
+                self.manifest_builders = self.manifest_builders.split(',')
+            builders = []
+            for builder in self.manifest_builders:
+                builder = builder.strip()
+                if builder == '':
+                    continue
+                try:
+                    builder = resolve_name(builder)
+                except ImportError, e:
+                    raise DistutilsModuleError(e)
+
+                builders.append(builder)
+
+            self.manifest_builders = builders
 
 
     def run(self):
@@ -178,6 +201,11 @@ class sdist(Command):
         if template_exists:
             template = '\n'.join(self.distribution.extra_files)
             self.filelist.read_template(StringIO(template))
+
+        # call manifest builders, if any.
+        for builder in self.manifest_builders:
+            builder(self.filelist)
+
         if self.prune:
             self.prune_file_list()
 
