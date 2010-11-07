@@ -40,6 +40,11 @@ class install_scripts (Command):
     def run (self):
         if not self.skip_build:
             self.run_command('build_scripts')
+
+        if not os.path.exists(self.build_dir):
+            self.outfiles = []
+            return
+
         self.outfiles = self.copy_tree(self.build_dir, self.install_dir)
         if os.name == 'posix':
             # Set the executable bits (owner, group, and world) on
@@ -57,5 +62,3 @@ class install_scripts (Command):
 
     def get_outputs(self):
         return self.outfiles or []
-
-# class install_scripts

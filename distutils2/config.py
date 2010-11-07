@@ -185,6 +185,7 @@ class Config(object):
         logger.debug("Distribution.parse_config_files():")
 
         parser = RawConfigParser()
+
         for filename in filenames:
             logger.debug("  reading %s" % filename)
             parser.read(filename)
@@ -197,26 +198,29 @@ class Config(object):
                 opt_dict = self.dist.get_option_dict(section)
 
                 for opt in options:
-                    if opt != '__name__':
-                        val = parser.get(section, opt)
-                        opt = opt.replace('-', '_')
+                    if opt == '__name__':
+                        continue
+                    val = parser.get(section, opt)
+                    opt = opt.replace('-', '_')
 
+                    if opt == 'sub_commands':
+                        val = self._multiline(val)
+                        if isinstance(val, str):
+                            val = [val]
 
-                        # XXX this is not used ...
-
-                        # Hooks use a suffix system to prevent being overriden
-                        # by a config file processed later (i.e. a hook set in
-                        # the user config file cannot be replaced by a hook
-                        # set in a project config file, unless they have the
-                        # same suffix).
-                        if (opt.startswith("pre_hook.") or
-                            opt.startswith("post_hook.")):
-                            hook_type, alias = opt.split(".")
-                            hook_dict = opt_dict.setdefault(hook_type,
-                                                            (filename, {}))[1]
-                            hook_dict[alias] = val
-                        else:
-                            opt_dict[opt] = (filename, val)
+                    # Hooks use a suffix system to prevent being overriden
+                    # by a config file processed later (i.e. a hook set in
+                    # the user config file cannot be replaced by a hook
+                    # set in a project config file, unless they have the
+                    # same suffix).
+                    if (opt.startswith("pre_hook.") or
+                        opt.startswith("post_hook.")):
+                        hook_type, alias = opt.split(".")
+                        hook_dict = opt_dict.setdefault(hook_type,
+                                                        (filename, {}))[1]
+                        hook_dict[alias] = val
+                    else:
+                        opt_dict[opt] = filename, val
 
             # Make the RawConfigParser forget everything (so we retain
             # the original filenames that options come from)

@@ -359,9 +359,13 @@ class Command(object):
         run for the current distribution.  Return a list of command names.
         """
         commands = []
-        for (cmd_name, method) in self.sub_commands:
-            if method is None or method(self):
-                commands.append(cmd_name)
+        for sub_command in self.sub_commands:
+            if len(sub_command) == 2:
+                cmd_name, method = sub_command
+                if method is None or method(self):
+                    commands.append(cmd_name)
+            else:
+                commands.append(sub_command)
         return commands
 
 

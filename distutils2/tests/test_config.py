@@ -77,6 +77,9 @@ commands =
     foo = distutils2.tests.test_config.Foo
 
 setup_hook = distutils2.tests.test_config.hook
+
+[install_dist]
+sub_commands = foo
 """
 
 
@@ -85,9 +88,17 @@ def hook(content):
 
 
 class Foo(object):
+
+    def __init__(self, dist):
+        self.distribution = dist
+
     def run(self):
+        self.distribution.foo_was_here = 1
+
+    def nothing(self):
         pass
-    finalize_options = initialize_options = run
+
+    ensure_finalized = finalize_options = initialize_options = nothing
 
 
 class ConfigTestCase(support.TempdirManager,
@@ -96,6 +107,7 @@ class ConfigTestCase(support.TempdirManager,
     def setUp(self):
         super(ConfigTestCase, self).setUp()
         self.addCleanup(setattr, sys, 'stdout', sys.stdout)
+        self.addCleanup(setattr, sys, 'stderr', sys.stderr)
         self.addCleanup(os.chdir, os.getcwd())
 
     def test_config(self):
@@ -166,6 +178,35 @@ class ConfigTestCase(support.TempdirManager,
 
         # did the README got loaded ?
         self.assertEquals(dist.metadata['description'], 'yeah')
+
+    def test_sub_commands(self):
+        tempdir = self.mkdtemp()
+        os.chdir(tempdir)
+        self.write_file('setup.cfg', SETUP_CFG)
+        self.write_file('README', 'yeah')
+        self.write_file('haven.py', '#')
+        self.write_file('script1.py', '#')
+        os.mkdir('scripts')
+        self.write_file(os.path.join('scripts', 'find-coconuts'), '#')
+        os.mkdir('bin')
+        self.write_file(os.path.join('bin', 'taunt'), '#')
+
+        for pkg in ('one', 'src', 'src2'):
+            os.mkdir(pkg)
+            self.write_file(os.path.join(pkg, '__init__.py'), '#')
+
+        # try to run the install command to see if foo is called
+        sys.stdout = sys.stderr = StringIO()
+        sys.argv[:] = ['', 'install_dist']
+        old_sys = sys.argv[:]
+        try:
+            from distutils2.run import main
+            dist = main()
+        finally:
+            sys.argv[:] = old_sys
+
+        self.assertEquals(dist.foo_was_here, 1)
+
 
 def test_suite():
     return unittest.makeSuite(ConfigTestCase)
