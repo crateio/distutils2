@@ -56,7 +56,7 @@ somecode%(sep)sdoc.dat
 somecode%(sep)sdoc.txt
 """
 
-def builder(filelist):
+def builder(dist, filelist):
     filelist.append('bah')
 
 

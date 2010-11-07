@@ -204,7 +204,7 @@ class sdist(Command):
 
         # call manifest builders, if any.
         for builder in self.manifest_builders:
-            builder(self.filelist)
+            builder(self.distribution, self.filelist)
 
         if self.prune:
             self.prune_file_list()
