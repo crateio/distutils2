@@ -38,6 +38,7 @@ class CCompiler(object):
     # function) -- authors of new compiler interface classes are
     # responsible for updating 'compiler_class'!
     compiler_type = None
+    description = None
 
     # XXX things not handled by this compiler abstraction model:
     #   * client can't provide additional options for a compiler,

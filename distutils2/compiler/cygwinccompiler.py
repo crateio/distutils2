@@ -86,6 +86,7 @@ class CygwinCCompiler(UnixCCompiler):
     """ Handles the Cygwin port of the GNU C compiler to Windows.
     """
     compiler_type = 'cygwin'
+    description = 'Cygwin port of GNU C Compiler for Win32'
     obj_extension = ".o"
     static_lib_extension = ".a"
     shared_lib_extension = ".dll"

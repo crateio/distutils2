@@ -27,6 +27,7 @@ class BCPPCompiler(CCompiler) :
     """
 
     compiler_type = 'bcpp'
+    description = 'Borland C++ Compiler'
 
     # Just set this so CCompiler's constructor doesn't barf.  We currently
     # don't use the 'set_executables()' bureaucracy provided by CCompiler,
