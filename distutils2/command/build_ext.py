@@ -12,7 +12,7 @@ from distutils2.util import get_platform
 from distutils2.command.cmd import Command
 from distutils2.errors import (CCompilerError, CompileError, DistutilsError,
                                DistutilsPlatformError, DistutilsSetupError)
-from distutils2.compiler import customize_compiler
+from distutils2.compiler import customize_compiler, show_compilers
 from distutils2.util import newer_group
 from distutils2.extension import Extension
 from distutils2 import logger
@@ -37,11 +37,6 @@ if os.name == 'nt':
 # the same as a fully-qualified module name).
 extension_name_re = re.compile \
     (r'^[a-zA-Z_][a-zA-Z_0-9]*(\.[a-zA-Z_][a-zA-Z_0-9]*)*$')
-
-
-def show_compilers ():
-    from distutils2.compiler.ccompiler import show_compilers
-    show_compilers()
 
 
 class build_ext(Command):

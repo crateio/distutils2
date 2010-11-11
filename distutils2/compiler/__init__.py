@@ -1,7 +1,10 @@
 import os
 import sys
 import re
+
 from distutils2._backport import sysconfig
+from distutils2.util import resolve_name
+from distutils2.errors import DistutilsModuleError, DistutilsPlatformError
 
 
 def customize_compiler(compiler):
@@ -101,35 +104,24 @@ def get_default_compiler(osname=None, platform=None):
     # Default to Unix compiler
     return 'unix'
 
-# Map compiler types to (module_name, class_name) pairs -- ie. where to
-# find the code that implements an interface to this compiler.  (The module
-# is assumed to be in the 'distutils' package.)
-compiler_class = { 'unix':    ('unixccompiler', 'UnixCCompiler',
-                               "standard UNIX-style compiler"),
-                   'msvc':    ('msvccompiler', 'MSVCCompiler',
-                               "Microsoft Visual C++"),
-                   'cygwin':  ('cygwinccompiler', 'CygwinCCompiler',
-                               "Cygwin port of GNU C Compiler for Win32"),
-                   'mingw32': ('cygwinccompiler', 'Mingw32CCompiler',
-                               "Mingw32 port of GNU C Compiler for Win32"),
-                   'bcpp':    ('bcppcompiler', 'BCPPCompiler',
-                               "Borland C++ Compiler"),
-                   'emx':     ('emxccompiler', 'EMXCCompiler',
-                               "EMX port of GNU C Compiler for OS/2"),
-                 }
+
+_COMPILERS = {'unix': 'distutils2.compiler.unixccompiler.UnixCCompiler',
+              'msvc': 'distutils2.compiler.msvccompiler.MSVCCompiler',
+              'cygwin': 'distutils2.compiler.cygwinccompiler.CygWinCCompiler',
+              'mingw32': 'distutils2.compiler.cygwinccompiler.Mingw32CCompiler',
+              'bcpp': 'distutils2.compilers.bcppcompiler.BCPPCompiler'}
 
 def show_compilers():
     """Print list of available compilers (used by the "--help-compiler"
     options to "build", "build_ext", "build_clib").
     """
-    # XXX this "knows" that the compiler option it's describing is
-    # "--compiler", which just happens to be the case for the three
-    # commands that use it.
     from distutils2.fancy_getopt import FancyGetopt
     compilers = []
-    for compiler in compiler_class.keys():
-        compilers.append(("compiler="+compiler, None,
-                          compiler_class[compiler][2]))
+
+    for compiler, location in _COMPILERS.items():
+        klass = resolve_name(location)
+        compilers.append(("compiler=" + compiler, None, klass.description))
+
     compilers.sort()
     pretty_printer = FancyGetopt(compilers)
     pretty_printer.print_help("List of available compilers:")
@@ -153,26 +145,19 @@ def new_compiler(plat=None, compiler=None, verbose=0, dry_run=0, force=0):
         if compiler is None:
             compiler = get_default_compiler(plat)
 
-        (module_name, class_name, long_description) = compiler_class[compiler]
+        location = _COMPILERS[compiler]
     except KeyError:
         msg = "don't know how to compile C/C++ code on platform '%s'" % plat
         if compiler is not None:
             msg = msg + " with '%s' compiler" % compiler
-        raise DistutilsPlatformError, msg
+        raise DistutilsPlatformError(msg)
 
     try:
-        module_name = "distutils2.compiler." + module_name
-        __import__ (module_name)
-        module = sys.modules[module_name]
-        cls = vars(module)[class_name]
+        cls = resolve_name(location)
     except ImportError:
-        raise DistutilsModuleError, \
-              "can't compile C/C++ code: unable to load module '%s'" % \
-              module_name
-    except KeyError:
-        raise DistutilsModuleError, \
-              ("can't compile C/C++ code: unable to find class '%s' " +
-               "in module '%s'") % (class_name, module_name)
+        raise DistutilsModuleError(
+              "can't compile C/C++ code: unable to load '%s'" % \
+              location)
 
     # XXX The None is necessary to preserve backwards compatibility
     # with classes that expect verbose to be the first positional

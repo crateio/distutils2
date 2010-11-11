@@ -32,11 +32,7 @@ class CCompiler(object):
     # 'compiler_type' is a class attribute that identifies this class.  It
     # keeps code that wants to know what kind of compiler it's dealing with
     # from having to import all possible compiler classes just to do an
-    # 'isinstance'.  In concrete CCompiler subclasses, 'compiler_type'
-    # should really, really be one of the keys of the 'compiler_class'
-    # dictionary (see below -- used by the 'new_compiler()' factory
-    # function) -- authors of new compiler interface classes are
-    # responsible for updating 'compiler_class'!
+    # 'isinstance'.
     compiler_type = None
     description = None
 

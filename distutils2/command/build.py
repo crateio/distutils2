@@ -1,17 +1,15 @@
 """distutils.command.build
 
-Implements the Distutils 'build' command."""
-
-
-import sys, os
+Implements the Distutils 'build' command.
+"""
+import sys
+import os
 
 from distutils2.util import get_platform
 from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsOptionError
+from distutils2.compiler import show_compilers
 
-def show_compilers():
-    from distutils2.compiler.ccompiler import show_compilers
-    show_compilers()
 
 class build(Command):
 
