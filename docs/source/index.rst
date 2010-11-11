@@ -48,6 +48,9 @@ The documentation is split in four sections, as in the standard Python docs:
   A guide for for end-users wanting to install a Python application or
   library.
 
+:doc:`setupcfg`
+  Specifications of setup.cfg, the most important file for developers.
+
 :doc:`tutorial`
   A tutorial for Python developers to discover Distutils2 main features.
 
@@ -68,6 +71,7 @@ The documentation is split in four sections, as in the standard Python docs:
 
    devresources
    install/index
+   setupcfg
    tutorial
    distutils/index
    library/distutils2

@@ -8,6 +8,7 @@ from ConfigParser import RawConfigParser
 
 from distutils2 import logger
 from distutils2.util import check_environ, resolve_name
+from distutils2.compiler import set_compiler
 
 
 class Config(object):
@@ -194,6 +195,10 @@ class Config(object):
                 self._read_setup_cfg(parser)
 
             for section in parser.sections():
+                if section == 'compilers':
+                    self._load_compilers(parser.items(section))
+                    continue
+
                 options = parser.options(section)
                 opt_dict = self.dist.get_option_dict(section)
 
@@ -240,3 +245,7 @@ class Config(object):
                         setattr(self.dist, opt, val)
                 except ValueError, msg:
                     raise DistutilsOptionError(msg)
+
+    def _load_compilers(self, compilers):
+        for name, location in compilers:
+            set_compiler(name, location)

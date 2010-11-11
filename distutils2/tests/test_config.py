@@ -80,8 +80,18 @@ setup_hook = distutils2.tests.test_config.hook
 
 [install_dist]
 sub_commands = foo
+
+[compilers]
+d = distutils2.tests.test_config.DCompiler
 """
 
+
+class DCompiler(object):
+    compiler_type = 'd'
+    description = 'D Compiler'
+
+    def __init__(self, *args):
+        pass
 
 def hook(content):
     content['metadata']['version'] += '.dev1'
@@ -178,6 +188,12 @@ class ConfigTestCase(support.TempdirManager,
 
         # did the README got loaded ?
         self.assertEquals(dist.metadata['description'], 'yeah')
+
+        # do we have the D Compiler enabled ?
+        from distutils2.compiler import new_compiler, _COMPILERS
+        self.assertIn('d', _COMPILERS)
+        d = new_compiler(compiler='d')
+        self.assertEqual(d.description, 'D Compiler')
 
     def test_sub_commands(self):
         tempdir = self.mkdtemp()

@@ -111,6 +111,12 @@ _COMPILERS = {'unix': 'distutils2.compiler.unixccompiler.UnixCCompiler',
               'mingw32': 'distutils2.compiler.cygwinccompiler.Mingw32CCompiler',
               'bcpp': 'distutils2.compilers.bcppcompiler.BCPPCompiler'}
 
+
+def set_compiler(name, location):
+    """Add or change a compiler"""
+    _COMPILERS[name] = location
+
+
 def show_compilers():
     """Print list of available compilers (used by the "--help-compiler"
     options to "build", "build_ext", "build_clib").
