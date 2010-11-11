@@ -18,16 +18,12 @@ import os, sys
 from types import StringType, NoneType
 
 from distutils2.util import newer
-from distutils2.compiler.ccompiler import (CCompiler, gen_preprocess_options,
-                                           gen_lib_options)
+from distutils2.compiler.ccompiler import CCompiler
+from distutils2.compiler import gen_preprocess_options, gen_lib_options
 from distutils2.errors import (DistutilsExecError, CompileError,
                                LibError, LinkError)
 from distutils2 import logger
-
-try:
-    import sysconfig
-except ImportError:
-    from distutils2._backport import sysconfig
+from distutils2._backport import sysconfig
 
 
 # XXX Things not currently handled:

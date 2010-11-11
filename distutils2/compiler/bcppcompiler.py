@@ -10,16 +10,16 @@ for the Borland C++ compiler.
 # XXX looks like there's a LOT of overlap between these two classes:
 # someone should sit down and factor out the common code as
 # WindowsCCompiler!  --GPW
-
-
 import os
 
 from distutils2.errors import (DistutilsExecError, CompileError, LibError,
                                LinkError, UnknownFileError)
-from distutils2.compiler.ccompiler import CCompiler, gen_preprocess_options
+from distutils2.compiler.ccompiler import CCompiler
+from distutils2.compiler import gen_preprocess_options
 from distutils2.file_util import write_file
 from distutils2.dep_util import newer
 from distutils2 import logger
+
 
 class BCPPCompiler(CCompiler) :
     """Concrete class that implements an interface to the Borland C/C++

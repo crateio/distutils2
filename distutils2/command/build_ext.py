@@ -12,7 +12,7 @@ from distutils2.util import get_platform
 from distutils2.command.cmd import Command
 from distutils2.errors import (CCompilerError, CompileError, DistutilsError,
                                DistutilsPlatformError, DistutilsSetupError)
-from distutils2.compiler.ccompiler import customize_compiler
+from distutils2.compiler import customize_compiler
 from distutils2.util import newer_group
 from distutils2.extension import Extension
 from distutils2 import logger
@@ -334,7 +334,7 @@ class build_ext(Command):
                 self.rpath.append(user_lib)
 
     def run(self):
-        from distutils2.compiler.ccompiler import new_compiler
+        from distutils2.compiler import new_compiler
 
         # 'self.extensions', as supplied by setup.py, is a list of
         # Extension instances.  See the documentation for Extension (in

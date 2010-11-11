@@ -56,10 +56,8 @@ from distutils2.compiler.unixccompiler import UnixCCompiler
 from distutils2.util import write_file
 from distutils2.errors import DistutilsExecError, CompileError, UnknownFileError
 from distutils2.util import get_compiler_versions
-try:
-    import sysconfig
-except ImportError:
-    from distutils2._backport import sysconfig
+from distutils2._backport import sysconfig
+
 
 def get_msvcr():
     """Include the appropriate MSVC runtime library if Python was built

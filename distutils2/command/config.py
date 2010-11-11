@@ -8,14 +8,12 @@ list of standard commands.  Also, this is a good place to put common
 configure-like tasks: "try to compile this C code", or "figure out where
 this header file lives".
 """
-
-
 import os
 import re
 
 from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsExecError
-from distutils2.compiler.ccompiler import customize_compiler
+from distutils2.compiler import customize_compiler
 from distutils2 import logger
 
 LANG_EXT = {'c': '.c', 'c++': '.cxx'}
@@ -95,7 +93,8 @@ class config(Command):
         """
         # We do this late, and only on-demand, because this is an expensive
         # import.
-        from distutils2.compiler.ccompiler import CCompiler, new_compiler
+        from distutils2.compiler.ccompiler import CCompiler
+        from distutils2.compiler import new_compiler
         if not isinstance(self.compiler, CCompiler):
             self.compiler = new_compiler(compiler=self.compiler,
                                          dry_run=self.dry_run, force=1)

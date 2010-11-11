@@ -11,8 +11,6 @@ for older versions of VS in distutils.msvccompiler.
 # hacked by Robin Becker and Thomas Heller to do a better job of
 #   finding DevStudio (through the registry)
 # ported to VS2005 and VS 2008 by Christian Heimes
-
-
 import os
 import subprocess
 import sys
@@ -20,7 +18,8 @@ import re
 
 from distutils2.errors import (DistutilsExecError, DistutilsPlatformError,
                                CompileError, LibError, LinkError)
-from distutils2.compiler.ccompiler import CCompiler, gen_lib_options
+from distutils2.compiler.ccompiler import CCompiler
+from distutils2.compiler import gen_lib_options
 from distutils2 import logger
 from distutils2.util import get_platform
 
@@ -48,6 +47,7 @@ PLAT_TO_VCVARS = {
     'win-amd64' : 'amd64',
     'win-ia64' : 'ia64',
 }
+
 
 class Reg(object):
     """Helper class to read values from the registry
