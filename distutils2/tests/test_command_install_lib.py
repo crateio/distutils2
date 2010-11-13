@@ -3,7 +3,7 @@ import sys
 import os
 
 from distutils2.command.install_lib import install_lib
-from distutils2.extension import Extension
+from distutils2.compiler.extension import Extension
 from distutils2.tests import unittest, support
 from distutils2.errors import DistutilsOptionError
 

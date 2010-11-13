@@ -1,7 +1,7 @@
 """Tests for distutils.extension."""
 import os
 
-from distutils2.extension import Extension
+from distutils2.compiler.extension import Extension
 from distutils2.tests import unittest
 
 class ExtensionTestCase(unittest.TestCase):
