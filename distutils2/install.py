@@ -1,26 +1,30 @@
+from tempfile import mkdtemp
 import logging
+import shutil
+import os
+import errno
+
+from distutils2._backport.pkgutil import get_distributions
+from distutils2.depgraph import generate_graph
 from distutils2.index import wrapper
 from distutils2.index.errors import ProjectNotFound, ReleaseNotFound
-from distutils2.depgraph import generate_graph
-from distutils2._backport.pkgutil import get_distributions
 
-
-"""Provides the installation script.
+"""Provides installations scripts.
 
 The goal of this script is to install a release from the indexes (eg.
 PyPI), including the dependencies of the releases if needed.
 
 It uses the work made in pkgutil and by the index crawlers to browse the
-installed distributions, and rely on the instalation command to install.
-
-Please note that this installation *script* iis different of the installation
-*command*. While the command only install one distribution, the script installs
-all the dependencies from a distribution, in a secure way.
+installed distributions, and rely on the instalation commands to install.
 """
 
 
 class InstallationException(Exception):
-    pass
+    """Base exception for installation scripts"""
+
+
+class InstallationConflict(InstallationException):
+    """Raised when a conflict is detected"""
 
 
 def _update_infos(infos, new_infos):
@@ -32,8 +36,113 @@ def _update_infos(infos, new_infos):
             infos[key].extend(new_infos[key])
 
 
-def get_infos(requirements, index=None, installed=None,
-                     prefer_final=True):
+def move_files(files, destination=None):
+    """Move the list of files in the destination folder, keeping the same
+    structure.
+
+    Return a list of tuple (old, new) emplacement of files
+
+    :param files: a list of files to move.
+    :param destination: the destination directory to put on the files.
+                        if not defined, create a new one, using mkdtemp
+    """
+    if not destination:
+        destination = mkdtemp()
+
+    for old in files:
+        new = '%s%s' % (destination, old)
+
+        # try to make the paths.
+        try:
+            os.makedirs(os.path.dirname(new))
+        except OSError, e:
+            if e.errno == errno.EEXIST:
+                pass
+            else:
+                raise e
+        os.rename(old, new)
+        yield(old, new)
+
+
+def install_dists(dists, path=None):
+    """Install all distributions provided in dists, with the given prefix.
+
+    If an error occurs while installing one of the distributions, uninstall all
+    the installed distribution (in the context if this function).
+
+    Return a list of installed files.
+
+    :param dists: distributions to install
+    :param path: base path to install distribution on
+    """
+    if not path:
+        path = mkdtemp()
+
+    installed_dists, installed_files = [], []
+    for d in dists:
+        try:
+            installed_files.extend(d.install(path))
+            installed_dists.append(d)
+        except Exception, e :
+            for d in installed_dists:
+                d.uninstall()
+            raise e
+    return installed_files
+
+
+def install_from_infos(install=[], remove=[], conflicts=[], install_path=None):
+    """Install and remove the given distributions.
+
+    The function signature is made to be compatible with the one of get_infos.
+    The aim of this script is to povide a way to install/remove what's asked,
+    and to rollback if needed.
+
+    So, it's not possible to be in an inconsistant state, it could be either
+    installed, either uninstalled, not half-installed.
+
+    The process follow those steps:
+
+        1. Move all distributions that will be removed in a temporary location
+        2. Install all the distributions that will be installed in a temp. loc.
+        3. If the installation fails, rollback (eg. move back) those
+           distributions, or remove what have been installed.
+        4. Else, move the distributions to the right locations, and remove for
+           real the distributions thats need to be removed.
+
+    :param install: list of distributions that will be installed.
+    :param remove: list of distributions that will be removed.
+    :param conflicts: list of conflicting distributions, eg. that will be in
+                      conflict once the install and remove distribution will be
+                      processed.
+    :param install_path: the installation path where we want to install the
+                         distributions.
+    """
+    # first of all, if we have conflicts, stop here.
+    if conflicts:
+        raise InstallationConflict(conflicts)
+
+    # before removing the files, we will start by moving them away
+    # then, if any error occurs, we could replace them in the good place.
+    temp_files = {}  # contains lists of {dist: (old, new)} paths
+    if remove:
+        for dist in remove:
+            files = dist.get_installed_files()
+            temp_files[dist] = move_files(files)
+    try:
+        if install:
+            installed_files = install_dists(install, install_path)  # install to tmp first
+        for files in temp_files.values():
+            for old, new in files:
+                os.remove(new)
+
+    except Exception,e:
+        # if an error occurs, put back the files in the good place.
+        for files in temp_files.values():
+            for old, new in files:
+                shutil.move(new, old)
+
+
+def get_infos(requirements, index=None, installed=None, prefer_final=True):
     """Return the informations on what's going to be installed and upgraded.
 
     :param requirements: is a *string* containing the requirements for this
@@ -63,14 +172,13 @@ def get_infos(requirements, index=None, installed=None,
     # Get all the releases that match the requirements
     try:
         releases = index.get_releases(requirements)
-    except (ReleaseNotFound, ProjectNotFound):
+    except (ReleaseNotFound, ProjectNotFound), e:
         raise InstallationException('Release not found: "%s"' % requirements)
 
     # Pick up a release, and try to get the dependency tree
     release = releases.get_last(requirements, prefer_final=prefer_final)
 
     # Iter since we found something without conflicts
-    # XXX the metadata object is not used, remove the call or the binding
     metadata = release.fetch_metadata()
 
     # Get the distributions already_installed on the system
