@@ -7,6 +7,10 @@ from distutils2.tests import unittest, support
 
 
 class FakeCompiler(object):
+
+    name = 'fake'
+    description = 'Fake'
+
     def library_dir_option(self, dir):
         return "-L" + dir
 
@@ -33,7 +37,7 @@ class CompilerTestCase(support.EnvironGuard, unittest.TestCase):
 
         # make sure AR gets caught
         class compiler:
-            compiler_type = 'unix'
+            name = 'unix'
 
             def set_executables(self, **kw):
                 self.exes = kw
