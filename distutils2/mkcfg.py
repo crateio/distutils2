@@ -148,6 +148,16 @@ def _build_classifiers_dict(classifiers):
 
 CLASSIFIERS = _build_classifiers_dict(_CLASSIFIERS_LIST)
 
+def _build_licences(classifiers):
+    res = []
+    for index, item in enumerate(classifiers):
+        if not item.startswith('License :: '):
+            continue
+        res.append((index, item.split(' :: ')[-1].lower()))
+    return res
+
+LICENCES = _build_licences(_CLASSIFIERS_LIST)
+
 
 class MainProgram(object):
     def __init__(self):
@@ -378,44 +388,43 @@ class MainProgram(object):
             if not license:
                 return
 
-            licenseWords = license.lower().split(' ')
+            license_words = license.lower().split(' ')
+            found_list = []
 
-            foundList = []
-            # TODO use enumerate
-            for index in range(len(_CLASSIFIERS_LIST)):
-                troveItem = _CLASSIFIERS_LIST[index]
-                if not troveItem.startswith('License :: '):
-                    continue
-                troveItem = troveItem[11:].lower()
-
-                allMatch = True
-                for word in licenseWords:
-                    if not word in troveItem:
-                        allMatch = False
+            for index, licence in LICENCES:
+                for word in license_words:
+                    if word in licence:
+                        found_list.append(index)
                         break
-                if allMatch:
-                    foundList.append(index)
+
+            if len(found_list) == 0:
+                print('ERROR: Could not find a matching license for "%s"' % \
+                      license)
+                continue
 
             question = 'Matching licenses:\n\n'
-            # TODO use enumerate?
-            for i in xrange(1, len(foundList) + 1):
-                question += '   %s) %s\n' % (i, _CLASSIFIERS_LIST[foundList[i - 1]])
+
+            for index, list_index in enumerate(found_list):
+                question += '   %s) %s\n' % (index + 1,
+                                             _CLASSIFIERS_LIST[list_index])
+
             question += ('\nType the number of the license you wish to use or '
                          '? to try again:')
-            troveLicense = ask(question, required=False)
+            choice = ask(question, required=False)
 
-            if troveLicense == '?':
+            if choice == '?':
                 continue
-            if troveLicense == '':
+            if choice == '':
                 return
-            # FIXME the int conversion can fail
-            foundIndex = foundList[int(troveLicense) - 1]
-            classifiers[_CLASSIFIERS_LIST[foundIndex]] = 1
+
             try:
-                return
-            except IndexError:
+                index = found_list[int(choice) - 1]
+            except ValueError:
                 print ("ERROR: Invalid selection, type a number from the list "
                        "above.")
+
+            classifiers[_CLASSIFIERS_LIST[index]] = 1
+            return
 
     def set_devel_status(self, classifiers):
         while True:

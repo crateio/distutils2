@@ -6,6 +6,8 @@ CHANGES
 ---------
 
 - The setup runner supports more options:
+- XXX fill changes done in commands + compilers
+- Issue 10409: Fixed the Licence selector in mkcfg
 
 1.0a3 - 2010-10-08
 ------------------
