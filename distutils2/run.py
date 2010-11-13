@@ -63,7 +63,12 @@ def main(**attrs):
         attrs['script_name'] = os.path.basename(sys.argv[0])
 
     if 'script_args' not in attrs:
-        attrs['script_args'] = sys.argv[1:]
+        if sys.argv[1] == "help":
+            script_args = sys.argv[2:]
+            script_args.append("--help")
+        else:
+            script_args = sys.argv[1:]
+        attrs['script_args'] = script_args
 
     # Create the Distribution instance, using the remaining arguments
     # (ie. everything except distclass) to initialize it
