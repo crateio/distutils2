@@ -74,15 +74,17 @@ sdist_extra =
 
 [global]
 commands =
-    foo = distutils2.tests.test_config.Foo
+    distutils2.tests.test_config.Foo
+
+compilers =
+    distutils2.tests.test_config.DCompiler
 
 setup_hook = distutils2.tests.test_config.hook
 
+
+
 [install_dist]
 sub_commands = foo
-
-[compilers]
-d = distutils2.tests.test_config.DCompiler
 """
 
 
@@ -102,11 +104,18 @@ class Foo(object):
     def __init__(self, dist):
         self.distribution = dist
 
+    @classmethod
+    def get_command_name(self):
+        return 'foo'
+
     def run(self):
         self.distribution.foo_was_here = 1
 
     def nothing(self):
         pass
+
+    def get_source_files(self):
+        return []
 
     ensure_finalized = finalize_options = initialize_options = nothing
 
@@ -184,7 +193,7 @@ class ConfigTestCase(support.TempdirManager,
         self.assertEqual(dist.package_dir['two'], 'src')
 
         # make sure we get the foo command loaded !
-        self.assertEquals(dist.cmdclass['foo'], Foo)
+        self.assertTrue(isinstance(dist.get_command_obj('foo'), Foo))
 
         # did the README got loaded ?
         self.assertEquals(dist.metadata['description'], 'yeah')

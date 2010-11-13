@@ -105,16 +105,19 @@ def get_default_compiler(osname=None, platform=None):
     return 'unix'
 
 
-_COMPILERS = {'unix': 'distutils2.compiler.unixccompiler.UnixCCompiler',
-              'msvc': 'distutils2.compiler.msvccompiler.MSVCCompiler',
-              'cygwin': 'distutils2.compiler.cygwinccompiler.CygWinCCompiler',
-              'mingw32': 'distutils2.compiler.cygwinccompiler.Mingw32CCompiler',
-              'bcpp': 'distutils2.compilers.bcppcompiler.BCPPCompiler'}
+_COMPILERS = {
+    'unix': 'distutils2.compiler.unixccompiler.UnixCCompiler',
+    'msvc': 'distutils2.compiler.msvccompiler.MSVCCompiler',
+    'cygwin': 'distutils2.compiler.cygwinccompiler.CygWinCCompiler',
+    'mingw32': 'distutils2.compiler.cygwinccompiler.Mingw32CCompiler',
+    'bcpp': 'distutils2.compilers.bcppcompiler.BCPPCompiler'}
 
 
-def set_compiler(name, location):
+def set_compiler(location):
     """Add or change a compiler"""
-    _COMPILERS[name] = location
+    klass = resolve_name(location)
+    # XXX we want to check teh class here
+    _COMPILERS[klass.compiler_type] = klass
 
 
 def show_compilers():
@@ -124,8 +127,11 @@ def show_compilers():
     from distutils2.fancy_getopt import FancyGetopt
     compilers = []
 
-    for compiler, location in _COMPILERS.items():
-        klass = resolve_name(location)
+    for name, klass in _COMPILERS.items():
+        if isinstance(klass, str):
+            klass = resolve_name(klass)
+            _COMPILERS[name] = klass
+
         compilers.append(("compiler=" + compiler, None, klass.description))
 
     compilers.sort()
@@ -151,24 +157,22 @@ def new_compiler(plat=None, compiler=None, verbose=0, dry_run=0, force=0):
         if compiler is None:
             compiler = get_default_compiler(plat)
 
-        location = _COMPILERS[compiler]
+        klass = _COMPILERS[compiler]
     except KeyError:
         msg = "don't know how to compile C/C++ code on platform '%s'" % plat
         if compiler is not None:
             msg = msg + " with '%s' compiler" % compiler
         raise DistutilsPlatformError(msg)
 
-    try:
-        cls = resolve_name(location)
-    except ImportError:
-        raise DistutilsModuleError(
-              "can't compile C/C++ code: unable to load '%s'" % \
-              location)
+    if isinstance(klass, str):
+        klass = resolve_name(klass)
+        _COMPILERS[compiler] = klass
+
 
     # XXX The None is necessary to preserve backwards compatibility
     # with classes that expect verbose to be the first positional
     # argument.
-    return cls(None, dry_run, force)
+    return klass(None, dry_run, force)
 
 
 def gen_preprocess_options(macros, include_dirs):

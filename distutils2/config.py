@@ -9,7 +9,7 @@ from ConfigParser import RawConfigParser
 from distutils2 import logger
 from distutils2.util import check_environ, resolve_name
 from distutils2.compiler import set_compiler
-
+from distutils2.command import set_command
 
 class Config(object):
     """Reads configuration files and work with the Distribution instance
@@ -93,20 +93,6 @@ class Config(object):
                 setup_hook = content['global']['setup_hook']
                 self.setup_hook = resolve_name(setup_hook)
                 self.run_hook(content)
-
-            if 'commands' in content['global']:
-                commands = self._multiline(content['global']['commands'])
-                if isinstance(commands, str):
-                    commands = [commands]
-
-                for command in commands:
-                    command = command.split('=')
-                    if len(command) != 2:
-                        # Issue XXX a warning
-                        continue
-                    name, location = command[0].strip(), command[1].strip()
-                    self.dist.cmdclass[name] = resolve_name(location)
-
 
         metadata = self.dist.metadata
 
@@ -195,9 +181,12 @@ class Config(object):
                 self._read_setup_cfg(parser)
 
             for section in parser.sections():
-                if section == 'compilers':
-                    self._load_compilers(parser.items(section))
-                    continue
+                if section == 'global':
+                    if parser.has_option('global', 'compilers'):
+                        self._load_compilers(parser.get('global', 'compilers'))
+
+                    if parser.has_option('global', 'commands'):
+                        self._load_commands(parser.get('global', 'commands'))
 
                 options = parser.options(section)
                 opt_dict = self.dist.get_option_dict(section)
@@ -247,5 +236,15 @@ class Config(object):
                     raise DistutilsOptionError(msg)
 
     def _load_compilers(self, compilers):
-        for name, location in compilers:
-            set_compiler(name, location)
+        compilers = self._multiline(compilers)
+        if isinstance(compilers, str):
+            compilers = [compilers]
+        for compiler in compilers:
+            set_compiler(compiler.strip())
+
+    def _load_commands(self, commands):
+        commands = self._multiline(commands)
+        if isinstance(commands, str):
+            commands = [commands]
+        for command in commands:
+            set_command(command.strip())

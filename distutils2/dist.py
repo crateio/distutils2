@@ -18,6 +18,7 @@ from distutils2.util import strtobool, resolve_name
 from distutils2 import logger
 from distutils2.metadata import DistributionMetadata
 from distutils2.config import Config
+from distutils2.command import get_command_class
 
 # Regex to define acceptable Distutils command names.  This is not *quite*
 # the same as a Python NAME -- I don't allow leading underscores.  The fact
@@ -152,14 +153,6 @@ Common commands: (see '--help-commands' for more)
         # we need to create a new command object, and 2) have a way
         # for the setup script to override command classes
         self.cmdclass = {}
-
-        # 'command_packages' is a list of packages in which commands
-        # are searched for.  The factory for command 'foo' is expected
-        # to be named 'foo' in the module 'foo' in one of the packages
-        # named here.  This list is searched from the left; an error
-        # is raised if no named package provides the command being
-        # searched for.  (Always access using get_command_packages().)
-        self.command_packages = None
 
         # 'script_name' and 'script_args' are usually set to sys.argv[0]
         # and sys.argv[1:], but they can be overridden when the caller is
@@ -388,11 +381,6 @@ Common commands: (see '--help-commands' for more)
                             commands=self.commands)
             return
 
-        # Oops, no commands found -- an end-user error
-        if not self.commands:
-            raise DistutilsArgError("no commands supplied")
-
-        # All is well: return true
         return 1
 
     def _get_toplevel_options(self):
@@ -425,10 +413,12 @@ Common commands: (see '--help-commands' for more)
         # 1) know that it's a valid command, and 2) know which options
         # it takes.
         try:
-            cmd_class = self.get_command_class(command)
+            cmd_class = get_command_class(command)
         except DistutilsModuleError, msg:
             raise DistutilsArgError(msg)
 
+        # XXX We want to push this in distutils.command
+        #
         # Require that the command class be derived from Command -- want
         # to be sure that the basic "command" interface is implemented.
         for meth in ('initialize_options', 'finalize_options', 'run'):
@@ -545,7 +535,7 @@ Common commands: (see '--help-commands' for more)
             if isinstance(command, type) and issubclass(command, Command):
                 cls = command
             else:
-                cls = self.get_command_class(command)
+                cls = get_command_class(command)
             if (hasattr(cls, 'help_options') and
                 isinstance(cls.help_options, list)):
                 parser.set_option_table(cls.user_options +
@@ -606,7 +596,7 @@ Common commands: (see '--help-commands' for more)
         for cmd in commands:
             cls = self.cmdclass.get(cmd)
             if not cls:
-                cls = self.get_command_class(cmd)
+                cls = get_command_class(cmd)
             try:
                 description = cls.description
             except AttributeError:
@@ -648,94 +638,9 @@ Common commands: (see '--help-commands' for more)
                                     "Extra commands",
                                     max_length)
 
-    def get_command_list(self):
-        """Get a list of (command, description) tuples.
-
-        The list is divided into standard commands (listed in
-        distutils2.command.__all__) and extra commands (given in
-        self.cmdclass and not standard commands).  The descriptions come
-        from the command class attribute 'description'.
-        """
-        # Currently this is only used on Mac OS, for the Mac-only GUI
-        # Distutils interface (by Jack Jansen)
-
-        rv = []
-        for cls in self.get_command_classes():
-            try:
-                description = cls.description
-            except AttributeError:
-                description = "(no description available)"
-            rv.append((cls, description))
-        return rv
 
     # -- Command class/object methods ----------------------------------
 
-    def get_command_packages(self):
-        """Return a list of packages from which commands are loaded."""
-        pkgs = self.command_packages
-        if not isinstance(pkgs, list):
-            if pkgs is None:
-                pkgs = ''
-            pkgs = [pkg.strip() for pkg in pkgs.split(',') if pkg != '']
-            if "distutils2.command" not in pkgs:
-                pkgs.insert(0, "distutils2.command")
-            self.command_packages = pkgs
-        return pkgs
-
-    def get_command_names(self):
-        """Return a list of all command names."""
-        return [getattr(cls, 'command_name', cls.__name__)
-                for cls in self.get_command_classes()]
-
-    def get_command_classes(self):
-        """Return a list of all command classes."""
-        std_commands, extra_commands = self._get_command_groups()
-        classes = []
-        for cmd in (std_commands + extra_commands):
-            try:
-                cls = self.cmdclass[cmd]
-            except KeyError:
-                cls = self.get_command_class(cmd)
-            classes.append(cls)
-        return classes
-
-    def get_command_class(self, command):
-        """Return the class that implements the Distutils command named by
-        'command'.  First we check the 'cmdclass' dictionary; if the
-        command is mentioned there, we fetch the class object from the
-        dictionary and return it.  Otherwise we load the command module
-        ("distutils.command." + command) and fetch the command class from
-        the module.  The loaded class is also stored in 'cmdclass'
-        to speed future calls to 'get_command_class()'.
-
-        Raises DistutilsModuleError if the expected module could not be
-        found, or if that module does not define the expected class.
-        """
-        cls = self.cmdclass.get(command)
-        if cls:
-            return cls
-
-        for pkgname in self.get_command_packages():
-            module_name = "%s.%s" % (pkgname, command)
-            class_name = command
-
-            try:
-                __import__(module_name)
-                module = sys.modules[module_name]
-            except ImportError:
-                continue
-
-            try:
-                cls = getattr(module, class_name)
-            except AttributeError:
-                raise DistutilsModuleError(
-                      "invalid command '%s' (no class '%s' in module '%s')" %
-                      (command, class_name, module_name))
-
-            self.cmdclass[command] = cls
-            return cls
-
-        raise DistutilsModuleError("invalid command '%s'" % command)
 
     def get_command_obj(self, command, create=1):
         """Return the command object for 'command'.  Normally this object
@@ -748,7 +653,7 @@ Common commands: (see '--help-commands' for more)
             logger.debug("Distribution.get_command_obj(): " \
                          "creating '%s' command object" % command)
 
-            cls = self.get_command_class(command)
+            cls = get_command_class(command)
             cmd_obj = self.command_obj[command] = cls(self)
             self.have_run[command] = 0
 

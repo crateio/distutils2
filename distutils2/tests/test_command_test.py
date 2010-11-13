@@ -9,10 +9,11 @@ from os.path import join
 from operator import getitem, setitem, delitem
 from StringIO import StringIO
 
-from distutils2.command.cmd import Command
+from distutils2.command.build import build
 from distutils2.tests import unittest
 from distutils2.tests.support import TempdirManager, LoggingCatcher
 from distutils2.command.test import test
+from distutils2.command import set_command
 from distutils2.dist import Distribution
 from distutils2._backport import pkgutil
 
@@ -30,6 +31,17 @@ AssertionError: horribly
 '''
 
 here = os.path.dirname(os.path.abspath(__file__))
+
+_RECORD = []
+
+class MockBuildCmd(build):
+    build_lib = "mock build lib"
+    command_name = 'build'
+    plat_name = 'whatever'
+    def initialize_options(self): pass
+    def finalize_options(self): pass
+    def run(self): _RECORD.append("build run")
+
 
 class TestTest(TempdirManager,
                LoggingCatcher,
@@ -111,20 +123,17 @@ class TestTest(TempdirManager,
         self.assertEqual(record, ["suite", "run"])
 
     def test_builds_before_running_tests(self):
-        dist = Distribution()
-        cmd = test(dist)
-        cmd.runner = self.prepare_named_function(lambda: None)
-        record = []
-        class MockBuildCmd(Command):
-            build_lib = "mock build lib"
-            def initialize_options(self): pass
-            def finalize_options(self): pass
-            def run(self): record.append("build run")
-        dist.cmdclass['build'] = MockBuildCmd
-
-        cmd.ensure_finalized()
-        cmd.run()
-        self.assertEqual(record, ['build run'])
+        set_command('distutils2.tests.test_command_test.MockBuildCmd')
+        try:
+            dist = Distribution()
+            cmd = test(dist)
+            cmd.runner = self.prepare_named_function(lambda: None)
+            _RECORD[:] = []
+            cmd.ensure_finalized()
+            cmd.run()
+            self.assertEqual(_RECORD, ['build run'])
+        finally:
+            set_command('distutils2.command.build.build')
 
     def _test_works_with_2to3(self):
         pass
@@ -157,7 +166,6 @@ class TestTest(TempdirManager,
     def test_custom_runner(self):
         dist = Distribution()
         cmd = test(dist)
-
         record = []
         cmd.runner = self.prepare_named_function(lambda: record.append("runner called"))
         cmd.ensure_finalized()
@@ -189,12 +197,12 @@ class TestTest(TempdirManager,
     def test_calls_discover(self):
         self.safely_replace(ut1.TestLoader, "discover", delete=True)
         mock_ut2 = self.prepare_mock_ut2()
-        record = []
-        mock_ut2.TestLoader.discover = lambda self, path: record.append(path)
+        _RECORD[:] = []
+        mock_ut2.TestLoader.discover = lambda self, path: _RECORD.append(path)
         dist = Distribution()
         cmd = test(dist)
         cmd.run()
-        self.assertEqual(record, [os.curdir])
+        self.assertEqual(_RECORD, [os.curdir])
 
 def test_suite():
     return unittest.makeSuite(TestTest)
