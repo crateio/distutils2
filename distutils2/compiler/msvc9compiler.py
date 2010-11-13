@@ -285,7 +285,7 @@ class MSVCCompiler(CCompiler) :
     """Concrete class that implements an interface to Microsoft Visual C++,
        as defined by the CCompiler abstract class."""
 
-    compiler_type = 'msvc'
+    name = 'msvc'
     description = 'Microsoft Visual C++'
 
     # Just set this so CCompiler's constructor doesn't barf.  We currently

@@ -296,11 +296,12 @@ class Command(object):
 
     # -- Convenience methods for commands ------------------------------
 
-    def get_command_name(self):
-        if hasattr(self, 'command_name'):
-            return self.command_name
+    @classmethod
+    def get_command_name(cls):
+        if hasattr(cls, 'command_name'):
+            return cls.command_name
         else:
-            return self.__class__.__name__
+            return cls.__name__
 
     def set_undefined_options(self, src_cmd, *options):
         """Set values of undefined options from another command.

@@ -5,17 +5,13 @@ from StringIO import StringIO
 
 import distutils2.tests
 from distutils2.tests import unittest
-from distutils2.extension import Extension
+from distutils2.compiler.extension import Extension
 from distutils2.dist import Distribution
 from distutils2.command.build_ext import build_ext
 from distutils2.tests import support
-from distutils2.extension import Extension
 from distutils2.errors import (UnknownFileError, DistutilsSetupError,
                                CompileError)
-try:
-    import sysconfig
-except ImportError:
-    from distutils2._backport import sysconfig
+from distutils2._backport import sysconfig
 
 
 # http://bugs.python.org/issue4373

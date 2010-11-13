@@ -106,7 +106,7 @@ def _darwin_compiler_fixup(compiler_so, cc_args):
 
 class UnixCCompiler(CCompiler):
 
-    compiler_type = 'unix'
+    name = 'unix'
     description = 'Standard UNIX-style compiler'
 
     # These are used by CCompiler in two places: the constructor sets

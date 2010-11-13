@@ -4,10 +4,7 @@ import sys
 
 from distutils2.command.build import build
 from distutils2.tests import unittest, support
-try:
-    from sysconfig import get_platform
-except ImportError:
-    from distutils2._backport.sysconfig import get_platform
+from distutils2._backport.sysconfig import get_platform
 
 class BuildTestCase(support.TempdirManager,
                     support.LoggingCatcher,

@@ -14,7 +14,7 @@ from distutils2.errors import (CCompilerError, CompileError, DistutilsError,
                                DistutilsPlatformError, DistutilsSetupError)
 from distutils2.compiler import customize_compiler, show_compilers
 from distutils2.util import newer_group
-from distutils2.extension import Extension
+from distutils2.compiler.extension import Extension
 from distutils2 import logger
 try:
     import sysconfig

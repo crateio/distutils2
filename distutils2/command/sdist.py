@@ -15,6 +15,7 @@ try:
 except ImportError:
     from distutils2._backport.shutil import get_archive_formats
 
+from distutils2.command import get_command_names
 from distutils2.command.cmd import Command
 from distutils2.errors import (DistutilsPlatformError, DistutilsOptionError,
                                DistutilsTemplateError, DistutilsModuleError)
@@ -250,7 +251,7 @@ class sdist(Command):
             if files:
                 self.filelist.extend(files)
 
-        for cmd_name in self.distribution.get_command_names():
+        for cmd_name in get_command_names():
             try:
                 cmd_obj = self.get_finalized_command(cmd_name)
             except DistutilsOptionError:
