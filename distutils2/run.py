@@ -1,10 +1,12 @@
 import os
 import sys
+from optparse import OptionParser
 
 from distutils2.util import grok_environment_error
 from distutils2.errors import (DistutilsSetupError, DistutilsArgError,
                                DistutilsError, CCompilerError)
 from distutils2.dist import Distribution
+from distutils2 import __version__
 
 # This is a barebones help message generated displayed when the user
 # runs the setup script with no arguments at all.  More useful help
@@ -23,7 +25,7 @@ def gen_usage(script_name):
     return USAGE % {'script': script}
 
 
-def main(**attrs):
+def commands_main(**attrs):
     """The gateway to the Distutils: do everything your setup script needs
     to do, in a highly flexible and user-driven way.  Briefly: create a
     Distribution instance; find and parse config files; parse the command
@@ -109,6 +111,25 @@ def main(**attrs):
 
     return dist
 
+
+def main():
+    """Main entry point for Distutils2"""
+    parser = OptionParser()
+    parser.disable_interspersed_args()
+    parser.add_option("-v", "--version",
+                  action="store_true", dest="version", default=False,
+                  help="Prints out the version of Distutils2 and exits.")
+
+    options, args = parser.parse_args()
+    if options.version:
+        print('Distutils2 %s' % __version__)
+        sys.exit(0)
+
+    if len(args) == 0:
+        parser.print_help()
+
+    commands_main()
+    sys.exit(0)
 
 if __name__ == '__main__':
     main()

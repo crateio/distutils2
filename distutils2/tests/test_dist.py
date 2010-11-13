@@ -248,10 +248,7 @@ class DistributionTestCase(support.TempdirManager,
             [test_dist]
             pre-hook.test = nonexistent.dotted.name'''))
 
-        sys.argv.extend(["--command-packages",
-                         "distutils2.tests",
-                         "test_dist"])
-
+        set_command('distutils2.tests.test_dist.test_dist')
         d = create_distribution([config_file])
         cmd = d.get_command_obj("test_dist")
         cmd.ensure_finalized()

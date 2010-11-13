@@ -389,10 +389,7 @@ Common commands: (see '--help-commands' for more)
         This includes options that are recognized *only* at the top
         level as well as options recognized for commands.
         """
-        return self.global_options + [
-            ("command-packages=", None,
-             "list of packages that provide distutils commands"),
-            ]
+        return self.global_options
 
     def _parse_command_opts(self, parser, args):
         """Parse the command-line options for a single command.
