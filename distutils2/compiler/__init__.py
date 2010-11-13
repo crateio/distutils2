@@ -13,7 +13,7 @@ def customize_compiler(compiler):
     Mainly needed on Unix, so we can plug in the information that
     varies across Unices and is stored in Python's Makefile.
     """
-    if compiler.compiler_type == "unix":
+    if compiler.name == "unix":
         (cc, cxx, opt, cflags, ccshared, ldshared, so_ext, ar, ar_flags) = \
             sysconfig.get_config_vars('CC', 'CXX', 'OPT', 'CFLAGS',
                                        'CCSHARED', 'LDSHARED', 'SO', 'AR',
@@ -116,8 +116,8 @@ _COMPILERS = {
 def set_compiler(location):
     """Add or change a compiler"""
     klass = resolve_name(location)
-    # XXX we want to check teh class here
-    _COMPILERS[klass.compiler_type] = klass
+    # XXX we want to check the class here
+    _COMPILERS[klass.name] = klass
 
 
 def show_compilers():

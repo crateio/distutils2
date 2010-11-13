@@ -89,7 +89,7 @@ sub_commands = foo
 
 
 class DCompiler(object):
-    compiler_type = 'd'
+    name = 'd'
     description = 'D Compiler'
 
     def __init__(self, *args):
