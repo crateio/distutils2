@@ -422,7 +422,7 @@ Common commands: (see '--help-commands' for more)
             if hasattr(cmd_class, meth):
                 continue
             raise DistutilsClassError(
-                  'command "%s" must implement "%s"' % (cmd_class. meth))
+                  'command "%s" must implement "%s"' % (cmd_class, meth))
 
         # Also make sure that the command object provides a list of its
         # known options.
