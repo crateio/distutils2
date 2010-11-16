@@ -103,10 +103,7 @@ class BuildExtTestCase(support.TempdirManager,
         old = sys.platform
 
         sys.platform = 'sunos' # fooling finalize_options
-        try:
-            from sysconfig import _CONFIG_VARS
-        except ImportError:
-            from distutils2._backport.sysconfig import _CONFIG_VARS
+        from distutils2._backport.sysconfig import _CONFIG_VARS
 
         old_var = _CONFIG_VARS.get('Py_ENABLE_SHARED')
         _CONFIG_VARS['Py_ENABLE_SHARED'] = 1
