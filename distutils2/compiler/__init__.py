@@ -108,7 +108,7 @@ def get_default_compiler(osname=None, platform=None):
 _COMPILERS = {
     'unix': 'distutils2.compiler.unixccompiler.UnixCCompiler',
     'msvc': 'distutils2.compiler.msvccompiler.MSVCCompiler',
-    'cygwin': 'distutils2.compiler.cygwinccompiler.CygWinCCompiler',
+    'cygwin': 'distutils2.compiler.cygwinccompiler.CygwinCCompiler',
     'mingw32': 'distutils2.compiler.cygwinccompiler.Mingw32CCompiler',
     'bcpp': 'distutils2.compilers.bcppcompiler.BCPPCompiler'}
 
