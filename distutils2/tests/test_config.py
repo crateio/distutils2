@@ -74,7 +74,7 @@ sdist_extra =
 
 [global]
 commands =
-    distutils2.tests.test_config.Foo
+    distutils2.tests.test_config.FooBarBazTest
 
 compilers =
     distutils2.tests.test_config.DCompiler
@@ -99,7 +99,7 @@ def hook(content):
     content['metadata']['version'] += '.dev1'
 
 
-class Foo(object):
+class FooBarBazTest(object):
 
     def __init__(self, dist):
         self.distribution = dist
@@ -193,8 +193,15 @@ class ConfigTestCase(support.TempdirManager,
              ('/etc/init.d ', ['init-script'])])
         self.assertEqual(dist.package_dir['two'], 'src')
 
-        # make sure we get the foo command loaded !
-        self.assertTrue(isinstance(dist.get_command_obj('foo'), Foo))
+        # Make sure we get the foo command loaded.  We use a string comparison
+        # instead of assertIsInstance because the class is not the same when
+        # this test is run directly: foo is distutils2.tests.test_config.Foo
+        # because get_command_class uses the full name, but a bare "Foo" in
+        # this file would be __main__.Foo when run as "python test_config.py".
+        # The name FooBarBazTest should be unique enough to prevent
+        # collisions.
+        self.assertEqual(dist.get_command_obj('foo').__class__.__name__,
+                         'FooBarBazTest')
 
         # did the README got loaded ?
         self.assertEquals(dist.metadata['description'], 'yeah')
