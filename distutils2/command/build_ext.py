@@ -16,10 +16,7 @@ from distutils2.compiler import customize_compiler, show_compilers
 from distutils2.util import newer_group
 from distutils2.compiler.extension import Extension
 from distutils2 import logger
-try:
-    import sysconfig
-except ImportError:
-    from distutils2._backport import sysconfig
+from distutils2._backport import sysconfig
 
 # this keeps compatibility from 2.3 to 2.5
 if sys.version < "2.6":
