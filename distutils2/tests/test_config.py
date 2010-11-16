@@ -121,6 +121,7 @@ class Foo(object):
 
 
 class ConfigTestCase(support.TempdirManager,
+                     support.LoggingCatcher,
                      unittest.TestCase):
 
     def setUp(self):
