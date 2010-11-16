@@ -19,6 +19,7 @@ try:
 except ImportError:
     from distutils2._backport.shutil import make_archive
 
+
 class Command(object):
     """Abstract base class for defining command classes, the "worker bees"
     of the Distutils.  A useful analogy for command classes is to think of
@@ -57,7 +58,6 @@ class Command(object):
     pre_hook = None
     post_hook = None
 
-
     # -- Creation/initialization methods -------------------------------
 
     def __init__(self, dist):
@@ -69,9 +69,9 @@ class Command(object):
         from distutils2.dist import Distribution
 
         if not isinstance(dist, Distribution):
-            raise TypeError, "dist must be a Distribution instance"
+            raise TypeError("dist must be a Distribution instance")
         if self.__class__ is Command:
-            raise RuntimeError, "Command is an abstract class"
+            raise RuntimeError("Command is an abstract class")
 
         self.distribution = dist
         self.initialize_options()
@@ -143,8 +143,8 @@ class Command(object):
 
         This method must be implemented by all command classes.
         """
-        raise RuntimeError, \
-              "abstract method -- subclass %s must override" % self.__class__
+        raise RuntimeError(
+            "abstract method -- subclass %s must override" % self.__class__)
 
     def finalize_options(self):
         """Set final values for all the options that this command supports.
@@ -157,9 +157,8 @@ class Command(object):
 
         This method must be implemented by all command classes.
         """
-        raise RuntimeError, \
-              "abstract method -- subclass %s must override" % self.__class__
-
+        raise RuntimeError(
+            "abstract method -- subclass %s must override" % self.__class__)
 
     def dump_options(self, header=None, indent=""):
         if header is None:
@@ -184,8 +183,8 @@ class Command(object):
 
         This method must be implemented by all command classes.
         """
-        raise RuntimeError, \
-              "abstract method -- subclass %s must override" % self.__class__
+        raise RuntimeError(
+            "abstract method -- subclass %s must override" % self.__class__)
 
     def announce(self, msg, level=logging.INFO):
         """If the current verbosity level is of greater than or equal to
@@ -237,8 +236,8 @@ class Command(object):
             setattr(self, option, default)
             return default
         elif not isinstance(val, str):
-            raise DistutilsOptionError, \
-                  "'%s' must be a %s (got `%s`)" % (option, what, val)
+            raise DistutilsOptionError("'%s' must be a %s (got `%s`)" %
+                                       (option, what, val))
         return val
 
     def ensure_string(self, option, default=None):
@@ -248,7 +247,7 @@ class Command(object):
         self._ensure_stringlike(option, "string", default)
 
     def ensure_string_list(self, option):
-        """Ensure that 'option' is a list of strings.  If 'option' is
+        r"""Ensure that 'option' is a list of strings.  If 'option' is
         currently a string, we split it either on /,\s*/ or /\s+/, so
         "foo bar baz", "foo,bar,baz", and "foo,   bar baz" all become
         ["foo", "bar", "baz"].
@@ -270,17 +269,15 @@ class Command(object):
                 ok = 0
 
             if not ok:
-                raise DistutilsOptionError, \
-                    "'%s' must be a list of strings (got %r)" % \
-                        (option, val)
-
+                raise DistutilsOptionError(
+                    "'%s' must be a list of strings (got %r)" % (option, val))
 
     def _ensure_tested_string(self, option, tester,
                               what, error_fmt, default=None):
         val = self._ensure_stringlike(option, what, default)
         if val is not None and not tester(val):
-            raise DistutilsOptionError, \
-                  ("error in '%s' option: " + error_fmt) % (option, val)
+            raise DistutilsOptionError(
+                ("error in '%s' option: " + error_fmt) % (option, val))
 
     def ensure_filename(self, option):
         """Ensure that 'option' is the name of an existing file."""
@@ -292,7 +289,6 @@ class Command(object):
         self._ensure_tested_string(option, os.path.isdir,
                                    "directory name",
                                    "'%s' does not exist or is not a directory")
-
 
     # -- Convenience methods for commands ------------------------------
 
@@ -369,12 +365,10 @@ class Command(object):
                 commands.append(sub_command)
         return commands
 
-
     # -- External world manipulation -----------------------------------
 
     def warn(self, msg):
-        logger.warning("warning: %s: %s\n" %
-                (self.get_command_name(), msg))
+        logger.warning("warning: %s: %s\n" % (self.get_command_name(), msg))
 
     def execute(self, func, args, msg=None, level=1):
         util.execute(func, args, msg, dry_run=self.dry_run)
@@ -413,19 +407,19 @@ class Command(object):
         and force flags.
         """
         if self.dry_run:
-            return # see if we want to display something
+            return  # see if we want to display something
         return copytree(infile, outfile, preserve_symlinks)
 
     def move_file(self, src, dst, level=1):
         """Move a file respectin dry-run flag."""
         if self.dry_run:
-            return # XXX log ?
+            return  # XXX log ?
         return move(src, dst)
 
     def spawn(self, cmd, search_path=1, level=1):
         """Spawn an external command respecting dry-run flag."""
         from distutils2.util import spawn
-        spawn(cmd, search_path, dry_run= self.dry_run)
+        spawn(cmd, search_path, dry_run=self.dry_run)
 
     def make_archive(self, base_name, format, root_dir=None, base_dir=None,
                      owner=None, group=None):
@@ -450,12 +444,11 @@ class Command(object):
         if isinstance(infiles, str):
             infiles = (infiles,)
         elif not isinstance(infiles, (list, tuple)):
-            raise TypeError, \
-                  "'infiles' must be a string, or a list or tuple of strings"
+            raise TypeError(
+                "'infiles' must be a string, or a list or tuple of strings")
 
         if exec_msg is None:
-            exec_msg = "generating %s from %s" % \
-                       (outfile, ', '.join(infiles))
+            exec_msg = "generating %s from %s" % (outfile, ', '.join(infiles))
 
         # If 'outfile' must be regenerated (either because it doesn't
         # exist, is out-of-date, or the 'force' flag is true) then

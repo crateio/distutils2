@@ -520,7 +520,6 @@ class install_dist(Command):
                 raise DistutilsPlatformError("Can't install when "
                                              "cross-compiling")
 
-
         # Run all sub-commands (at least those that need to be run)
         for cmd_name in self.get_sub_commands():
             self.run_command(cmd_name)
