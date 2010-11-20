@@ -5,12 +5,19 @@ import os
 import re
 
 from distutils2 import __version__ as VERSION
-from distutils2.util import find_packages
 from distutils import log
 from distutils.core import setup, Extension
 from distutils.ccompiler import new_compiler
 from distutils.command.sdist import sdist
 from distutils.command.install import install
+
+# Python 3.x hook to run 2to3 automatically
+try:
+    from distutils.command.build_py import build_py_2to3 as build_py
+except ImportError:
+    # 2.x
+    from distutils.command.build_py import build_py
+
 
 f = open('README.txt')
 try:
@@ -26,7 +33,7 @@ def get_tip_revision(path=os.getcwd()):
     except OSError:
         return 0
     rev = cmd.stdout.read()
-    if rev == '':
+    if not rev :
         # there has been an error in the command
         return 0
     return int(rev)
@@ -217,7 +224,20 @@ setup(name="Distutils2",
       license="PSF",
       long_description=README,
       classifiers=_CLASSIFIERS.split('\n'),
-      packages=find_packages(),
-      cmdclass={'sdist_hg': sdist_hg, 'install_hg': install_hg},
+      packages=[
+          'distutils2',
+          'distutils2.tests', 
+          'distutils2.compiler', 
+          'distutils2.command', 
+          'distutils2._backport', 
+          'distutils2.index', 
+          'distutils2.tests.fixer', 
+          'distutils2._backport.tests',
+      ],
+      cmdclass={
+          'build_py':build_py, 
+          'install_hg': install_hg,
+          'sdist_hg': sdist_hg, 
+      },
       package_data={'distutils2._backport': ['sysconfig.cfg']},
       **setup_kwargs)
