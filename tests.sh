@@ -37,4 +37,13 @@ if [ $? -ne 0 ];then
 else
     echo Success
 fi
+
+echo -n "Running tests for Python 3.1... "
+python3.1 -Wd -bb runtests.py -q 2> /dev/null
+if [ $? -ne 0 ];then
+    echo Failed
+    exit 1
+else
+    echo Success
+fi
 echo "Good job, commit now! (or add tests)"
