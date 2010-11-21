@@ -8,6 +8,7 @@ import textwrap
 
 import distutils2.dist
 from distutils2.dist import Distribution, fix_help_options
+from distutils2.command import set_command
 from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsModuleError, DistutilsOptionError
 from distutils2.tests import TESTFN, captured_stdout
@@ -65,52 +66,6 @@ class DistributionTestCase(support.TempdirManager,
             self.assertEqual(stdout, '')
         finally:
             distutils2.dist.DEBUG = False
-
-    def test_command_packages_unspecified(self):
-        sys.argv.append("build")
-        d = create_distribution()
-        self.assertEqual(d.get_command_packages(), ["distutils2.command"])
-
-    def test_command_packages_cmdline(self):
-        from distutils2.tests.test_dist import test_dist
-        sys.argv.extend(["--command-packages",
-                         "foo.bar,distutils2.tests",
-                         "test_dist",
-                         "-Ssometext",
-                         ])
-        d = create_distribution()
-        # let's actually try to load our test command:
-        self.assertEqual(d.get_command_packages(),
-                         ["distutils2.command", "foo.bar", "distutils2.tests"])
-        cmd = d.get_command_obj("test_dist")
-        self.assertTrue(isinstance(cmd, test_dist))
-        self.assertEqual(cmd.sample_option, "sometext")
-
-    def test_command_packages_configfile(self):
-        sys.argv.append("build")
-        f = open(TESTFN, "w")
-        try:
-            print >> f, "[global]"
-            print >> f, "command_packages = foo.bar, splat"
-            f.close()
-            d = create_distribution([TESTFN])
-            self.assertEqual(d.get_command_packages(),
-                             ["distutils2.command", "foo.bar", "splat"])
-
-            # ensure command line overrides config:
-            sys.argv[1:] = ["--command-packages", "spork", "build"]
-            d = create_distribution([TESTFN])
-            self.assertEqual(d.get_command_packages(),
-                             ["distutils2.command", "spork"])
-
-            # Setting --command-packages to '' should cause the default to
-            # be used even if a config file specified something else:
-            sys.argv[1:] = ["--command-packages", "", "build"]
-            d = create_distribution([TESTFN])
-            self.assertEqual(d.get_command_packages(), ["distutils2.command"])
-
-        finally:
-            os.unlink(TESTFN)
 
     def test_write_pkg_file(self):
         # Check DistributionMetadata handling of Unicode fields
@@ -188,18 +143,6 @@ class DistributionTestCase(support.TempdirManager,
         self.assertEqual(dist.metadata['platform'], ['one', 'two'])
         self.assertEqual(dist.metadata['keywords'], ['one', 'two'])
 
-    def test_get_command_packages(self):
-        dist = Distribution()
-        self.assertEqual(dist.command_packages, None)
-        cmds = dist.get_command_packages()
-        self.assertEqual(cmds, ['distutils2.command'])
-        self.assertEqual(dist.command_packages,
-                         ['distutils2.command'])
-
-        dist.command_packages = 'one,two'
-        cmds = dist.get_command_packages()
-        self.assertEqual(cmds, ['distutils2.command', 'one', 'two'])
-
     def test_announce(self):
         # make sure the level is known
         dist = Distribution()
@@ -250,12 +193,9 @@ class DistributionTestCase(support.TempdirManager,
         self.write_file((temp_home, "config2.cfg"),
                         '[test_dist]\npre-hook.b = type')
 
-        sys.argv.extend(["--command-packages",
-                         "distutils2.tests",
-                         "test_dist"])
+        set_command('distutils2.tests.test_dist.test_dist')
         dist = create_distribution(config_files)
         cmd = dist.get_command_obj("test_dist")
-
         self.assertEqual(cmd.pre_hook, {"a": 'type', "b": 'type'})
 
     def test_hooks_get_run(self):
@@ -278,10 +218,7 @@ class DistributionTestCase(support.TempdirManager,
             record.append('post-%s' % cmd.get_command_name())
         '''))
 
-        sys.argv.extend(["--command-packages",
-                         "distutils2.tests",
-                         "test_dist"])
-
+        set_command('distutils2.tests.test_dist.test_dist')
         d = create_distribution([config_file])
         cmd = d.get_command_obj("test_dist")
 
@@ -311,10 +248,7 @@ class DistributionTestCase(support.TempdirManager,
             [test_dist]
             pre-hook.test = nonexistent.dotted.name'''))
 
-        sys.argv.extend(["--command-packages",
-                         "distutils2.tests",
-                         "test_dist"])
-
+        set_command('distutils2.tests.test_dist.test_dist')
         d = create_distribution([config_file])
         cmd = d.get_command_obj("test_dist")
         cmd.ensure_finalized()
@@ -329,10 +263,7 @@ class DistributionTestCase(support.TempdirManager,
             [test_dist]
             pre-hook.test = distutils2.tests.test_dist.__doc__'''))
 
-        sys.argv.extend(["--command-packages",
-                         "distutils2.tests",
-                         "test_dist"])
-
+        set_command('distutils2.tests.test_dist.test_dist')
         d = create_distribution([config_file])
         cmd = d.get_command_obj("test_dist")
         cmd.ensure_finalized()

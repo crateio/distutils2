@@ -1,11 +1,7 @@
 """Tests for distutils.unixccompiler."""
 import sys
 
-try:
-    import sysconfig
-except ImportError:
-    from distutils2._backport import sysconfig
-
+from distutils2._backport import sysconfig
 from distutils2.compiler.unixccompiler import UnixCCompiler
 from distutils2.tests import unittest
 

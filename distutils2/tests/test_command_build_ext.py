@@ -5,17 +5,13 @@ from StringIO import StringIO
 
 import distutils2.tests
 from distutils2.tests import unittest
-from distutils2.extension import Extension
+from distutils2.compiler.extension import Extension
 from distutils2.dist import Distribution
 from distutils2.command.build_ext import build_ext
 from distutils2.tests import support
-from distutils2.extension import Extension
 from distutils2.errors import (UnknownFileError, DistutilsSetupError,
                                CompileError)
-try:
-    import sysconfig
-except ImportError:
-    from distutils2._backport import sysconfig
+from distutils2._backport import sysconfig
 
 
 # http://bugs.python.org/issue4373
@@ -107,10 +103,7 @@ class BuildExtTestCase(support.TempdirManager,
         old = sys.platform
 
         sys.platform = 'sunos' # fooling finalize_options
-        try:
-            from sysconfig import _CONFIG_VARS
-        except ImportError:
-            from distutils2._backport.sysconfig import _CONFIG_VARS
+        from distutils2._backport.sysconfig import _CONFIG_VARS
 
         old_var = _CONFIG_VARS.get('Py_ENABLE_SHARED')
         _CONFIG_VARS['Py_ENABLE_SHARED'] = 1

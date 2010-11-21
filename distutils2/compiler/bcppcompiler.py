@@ -26,7 +26,7 @@ class BCPPCompiler(CCompiler) :
     compiler, as defined by the CCompiler abstract class.
     """
 
-    compiler_type = 'bcpp'
+    name = 'bcpp'
     description = 'Borland C++ Compiler'
 
     # Just set this so CCompiler's constructor doesn't barf.  We currently

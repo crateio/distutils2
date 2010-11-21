@@ -85,7 +85,7 @@ def get_msvcr():
 class CygwinCCompiler(UnixCCompiler):
     """ Handles the Cygwin port of the GNU C compiler to Windows.
     """
-    compiler_type = 'cygwin'
+    name = 'cygwin'
     description = 'Cygwin port of GNU C Compiler for Win32'
     obj_extension = ".o"
     static_lib_extension = ".a"
@@ -110,7 +110,7 @@ class CygwinCCompiler(UnixCCompiler):
 
         self.gcc_version, self.ld_version, self.dllwrap_version = \
             get_compiler_versions()
-        self.debug_print(self.compiler_type + ": gcc %s, ld %s, dllwrap %s\n" %
+        self.debug_print(self.name + ": gcc %s, ld %s, dllwrap %s\n" %
                          (self.gcc_version,
                           self.ld_version,
                           self.dllwrap_version) )
@@ -272,7 +272,8 @@ class CygwinCCompiler(UnixCCompiler):
 class Mingw32CCompiler(CygwinCCompiler):
     """ Handles the Mingw32 port of the GNU C compiler to Windows.
     """
-    compiler_type = 'mingw32'
+    name = 'mingw32'
+    description = 'MinGW32 compiler'
 
     def __init__(self, verbose=0, dry_run=0, force=0):
 

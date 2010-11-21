@@ -127,27 +127,27 @@ class build(Command):
         # Run all relevant sub-commands.  This will be some subset of:
         #  - build_py      - pure Python modules
         #  - build_clib    - standalone C libraries
-        #  - build_ext     - Python extensions
-        #  - build_scripts - (Python) scripts
+        #  - build_ext     - Python extension modules
+        #  - build_scripts - Python scripts
         for cmd_name in self.get_sub_commands():
             self.run_command(cmd_name)
 
     # -- Predicates for the sub-command list ---------------------------
 
-    def has_pure_modules (self):
+    def has_pure_modules(self):
         return self.distribution.has_pure_modules()
 
-    def has_c_libraries (self):
+    def has_c_libraries(self):
         return self.distribution.has_c_libraries()
 
-    def has_ext_modules (self):
+    def has_ext_modules(self):
         return self.distribution.has_ext_modules()
 
-    def has_scripts (self):
+    def has_scripts(self):
         return self.distribution.has_scripts()
 
-    sub_commands = [('build_py',      has_pure_modules),
-                    ('build_clib',    has_c_libraries),
-                    ('build_ext',     has_ext_modules),
+    sub_commands = [('build_py', has_pure_modules),
+                    ('build_clib', has_c_libraries),
+                    ('build_ext', has_ext_modules),
                     ('build_scripts', has_scripts),
                    ]

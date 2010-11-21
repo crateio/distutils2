@@ -15,6 +15,7 @@ from distutils2.util import split_quoted, execute, newer_group, spawn
 from distutils2 import logger
 from distutils2.compiler import gen_preprocess_options
 
+
 class CCompiler(object):
     """Abstract base class to define the interface that must be implemented
     by real compiler classes.  Also has some utility methods used by
@@ -29,11 +30,11 @@ class CCompiler(object):
     attributes may be varied on a per-compilation or per-link basis.
     """
 
-    # 'compiler_type' is a class attribute that identifies this class.  It
+    # 'name' is a class attribute that identifies this class.  It
     # keeps code that wants to know what kind of compiler it's dealing with
     # from having to import all possible compiler classes just to do an
     # 'isinstance'.
-    compiler_type = None
+    name = None
     description = None
 
     # XXX things not handled by this compiler abstraction model:

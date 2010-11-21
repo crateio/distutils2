@@ -1,10 +1,8 @@
 """Tests for distutils.cygwinccompiler."""
 import sys
 import os
-try:
-    import sysconfig
-except ImportError:
-    from distutils2._backport import sysconfig
+
+from distutils2._backport import sysconfig
 
 from distutils2.tests import run_unittest
 from distutils2.tests import captured_stdout

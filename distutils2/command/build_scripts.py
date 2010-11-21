@@ -9,10 +9,7 @@ from stat import ST_MODE
 from distutils2.command.cmd import Command
 from distutils2.util import convert_path, newer
 from distutils2 import logger
-try:
-    import sysconfig
-except ImportError:
-    from distutils2._backport import sysconfig
+from distutils2._backport import sysconfig
 from distutils2.compat import Mixin2to3
 
 # check if Python is called on the first line with this expression

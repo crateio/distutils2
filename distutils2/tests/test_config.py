@@ -74,20 +74,22 @@ sdist_extra =
 
 [global]
 commands =
-    foo = distutils2.tests.test_config.Foo
+    distutils2.tests.test_config.FooBarBazTest
+
+compilers =
+    distutils2.tests.test_config.DCompiler
 
 setup_hook = distutils2.tests.test_config.hook
 
+
+
 [install_dist]
 sub_commands = foo
-
-[compilers]
-d = distutils2.tests.test_config.DCompiler
 """
 
 
 class DCompiler(object):
-    compiler_type = 'd'
+    name = 'd'
     description = 'D Compiler'
 
     def __init__(self, *args):
@@ -97,10 +99,14 @@ def hook(content):
     content['metadata']['version'] += '.dev1'
 
 
-class Foo(object):
+class FooBarBazTest(object):
 
     def __init__(self, dist):
         self.distribution = dist
+
+    @classmethod
+    def get_command_name(self):
+        return 'foo'
 
     def run(self):
         self.distribution.foo_was_here = 1
@@ -108,10 +114,14 @@ class Foo(object):
     def nothing(self):
         pass
 
+    def get_source_files(self):
+        return []
+
     ensure_finalized = finalize_options = initialize_options = nothing
 
 
 class ConfigTestCase(support.TempdirManager,
+                     support.LoggingCatcher,
                      unittest.TestCase):
 
     def setUp(self):
@@ -183,8 +193,15 @@ class ConfigTestCase(support.TempdirManager,
              ('/etc/init.d ', ['init-script'])])
         self.assertEqual(dist.package_dir['two'], 'src')
 
-        # make sure we get the foo command loaded !
-        self.assertEquals(dist.cmdclass['foo'], Foo)
+        # Make sure we get the foo command loaded.  We use a string comparison
+        # instead of assertIsInstance because the class is not the same when
+        # this test is run directly: foo is distutils2.tests.test_config.Foo
+        # because get_command_class uses the full name, but a bare "Foo" in
+        # this file would be __main__.Foo when run as "python test_config.py".
+        # The name FooBarBazTest should be unique enough to prevent
+        # collisions.
+        self.assertEqual(dist.get_command_obj('foo').__class__.__name__,
+                         'FooBarBazTest')
 
         # did the README got loaded ?
         self.assertEquals(dist.metadata['description'], 'yeah')

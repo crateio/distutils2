@@ -4,7 +4,7 @@ import re
 
 from distutils2._backport import sysconfig
 from distutils2.util import resolve_name
-from distutils2.errors import DistutilsModuleError, DistutilsPlatformError
+from distutils2.errors import DistutilsPlatformError
 
 
 def customize_compiler(compiler):
@@ -13,7 +13,7 @@ def customize_compiler(compiler):
     Mainly needed on Unix, so we can plug in the information that
     varies across Unices and is stored in Python's Makefile.
     """
-    if compiler.compiler_type == "unix":
+    if compiler.name == "unix":
         (cc, cxx, opt, cflags, ccshared, ldshared, so_ext, ar, ar_flags) = \
             sysconfig.get_config_vars('CC', 'CXX', 'OPT', 'CFLAGS',
                                        'CCSHARED', 'LDSHARED', 'SO', 'AR',
@@ -105,16 +105,19 @@ def get_default_compiler(osname=None, platform=None):
     return 'unix'
 
 
-_COMPILERS = {'unix': 'distutils2.compiler.unixccompiler.UnixCCompiler',
-              'msvc': 'distutils2.compiler.msvccompiler.MSVCCompiler',
-              'cygwin': 'distutils2.compiler.cygwinccompiler.CygWinCCompiler',
-              'mingw32': 'distutils2.compiler.cygwinccompiler.Mingw32CCompiler',
-              'bcpp': 'distutils2.compilers.bcppcompiler.BCPPCompiler'}
+_COMPILERS = {
+    'unix': 'distutils2.compiler.unixccompiler.UnixCCompiler',
+    'msvc': 'distutils2.compiler.msvccompiler.MSVCCompiler',
+    'cygwin': 'distutils2.compiler.cygwinccompiler.CygwinCCompiler',
+    'mingw32': 'distutils2.compiler.cygwinccompiler.Mingw32CCompiler',
+    'bcpp': 'distutils2.compilers.bcppcompiler.BCPPCompiler'}
 
 
-def set_compiler(name, location):
+def set_compiler(location):
     """Add or change a compiler"""
-    _COMPILERS[name] = location
+    cls = resolve_name(location)
+    # XXX we want to check the class here
+    _COMPILERS[cls.name] = cls
 
 
 def show_compilers():
@@ -124,9 +127,12 @@ def show_compilers():
     from distutils2.fancy_getopt import FancyGetopt
     compilers = []
 
-    for compiler, location in _COMPILERS.items():
-        klass = resolve_name(location)
-        compilers.append(("compiler=" + compiler, None, klass.description))
+    for name, cls in _COMPILERS.items():
+        if isinstance(cls, str):
+            cls = resolve_name(cls)
+            _COMPILERS[name] = cls
+
+        compilers.append(("compiler=" + name, None, cls.description))
 
     compilers.sort()
     pretty_printer = FancyGetopt(compilers)
@@ -151,19 +157,17 @@ def new_compiler(plat=None, compiler=None, verbose=0, dry_run=0, force=0):
         if compiler is None:
             compiler = get_default_compiler(plat)
 
-        location = _COMPILERS[compiler]
+        cls = _COMPILERS[compiler]
     except KeyError:
         msg = "don't know how to compile C/C++ code on platform '%s'" % plat
         if compiler is not None:
             msg = msg + " with '%s' compiler" % compiler
         raise DistutilsPlatformError(msg)
 
-    try:
-        cls = resolve_name(location)
-    except ImportError:
-        raise DistutilsModuleError(
-              "can't compile C/C++ code: unable to load '%s'" % \
-              location)
+    if isinstance(cls, str):
+        cls = resolve_name(cls)
+        _COMPILERS[compiler] = cls
+
 
     # XXX The None is necessary to preserve backwards compatibility
     # with classes that expect verbose to be the first positional
