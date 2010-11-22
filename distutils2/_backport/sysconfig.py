@@ -87,7 +87,6 @@ def _subst_vars(path, local_vars):
     """In the string `path`, replace tokens like {some.thing} with the corresponding value from the map `local_vars`.
 
     If there is no corresponding value, leave the token unchanged.
-
     """
     def _replacer(matchobj):
         name = matchobj.group(1)
@@ -267,6 +266,7 @@ def _parse_makefile(filename, vars=None):
 
 
 def get_makefile_filename():
+    """Return the path of the Makefile."""
     if _PYTHON_BUILD:
         return os.path.join(_PROJECT_BASE, "Makefile")
     return os.path.join(get_path('stdlib'), "config", "Makefile")
@@ -361,7 +361,7 @@ def parse_config_h(fp, vars=None):
     return vars
 
 def get_config_h_filename():
-    """Returns the path of pyconfig.h."""
+    """Return the path of pyconfig.h."""
     if _PYTHON_BUILD:
         if os.name == "nt":
             inc_dir = os.path.join(_PROJECT_BASE, "PC")
@@ -372,16 +372,16 @@ def get_config_h_filename():
     return os.path.join(inc_dir, 'pyconfig.h')
 
 def get_scheme_names():
-    """Returns a tuple containing the schemes names."""
+    """Return a tuple containing the schemes names."""
     return tuple(sorted(_SCHEMES.sections()))
 
 def get_path_names():
-    """Returns a tuple containing the paths names."""
+    """Return a tuple containing the paths names."""
     # xxx see if we want a static list
     return _SCHEMES.options('posix_prefix')
 
 def get_paths(scheme=_get_default_scheme(), vars=None, expand=True):
-    """Returns a mapping containing an install scheme.
+    """Return a mapping containing an install scheme.
 
     ``scheme`` is the install scheme name. If not provided, it will
     return the default scheme for the current platform.
@@ -392,7 +392,7 @@ def get_paths(scheme=_get_default_scheme(), vars=None, expand=True):
         return dict(_SCHEMES.items(scheme))
 
 def get_path(name, scheme=_get_default_scheme(), vars=None, expand=True):
-    """Returns a path corresponding to the scheme.
+    """Return a path corresponding to the scheme.
 
     ``scheme`` is the install scheme name.
     """
