@@ -12,9 +12,7 @@ try:
 except ImportError:
     from distutils2._backport.hashlib import md5
 
-from test.test_support import TESTFN
-
-from distutils2.tests import unittest, run_unittest, support
+from distutils2.tests import unittest, run_unittest, support, TESTFN
 from distutils2._backport import pkgutil
 
 try:
