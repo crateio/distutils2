@@ -238,20 +238,20 @@ def split_quoted(s):
             words.append(s[:end])
             break
 
-        if s[end] in string.whitespace: # unescaped, unquoted whitespace: now
-            words.append(s[:end])       # we definitely have a word delimiter
+        if s[end] in string.whitespace:  # unescaped, unquoted whitespace: now
+            words.append(s[:end])        # we definitely have a word delimiter
             s = s[end:].lstrip()
             pos = 0
 
-        elif s[end] == '\\':            # preserve whatever is being escaped;
-                                        # will become part of the current word
+        elif s[end] == '\\':             # preserve whatever is being escaped;
+                                         # will become part of the current word
             s = s[:end] + s[end + 1:]
             pos = end + 1
 
         else:
-            if s[end] == "'":           # slurp singly-quoted string
+            if s[end] == "'":            # slurp singly-quoted string
                 m = _squote_re.match(s, end)
-            elif s[end] == '"':         # slurp doubly-quoted string
+            elif s[end] == '"':          # slurp doubly-quoted string
                 m = _dquote_re.match(s, end)
             else:
                 raise RuntimeError("this can't happen "
@@ -664,6 +664,7 @@ def resolve_name(name):
 
     return ret
 
+
 def splitext(path):
     """Like os.path.splitext, but take off .tar too"""
     base, ext = posixpath.splitext(path)
@@ -869,7 +870,8 @@ def _spawn_os2(cmd, search_path=1, verbose=0, dry_run=0, env=None):
                   "command '%s' failed: %s" % (cmd[0], exc[-1]))
         if rc != 0:
             # and this reflects the command running but failing
-            logger.debug("command '%s' failed with exit status %d" % (cmd[0], rc))
+            logger.debug("command '%s' failed with exit status %d",
+                         (cmd[0], rc))
             raise DistutilsExecError(
                   "command '%s' failed with exit status %d" % (cmd[0], rc))
 
@@ -971,6 +973,7 @@ username:%s
 password:%s
 """
 
+
 def get_pypirc_path():
     """Returns rc file path."""
     return os.path.join(os.path.expanduser('~'), '.pypirc')
@@ -1048,7 +1051,7 @@ def read_pypirc(repository=DEFAULT_REPOSITORY, realm=DEFAULT_REALM):
 def metadata_to_dict(meta):
     """XXX might want to move it to the Metadata class."""
     data = {
-        'metadata_version' : meta.version,
+        'metadata_version': meta.version,
         'name': meta['Name'],
         'version': meta['Version'],
         'summary': meta['Summary'],
@@ -1079,10 +1082,11 @@ def metadata_to_dict(meta):
 
     return data
 
+
 # utility functions for 2to3 support
 
-def run_2to3(files, doctests_only=False, fixer_names=None, options=None,
-                                                                explicit=None):
+def run_2to3(files, doctests_only=False, fixer_names=None,
+             options=None, explicit=None):
     """ Wrapper function around the refactor() class which
     performs the conversions on a list of python files.
     Invoke 2to3 on a list of Python files. The files should all come
@@ -1095,7 +1099,6 @@ def run_2to3(files, doctests_only=False, fixer_names=None, options=None,
     from lib2to3.refactor import get_fixers_from_package, RefactoringTool
     fixers = []
     fixers = get_fixers_from_package('lib2to3.fixes')
-
 
     if fixer_names:
         for fixername in fixer_names:
