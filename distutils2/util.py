@@ -1101,10 +1101,8 @@ def run_2to3(files, doctests_only=False, fixer_names=None, options=None,
         for fixername in fixer_names:
             fixers.extend([fixer for fixer in get_fixers_from_package(fixername)])
     r = RefactoringTool(fixers, options=options)
-    if doctests_only:
-        r.refactor(files, doctests_only=True, write=True)
-    else:
-        r.refactor(files, write=True)
+    r.refactor(files, write=True, doctests_only=doctests_only)
+
 
 class Mixin2to3:
     """ Wrapper class for commands that run 2to3.
