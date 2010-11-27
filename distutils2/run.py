@@ -7,6 +7,8 @@ from distutils2.errors import (DistutilsSetupError, DistutilsArgError,
                                DistutilsError, CCompilerError)
 from distutils2.dist import Distribution
 from distutils2 import __version__
+from distutils2._backport.pkgutil import get_distributions, get_distribution
+from distutils2.depgraph import generate_graph
 
 # This is a barebones help message generated displayed when the user
 # runs the setup script with no arguments at all.  More useful help
@@ -120,9 +122,49 @@ def main():
                   action="store_true", dest="version", default=False,
                   help="Prints out the version of Distutils2 and exits.")
 
+    parser.add_option("-s", "--search",
+                  action="store", dest="search", default=None,
+                  help="Search for installed distributions.")
+
+    parser.add_option("-g", "--graph",
+                  action="store", dest="graph", default=None,
+                  help="Display the graph for a given installed distribution.")
+
+    parser.add_option("-f", "--full-graph",
+                  action="store_true", dest="fgraph", default=False,
+                  help="Display the full graph for installed distribution.")
+
     options, args = parser.parse_args()
     if options.version:
         print('Distutils2 %s' % __version__)
+        sys.exit(0)
+
+    if options.search is not None:
+        search = options.search.lower()
+        for dist in get_distributions(use_egg_info=True):
+            name = dist.name.lower()
+            if search in name:
+                print('%s %s at %s' % (dist.name, dist.metadata['version'],
+                                     dist.path))
+
+        sys.exit(0)
+
+    if options.graph is not None:
+        name = options.graph
+        dist = get_distribution(name, use_egg_info=True)
+        if dist is None:
+            print('Distribution not found.')
+        else:
+            dists = get_distributions(use_egg_info=True)
+            graph = generate_graph(dists)
+            print(graph.repr_node(dist))
+
+        sys.exit(0)
+
+    if options.fgraph:
+        dists = get_distributions(use_egg_info=True)
+        graph = generate_graph(dists)
+        print(graph)
         sys.exit(0)
 
     if len(args) == 0:

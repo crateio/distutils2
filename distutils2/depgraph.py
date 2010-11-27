@@ -66,18 +66,28 @@ class DependencyGraph(object):
         """
         self.missing[distribution].append(requirement)
 
+    def _repr_dist(self, dist):
+        return '%s %s' % (dist.name, dist.metadata['Version'])
+
+    def repr_node(self, dist, level=1):
+        """Prints only a subgraph"""
+        output = []
+        output.append(self._repr_dist(dist))
+        for other, label in self.adjacency_list[dist]:
+            dist = self._repr_dist(other)
+            if label is not None:
+                dist = '%s [%s]' % (dist, label)
+            output.append('    ' * level + '%s' % dist)
+            suboutput = self.repr_node(other, level+1)
+            subs = suboutput.split('\n')
+            output.extend(subs[1:])
+        return '\n'.join(output)
+
     def __repr__(self):
         """Representation of the graph"""
-        def _repr_dist(dist):
-            return '%s %s' % (dist.name, dist.metadata['Version'])
         output = []
         for dist, adjs in self.adjacency_list.iteritems():
-            output.append(_repr_dist(dist))
-            for other, label in adjs:
-                dist = _repr_dist(other)
-                if label is not None:
-                    dist = '%s [%s]' % (dist, label)
-                output.append('    %s' % dist)
+            output.append(self.repr_node(dist))
         return '\n'.join(output)
 
 
@@ -129,7 +139,9 @@ def generate_graph(dists):
     # first, build the graph and find out the provides
     for dist in dists:
         graph.add_distribution(dist)
-        provides = dist.metadata['Provides-Dist'] + dist.metadata['Provides']
+        provides = (dist.metadata['Provides-Dist'] + dist.metadata['Provides'] +
+                    ['%s (%s)' % (dist.name, dist.metadata['Version'])])
+
 
         for p in provides:
             comps = p.strip().rsplit(" ", 1)
@@ -149,7 +161,13 @@ def generate_graph(dists):
     for dist in dists:
         requires = dist.metadata['Requires-Dist'] + dist.metadata['Requires']
         for req in requires:
-            predicate = VersionPredicate(req)
+            try:
+                predicate = VersionPredicate(req)
+            except IrrationalVersionError:
+                # XXX compat-mode if cannot read the version
+                name = req.split()[0]
+                predicate = VersionPredicate(name)
+
             name = predicate.name
 
             if not name in provided:
@@ -172,7 +190,6 @@ def generate_graph(dists):
                         break
                 if not matched:
                     graph.add_missing(dist, req)
-
     return graph
 
 
