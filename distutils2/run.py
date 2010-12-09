@@ -123,13 +123,13 @@ def main():
     options, args = parser.parse_args()
     if options.version:
         print('Distutils2 %s' % __version__)
-        sys.exit(0)
+#        sys.exit(0)
 
     if len(args) == 0:
         parser.print_help()
 
     commands_main()
-    sys.exit(0)
+#    sys.exit(0)
 
 if __name__ == '__main__':
     main()
