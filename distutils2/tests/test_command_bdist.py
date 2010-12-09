@@ -1,5 +1,6 @@
 """Tests for distutils.command.bdist."""
 
+from distutils2 import util
 from distutils2.tests import run_unittest
 
 from distutils2.command.bdist import bdist, show_formats
@@ -8,6 +9,22 @@ from distutils2.tests import unittest, support, captured_stdout
 
 class BuildTestCase(support.TempdirManager,
                     unittest.TestCase):
+
+    def _mock_get_platform(self):
+        self._get_platform_called = True
+        return self._get_platform()
+
+    def setUp(self):
+        super(BuildTestCase, self).setUp()
+
+        # mock util.get_platform
+        self._get_platform_called = False
+        self._get_platform = util.get_platform
+        util.get_platform = self._mock_get_platform
+
+    def tearDown(self):
+        super(BuildTestCase, self).tearDown()
+        util.get_platform = self._get_platform
 
     def test_formats(self):
 
@@ -28,6 +45,15 @@ class BuildTestCase(support.TempdirManager,
         found = cmd.format_command.keys()
         found.sort()
         self.assertEqual(found, formats)
+
+    def test_skip_build(self):
+        pkg_pth, dist = self.create_dist()
+        cmd = bdist(dist)
+        cmd.skip_build = True
+        
+        cmd.formats = ['ztar']
+        cmd.ensure_finalized()
+        self.assertTrue(self._get_platform_called)
 
     def test_show_formats(self):
         __, stdout = captured_stdout(show_formats)
