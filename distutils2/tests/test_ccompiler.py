@@ -1,5 +1,4 @@
 """Tests for distutils.ccompiler."""
-from distutils2.compiler.ccompiler import CCompiler
 from distutils2.tests import unittest, support
 
 
