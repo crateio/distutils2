@@ -204,7 +204,7 @@ class ConfigTestCase(support.TempdirManager,
                          'FooBarBazTest')
 
         # did the README got loaded ?
-        self.assertEquals(dist.metadata['description'], 'yeah')
+        self.assertEqual(dist.metadata['description'], 'yeah')
 
         # do we have the D Compiler enabled ?
         from distutils2.compiler import new_compiler, _COMPILERS
@@ -238,7 +238,7 @@ class ConfigTestCase(support.TempdirManager,
         finally:
             sys.argv[:] = old_sys
 
-        self.assertEquals(dist.foo_was_here, 1)
+        self.assertEqual(dist.foo_was_here, 1)
 
 
 def test_suite():

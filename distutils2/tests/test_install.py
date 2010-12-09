@@ -284,7 +284,7 @@ class TestInstall(TempdirManager, unittest.TestCase):
         install.install_from_infos(install=to_install,
                                          install_path=install_path)
         for dist in to_install:
-            self.assertEquals(dist.install_called_with, (install_path,))
+            self.assertEqual(dist.install_called_with, (install_path,))
 
 def test_suite():
     suite = unittest.TestSuite()

@@ -144,7 +144,7 @@ class UtilTestCase(support.EnvironGuard,
         os.path.join = _join
 
         self.assertEqual(convert_path('/home/to/my/stuff'),
-                          '/home/to/my/stuff')
+                         '/home/to/my/stuff')
 
         # win
         os.sep = '\\'
@@ -156,9 +156,9 @@ class UtilTestCase(support.EnvironGuard,
         self.assertRaises(ValueError, convert_path, 'home/to/my/stuff/')
 
         self.assertEqual(convert_path('home/to/my/stuff'),
-                          'home\\to\\my\\stuff')
+                         'home\\to\\my\\stuff')
         self.assertEqual(convert_path('.'),
-                          os.curdir)
+                         os.curdir)
 
     def test_change_root(self):
         # linux/mac
@@ -171,9 +171,9 @@ class UtilTestCase(support.EnvironGuard,
         os.path.join = _join
 
         self.assertEqual(change_root('/root', '/old/its/here'),
-                          '/root/old/its/here')
+                         '/root/old/its/here')
         self.assertEqual(change_root('/root', 'its/here'),
-                          '/root/its/here')
+                         '/root/its/here')
 
         # windows
         os.name = 'nt'
@@ -190,9 +190,9 @@ class UtilTestCase(support.EnvironGuard,
         os.path.join = _join
 
         self.assertEqual(change_root('c:\\root', 'c:\\old\\its\\here'),
-                          'c:\\root\\old\\its\\here')
+                         'c:\\root\\old\\its\\here')
         self.assertEqual(change_root('c:\\root', 'its\\here'),
-                          'c:\\root\\its\\here')
+                         'c:\\root\\its\\here')
 
         # BugsBunny os (it's a great os)
         os.name = 'BugsBunny'
@@ -203,7 +203,7 @@ class UtilTestCase(support.EnvironGuard,
 
     def test_split_quoted(self):
         self.assertEqual(split_quoted('""one"" "two" \'three\' \\four'),
-                          ['one', 'two', 'three', 'four'])
+                         ['one', 'two', 'three', 'four'])
 
     def test_strtobool(self):
         yes = ('y', 'Y', 'yes', 'True', 't', 'true', 'True', 'On', 'on', '1')
@@ -383,7 +383,7 @@ class UtilTestCase(support.EnvironGuard,
         run_2to3([file_name])
         new_content = "".join(file_handle.read())
         file_handle.close()
-        self.assertEquals(new_content, converted_content)
+        self.assertEqual(new_content, converted_content)
 
     @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_run_2to3_on_doctests(self):
@@ -399,7 +399,7 @@ class UtilTestCase(support.EnvironGuard,
         run_2to3([file_name], doctests_only=True)
         new_content = "".join(file_handle.readlines())
         file_handle.close()
-        self.assertEquals(new_content, converted_content)
+        self.assertEqual(new_content, converted_content)
 
     def test_nt_quote_args(self):
 
