@@ -4,7 +4,7 @@ Implements the Distutils 'bdist' command (create a built [binary]
 distribution)."""
 import os
 
-from distutils2.util import get_platform
+from distutils2 import util
 from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsPlatformError, DistutilsOptionError
 
@@ -29,7 +29,7 @@ class bdist(Command):
                      "temporary directory for creating built distributions"),
                     ('plat-name=', 'p',
                      "platform name to embed in generated filenames "
-                     "(default: %s)" % get_platform()),
+                     "(default: %s)" % util.get_platform()),
                     ('formats=', None,
                      "formats for distribution (comma-separated list)"),
                     ('dist-dir=', 'd',
@@ -87,7 +87,7 @@ class bdist(Command):
         # have to finalize 'plat_name' before 'bdist_base'
         if self.plat_name is None:
             if self.skip_build:
-                self.plat_name = get_platform()
+                self.plat_name = util.get_platform()
             else:
                 self.plat_name = self.get_finalized_command('build').plat_name
 
