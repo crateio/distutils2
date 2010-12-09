@@ -49,8 +49,14 @@ class BuildTestCase(support.TempdirManager,
     def test_skip_build(self):
         pkg_pth, dist = self.create_dist()
         cmd = bdist(dist)
+        cmd.skip_build = False
+        cmd.formats = ['ztar']
+        cmd.ensure_finalized()
+        self.assertFalse(self._get_platform_called)
+
+        pkg_pth, dist = self.create_dist()
+        cmd = bdist(dist)
         cmd.skip_build = True
-        
         cmd.formats = ['ztar']
         cmd.ensure_finalized()
         self.assertTrue(self._get_platform_called)
