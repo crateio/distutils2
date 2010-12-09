@@ -128,7 +128,7 @@ def main():
     if len(args) == 0:
         parser.print_help()
 
-    commands_main()
+    return commands_main()
 #    sys.exit(0)
 
 if __name__ == '__main__':
