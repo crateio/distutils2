@@ -1,11 +1,12 @@
 """Tests for distutils.command.bdist."""
 
+import os
 from distutils2 import util
 from distutils2.tests import run_unittest
 
 from distutils2.command.bdist import bdist, show_formats
+from distutils2.errors import DistutilsPlatformError
 from distutils2.tests import unittest, support, captured_stdout
-
 
 class BuildTestCase(support.TempdirManager,
                     unittest.TestCase):
@@ -61,6 +62,17 @@ class BuildTestCase(support.TempdirManager,
         cmd.ensure_finalized()
         self.assertTrue(self._get_platform_called)
 
+    def test_unsupported_platform(self):
+        try:
+            _os_name = os.name
+            os.name = "some-obscure-os"
+
+            pkg_pth, dist = self.create_dist()
+            cmd = bdist(dist)
+            self.assertRaises(DistutilsPlatformError, cmd.ensure_finalized)
+        finally:
+            os.name = _os_name
+    
     def test_show_formats(self):
         __, stdout = captured_stdout(show_formats)
 
