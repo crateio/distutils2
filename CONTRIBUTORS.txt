@@ -18,15 +18,21 @@ Thanks to:
 - Nicolas Cadou
 - Konrad Delong
 - Josip Djolonga
+- Andrew Francis
 - Yannick Gingras
+- Alexandre Hamelin
+- Christian Hudon
 - Jeremy Kloth
 - Amos Latteier
+- Mathieu Leduc-Hamel
 - Martin von Löwis
+- Simon Mathieu
 - Carl Meyer
 - Alexis Métaireau
 - Zubin Mithra
 - Derek McTavish Mounce
 - Michael Mulich
+- Louis Munro
 - George Peristerakis
 - Mathieu Perreault
 - Sean Reifschneider
