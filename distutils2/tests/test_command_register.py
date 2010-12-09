@@ -1,6 +1,5 @@
 # -*- encoding: utf-8 -*-
 """Tests for distutils.command.register."""
-import sys
 import os
 import getpass
 import urllib2

@@ -1,7 +1,6 @@
 """Tests for ``distutils2.command.install_distinfo``. """
 
 import os
-import sys
 import csv
 
 from distutils2.command.install_distinfo import install_distinfo

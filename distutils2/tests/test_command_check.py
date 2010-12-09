@@ -62,7 +62,6 @@ class CheckTestCase(support.LoggingCatcher,
 
     def test_check_all(self):
 
-        metadata = {'home_page': 'xxx', 'author': 'xxx'}
         self.assertRaises(DistutilsSetupError, self._run,
                           {}, **{'strict': 1,
                                  'all': 1})
