@@ -1,7 +1,5 @@
 """Tests for distutils.command.install_data."""
-import sys
 import os
-import getpass
 
 from distutils2.command.install_data import install_data
 from distutils2.tests import unittest, support
@@ -53,7 +51,6 @@ class InstallDataTestCase(support.TempdirManager,
 
         # now using root and empty dir
         cmd.root = os.path.join(pkg_dir, 'root')
-        inst3 = os.path.join(cmd.install_dir, 'inst3')
         inst4 = os.path.join(pkg_dir, 'inst4')
         three = os.path.join(cmd.install_dir, 'three')
         self.write_file(three, 'xx')
