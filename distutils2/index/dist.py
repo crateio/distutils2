@@ -445,8 +445,7 @@ class ReleasesList(IndexReference):
             reverse=reverse, *args, **kwargs)
 
     def get_release(self, version):
-        """Return a release from it's version.
-        """
+        """Return a release from its version."""
         matches = [r for r in self.releases if "%s" % r.version == version]
         if len(matches) != 1:
             raise KeyError(version)

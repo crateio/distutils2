@@ -1,5 +1,4 @@
-import xmlrpc
-import simple
+from distutils2.index import simple, xmlrpc
 
 _WRAPPER_MAPPINGS = {'get_release': 'simple',
                      'get_releases': 'simple',
