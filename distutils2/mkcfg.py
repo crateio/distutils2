@@ -347,8 +347,6 @@ class MainProgram(object):
     def _set_multi(self, question, name):
         existing_values = self.data[name]
         value = ask(question, helptext=_helptext[name]).strip()
-        if value == '':
-            return
         if value not in existing_values:
             existing_values.append(value)
 

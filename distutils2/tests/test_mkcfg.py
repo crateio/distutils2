@@ -1,12 +1,46 @@
 """Tests for distutils.mkcfg."""
 import os
+import sys
+import StringIO
 from distutils2.tests import run_unittest, support, unittest
 from distutils2.mkcfg import MainProgram
-
+from distutils2.mkcfg import ask_yn, ask
 
 class MkcfgTestCase(support.TempdirManager,
                     unittest.TestCase):
 
+    def setUp(self):
+        super(MkcfgTestCase, self).setUp()
+        self._stdin = sys.stdin
+        self._stdout = sys.stdout        
+        sys.stdin = StringIO.StringIO()
+        sys.stdout = StringIO.StringIO()
+        
+    def tearDown(self):
+        super(MkcfgTestCase, self).tearDown()
+        sys.stdin = self._stdin
+        sys.stdout = self._stdout
+        
+    def test_ask_yn(self):        
+        sys.stdin.write('y\n')
+        sys.stdin.seek(0)
+        self.assertEqual('y', ask_yn('is this a test'))
+
+    def test_ask(self):
+        sys.stdin.write('a\n')
+        sys.stdin.write('b\n')
+        sys.stdin.seek(0)
+        self.assertEqual('a', ask('is this a test'))
+        self.assertEqual('b', ask(str(range(0,70)), default='c', lengthy=True))
+
+    def test_set_multi(self):
+        main = MainProgram()
+        sys.stdin.write('aaaaa\n')
+        sys.stdin.seek(0)
+        main.data['author'] = []
+        main._set_multi('_set_multi test', 'author')
+        self.assertEqual(['aaaaa'], main.data['author'])
+        
     def test_find_files(self):
         # making sure we scan a project dir correctly
         main = MainProgram()
