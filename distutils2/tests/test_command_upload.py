@@ -5,6 +5,7 @@ import sys
 
 from distutils2.command.upload import upload
 from distutils2.dist import Distribution
+from distutils2.errors import DistutilsOptionError
 
 from distutils2.tests import unittest, support
 from distutils2.tests.pypi_server import PyPIServer, PyPIServerTestCase
@@ -59,6 +60,14 @@ class UploadTestCase(support.TempdirManager, support.EnvironGuard,
                                ('repository', 'http://pypi.python.org/pypi')):
             self.assertEqual(getattr(cmd, attr), expected)
 
+    def test_finalize_options_unsigned_identity_yields_exception(self):
+        self.write_file(self.rc, PYPIRC)
+        dist = Distribution()
+        cmd = upload(dist)
+        cmd.identity = True
+        cmd.sign = False
+        self.assertRaises(DistutilsOptionError, cmd.finalize_options) 
+
     def test_saved_password(self):
         # file with no password
         self.write_file(self.rc, PYPIRC_NOPASSWORD)
@@ -75,6 +84,11 @@ class UploadTestCase(support.TempdirManager, support.EnvironGuard,
         cmd = upload(dist)
         cmd.finalize_options()
         self.assertEqual(cmd.password, 'xxx')
+
+    def test_upload_without_files_yields_exception(self):
+        dist = Distribution()
+        cmd = upload(dist)
+        self.assertRaises(DistutilsOptionError, cmd.run)
 
     def test_upload(self):
         path = os.path.join(self.tmp_dir, 'xxx')

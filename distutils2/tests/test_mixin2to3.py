@@ -60,7 +60,7 @@ class Mixin2to3TestCase(support.TempdirManager, support.WarningsCatcher,
 
         mixin2to3 = Mixin2to3()
 
-        mixin2to3._run_2to3(files=[code_name],
+        mixin2to3._run_2to3(files=[code_name], doctests=[code_name],
                             fixers=['distutils2.tests.fixer'])
         converted_code_content = "isinstance(x, T)"
         new_code_content = "".join(open(code_name).readlines())
