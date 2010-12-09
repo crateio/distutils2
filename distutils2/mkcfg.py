@@ -317,7 +317,7 @@ class MainProgram(object):
         for root, dirs, files in os.walk(curdir):
             if to_skip(root):
                 continue
-            for dir_ in dirs:
+            for dir_ in sorted(dirs):
                 if to_skip(dir_):
                     continue
                 fullpath = os.path.join(root, dir_)
@@ -334,7 +334,7 @@ class MainProgram(object):
             if True in [root.startswith(path) for path in scanned]:
                 continue
 
-            for file in files:
+            for file in sorted(files):
                 fullpath = os.path.join(root, file)
                 if to_skip(fullpath):
                     continue
