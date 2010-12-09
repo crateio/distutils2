@@ -274,6 +274,16 @@ class DepGraphTestCase(support.LoggingCatcher,
 
         self.checkLists(matches, expected)
 
+    def test_repr(self):
+        dists = []
+        for name in self.DISTROS_DIST + self.DISTROS_EGG + self.BAD_EGGS:
+            dist = pkgutil.get_distribution(name, use_egg_info=True)
+            self.assertNotEqual(dist, None)
+            dists.append(dist)
+
+        graph = depgraph.generate_graph(dists)
+        assert repr(graph)
+
     def test_main(self):
         tempout = StringIO.StringIO()
         old = sys.stdout
