@@ -118,6 +118,8 @@ def main():
     """Main entry point for Distutils2"""
     parser = OptionParser()
     parser.disable_interspersed_args()
+    parser.usage = '%prog [options] cmd1 cmd2 ..'
+
     parser.add_option("-v", "--version",
                   action="store_true", dest="version", default=False,
                   help="Prints out the version of Distutils2 and exits.")
@@ -132,7 +134,7 @@ def main():
 
     parser.add_option("-f", "--full-graph",
                   action="store_true", dest="fgraph", default=False,
-                  help="Display the full graph for installed distribution.")
+                  help="Display the full graph for installed distributions.")
 
     options, args = parser.parse_args()
     if options.version:
@@ -169,9 +171,11 @@ def main():
 
     if len(args) == 0:
         parser.print_help()
+        sys.exit(0)
 
     commands_main()
     sys.exit(0)
+
 
 if __name__ == '__main__':
     main()
