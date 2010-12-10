@@ -231,7 +231,6 @@ class DepGraphTestCase(support.LoggingCatcher,
         # checks what main did XXX could do more here
         tempout.seek(0)
         res = tempout.read()
-        import pdb; pdb.set_trace()
         self.assertTrue('towel' in res)
 
 

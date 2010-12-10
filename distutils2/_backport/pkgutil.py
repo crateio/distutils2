@@ -680,7 +680,6 @@ def _yield_distributions(include_dist, include_egg):
                                   dir.endswith('.egg')):
                 yield EggInfoDistribution(dist_path)
 
-
 def _generate_cache(use_egg_info=False):
     global _cache_generated, _cache_generated_egg
 
@@ -913,14 +912,15 @@ class EggInfoDistribution(object):
         else:
             raise ValueError('The path must end with .egg-info or .egg')
 
-        provides = "%s (%s)" % (self.metadata['name'],
-                                self.metadata['version'])
-        #if self.metadata['Metadata-Version'] == '1.2':
-        #    self.metadata['Provides-Dist'] += (provides,)
-        #else:
-        #    self.metadata['Provides'] += (provides,)
 
-        if len(provides) > 0:
+        if requires is not None:
+            if self.metadata['Metadata-Version'] == '1.1':
+                # we can't have 1.1 metadata *and* Setuptools requires
+                for field in ('Obsoletes', 'Requires', 'Provides'):
+                    del self.metadata[field]
+
+            provides = "%s (%s)" % (self.metadata['name'],
+                                    self.metadata['version'])
             self.metadata['Provides-Dist'] += (provides,)
 
         reqs = []
@@ -958,10 +958,7 @@ class EggInfoDistribution(object):
                             reqs.append(name)
                         else:
                             reqs.append('%s (%s)' % (name, version))
-            #if self.metadata['Metadata-Version'] == '1.2':
-            #    self.metadata['Requires-Dist'] += reqs
-            #else:
-            #    self.metadata['Requires'] += reqs
+
             if len(reqs) > 0:
                 self.metadata['Requires-Dist'] += reqs
 
