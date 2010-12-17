@@ -140,7 +140,7 @@ class upload(Command):
         body = StringIO()
         file_fields = ('content', 'gpg_signature')
 
-        for key, values in data.items():
+        for key, values in data.iteritems():
             # handle multiple entries for the same name
             if not isinstance(values, (tuple, list)):
                 values = [values]

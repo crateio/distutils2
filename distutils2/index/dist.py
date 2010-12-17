@@ -408,7 +408,7 @@ class ReleasesList(IndexReference):
             if not version in self.get_versions():
                 # append only if not already exists
                 self.releases.append(release)
-            for dist in release.dists.values():
+            for dist in release.dists.itervalues():
                 for url in dist.urls:
                     self.add_release(version, dist.dist_type, **url)
         else:

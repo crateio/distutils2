@@ -235,7 +235,7 @@ Your selection [default 1]: ''', logging.INFO)
         sep_boundary = '\n--' + boundary
         end_boundary = sep_boundary + '--'
         body = StringIO.StringIO()
-        for key, value in data.items():
+        for key, value in data.iteritems():
             # handle multiple entries for the same name
             if not isinstance(value, (tuple, list)):
                 value = [value]

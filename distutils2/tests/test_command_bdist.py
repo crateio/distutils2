@@ -22,10 +22,9 @@ class BuildTestCase(support.TempdirManager,
         # XXX an explicit list in bdist is
         # not the best way to  bdist_* commands
         # we should add a registry
-        formats = ['zip', 'gztar', 'bztar', 'ztar', 'tar', 'wininst', 'msi']
-        formats.sort()
-        found = cmd.format_command.keys()
-        found.sort()
+        formats = sorted(('zip', 'gztar', 'bztar', 'ztar',
+                          'tar', 'wininst', 'msi'))
+        found = sorted(cmd.format_command)
         self.assertEqual(found, formats)
 
 def test_suite():

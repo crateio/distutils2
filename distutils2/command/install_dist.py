@@ -424,7 +424,7 @@ class install_dist(Command):
         """Set the install directories by applying the install schemes."""
         # it's the caller's problem if they supply a bad name!
         scheme = get_paths(name, expand=False)
-        for key, value in scheme.items():
+        for key, value in scheme.iteritems():
             if key == 'platinclude':
                 key = 'headers'
                 value = os.path.join(value, self.distribution.metadata['Name'])

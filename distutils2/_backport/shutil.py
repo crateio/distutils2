@@ -349,7 +349,7 @@ def _make_tarball(base_name, base_dir, compress="gzip", verbose=0, dry_run=0,
     compress_ext = {'gzip': '.gz', 'bzip2': '.bz2', 'compress': '.Z'}
 
     # flags for compression program, each element of list will be an argument
-    if compress is not None and compress not in compress_ext.keys():
+    if compress is not None and compress not in compress_ext:
         raise ValueError, \
               ("bad value for 'compress': must be None, 'gzip', 'bzip2' "
                "or 'compress'")
@@ -487,7 +487,7 @@ def get_archive_formats():
     Each element of the returned sequence is a tuple (name, description)
     """
     formats = [(name, registry[2]) for name, registry in
-               _ARCHIVE_FORMATS.items()]
+               _ARCHIVE_FORMATS.iteritems()]
     formats.sort()
     return formats
 
