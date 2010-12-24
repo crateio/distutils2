@@ -25,6 +25,24 @@ class TestXMLRPCClient(unittest.TestCase):
                           invalid="test")
 
     @use_xmlrpc_server()
+    def test_get_all_projects(self, server):
+        client = self._get_client(server)
+        server.xmlrpc.set_distributions([
+            {'name': 'FooBar', 'version': '1.1'},
+            {'name': 'FooBar', 'version': '1.2'},
+            {'name': 'Foo', 'version': '1.1'},
+        ])
+        results = client.get_all_projects()
+        self.assertEqual(2, len(results))
+
+        # check we do have two releases for Foobar's project
+        self.assertEqual(2, len(results[0].releases))
+
+        names = [r.name for r in results]
+        self.assertIn('FooBar', names)
+        self.assertIn('Foo', names)
+
+    @use_xmlrpc_server()
     def test_get_releases(self, server):
         client = self._get_client(server)
         server.xmlrpc.set_distributions([

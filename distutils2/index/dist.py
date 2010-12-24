@@ -101,7 +101,7 @@ class ReleaseInfo(IndexReference):
     def is_final(self):
         """proxy to version.is_final"""
         return self.version.is_final
-    
+
     def fetch_distributions(self):
         if self.dists is None:
             self._index.get_distributions(self.name, '%s' % self.version)
@@ -127,7 +127,7 @@ class ReleaseInfo(IndexReference):
             self.dists[dist_type] = DistInfo(self, dist_type,
                                              index=self._index, **params)
         if python_version:
-            self.dists[dist_type].python_version = python_version 
+            self.dists[dist_type].python_version = python_version
 
     def get_distribution(self, dist_type=None, prefer_source=True):
         """Return a distribution.
@@ -302,7 +302,7 @@ class DistInfo(IndexReference):
 
     def unpack(self, path=None):
         """Unpack the distribution to the given path.
-        
+
         If not destination is given, creates a temporary location.
 
         Returns the location of the extracted files (root).
@@ -310,10 +310,10 @@ class DistInfo(IndexReference):
         if not self._unpacked_dir:
             if path is None:
                 path = tempfile.mkdtemp()
-            
+
             filename = self.download()
             content_type = mimetypes.guess_type(filename)[0]
-     
+
             if (content_type == 'application/zip'
                 or filename.endswith('.zip')
                 or filename.endswith('.pybundle')
@@ -351,7 +351,7 @@ class ReleasesList(IndexReference):
     """
     def __init__(self, name, releases=None, contains_hidden=False, index=None):
         self.set_index(index)
-        self.releases = [] 
+        self.releases = []
         self.name = name
         self.contains_hidden = contains_hidden
         if releases:
@@ -404,7 +404,7 @@ class ReleasesList(IndexReference):
                 raise ValueError("%s is not the same project than %s" %
                                  (release.name, self.name))
             version = '%s' % release.version
-                
+
             if not version in self.get_versions():
                 # append only if not already exists
                 self.releases.append(release)
