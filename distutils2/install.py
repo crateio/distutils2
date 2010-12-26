@@ -1,14 +1,15 @@
 from tempfile import mkdtemp
-import logging
 import shutil
 import os
 import errno
 import itertools
 
+from distutils2 import logger
 from distutils2._backport.pkgutil import get_distributions
 from distutils2.depgraph import generate_graph
 from distutils2.index import wrapper
 from distutils2.index.errors import ProjectNotFound, ReleaseNotFound
+from distutils2.version import get_version_predicate
 
 """Provides installations scripts.
 
@@ -72,10 +73,13 @@ def install_dists(dists, path=None):
 
     installed_dists, installed_files = [], []
     for d in dists:
+        logger.info('Installing %s %s' % (d.name, d.version))
         try:
             installed_files.extend(d.install(path))
             installed_dists.append(d)
         except Exception, e :
+            logger.info('Failed. %s' % str(e))
+
             for d in installed_dists:
                 d.uninstall()
             raise e
@@ -155,11 +159,35 @@ def get_infos(requirements, index=None, installed=None, prefer_final=True):
     conflict.
     """
 
-    if not index:
-        index = wrapper.ClientWrapper()
 
     if not installed:
+        logger.info('Reading installed distributions')
         installed = get_distributions(use_egg_info=True)
+
+    infos = {'install': [], 'remove': [], 'conflict': []}
+    # Is a compatible version of the project is already installed ?
+    predicate = get_version_predicate(requirements)
+    found = False
+    installed = list(installed)
+    for installed_project in installed:
+        # is it a compatible project ?
+        if predicate.name.lower() != installed_project.name.lower():
+            continue
+        found = True
+        logger.info('Found %s %s' % (installed_project.name,
+                                     installed_project.metadata.version))
+        if predicate.match(installed_project.metadata.version):
+            return infos
+
+
+
+        break
+
+    if not found:
+        logger.info('Project not installed.')
+
+    if not index:
+        index = wrapper.ClientWrapper()
 
     # Get all the releases that match the requirements
     try:
@@ -170,28 +198,31 @@ def get_infos(requirements, index=None, installed=None, prefer_final=True):
     # Pick up a release, and try to get the dependency tree
     release = releases.get_last(requirements, prefer_final=prefer_final)
 
+    if release is None:
+        logger.info('Could not find a matching project')
+        return infos
+
     # Iter since we found something without conflicts
     metadata = release.fetch_metadata()
 
-    # Get the distributions already_installed on the system
-    # and add the one we want to install
 
     distributions = itertools.chain(installed, [release])
     depgraph = generate_graph(distributions)
 
     # Store all the already_installed packages in a list, in case of rollback.
-    infos = {'install': [], 'remove': [], 'conflict': []}
+
 
     # Get what the missing deps are
-    for dists in depgraph.missing.values():
+    for dists in depgraph.missing[release]:
         if dists:
-            logging.info("missing dependencies found, installing them")
+            logger.info("missing dependencies found, installing them")
             # we have missing deps
             for dist in dists:
                 _update_infos(infos, get_infos(dist, index, installed))
 
     # Fill in the infos
     existing = [d for d in installed if d.name == release.name]
+
     if existing:
         infos['remove'].append(existing[0])
         infos['conflict'].extend(depgraph.reverse_list[existing[0]])
@@ -213,6 +244,29 @@ def main(**attrs):
         import sys
         attrs['requirements'] = sys.argv[1]
     get_infos(**attrs)
+
+
+def install(project):
+    logger.info('Getting information about "%s".' % project)
+    try:
+        info = get_infos(project)
+    except InstallationException:
+        logger.info('Cound not find "%s".' % project)
+        return
+
+    if info['install'] == []:
+        logger.info('Nothing to install.')
+        return
+
+    #logger.info('Installing "%s" and its dependencies' % project)
+    try:
+        install_from_infos(info['install'], info['remove'], info['conflict'])
+
+    except InstallationConflict, e:
+
+        projects = ['%s %s' % (p.name, p.metadata.version) for p in e.args[0]]
+        logger.info('"%s" conflicts with "%s"' % (project, ','.join(projects)))
+
 
 if __name__ == '__main__':
     main()

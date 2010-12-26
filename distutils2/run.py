@@ -1,7 +1,9 @@
 import os
 import sys
 from optparse import OptionParser
+import logging
 
+from distutils2 import logger
 from distutils2.util import grok_environment_error
 from distutils2.errors import (DistutilsSetupError, DistutilsArgError,
                                DistutilsError, CCompilerError)
@@ -9,6 +11,7 @@ from distutils2.dist import Distribution
 from distutils2 import __version__
 from distutils2._backport.pkgutil import get_distributions, get_distribution
 from distutils2.depgraph import generate_graph
+from distutils2.install import install
 
 # This is a barebones help message generated displayed when the user
 # runs the setup script with no arguments at all.  More useful help
@@ -114,8 +117,17 @@ def commands_main(**attrs):
     return dist
 
 
+def _set_logger():
+    logger.setLevel(logging.INFO)
+    sth = logging.StreamHandler(sys.stderr)
+    sth.setLevel(logging.INFO)
+    logger.addHandler(sth)
+    logger.propagate = 0
+
+
 def main():
     """Main entry point for Distutils2"""
+    _set_logger()
     parser = OptionParser()
     parser.disable_interspersed_args()
     parser.usage = '%prog [options] cmd1 cmd2 ..'
@@ -135,6 +147,14 @@ def main():
     parser.add_option("-f", "--full-graph",
                   action="store_true", dest="fgraph", default=False,
                   help="Display the full graph for installed distributions.")
+
+    parser.add_option("-i", "--install",
+                  action="store", dest="install",
+                  help="Install a project.")
+
+    parser.add_option("-r", "--remove",
+                  action="store", dest="remove",
+                  help="Remove a project.")
 
     options, args = parser.parse_args()
     if options.version:
@@ -169,6 +189,10 @@ def main():
         print(graph)
         sys.exit(0)
 
+    if options.install is not None:
+        install(options.install)
+        sys.exit(0)
+
     if len(args) == 0:
         parser.print_help()
         sys.exit(0)
@@ -178,4 +202,5 @@ def main():
 
 
 if __name__ == '__main__':
+
     main()

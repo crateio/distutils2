@@ -323,7 +323,7 @@ def suggest_normalized_version(s):
 
 
 _PREDICATE = re.compile(r"(?i)^\s*([a-z_][\sa-zA-Z_-]*(?:\.[a-z_]\w*)*)(.*)")
-_VERSIONS = re.compile(r"^\s*\((.*)\)\s*$")
+_VERSIONS = re.compile(r"^\s*\((?P<versions>.*)\)\s*$|^\s*(?P<versions2>.*)\s*$")
 _PLAIN_VERSIONS = re.compile(r"^\s*(.*)\s*$")
 _SPLIT_CMP = re.compile(r"^\s*(<=|>=|<|>|!=|==)\s*([^\s,]+)\s*$")
 
@@ -358,14 +358,22 @@ class VersionPredicate(object):
 
         name, predicates = match.groups()
         self.name = name.strip()
-        predicates = predicates.strip()
-        predicates = _VERSIONS.match(predicates)
+        self.predicates = []
+        predicates = _VERSIONS.match(predicates.strip())
         if predicates is not None:
-            predicates = predicates.groups()[0]
-            self.predicates = [_split_predicate(pred.strip())
-                               for pred in predicates.split(',')]
-        else:
-            self.predicates = []
+            predicates = predicates.groupdict()
+            if predicates['versions'] is not None:
+                versions = predicates['versions']
+            else:
+                versions = predicates.get('versions2')
+
+            if versions is not None:
+                for version in versions.split(','):
+                    try:
+                        self.predicates.append(_split_predicate(version))
+                    except:
+                        pass
+                        #import pdb; pdb.set_trace()
 
     def match(self, version):
         """Check if the provided version matches the predicates."""
