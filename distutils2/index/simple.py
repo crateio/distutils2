@@ -1,7 +1,7 @@
 """index.simple
 
 Contains the class "SimpleIndexCrawler", a simple spider to find and retrieve
-distributions on the Python Package Index, using it's "simple" API,
+distributions on the Python Package Index, using its "simple" API,
 avalaible at http://pypi.python.org/simple/
 """
 from fnmatch import translate

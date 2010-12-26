@@ -159,8 +159,15 @@ class Client(BaseClient):
                     index=self._index))
             except IrrationalVersionError, e:
                 logging.warn("Irrational version error found: %s" % e)
-
         return [self._projects[p['name'].lower()] for p in projects]
+
+    def get_all_projects(self):
+        """Return the list of all projects registered in the package index"""
+        projects = self.proxy.list_packages()
+        for name in projects:
+            self.get_releases(name, show_hidden=True)
+
+        return [self._projects[name.lower()] for name in set(projects)]
 
     @property
     def proxy(self):

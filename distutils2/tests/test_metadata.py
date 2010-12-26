@@ -11,6 +11,7 @@ from distutils2.tests.support import LoggingCatcher, WarningsCatcher
 from distutils2.errors import (MetadataConflictError,
                                MetadataUnrecognizedVersionError)
 
+
 class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
                                    unittest.TestCase):
 
@@ -95,7 +96,6 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
                                    {'python_version': '0.1'}))
 
     def test_metadata_read_write(self):
-
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
         metadata = DistributionMetadata(PKG_INFO)
         out = StringIO()
@@ -117,7 +117,7 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
         metadata['Name'] = "baz; sys.platform == 'blah'"
         # FIXME is None or 'UNKNOWN' correct here?
         # where is that documented?
-        self.assertEquals(metadata['Name'], None)
+        self.assertEqual(metadata['Name'], None)
 
         # test with context
         context = {'sys.platform': 'okook'}

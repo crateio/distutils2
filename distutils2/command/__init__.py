@@ -31,24 +31,23 @@ _COMMANDS = {
 
 
 def get_command_names():
-    """Returns registered commands"""
     return sorted(_COMMANDS.keys())
+    """Return registered commands"""
 
 
 def set_command(location):
-    klass = resolve_name(location)
-    # we want to do the duck-type checking here
-    # XXX
-    _COMMANDS[klass.get_command_name()] = klass
+    cls = resolve_name(location)
+    # XXX we want to do the duck-type checking here
+    _COMMANDS[cls.get_command_name()] = cls
 
 
 def get_command_class(name):
     """Return the registered command"""
     try:
-        klass = _COMMANDS[name]
-        if isinstance(klass, str):
-            klass = resolve_name(klass)
-            _COMMANDS[name] = klass
-        return klass
+        cls = _COMMANDS[name]
+        if isinstance(cls, str):
+            cls = resolve_name(cls)
+            _COMMANDS[name] = cls
+        return cls
     except KeyError:
         raise DistutilsModuleError("Invalid command %s" % name)

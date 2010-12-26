@@ -19,6 +19,7 @@ from distutils2.errors import DistutilsOptionError
 
 from distutils2.tests import unittest, support
 
+
 class InstallTestCase(support.TempdirManager,
                       support.EnvironGuard,
                       support.LoggingCatcher,
@@ -83,10 +84,12 @@ class InstallTestCase(support.TempdirManager,
         _CONFIG_VARS['userbase'] = self.user_base
         scheme = '%s_user' % os.name
         _SCHEMES.set(scheme, 'purelib', self.user_site)
+
         def _expanduser(path):
             if path[0] == '~':
                 path = os.path.normpath(self.tmpdir) + path[1:]
             return path
+
         self.old_expand = os.path.expanduser
         os.path.expanduser = _expanduser
 
@@ -211,6 +214,7 @@ class InstallTestCase(support.TempdirManager,
         finally:
             install_module.DEBUG = False
         self.assertTrue(len(self.logs) > old_logs_len)
+
 
 def test_suite():
     return unittest.makeSuite(InstallTestCase)

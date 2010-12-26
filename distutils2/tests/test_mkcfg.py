@@ -36,8 +36,8 @@ class MkcfgTestCase(support.TempdirManager,
         # do we have what we want ?
         self.assertEqual(main.data['packages'], ['pkg1', 'pkg2', 'pkg2.sub'])
         self.assertEqual(main.data['modules'], ['foo'])
-        self.assertEqual(main.data['extra_files'],
-                         ['setup.cfg', 'README', 'data/data1'])
+        self.assertEqual(set(main.data['extra_files']),
+                         set(['setup.cfg', 'README', 'data/data1']))
 
 
 def test_suite():

@@ -3,6 +3,7 @@ import logging
 import shutil
 import os
 import errno
+import itertools
 
 from distutils2._backport.pkgutil import get_distributions
 from distutils2.depgraph import generate_graph
@@ -25,15 +26,6 @@ class InstallationException(Exception):
 
 class InstallationConflict(InstallationException):
     """Raised when a conflict is detected"""
-
-
-def _update_infos(infos, new_infos):
-    """extends the lists contained in the `info` dict with those contained
-    in the `new_info` one
-    """
-    for key, value in infos.items():
-        if key in new_infos:
-            infos[key].extend(new_infos[key])
 
 
 def move_files(files, destination=None):
@@ -167,7 +159,7 @@ def get_infos(requirements, index=None, installed=None, prefer_final=True):
         index = wrapper.ClientWrapper()
 
     if not installed:
-        installed = get_distributions()
+        installed = get_distributions(use_egg_info=True)
 
     # Get all the releases that match the requirements
     try:
@@ -184,7 +176,7 @@ def get_infos(requirements, index=None, installed=None, prefer_final=True):
     # Get the distributions already_installed on the system
     # and add the one we want to install
 
-    distributions = installed + [release]
+    distributions = itertools.chain(installed, [release])
     depgraph = generate_graph(distributions)
 
     # Store all the already_installed packages in a list, in case of rollback.
@@ -196,8 +188,7 @@ def get_infos(requirements, index=None, installed=None, prefer_final=True):
             logging.info("missing dependencies found, installing them")
             # we have missing deps
             for dist in dists:
-                _update_infos(infos,
-                             get_infos(dist, index, installed))
+                _update_infos(infos, get_infos(dist, index, installed))
 
     # Fill in the infos
     existing = [d for d in installed if d.name == release.name]
@@ -206,3 +197,22 @@ def get_infos(requirements, index=None, installed=None, prefer_final=True):
         infos['conflict'].extend(depgraph.reverse_list[existing[0]])
     infos['install'].append(release)
     return infos
+
+
+def _update_infos(infos, new_infos):
+    """extends the lists contained in the `info` dict with those contained
+    in the `new_info` one
+    """
+    for key, value in infos.items():
+        if key in new_infos:
+            infos[key].extend(new_infos[key])
+
+
+def main(**attrs):
+    if 'script_args' not in attrs:
+        import sys
+        attrs['requirements'] = sys.argv[1]
+    get_infos(**attrs)
+
+if __name__ == '__main__':
+    main()

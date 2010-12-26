@@ -61,9 +61,9 @@ class VersionTestCase(unittest.TestCase):
 
     def test_huge_version(self):
 
-        self.assertEquals(str(V('1980.0')), '1980.0')
+        self.assertEqual(str(V('1980.0')), '1980.0')
         self.assertRaises(HugeMajorVersionNumError, V, '1981.0')
-        self.assertEquals(str(V('1981.0', error_on_huge_major_num=False)), '1981.0')
+        self.assertEqual(str(V('1981.0', error_on_huge_major_num=False)), '1981.0')
 
     def test_comparison(self):
         r"""
@@ -225,7 +225,7 @@ class VersionWhiteBoxTestCase(unittest.TestCase):
     def test_parse_numdots(self):
         # For code coverage completeness, as pad_zeros_length can't be set or
         # influenced from the public interface
-        self.assertEquals(V('1.0')._parse_numdots('1.0', '1.0',
+        self.assertEqual(V('1.0')._parse_numdots('1.0', '1.0',
                                                   pad_zeros_length=3),
                           [1, 0, 0])
 

@@ -16,10 +16,7 @@ from distutils2.compiler import customize_compiler, show_compilers
 from distutils2.util import newer_group
 from distutils2.compiler.extension import Extension
 from distutils2 import logger
-try:
-    import sysconfig
-except ImportError:
-    from distutils2._backport import sysconfig
+from distutils2._backport import sysconfig
 
 # this keeps compatibility from 2.3 to 2.5
 if sys.version < "2.6":
@@ -260,7 +257,7 @@ class build_ext(Command):
 
             elif MSVC_VERSION == 8:
                 self.library_dirs.append(os.path.join(sys.exec_prefix,
-                                         'PC', 'VS8.0', 'win32release'))
+                                         'PC', 'VS8.0'))
             elif MSVC_VERSION == 7:
                 self.library_dirs.append(os.path.join(sys.exec_prefix,
                                          'PC', 'VS7.1'))

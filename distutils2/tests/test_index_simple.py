@@ -250,7 +250,7 @@ class SimpleCrawlerTestCase(support.TempdirManager, unittest.TestCase):
 
         # Test that the simple link matcher yield the good links.
         generator = crawler._simple_link_matcher(content, crawler.index_url)
-        self.assertEqual(('%stest/foobar-1.tar.gz#md5=abcdef' % crawler.index_url, 
+        self.assertEqual(('%stest/foobar-1.tar.gz#md5=abcdef' % crawler.index_url,
                          True), generator.next())
         self.assertEqual(('http://dl-link1', True), generator.next())
         self.assertEqual(('%stest' % crawler.index_url, False),
@@ -260,7 +260,7 @@ class SimpleCrawlerTestCase(support.TempdirManager, unittest.TestCase):
         # Follow the external links is possible (eg. homepages)
         crawler.follow_externals = True
         generator = crawler._simple_link_matcher(content, crawler.index_url)
-        self.assertEqual(('%stest/foobar-1.tar.gz#md5=abcdef' % crawler.index_url, 
+        self.assertEqual(('%stest/foobar-1.tar.gz#md5=abcdef' % crawler.index_url,
                          True), generator.next())
         self.assertEqual(('http://dl-link1', True), generator.next())
         self.assertEqual(('http://dl-link2', False), generator.next())
@@ -304,8 +304,8 @@ class SimpleCrawlerTestCase(support.TempdirManager, unittest.TestCase):
         # we can search the index for some projects, on their names
         # the case used no matters here
         crawler = self._get_simple_crawler(server)
-        tests = (('Foobar', ['FooBar-bar', 'Foobar-baz', 'Baz-FooBar']), 
-                 ('foobar*', ['FooBar-bar', 'Foobar-baz']), 
+        tests = (('Foobar', ['FooBar-bar', 'Foobar-baz', 'Baz-FooBar']),
+                 ('foobar*', ['FooBar-bar', 'Foobar-baz']),
                  ('*foobar', ['Baz-FooBar',]))
 
         for search, expected in tests:
