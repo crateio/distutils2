@@ -376,6 +376,8 @@ class ReleasesList(IndexReference):
         """
         predicate = get_version_predicate(requirements)
         releases = self.filter(predicate)
+        if len(releases) == 0:
+            return None
         releases.sort_releases(prefer_final, reverse=True)
         return releases[0]
 

@@ -237,6 +237,10 @@ class TestReleasesList(unittest.TestCase):
 #        dists.sort_distributions(prefer_source=True)
 #        self.assertEqual(fb2_binary, dists[0])
 
+    def test_get_last(self):
+        dists = ReleasesList('Foo')
+        self.assertEqual(dists.get_last('Foo 1.0'), None)
+
 
 def test_suite():
     suite = unittest.TestSuite()
