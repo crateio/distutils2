@@ -196,6 +196,8 @@ class VersionTestCase(unittest.TestCase):
 
         self.assertRaises(ValueError, VersionPredicate, '')
 
+        self.assertTrue(VersionPredicate('Hey 2.5').match('2.5.1'))
+
         # XXX need to silent the micro version in this case
         #assert not VersionPredicate('Ho (<3.0,!=2.6)').match('2.6.3')
 
@@ -219,6 +221,7 @@ class VersionTestCase(unittest.TestCase):
             self.assertTrue(V(version).is_final)
         for version in other_versions:
             self.assertFalse(V(version).is_final)
+
 
 class VersionWhiteBoxTestCase(unittest.TestCase):
 
