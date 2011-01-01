@@ -201,6 +201,15 @@ class VersionTestCase(unittest.TestCase):
         # XXX need to silent the micro version in this case
         #assert not VersionPredicate('Ho (<3.0,!=2.6)').match('2.6.3')
 
+
+        # Make sure a predicate that ends with a number works
+        self.assertTrue(VersionPredicate('virtualenv5 (1.0)').match('1.0'))
+        self.assertTrue(VersionPredicate('virtualenv5').match('1.0'))
+        self.assertTrue(VersionPredicate('vi5two').match('1.0'))
+        self.assertTrue(VersionPredicate('5two').match('1.0'))
+        self.assertTrue(VersionPredicate('vi5two 1.0').match('1.0'))
+        self.assertTrue(VersionPredicate('5two 1.0').match('1.0'))
+
         # test repr
         for predicate in predicates:
             self.assertEqual(str(VersionPredicate(predicate)), predicate)
