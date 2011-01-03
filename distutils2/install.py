@@ -60,77 +60,6 @@ def move_files(files, destination=None):
         yield old, new
 
 
-
-# ripped from shutil
-def _ensure_directory(path):
-    """Ensure that the parent directory of `path` exists"""
-    dirname = os.path.dirname(path)
-    if not os.path.isdir(dirname):
-        os.makedirs(dirname)
-
-def _unpack_zipfile(filename, extract_dir):
-    try:
-        import zipfile
-    except ImportError:
-        raise ReadError('zlib not supported, cannot unpack this archive.')
-
-    if not zipfile.is_zipfile(filename):
-        raise ReadError("%s is not a zip file" % filename)
-
-    zip = zipfile.ZipFile(filename)
-    try:
-        for info in zip.infolist():
-            name = info.filename
-            if name.startswith('/') or '..' in name:
-                continue
-
-            target = os.path.join(extract_dir, *name.split('/'))
-            if not target:
-                continue
-
-            _ensure_directory(target)
-            if not name.endswith('/'):
-                # file
-                data = zip.read(info.filename)
-                f = open(target,'wb')
-                try:
-                    f.write(data)
-                finally:
-                    f.close()
-                    del data
-    finally:
-        zip.close()
-
-def _unpack_tarfile(filename, extract_dir):
-    try:
-        tarobj = tarfile.open(filename)
-    except tarfile.TarError:
-        raise ReadError(
-            "%s is not a compressed or uncompressed tar file" % filename)
-    try:
-        tarobj.extractall(extract_dir)
-    finally:
-        tarobj.close()
-
-
-_UNPACKERS = (
-    (['.tar.gz', '.tgz', '.tar'], _unpack_tarfile),
-    (['.zip', '.egg'], _unpack_zipfile))
-
-
-def _unpack(filename, extract_dir=None):
-    if extract_dir is None:
-        extract_dir = os.path.dirname(filename)
-
-    for formats, func in _UNPACKERS:
-        for format in formats:
-            if filename.endswith(format):
-                func(filename, extract_dir)
-                return extract_dir
-
-    raise ValueError('Unknown archive format: %s' % filename)
-
-
 def _install_dist(dist, path):
     """Install a distribution into a path"""
     def _run_d1_install(archive_dir, path):
@@ -152,11 +81,7 @@ def _install_dist(dist, path):
         # using our own install command
         raise NotImplementedError()
 
-    # download
-    archive = dist.download()
-
-    # unarchive
-    where = _unpack(archive)
+    where = dist.unpack(archive)
 
     # get into the dir
     archive_dir = None

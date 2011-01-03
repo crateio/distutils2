@@ -568,3 +568,72 @@ def make_archive(base_name, format, root_dir=None, base_dir=None, verbose=0,
             os.chdir(save_cwd)
 
     return filename
+
+
+def _ensure_directory(path):
+    """Ensure that the parent directory of `path` exists"""
+    dirname = os.path.dirname(path)
+    if not os.path.isdir(dirname):
+        os.makedirs(dirname)
+
+def _unpack_zipfile(filename, extract_dir):
+    try:
+        import zipfile
+    except ImportError:
+        raise ReadError('zlib not supported, cannot unpack this archive.')
+
+    if not zipfile.is_zipfile(filename):
+        raise ReadError("%s is not a zip file" % filename)
+
+    zip = zipfile.ZipFile(filename)
+    try:
+        for info in zip.infolist():
+            name = info.filename
+            if name.startswith('/') or '..' in name:
+                continue
+
+            target = os.path.join(extract_dir, *name.split('/'))
+            if not target:
+                continue
+
+            _ensure_directory(target)
+            if not name.endswith('/'):
+                # file
+                data = zip.read(info.filename)
+                f = open(target,'wb')
+                try:
+                    f.write(data)
+                finally:
+                    f.close()
+                    del data
+    finally:
+        zip.close()
+
+def _unpack_tarfile(filename, extract_dir):
+    try:
+        tarobj = tarfile.open(filename)
+    except tarfile.TarError:
+        raise ReadError(
+            "%s is not a compressed or uncompressed tar file" % filename)
+    try:
+        tarobj.extractall(extract_dir)
+    finally:
+        tarobj.close()
+
+
+_UNPACKERS = (
+    (['.tar.gz', '.tgz', '.tar'], _unpack_tarfile),
+    (['.zip', '.egg'], _unpack_zipfile))
+
+
+def unpack_archive(filename, extract_dir=None):
+    if extract_dir is None:
+        extract_dir = os.path.dirname(filename)
+
+    for formats, func in _UNPACKERS:
+        for format in formats:
+            if filename.endswith(format):
+                func(filename, extract_dir)
+                return extract_dir
+
+    raise ValueError('Unknown archive format: %s' % filename)
