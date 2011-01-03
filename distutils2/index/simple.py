@@ -199,6 +199,7 @@ class Crawler(BaseClient):
 
         Currently, download one archive, extract it and use the PKG-INFO file.
         """
+        import pdb; pdb.set_trace()
         release = self.get_distributions(project_name, version)
         if not release._metadata:
             location = release.get_distribution().unpack()

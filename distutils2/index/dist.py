@@ -17,7 +17,6 @@ import tempfile
 import urllib
 import urlparse
 import zipfile
-
 try:
     import hashlib
 except ImportError:
@@ -204,6 +203,7 @@ class ReleaseInfo(IndexReference):
 
     # See http://docs.python.org/reference/datamodel#object.__hash__
     __hash__ = object.__hash__
+
 
 
 class DistInfo(IndexReference):
