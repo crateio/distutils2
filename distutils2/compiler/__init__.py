@@ -127,7 +127,7 @@ def show_compilers():
     from distutils2.fancy_getopt import FancyGetopt
     compilers = []
 
-    for name, cls in _COMPILERS.items():
+    for name, cls in _COMPILERS.iteritems():
         if isinstance(cls, str):
             cls = resolve_name(cls)
             _COMPILERS[name] = cls

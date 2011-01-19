@@ -153,7 +153,7 @@ you can try compiling with MingW32, by passing "-c mingw32" to setup.py.""")
                 self.macros["$(FrameworkVersion)"] = d["version"]
 
     def sub(self, s):
-        for k, v in self.macros.items():
+        for k, v in self.macros.iteritems():
             s = s.replace(k, v)
         return s
 
@@ -271,7 +271,7 @@ def query_vcvarsall(version, arch="x86"):
             result[key] = removeDuplicates(value)
 
     if len(result) != len(interesting):
-        raise ValueError(str(list(result.keys())))
+        raise ValueError(str(list(result)))
 
     return result
 

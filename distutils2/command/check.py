@@ -76,11 +76,11 @@ class check(Command):
             raise DistutilsSetupError('The docutils package is needed.')
 
     def check_hooks_resolvable(self):
-        for options in self.distribution.command_options.values():
+        for options in self.distribution.command_options.itervalues():
             for hook_kind in ("pre_hook", "post_hook"):
                 if hook_kind not in options:
                     break
-                for hook_name in options[hook_kind][1].values():
+                for hook_name in options[hook_kind][1].itervalues():
                     try:
                         resolve_name(hook_name)
                     except ImportError:

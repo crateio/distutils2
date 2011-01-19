@@ -371,8 +371,7 @@ class sdist(Command):
         need_dir = {}
         for file in files:
             need_dir[os.path.join(base_dir, os.path.dirname(file))] = 1
-        need_dirs = need_dir.keys()
-        need_dirs.sort()
+        need_dirs = sorted(need_dir)
 
         # Now create them
         for dir in need_dirs:

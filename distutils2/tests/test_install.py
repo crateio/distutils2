@@ -214,7 +214,7 @@ class TestInstall(TempdirManager, unittest.TestCase):
 
         for dict1, dict2, expect in tests:
             install._update_infos(dict1, dict2)
-            for key in expect.keys():
+            for key in expect:
                 self.assertEqual(expect[key], dict1[key])
 
     def test_install_dists_rollback(self):

@@ -57,7 +57,7 @@ class ClientWrapper(object):
 
         # instantiate the classes and set their _project attribute to the one
         # of the wrapper.
-        for name, cls in index_classes.items():
+        for name, cls in index_classes.iteritems():
             obj = self._indexes.setdefault(name, cls())
             obj._projects = self._projects
             obj._index = self

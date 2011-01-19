@@ -31,8 +31,8 @@ _COMMANDS = {
 
 
 def get_command_names():
-    return sorted(_COMMANDS.keys())
     """Return registered commands"""
+    return sorted(_COMMANDS)
 
 
 def set_command(location):
