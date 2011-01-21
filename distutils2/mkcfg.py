@@ -106,7 +106,7 @@ def ask(question, default=None, helptext=None, required=True,
         if default and len(question) + len(default) > 70:
             prompt = '%s\n    [%s]: ' % (question, default)
     if lengthy or multiline:
-        prompt += '\n   >'
+        prompt += '\n   > '
 
     if not helptext:
         helptext = 'No additional help available.'
