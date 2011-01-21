@@ -500,7 +500,7 @@ class MainProgram(object):
         finally:
             fp.close()
 
-        os.chmod(_FILENAME, 0755)
+        os.chmod(_FILENAME, 0644)
         print 'Wrote "%s".' % _FILENAME
 
 
