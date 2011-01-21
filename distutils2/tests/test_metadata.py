@@ -117,7 +117,7 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
         metadata['Name'] = "baz; sys.platform == 'blah'"
         # FIXME is None or 'UNKNOWN' correct here?
         # where is that documented?
-        self.assertEquals(metadata['Name'], None)
+        self.assertEqual(metadata['Name'], None)
 
         # test with context
         context = {'sys.platform': 'okook'}

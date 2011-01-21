@@ -24,6 +24,7 @@ guides to install a project or package your own code, head to `See also`__.
     distutils2.version
     distutils2.metadata
     distutils2.depgraph
+    distutils2.install
     distutils2.index
     distutils2.tests.pypi_server
 

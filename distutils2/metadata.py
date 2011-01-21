@@ -195,8 +195,10 @@ class DistributionMetadata(object):
     # also document the mapping API and UNKNOWN default key
 
     def __init__(self, path=None, platform_dependent=False,
-                 execution_context=None, fileobj=None, mapping=None):
+                 execution_context=None, fileobj=None, mapping=None,
+                 display_warnings=False):
         self._fields = {}
+        self.display_warnings = display_warnings
         self.version = None
         self.docutils_support = _HAS_DOCUTILS
         self.platform_dependent = platform_dependent
@@ -387,21 +389,22 @@ class DistributionMetadata(object):
             else:
                 value = []
 
-        if name in _PREDICATE_FIELDS and value is not None:
-            for v in value:
-                # check that the values are valid predicates
-                if not is_valid_predicate(v.split(';')[0]):
-                    logger.warn('"%s" is not a valid predicate (field "%s")' %
-                         (v, name))
-        # FIXME this rejects UNKNOWN, is that right?
-        elif name in _VERSIONS_FIELDS and value is not None:
-            if not is_valid_versions(value):
-                logger.warn('"%s" is not a valid version (field "%s")' %
-                     (value, name))
-        elif name in _VERSION_FIELDS and value is not None:
-            if not is_valid_version(value):
-                logger.warn('"%s" is not a valid version (field "%s")' %
-                     (value, name))
+        if self.display_warnings:
+            if name in _PREDICATE_FIELDS and value is not None:
+                for v in value:
+                    # check that the values are valid predicates
+                    if not is_valid_predicate(v.split(';')[0]):
+                        logger.warn('"%s" is not a valid predicate (field "%s")' %
+                            (v, name))
+            # FIXME this rejects UNKNOWN, is that right?
+            elif name in _VERSIONS_FIELDS and value is not None:
+                if not is_valid_versions(value):
+                    logger.warn('"%s" is not a valid version (field "%s")' %
+                        (value, name))
+            elif name in _VERSION_FIELDS and value is not None:
+                if not is_valid_version(value):
+                    logger.warn('"%s" is not a valid version (field "%s")' %
+                        (value, name))
 
         if name in _UNICODEFIELDS:
             value = self._encode_field(value)

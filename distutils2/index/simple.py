@@ -1,7 +1,7 @@
 """index.simple
 
 Contains the class "SimpleIndexCrawler", a simple spider to find and retrieve
-distributions on the Python Package Index, using it's "simple" API,
+distributions on the Python Package Index, using its "simple" API,
 avalaible at http://pypi.python.org/simple/
 """
 from fnmatch import translate
@@ -14,6 +14,7 @@ import urlparse
 import logging
 import os
 
+from distutils2 import logger
 from distutils2.index.base import BaseClient
 from distutils2.index.dist import (ReleasesList, EXTENSIONS,
                                    get_infos_from_url, MD5_HASH)
@@ -167,6 +168,7 @@ class Crawler(BaseClient):
         if predicate.name.lower() in self._projects and not force_update:
             return self._projects.get(predicate.name.lower())
         prefer_final = self._get_prefer_final(prefer_final)
+        logger.info('Reading info on PyPI about %s' % predicate.name)
         self._process_index_page(predicate.name)
 
         if predicate.name.lower() not in self._projects:

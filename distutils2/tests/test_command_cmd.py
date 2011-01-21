@@ -66,12 +66,20 @@ class CommandTestCase(unittest.TestCase):
         cmd.ensure_string_list('option1')
         self.assertEqual(cmd.option1, ['ok', 'dok'])
 
-        cmd.option2 = ['xxx', 'www']
-        cmd.ensure_string_list('option2')
+        cmd.yes_string_list = ['one', 'two', 'three']
+        cmd.yes_string_list2 = 'ok'
+        cmd.ensure_string_list('yes_string_list')
+        cmd.ensure_string_list('yes_string_list2')
+        self.assertEqual(cmd.yes_string_list, ['one', 'two', 'three'])
+        self.assertEqual(cmd.yes_string_list2, ['ok'])
 
-        cmd.option3 = ['ok', 2]
-        self.assertRaises(DistutilsOptionError, cmd.ensure_string_list,
-                          'option3')
+        cmd.not_string_list = ['one', 2, 'three']
+        cmd.not_string_list2 = object()
+        self.assertRaises(DistutilsOptionError,
+                          cmd.ensure_string_list, 'not_string_list')
+
+        self.assertRaises(DistutilsOptionError,
+                          cmd.ensure_string_list, 'not_string_list2')
 
     def test_ensure_filename(self):
         cmd = self.cmd

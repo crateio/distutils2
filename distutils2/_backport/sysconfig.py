@@ -102,9 +102,8 @@ def _subst_vars(path, local_vars):
 
 
 def _extend_dict(target_dict, other_dict):
-    target_keys = target_dict.keys()
-    for key, value in other_dict.items():
-        if key in target_keys:
+    for key, value in other_dict.iteritems():
+        if key in target_dict:
             continue
         target_dict[key] = value
 
@@ -713,7 +712,7 @@ def get_python_version():
 
 
 def _print_dict(title, data):
-    for index, (key, value) in enumerate(sorted(data.items())):
+    for index, (key, value) in enumerate(sorted(data.iteritems())):
         if index == 0:
             print '%s: ' % (title)
         print '\t%s = "%s"' % (key, value)

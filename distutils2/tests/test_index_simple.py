@@ -293,8 +293,8 @@ class SimpleCrawlerTestCase(support.TempdirManager, unittest.TestCase):
 <a href="../download" rel="download">link2</a>
 <a href="../simpleurl">link2</a>
         """
-        found_links = dict(crawler._default_link_matcher(content,
-                                                         base_url)).keys()
+        found_links = set(dict(crawler._default_link_matcher(content,
+                                                             base_url)))
         self.assertIn('http://example.org/some/homepage', found_links)
         self.assertIn('http://example.org/some/simpleurl', found_links)
         self.assertIn('http://example.org/some/download', found_links)

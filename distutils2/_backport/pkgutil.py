@@ -343,8 +343,7 @@ try:
     from zipimport import zipimporter
 
     def iter_zipimport_modules(importer, prefix=''):
-        dirlist = zipimport._zip_directory_cache[importer.archive].keys()
-        dirlist.sort()
+        dirlist = sorted(zipimport._zip_directory_cache[importer.archive])
         _prefix = importer.prefix
         plen = len(_prefix)
         yielded = {}
@@ -680,7 +679,6 @@ def _yield_distributions(include_dist, include_egg):
                                   dir.endswith('.egg')):
                 yield EggInfoDistribution(dist_path)
 
-
 def _generate_cache(use_egg_info=False):
     global _cache_generated, _cache_generated_egg
 
@@ -737,6 +735,9 @@ class Distribution(object):
 
         if _cache_enabled and not path in _cache_path:
             _cache_path[path] = self
+
+    def __repr__(self):
+        return '%s-%s at %s' % (self.name, self.metadata.version, self.path)
 
     def _get_records(self, local=False):
         RECORD = os.path.join(self.path, 'RECORD')
@@ -856,9 +857,9 @@ class EggInfoDistribution(object):
         r'(?P<rest>(?:\s*,\s*(?:<|<=|!=|==|>=|>)[-A-Za-z0-9_.]+)*)\s*' \
         r'(?P<extras>\[.*\])?')
 
-    def __init__(self, path):
+    def __init__(self, path, display_warnings=False):
         self.path = path
-
+        self.display_warnings = display_warnings
         if _cache_enabled and path in _cache_path_egg:
             self.metadata = _cache_path_egg[path].metadata
             self.name = self.metadata['Name']
@@ -910,25 +911,35 @@ class EggInfoDistribution(object):
         else:
             raise ValueError('The path must end with .egg-info or .egg')
 
-        provides = "%s (%s)" % (self.metadata['name'],
-                                self.metadata['version'])
-        if self.metadata['Metadata-Version'] == '1.2':
+
+        if requires is not None:
+            if self.metadata['Metadata-Version'] == '1.1':
+                # we can't have 1.1 metadata *and* Setuptools requires
+                for field in ('Obsoletes', 'Requires', 'Provides'):
+                    del self.metadata[field]
+
+            provides = "%s (%s)" % (self.metadata['name'],
+                                    self.metadata['version'])
             self.metadata['Provides-Dist'] += (provides,)
-        else:
-            self.metadata['Provides'] += (provides,)
+
         reqs = []
+
         if requires is not None:
             for line in yield_lines(requires):
-                if line[0] == '[':
+                if line[0] == '[' and self.display_warnings:
                     warnings.warn('distutils2 does not support extensions '
                                   'in requires.txt')
                     break
                 else:
                     match = self._REQUIREMENT.match(line.strip())
                     if not match:
-                        raise ValueError('Distribution %s has ill formed '
-                                         'requires.txt file (%s)' %
-                                         (self.name, line))
+                        # this happens when we encounter extras
+                        # since they are written at the end of the file
+                        # we just exit
+                        break
+                        #raise ValueError('Distribution %s has ill formed '
+                        #                 'requires.txt file (%s)' %
+                        #                 (self.name, line))
                     else:
                         if match.group('extras'):
                             s = (('Distribution %s uses extra requirements '
@@ -946,13 +957,16 @@ class EggInfoDistribution(object):
                             reqs.append(name)
                         else:
                             reqs.append('%s (%s)' % (name, version))
-            if self.metadata['Metadata-Version'] == '1.2':
+
+            if len(reqs) > 0:
                 self.metadata['Requires-Dist'] += reqs
-            else:
-                self.metadata['Requires'] += reqs
+
 
         if _cache_enabled:
             _cache_path_egg[self.path] = self
+
+    def __repr__(self):
+        return '%s-%s at %s' % (self.name, self.metadata.version, self.path)
 
     def get_installed_files(self, local=False):
         return []

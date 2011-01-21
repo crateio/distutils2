@@ -363,7 +363,7 @@ class SDistTestCase(support.TempdirManager, support.LoggingCatcher,
         finally:
             f.close()
 
-        self.assertEquals(len(manifest), 4)
+        self.assertEqual(len(manifest), 4)
 
         # adding a file
         self.write_file((self.tmp_dir, 'somecode', 'doc2.txt'), '#')
@@ -383,7 +383,7 @@ class SDistTestCase(support.TempdirManager, support.LoggingCatcher,
             f.close()
 
         # do we have the new file in MANIFEST ?
-        self.assertEquals(len(manifest2), 5)
+        self.assertEqual(len(manifest2), 5)
         self.assertIn('doc2.txt', manifest2[-1])
 
     def test_manifest_marker(self):

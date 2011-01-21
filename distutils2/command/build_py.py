@@ -68,7 +68,7 @@ class build_py(Command, Mixin2to3):
         self.package_data = self.distribution.package_data
         self.package_dir = {}
         if self.distribution.package_dir:
-            for name, path in self.distribution.package_dir.items():
+            for name, path in self.distribution.package_dir.iteritems():
                 self.package_dir[name] = convert_path(path)
         self.data_files = self.get_data_files()
 

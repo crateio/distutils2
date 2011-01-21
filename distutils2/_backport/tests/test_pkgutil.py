@@ -249,7 +249,7 @@ class TestPkgUtilDistribution(unittest.TestCase):
             dist = Distribution(distinfo_dir)
             for path, md5_, size in dist.get_installed_files():
                 record_data = self.records[dist.path]
-                self.assertTrue(path in record_data.keys())
+                self.assertIn(path, record_data)
                 self.assertEqual(md5_, record_data[path][0])
                 self.assertEqual(size, record_data[path][1])
 
@@ -318,7 +318,7 @@ class TestPkgUtilDistribution(unittest.TestCase):
         self.assertEqual(sorted(found), sorted(distinfo_record_paths))
         # Test for the iteration of local absolute paths
         distinfo_record_paths = [os.path.join(sys.prefix, path)
-            for path in self.records[distinfo_dir].keys()]
+            for path in self.records[distinfo_dir]]
         found = [path for path in dist.get_distinfo_files(local=True)]
         self.assertEqual(sorted(found), sorted(distinfo_record_paths))
 
@@ -382,7 +382,7 @@ class TestPkgUtilPEP376(support.LoggingCatcher, support.WarningsCatcher,
             if not isinstance(dist, Distribution):
                 self.fail("item received was not a Distribution instance: "
                     "%s" % type(dist))
-            if dist.name in dict(fake_dists).keys() and \
+            if dist.name in dict(fake_dists) and \
                dist.path.startswith(self.fake_dists_path):
                 found_dists.append((dist.name, dist.metadata['version'],))
             else:
@@ -405,7 +405,7 @@ class TestPkgUtilPEP376(support.LoggingCatcher, support.WarningsCatcher,
                     isinstance(dist, EggInfoDistribution)):
                 self.fail("item received was not a Distribution or "
                           "EggInfoDistribution instance: %s" % type(dist))
-            if dist.name in dict(fake_dists).keys() and \
+            if dist.name in dict(fake_dists) and \
                dist.path.startswith(self.fake_dists_path):
                 found_dists.append((dist.name, dist.metadata['version']))
             else:

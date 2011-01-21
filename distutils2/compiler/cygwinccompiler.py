@@ -358,27 +358,3 @@ def check_config_h():
     except IOError, exc:
         return (CONFIG_H_UNCERTAIN,
                 "couldn't read '%s': %s" % (fn, exc.strerror))
-
-class _Deprecated_SRE_Pattern(object):
-    def __init__(self, pattern):
-        self.pattern = pattern
-
-    def __getattr__(self, name):
-        if name in ('findall', 'finditer', 'match', 'scanner', 'search',
-                    'split', 'sub', 'subn'):
-            warn("'distutils.cygwinccompiler.RE_VERSION' is deprecated "
-                 "and will be removed in the next version", DeprecationWarning)
-        return getattr(self.pattern, name)
-
-RE_VERSION = _Deprecated_SRE_Pattern(re.compile('(\d+\.\d+(\.\d+)*)'))
-
-def get_versions():
-    """ Try to find out the versions of gcc, ld and dllwrap.
-
-    If not possible it returns None for it.
-    """
-    warn("'distutils.cygwinccompiler.get_versions' is deprecated "
-         "use 'distutils.util.get_compiler_versions' instead",
-         DeprecationWarning)
-
-    return get_compiler_versions()

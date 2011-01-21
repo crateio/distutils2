@@ -367,7 +367,7 @@ class MainProgram(object):
         if not trove:
             return
 
-        for key in sorted(trove.keys()):
+        for key in sorted(trove):
             if len(trove[key]) == 0:
                 if ask_yn('Add "%s"' % desc[4:] + ' :: ' + key, 'n') == 'y':
                     classifiers[desc[4:] + ' :: ' + key] = 1
@@ -455,7 +455,7 @@ class MainProgram(object):
                            "number.")
 
     def _dotted_packages(self, data):
-        packages = sorted(data.keys())
+        packages = sorted(data)
         modified_pkgs = []
         for pkg in packages:
             pkg = pkg.lstrip('./')

@@ -98,7 +98,7 @@ class Config(object):
 
         # setting the metadata values
         if 'metadata' in content:
-            for key, value in content['metadata'].items():
+            for key, value in content['metadata'].iteritems():
                 key = key.replace('_', '-')
                 value = self._multiline(value)
                 if key == 'project-url':
@@ -124,7 +124,7 @@ class Config(object):
 
         if 'files' in content:
             files = dict([(key, self._multiline(value))
-                          for key, value in content['files'].items()])
+                          for key, value in content['files'].iteritems()])
             self.dist.packages = []
             self.dist.package_dir = {}
 
@@ -223,7 +223,7 @@ class Config(object):
         # If there was a "global" section in the config file, use it
         # to set Distribution options.
         if 'global' in self.dist.command_options:
-            for (opt, (src, val)) in self.dist.command_options['global'].items():
+            for (opt, (src, val)) in self.dist.command_options['global'].iteritems():
                 alias = self.dist.negative_opt.get(opt)
                 try:
                     if alias:

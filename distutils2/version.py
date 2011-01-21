@@ -322,8 +322,9 @@ def suggest_normalized_version(s):
     return None
 
 
-_PREDICATE = re.compile(r"(?i)^\s*([a-z_][\sa-zA-Z_-]*(?:\.[a-z_]\w*)*)(.*)")
-_VERSIONS = re.compile(r"^\s*\((.*)\)\s*$")
+# A predicate is: "ProjectName (VERSION1, VERSION2, ..)
+_PREDICATE = re.compile(r"(?i)^\s*(\w[\s\w-]*(?:\.\w*)*)(.*)")
+_VERSIONS = re.compile(r"^\s*\((?P<versions>.*)\)\s*$|^\s*(?P<versions2>.*)\s*$")
 _PLAIN_VERSIONS = re.compile(r"^\s*(.*)\s*$")
 _SPLIT_CMP = re.compile(r"^\s*(<=|>=|<|>|!=|==)\s*([^\s,]+)\s*$")
 
@@ -358,14 +359,25 @@ class VersionPredicate(object):
 
         name, predicates = match.groups()
         self.name = name.strip()
-        predicates = predicates.strip()
-        predicates = _VERSIONS.match(predicates)
-        if predicates is not None:
-            predicates = predicates.groups()[0]
-            self.predicates = [_split_predicate(pred.strip())
-                               for pred in predicates.split(',')]
+        self.predicates = []
+        if predicates is None:
+            return
+
+        predicates = _VERSIONS.match(predicates.strip())
+        if predicates is None:
+            return
+
+        predicates = predicates.groupdict()
+        if predicates['versions'] is not None:
+            versions = predicates['versions']
         else:
-            self.predicates = []
+            versions = predicates.get('versions2')
+
+        if versions is not None:
+            for version in versions.split(','):
+                if version.strip() == '':
+                    continue
+                self.predicates.append(_split_predicate(version))
 
     def match(self, version):
         """Check if the provided version matches the predicates."""

@@ -123,13 +123,13 @@ def install_from_infos(install=[], remove=[], conflicts=[], install_path=None):
     try:
         if install:
             installed_files = install_dists(install, install_path)  # install to tmp first
-        for files in temp_files.values():
+        for files in temp_files.itervalues():
             for old, new in files:
                 os.remove(new)
 
     except Exception,e:
         # if an error occurs, put back the files in the good place.
-        for files in temp_files.values():
+        for files in temp_files.itervalues():
             for old, new in files:
                 shutil.move(new, old)
 
@@ -183,7 +183,7 @@ def get_infos(requirements, index=None, installed=None, prefer_final=True):
     infos = {'install': [], 'remove': [], 'conflict': []}
 
     # Get what the missing deps are
-    for dists in depgraph.missing.values():
+    for dists in depgraph.missing.itervalues():
         if dists:
             logging.info("missing dependencies found, installing them")
             # we have missing deps
@@ -203,7 +203,7 @@ def _update_infos(infos, new_infos):
     """extends the lists contained in the `info` dict with those contained
     in the `new_info` one
     """
-    for key, value in infos.items():
+    for key, value in infos.iteritems():
         if key in new_infos:
             infos[key].extend(new_infos[key])
 

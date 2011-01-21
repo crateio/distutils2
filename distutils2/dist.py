@@ -227,14 +227,14 @@ Common commands: (see '--help-commands' for more)
             options = attrs.get('options')
             if options is not None:
                 del attrs['options']
-                for (command, cmd_options) in options.items():
+                for (command, cmd_options) in options.iteritems():
                     opt_dict = self.get_option_dict(command)
-                    for (opt, val) in cmd_options.items():
+                    for (opt, val) in cmd_options.iteritems():
                         opt_dict[opt] = ("setup script", val)
 
             # Now work on the rest of the attributes.  Any attribute that's
             # not already defined is invalid!
-            for key, val in attrs.items():
+            for key, val in attrs.iteritems():
                 if self.metadata.is_metadata_field(key):
                     self.metadata[key] = val
                 elif hasattr(self, key):
@@ -279,8 +279,7 @@ Common commands: (see '--help-commands' for more)
         from pprint import pformat
 
         if commands is None:             # dump all command option dicts
-            commands = self.command_options.keys()
-            commands.sort()
+            commands = sorted(self.command_options)
 
         if header is not None:
             self.announce(indent + header)
@@ -477,7 +476,7 @@ Common commands: (see '--help-commands' for more)
         # Put the options from the command line into their official
         # holding pen, the 'command_options' dictionary.
         opt_dict = self.get_option_dict(command)
-        for (name, value) in vars(opts).items():
+        for (name, value) in vars(opts).iteritems():
             opt_dict[name] = ("command line", value)
 
         return args
@@ -679,7 +678,7 @@ Common commands: (see '--help-commands' for more)
 
         logger.debug("  setting options for '%s' command:" % command_name)
 
-        for (option, (source, value)) in option_dict.items():
+        for (option, (source, value)) in option_dict.iteritems():
             logger.debug("    %s = %s (from %s)" % (option, value, source))
             try:
                 bool_opts = [x.replace('-', '_')

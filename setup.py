@@ -189,9 +189,10 @@ def prepare_hashlib_extensions():
 
     return exts
 
-setup_kwargs = {}
+setup_kwargs = {'scripts': ['distutils2/pysetup']}
+
 if sys.version < '2.6':
-    setup_kwargs['scripts'] = ['distutils2/mkcfg.py']
+    setup_kwargs['scripts'].append('distutils2/mkcfg.py')
 
 if sys.version < '2.5':
     setup_kwargs['ext_modules'] = prepare_hashlib_extensions()

@@ -11,7 +11,6 @@ import getpass
 import urlparse
 import StringIO
 import logging
-from warnings import warn
 
 from distutils2.command.cmd import Command
 from distutils2 import logger
@@ -33,25 +32,19 @@ class register(Command):
          "stop the registration if the metadata is not fully compliant")
         ]
 
-    boolean_options = ['show-response', 'verify', 'list-classifiers',
-                       'strict']
+    boolean_options = ['show-response', 'list-classifiers', 'strict']
 
     def initialize_options(self):
         self.repository = None
         self.realm = None
         self.show_response = 0
         self.list_classifiers = 0
-        self.strict = 0
 
     def finalize_options(self):
         if self.repository is None:
             self.repository = DEFAULT_REPOSITORY
         if self.realm is None:
             self.realm = DEFAULT_REALM
-        # setting options for the `check` subcommand
-        check_options = {'strict': ('register', self.strict),
-                         'all': ('register', 1)}
-        self.distribution.command_options['check'] = check_options
 
     def run(self):
         self.finalize_options()
@@ -66,16 +59,6 @@ class register(Command):
             self.classifiers()
         else:
             self.send_metadata()
-
-    def check_metadata(self):
-        """Deprecated API."""
-        warn("distutils.command.register.check_metadata is deprecated, \
-              use the check command instead", PendingDeprecationWarning)
-        check = self.distribution.get_command_obj('check')
-        check.ensure_finalized()
-        check.strict = self.strict
-        check.all = 1
-        check.run()
 
     def _set_config(self):
         ''' Reads the configuration file and set attributes.
@@ -252,7 +235,7 @@ Your selection [default 1]: ''', logging.INFO)
         sep_boundary = '\n--' + boundary
         end_boundary = sep_boundary + '--'
         body = StringIO.StringIO()
-        for key, value in data.items():
+        for key, value in data.iteritems():
             # handle multiple entries for the same name
             if not isinstance(value, (tuple, list)):
                 value = [value]
