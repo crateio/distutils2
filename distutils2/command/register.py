@@ -39,6 +39,7 @@ class register(Command):
         self.realm = None
         self.show_response = 0
         self.list_classifiers = 0
+        self.strict = 0
 
     def finalize_options(self):
         if self.repository is None:
@@ -51,6 +52,9 @@ class register(Command):
         self._set_config()
 
         # Check the package metadata
+        check = self.distribution.get_command_obj('check')
+        check.strict = self.strict
+        check.all = 1
         self.run_command('check')
 
         if self.dry_run:

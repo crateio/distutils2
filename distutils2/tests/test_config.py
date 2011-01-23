@@ -140,9 +140,10 @@ class ConfigTestCase(support.TempdirManager,
         sys.stdout = StringIO()
         sys.argv[:] = ['setup.py', '--version']
         old_sys = sys.argv[:]
+
         try:
-            from distutils2.run import main
-            dist = main()
+            from distutils2.run import commands_main
+            dist = commands_main()
         finally:
             sys.argv[:] = old_sys
 
