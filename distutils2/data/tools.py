@@ -1,12 +1,36 @@
-from glob import glob
+from glob import glob as simple_glob
+import os
+from os import path as osp
+
+def glob(path_glob):
+    if '**' in path_glob:
+        return rglob(path_glob)
+    else:
+        return simple_glob(path_glob)
 
 def check_glob(ressources):
-    correspondence = {}
+    destinations = {}
     for (path_glob,category) in ressources:
-        filepaths = glob(path_glob)
-        for filepath in filepaths:
-            if not filepath in correspondence:
-                correspondence[filepath] = []
-            if not category in correspondence[filepath]:
-                correspondence[filepath].append(category)
-    return correspondence
+        project_path = os.getcwd()
+        abspath_glob = osp.join(project_path, path_glob)
+        
+        for file in glob(abspath_glob):
+            file = file[len(project_path):].lstrip('/')
+            destinations.setdefault(file, set()).add(category)
+            
+    return destinations
+
+def rglob(path_glob):
+    prefix, radical = path_glob.split('**', 1)
+    if prefix == '':
+        prefix = '.'
+    if radical == '':
+        radical = '*'
+    else:
+        radical = radical.lstrip('/')
+    glob_files = []    
+    for (path, dir, files) in os.walk(prefix):
+        for file in glob(osp.join(prefix, path, radical)):
+           glob_files.append(os.path.join(prefix, file))
+        
+    return glob_files
