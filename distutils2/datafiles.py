@@ -8,16 +8,16 @@ def glob(path_glob):
     else:
         return simple_glob(path_glob)
 
-def check_glob(ressources):
+def find_glob(ressources):
     destinations = {}
     for (path_glob,category) in ressources:
         project_path = os.getcwd()
         abspath_glob = osp.join(project_path, path_glob)
-        
+
         for file in glob(abspath_glob):
             file = file[len(project_path):].lstrip('/')
             destinations.setdefault(file, set()).add(category)
-            
+
     return destinations
 
 def rglob(path_glob):
@@ -28,9 +28,9 @@ def rglob(path_glob):
         radical = '*'
     else:
         radical = radical.lstrip('/')
-    glob_files = []    
+    glob_files = []
     for (path, dir, files) in os.walk(prefix):
         for file in glob(osp.join(prefix, path, radical)):
            glob_files.append(os.path.join(prefix, file))
-        
+
     return glob_files
