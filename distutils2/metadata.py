@@ -181,7 +181,12 @@ _ELEMENTSFIELD = ('Keywords',)
 
 _UNICODEFIELDS = ('Author', 'Maintainer', 'Summary', 'Description')
 
-_MISSING = object()
+class NoDefault(object):
+    """Marker object used for clean representation"""
+    def __repr__(self):
+        return '<NoDefault>'
+
+_MISSING = NoDefault()
 
 class DistributionMetadata(object):
     """The metadata of a release.
@@ -455,7 +460,8 @@ class DistributionMetadata(object):
         return value
 
     def check(self, strict=False):
-        """Check if the metadata is compliant."""
+        """Check if the metadata is compliant. If strict is False then raise if
+        no Name or Version are provided"""
         # XXX should check the versions (if the file was loaded)
         missing, warnings = [], []
 

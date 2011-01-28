@@ -2,7 +2,9 @@
 Metadata
 ========
 
-Distutils2 provides a :class:`DistributionMetadata` class that can read and
+.. module:: distutils2.metadata
+
+Distutils2 provides a :class:`~distutils2.metadata.DistributionMetadata` class that can read and
 write metadata files. This class is compatible with all metadata versions:
 
 * 1.0: :PEP:`241`
@@ -17,7 +19,7 @@ markers, and displays warnings when versions that are supposed to be
 Reading metadata
 ================
 
-The :class:`DistributionMetadata` class can be instantiated with the path of
+The :class:`~distutils2.metadata.DistributionMetadata` class can be instantiated with the path of
 the metadata file, and provides a dict-like interface to the values::
 
     >>> from distutils2.metadata import DistributionMetadata
@@ -33,7 +35,7 @@ the metadata file, and provides a dict-like interface to the values::
 
 The fields that supports environment markers can be automatically ignored if
 the object is instantiated using the ``platform_dependent`` option.
-:class:`DistributionMetadata` will interpret in the case the markers and will
+:class:`~distutils2.metadata.DistributionMetadata` will interpret in the case the markers and will
 automatically remove the fields that are not compliant with the running
 environment. Here's an example under Mac OS X. The win32 dependency
 we saw earlier is ignored::
