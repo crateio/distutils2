@@ -2,14 +2,17 @@
 
     Know how to read all config files Distutils2 uses.
 """
+import os.path
 import os
 import sys
+import re
 from ConfigParser import RawConfigParser
 
 from distutils2 import logger
 from distutils2.util import check_environ, resolve_name
 from distutils2.compiler import set_compiler
 from distutils2.command import set_command
+from distutils2.datafiles import resources_dests
 
 class Config(object):
     """Reads configuration files and work with the Distribution instance
@@ -82,7 +85,7 @@ class Config(object):
                         if v != '']
         return value
 
-    def _read_setup_cfg(self, parser):
+    def _read_setup_cfg(self, parser, filename):
         content = {}
         for section in parser.sections():
             content[section] = dict(parser.items(section))
@@ -164,6 +167,25 @@ class Config(object):
 
             # manifest template
             self.dist.extra_files = files.get('extra_files', [])
+        
+        if 'resources' in content:
+            resources = []
+            regex = re.compile(r'[^\\](?:\\{2})* ')
+            for glob, destination in content['resources'].iteritems():
+                splitted_glob = regex.split(glob, 1)
+                if len(splitted_glob) == 1:
+                    prefix = ''
+                    suffix = splitted_glob[0]
+                else:
+                    prefix = splitted_glob[0]
+                    suffix = splitted_glob[1]
+                    
+                resources.append((prefix, suffix, destination))
+
+            dir = os.path.dirname(os.path.join(os.getcwd(), filename))
+            data_files = resources_dests(dir, resources)
+            self.dist.data_files = data_files
+
 
     def parse_config_files(self, filenames=None):
         if filenames is None:
@@ -178,7 +200,7 @@ class Config(object):
             parser.read(filename)
 
             if os.path.split(filename)[-1] == 'setup.cfg':
-                self._read_setup_cfg(parser)
+                self._read_setup_cfg(parser, filename)
 
             for section in parser.sections():
                 if section == 'global':
