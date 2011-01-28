@@ -2,7 +2,7 @@
 Metadata
 ========
 
-Distutils2 provides a :class:`DistributionMetadata` class that can read and
+Distutils2 provides a :class:`Metadata` class that can read and
 write metadata files. This class is compatible with all metadata versions:
 
 * 1.0: :PEP:`241`
@@ -17,11 +17,11 @@ markers, and displays warnings when versions that are supposed to be
 Reading metadata
 ================
 
-The :class:`DistributionMetadata` class can be instantiated with the path of
+The :class:`Metadata` class can be instantiated with the path of
 the metadata file, and provides a dict-like interface to the values::
 
-    >>> from distutils2.metadata import DistributionMetadata
-    >>> metadata = DistributionMetadata('PKG-INFO')
+    >>> from distutils2.metadata import Metadata
+    >>> metadata = Metadata('PKG-INFO')
     >>> metadata.keys()[:5]
     ('Metadata-Version', 'Name', 'Version', 'Platform', 'Supported-Platform')
     >>> metadata['Name']
@@ -33,13 +33,13 @@ the metadata file, and provides a dict-like interface to the values::
 
 The fields that supports environment markers can be automatically ignored if
 the object is instantiated using the ``platform_dependent`` option.
-:class:`DistributionMetadata` will interpret in the case the markers and will
+:class:`Metadata` will interpret in the case the markers and will
 automatically remove the fields that are not compliant with the running
 environment. Here's an example under Mac OS X. The win32 dependency
 we saw earlier is ignored::
 
-    >>> from distutils2.metadata import DistributionMetadata
-    >>> metadata = DistributionMetadata('PKG-INFO', platform_dependent=True)
+    >>> from distutils2.metadata import Metadata
+    >>> metadata = Metadata('PKG-INFO', platform_dependent=True)
     >>> metadata['Requires-Dist']
     ['bar']
 
@@ -51,9 +51,9 @@ expects.
 
 Here's an example, simulating a win32 environment::
 
-    >>> from distutils2.metadata import DistributionMetadata
+    >>> from distutils2.metadata import Metadata
     >>> context = {'sys.platform': 'win32'}
-    >>> metadata = DistributionMetadata('PKG-INFO', platform_dependent=True,
+    >>> metadata = Metadata('PKG-INFO', platform_dependent=True,
     ...                                 execution_context=context)
     ...
     >>> metadata['Requires-Dist'] = ["pywin32; sys.platform == 'win32'",
@@ -81,8 +81,8 @@ Conflict checking and best version
 Some fields in :PEP:`345` have to follow a version scheme in their versions
 predicate. When the scheme is violated, a warning is emitted::
 
-    >>> from distutils2.metadata import DistributionMetadata
-    >>> metadata = DistributionMetadata()
+    >>> from distutils2.metadata import Metadata
+    >>> metadata = Metadata()
     >>> metadata['Requires-Dist'] = ['Funky (Groovie)']
     "Funky (Groovie)" is not a valid predicate
     >>> metadata['Requires-Dist'] = ['Funky (1.2)']

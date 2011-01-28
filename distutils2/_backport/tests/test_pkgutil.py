@@ -236,8 +236,8 @@ class TestPkgUtilDistribution(unittest.TestCase):
         dist = Distribution(dist_path)
 
         self.assertEqual(dist.name, name)
-        from distutils2.metadata import DistributionMetadata
-        self.assertTrue(isinstance(dist.metadata, DistributionMetadata))
+        from distutils2.metadata import Metadata
+        self.assertTrue(isinstance(dist.metadata, Metadata))
         self.assertEqual(dist.metadata['version'], version)
         self.assertTrue(isinstance(dist.requested, type(bool())))
 

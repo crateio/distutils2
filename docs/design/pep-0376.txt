@@ -425,7 +425,7 @@ contained in `PKG-INFO` when it is instantiated.
 
 - ``name``: The name of the distribution.
 
-- ``metadata``: A ``DistributionMetadata`` instance loaded with the
+- ``metadata``: A ``Metadata`` instance loaded with the
   distribution's PKG-INFO file.
 
 - ``requested``: A boolean that indicates whether the REQUESTED

@@ -41,7 +41,7 @@ except ImportError:
     _HAS_DOCUTILS = False
 
 # public API of this module
-__all__ = ('DistributionMetadata', 'PKG_INFO_ENCODING',
+__all__ = ('Metadata', 'PKG_INFO_ENCODING',
            'PKG_INFO_PREFERRED_VERSION')
 
 # Encoding used for the PKG-INFO files
@@ -181,7 +181,7 @@ _UNICODEFIELDS = ('Author', 'Maintainer', 'Summary', 'Description')
 
 _MISSING = object()
 
-class DistributionMetadata(object):
+class Metadata(object):
     """The metadata of a release.
 
     Supports versions 1.0, 1.1 and 1.2 (auto-detected). You can

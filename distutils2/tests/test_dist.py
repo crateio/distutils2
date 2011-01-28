@@ -68,7 +68,7 @@ class DistributionTestCase(support.TempdirManager,
             distutils2.dist.DEBUG = False
 
     def test_write_pkg_file(self):
-        # Check DistributionMetadata handling of Unicode fields
+        # Check Metadata handling of Unicode fields
         tmp_dir = self.mkdtemp()
         my_file = os.path.join(tmp_dir, 'f')
         cls = Distribution
