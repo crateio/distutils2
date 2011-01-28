@@ -4,6 +4,7 @@ from distutils2.command.check import check
 from distutils2.metadata import _HAS_DOCUTILS
 from distutils2.tests import unittest, support
 from distutils2.errors import DistutilsSetupError
+from distutils2.errors import MetadataMissingError
 
 class CheckTestCase(support.LoggingCatcher,
                     support.TempdirManager,
@@ -11,7 +12,7 @@ class CheckTestCase(support.LoggingCatcher,
 
     def _run(self, metadata=None, **options):
         if metadata is None:
-            metadata = {}
+            metadata = {'name':'xxx', 'version':'xxx'}
         pkg_info, dist = self.create_dist(**metadata)
         cmd = check(dist)
         cmd.initialize_options()
@@ -40,7 +41,8 @@ class CheckTestCase(support.LoggingCatcher,
 
         # now with the strict mode, we should
         # get an error if there are missing metadata
-        self.assertRaises(DistutilsSetupError, self._run, {}, **{'strict': 1})
+        self.assertRaises(MetadataMissingError, self._run, {}, **{'strict': 1})
+        self.assertRaises(DistutilsSetupError, self._run, {'name':'xxx', 'version':'xxx'}, **{'strict': 1})
 
         # and of course, no error when all metadata fields are present
         cmd = self._run(metadata, strict=1)
@@ -63,6 +65,9 @@ class CheckTestCase(support.LoggingCatcher,
     def test_check_all(self):
 
         self.assertRaises(DistutilsSetupError, self._run,
+                          {'name':'xxx', 'version':'xxx'}, **{'strict': 1,
+                                 'all': 1})
+        self.assertRaises(MetadataMissingError, self._run,
                           {}, **{'strict': 1,
                                  'all': 1})
 

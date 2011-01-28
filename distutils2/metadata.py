@@ -14,7 +14,8 @@ from tokenize import tokenize, NAME, OP, STRING, ENDMARKER
 from distutils2 import logger
 from distutils2.version import (is_valid_predicate, is_valid_version,
                                 is_valid_versions)
-from distutils2.errors import (MetadataConflictError,
+from distutils2.errors import (MetadataMissingError,
+                               MetadataConflictError,
                                MetadataUnrecognizedVersionError)
 
 try:
@@ -82,6 +83,7 @@ _ALL_FIELDS.update(_241_FIELDS)
 _ALL_FIELDS.update(_314_FIELDS)
 _ALL_FIELDS.update(_345_FIELDS)
 
+_345_REQUIRED = ('Name', 'Version')
 
 def _version2fieldlist(version):
     if version == '1.0':
@@ -451,11 +453,20 @@ class DistributionMetadata(object):
             return None
         return value
 
-    def check(self):
+    def check(self, strict=False):
         """Check if the metadata is compliant."""
         # XXX should check the versions (if the file was loaded)
         missing, warnings = [], []
-        for attr in ('Name', 'Version', 'Home-page'):
+
+        for attr in ('Name', 'Version'):
+            if attr not in self:
+                missing.append(attr)
+
+        if strict and missing != []:
+            msg = "missing required metadata: %s"  % ', '.join(missing)
+            raise MetadataMissingError(msg)
+
+        for attr in ('Home-page',):
             if attr not in self:
                 missing.append(attr)
 
