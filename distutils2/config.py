@@ -112,11 +112,23 @@ class Config(object):
                                "mutually exclusive")
                         raise DistutilsOptionError(msg)
 
-                    f = open(value)    # will raise if file not found
-                    try:
-                        value = f.read()
-                    finally:
-                        f.close()
+                    if isinstance(value, list):
+                        filenames = value
+                    else:
+                        filenames = value.split()
+
+                    # concatenate each files
+                    value = ''
+                    for filename in filenames:
+                        f = open(filename)    # will raise if file not found
+                        try:
+                            value += f.read().strip() + '\n'
+                        finally:
+                            f.close()
+                        # add filename as a required file
+                        if filename not in metadata.requires_files:
+                            metadata.requires_files.append(filename)
+                    value = value.strip()
                     key = 'description'
 
                 if metadata.is_metadata_field(key):

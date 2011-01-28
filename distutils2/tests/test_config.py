@@ -5,6 +5,8 @@ import sys
 from StringIO import StringIO
 
 from distutils2.tests import unittest, support, run_unittest
+from distutils2.command.sdist import sdist
+from distutils2.errors import DistutilsFileError
 
 
 SETUP_CFG = """
@@ -16,7 +18,7 @@ author_email = carl@oddbird.net
 maintainer = Éric Araujo
 maintainer_email = merwok@netwok.org
 summary = A sample project demonstrating distutils2 packaging
-description-file = README
+description-file = %(description-file)s
 keywords = distutils2, packaging, sample project
 
 classifier =
@@ -65,6 +67,8 @@ data_files =
   bitmaps = bm/b1.gif, bm/b2.gif
   config = cfg/data.cfg
   /etc/init.d = init-script
+
+extra_files = %(extra-files)s
 
 # Replaces MANIFEST.in
 sdist_extra =
@@ -130,22 +134,32 @@ class ConfigTestCase(support.TempdirManager,
         self.addCleanup(setattr, sys, 'stderr', sys.stderr)
         self.addCleanup(os.chdir, os.getcwd())
 
-    def test_config(self):
-        tempdir = self.mkdtemp()
-        os.chdir(tempdir)
-        self.write_file('setup.cfg', SETUP_CFG)
-        self.write_file('README', 'yeah')
+    def write_setup(self, kwargs=None):
+        opts = {'description-file': 'README', 'extra-files':''}
+        if kwargs:
+            opts.update(kwargs)
+        self.write_file('setup.cfg', SETUP_CFG % opts)
 
-        # try to load the metadata now
+    def run_setup(self, *args):
+        # run setup with args
         sys.stdout = StringIO()
-        sys.argv[:] = ['setup.py', '--version']
+        sys.argv[:] = [''] + list(args)
         old_sys = sys.argv[:]
-
         try:
             from distutils2.run import commands_main
             dist = commands_main()
         finally:
             sys.argv[:] = old_sys
+        return dist
+
+    def test_config(self):
+        tempdir = self.mkdtemp()
+        os.chdir(tempdir)
+        self.write_setup()
+        self.write_file('README', 'yeah')
+
+        # try to load the metadata now
+        dist = self.run_setup('--version')
 
         # sanity check
         self.assertEqual(sys.stdout.getvalue(), '0.6.4.dev1' + os.linesep)
@@ -213,10 +227,80 @@ class ConfigTestCase(support.TempdirManager,
         d = new_compiler(compiler='d')
         self.assertEqual(d.description, 'D Compiler')
 
+
+    def test_multiple_description_file(self):
+        tempdir = self.mkdtemp()
+        os.chdir(tempdir)
+
+        self.write_setup({'description-file': 'README  CHANGES'})
+        self.write_file('README', 'yeah')
+        self.write_file('CHANGES', 'changelog2')
+        dist = self.run_setup('--version')
+        self.assertEqual(dist.metadata.requires_files, ['README', 'CHANGES'])
+
+    def test_multiline_description_file(self):
+        tempdir = self.mkdtemp()
+        os.chdir(tempdir)
+
+        self.write_setup({'description-file': 'README\n  CHANGES'})
+        self.write_file('README', 'yeah')
+        self.write_file('CHANGES', 'changelog')
+        dist = self.run_setup('--version')
+        self.assertEqual(dist.metadata['description'], 'yeah\nchangelog')
+        self.assertEqual(dist.metadata.requires_files, ['README', 'CHANGES'])
+
+    def test_metadata_requires_description_files_missing(self):
+        tempdir = self.mkdtemp()
+        os.chdir(tempdir)
+        self.write_setup({'description-file': 'README\n  README2'})
+        self.write_file('README', 'yeah')
+        self.write_file('README2', 'yeah')
+        self.write_file('haven.py', '#')
+        self.write_file('script1.py', '#')
+        os.mkdir('scripts')
+        self.write_file(os.path.join('scripts', 'find-coconuts'), '#')
+        os.mkdir('bin')
+        self.write_file(os.path.join('bin', 'taunt'), '#')
+
+        for pkg in ('one', 'src', 'src2'):
+            os.mkdir(pkg)
+            self.write_file(os.path.join(pkg, '__init__.py'), '#')
+
+        dist = self.run_setup('--version')
+        cmd = sdist(dist)
+        cmd.finalize_options()
+        cmd.get_file_list()
+        self.assertRaises(DistutilsFileError, cmd.make_distribution)
+
+    def test_metadata_requires_description_files(self):
+        tempdir = self.mkdtemp()
+        os.chdir(tempdir)
+        self.write_setup({'description-file': 'README\n  README2', 'extra-files':'\n  README2'})
+        self.write_file('README', 'yeah')
+        self.write_file('README2', 'yeah')
+        self.write_file('haven.py', '#')
+        self.write_file('script1.py', '#')
+        os.mkdir('scripts')
+        self.write_file(os.path.join('scripts', 'find-coconuts'), '#')
+        os.mkdir('bin')
+        self.write_file(os.path.join('bin', 'taunt'), '#')
+
+        for pkg in ('one', 'src', 'src2'):
+            os.mkdir(pkg)
+            self.write_file(os.path.join(pkg, '__init__.py'), '#')
+
+        dist = self.run_setup('--version')
+        cmd = sdist(dist)
+        cmd.finalize_options()
+        cmd.get_file_list()
+        cmd.make_distribution()
+        self.assertIn('README\nREADME2\n', open('MANIFEST').read())
+
+
     def test_sub_commands(self):
         tempdir = self.mkdtemp()
         os.chdir(tempdir)
-        self.write_file('setup.cfg', SETUP_CFG)
+        self.write_setup()
         self.write_file('README', 'yeah')
         self.write_file('haven.py', '#')
         self.write_file('script1.py', '#')
@@ -230,14 +314,7 @@ class ConfigTestCase(support.TempdirManager,
             self.write_file(os.path.join(pkg, '__init__.py'), '#')
 
         # try to run the install command to see if foo is called
-        sys.stdout = sys.stderr = StringIO()
-        sys.argv[:] = ['', 'install_dist']
-        old_sys = sys.argv[:]
-        try:
-            from distutils2.run import main
-            dist = main()
-        finally:
-            sys.argv[:] = old_sys
+        dist = self.run_setup('install_dist')
 
         self.assertEqual(dist.foo_was_here, 1)
 

@@ -18,7 +18,8 @@ except ImportError:
 from distutils2.command import get_command_names
 from distutils2.command.cmd import Command
 from distutils2.errors import (DistutilsPlatformError, DistutilsOptionError,
-                               DistutilsTemplateError, DistutilsModuleError)
+                               DistutilsTemplateError, DistutilsModuleError,
+                               DistutilsFileError)
 from distutils2.manifest import Manifest
 from distutils2 import logger
 from distutils2.util import convert_path, resolve_name
@@ -319,6 +320,12 @@ class sdist(Command):
             logger.warn("no files to distribute -- empty manifest?")
         else:
             logger.info(msg)
+
+        for file in self.distribution.metadata.requires_files:
+            if file not in files:
+                msg = "'%s' must be included explicitly extra-files metadata" % file
+                raise DistutilsFileError(msg)
+
         for file in files:
             if not os.path.isfile(file):
                 logger.warn("'%s' not a regular file -- skipping" % file)

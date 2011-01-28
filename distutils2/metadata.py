@@ -202,6 +202,7 @@ class DistributionMetadata(object):
         self._fields = {}
         self.display_warnings = display_warnings
         self.version = None
+        self.requires_files = []
         self.docutils_support = _HAS_DOCUTILS
         self.platform_dependent = platform_dependent
         self.execution_context = execution_context
