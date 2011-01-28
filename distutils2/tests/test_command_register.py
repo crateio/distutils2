@@ -195,7 +195,7 @@ class RegisterTestCase(support.TempdirManager,
         # long_description is not reSt compliant
 
         # empty metadata
-        cmd = self._get_cmd({})
+        cmd = self._get_cmd({'name': 'xxx', 'version': 'xxx'})
         cmd.ensure_finalized()
         cmd.strict = 1
         inputs = RawInputs('1', 'tarek', 'y')
