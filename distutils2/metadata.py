@@ -172,7 +172,7 @@ _VERSION_FIELDS = ('Version',)
 _LISTFIELDS = ('Platform', 'Classifier', 'Obsoletes',
         'Requires', 'Provides', 'Obsoletes-Dist',
         'Provides-Dist', 'Requires-Dist', 'Requires-External',
-        'Project-URL')
+        'Project-URL', 'Supported-Platform')
 _LISTTUPLEFIELDS = ('Project-URL',)
 
 _ELEMENTSFIELD = ('Keywords',)
