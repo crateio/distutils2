@@ -62,7 +62,7 @@ class DataFilesTestCase(support.TempdirManager,
         rules = [
             ('mailman/database/schemas/','*', '{appdata}/schemas'),
             ('', '**/*.tpl', '{appdata}/templates'),
-            ('developer-docs/', '**/*.txt', '{doc}'),
+            ('', 'developer-docs/**/*.txt', '{doc}'),
             ('', 'README', '{doc}'),
             ('mailman/etc/', '*', '{config}'),
             ('mailman/foo/', '**/bar/*.cfg', '{config}/baz'),
@@ -78,8 +78,8 @@ class DataFilesTestCase(support.TempdirManager,
             'mailman/etc/my.cnf': '{config}/my.cnf',
             'mailman/foo/some/path/bar/my.cfg': '{config}/hmm/some/path/bar/my.cfg',
             'mailman/foo/some/path/other.cfg': '{config}/hmm/some/path/other.cfg',
-            'developer-docs/index.txt': '{doc}/index.txt',
-            'developer-docs/api/toc.txt': '{doc}/api/toc.txt',
+            'developer-docs/index.txt': '{doc}/developer-docs/index.txt',
+            'developer-docs/api/toc.txt': '{doc}/developer-docs/api/toc.txt',
         }
         self.maxDiff = None
         self.assertFindGlob(rules, spec)
