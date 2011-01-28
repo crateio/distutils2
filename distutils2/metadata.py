@@ -298,6 +298,10 @@ class DistributionMetadata(object):
         name = self._convert_name(name)
         return name in _ALL_FIELDS
 
+    def is_multi_field(self, name):
+        name = self._convert_name(name)
+        return name in _LISTFIELDS
+
     def read(self, filepath):
         self.read_file(open(filepath))
 
