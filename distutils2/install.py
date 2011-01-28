@@ -3,8 +3,6 @@ import shutil
 import os
 import errno
 import itertools
-import sys
-import tarfile
 
 from distutils2 import logger
 from distutils2._backport.pkgutil import get_distributions
@@ -57,7 +55,7 @@ def move_files(files, destination=None):
             else:
                 raise e
         os.rename(old, new)
-        yield old, new
+        yield (old, new)
 
 
 def _install_dist(dist, path):
@@ -260,8 +258,6 @@ def get_infos(requirements, index=None, installed=None, prefer_final=True):
     if release is None:
         logger.info('Could not find a matching project')
         return infos
-
-    import pdb; pdb.set_trace()
 
     # this works for Metadata 1.2
     metadata = release.fetch_metadata()

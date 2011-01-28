@@ -152,6 +152,10 @@ def main():
                   action="store", dest="install",
                   help="Install a project.")
 
+    parser.add_option("-r", "--remove",
+                  action="store", dest="remove",
+                  help="Remove a project.")
+
     options, args = parser.parse_args()
     if options.version:
         print('Distutils2 %s' % __version__)
