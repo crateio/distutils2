@@ -300,13 +300,16 @@ class DistributionMetadata(object):
     # Public API
     #
     def get_fullname(self):
+        """Return the distribution name with version"""
         return '%s-%s' % (self['Name'], self['Version'])
 
     def is_metadata_field(self, name):
+        """return True if name is a valid metadata key"""
         name = self._convert_name(name)
         return name in _ALL_FIELDS
 
     def read(self, filepath):
+        """Read the metadata values from a file path."""
         self.read_file(open(filepath))
 
     def read_file(self, fileob):
@@ -501,12 +504,15 @@ class DistributionMetadata(object):
         return missing, warnings
 
     def keys(self):
+        """Dict like api"""
         return _version2fieldlist(self.version)
 
     def values(self):
+        """Dict like api"""
         return [self[key] for key in self.keys()]
 
     def items(self):
+        """Dict like api"""
         return [(key, self[key]) for key in self.keys()]
 
 
