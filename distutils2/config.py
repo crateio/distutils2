@@ -167,19 +167,17 @@ class Config(object):
 
             # manifest template
             self.dist.extra_files = files.get('extra_files', [])
-        
+
         if 'resources' in content:
             resources = []
-            regex = re.compile(r'[^\\](?:\\{2})* ')
             for glob, destination in content['resources'].iteritems():
-                splitted_glob = regex.split(glob, 1)
+                splitted_glob = glob.split(' ', 1)
                 if len(splitted_glob) == 1:
                     prefix = ''
                     suffix = splitted_glob[0]
                 else:
                     prefix = splitted_glob[0]
                     suffix = splitted_glob[1]
-                    
                 resources.append((prefix, suffix, destination))
 
             dir = os.path.dirname(os.path.join(os.getcwd(), filename))
