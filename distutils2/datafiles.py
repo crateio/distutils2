@@ -3,6 +3,7 @@ import re
 from os import path as osp
 from glob import iglob as simple_iglob
 
+__all__ = ['iglob', 'resources_dests']
 
 class SmartGlob(object):
 
