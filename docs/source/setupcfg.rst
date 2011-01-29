@@ -146,6 +146,73 @@ Example::
     extra_files =
             setup.py
 
+data-files
+==========
+
+This section describes the files used by the project which must not be installed in the same place that python modules or libraries.
+
+The format for specifing data files is :
+
+ **glob_syntax** = **destination**
+ 
+Example::
+
+    scripts/ *.bin = {scripts}
+
+It means that every file which match the glob_syntax will be placed in the destination. A part of the path of the file will be stripped when it will be expanded and another part will be append to the destination. For more informations about which part of the path will be stripped or not, take a look at next sub-section globsyntax_.
+
+The destination path will be expanded at the installation time using categories's default-path in the sysconfig.cfg file in the system. For more information about categories's default-paths, take a look at next next sub-section destination_.
+
+So, if you have this source tree::
+
+  mailman-1.0/
+    README
+    scripts/
+      start.sh
+      start.py
+      start.bat
+      LAUNCH
+    docs/
+      index.rst
+    mailman/
+      databases/
+        main.db
+      mailman.py
+
+
+
+
+.. _globsyntax:
+
+glob_syntax
+-----------
+
+The glob syntax is traditionnal glob syntax (with unix separator **/**) with one more information : what part of the path will be stripped when path will be expanded ?
+
+The special character which indicate the end of the part that will be stripped and the beginning of the part that will be added is whitespace, which can follow or replace a path separator.
+
+Example::
+
+    scripts/ *.bin
+    
+is equivalent to::
+
+    scripts *.bin
+
+Theses examples means that all files with extensions bin in the directory scripts will be placed directly on **destination** directory.
+
+This glob example::
+
+    scripts/*.bin
+    
+means that all files with extensions bin in the directory scripts will be placed directly on **destination/scripts** directory.
+
+.. _destination:
+
+destination
+-----------
+
+The destination is a traditionnal path (with unix separator **/**) where some parts will be expanded at installation time.
 
 command sections
 ================
