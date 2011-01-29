@@ -69,6 +69,9 @@ class install_distinfo(Command):
             self.requested = True
         if self.no_record is None:
             self.no_record = False
+        if self.no_datafiles is None:
+            self.no_datafiles = False
+
 
         metadata = self.distribution.metadata
 
@@ -116,6 +119,24 @@ class install_distinfo(Command):
                 f.close()
                 self.outputs.append(requested_path)
 
+
+            if not self.no_datafiles:
+                datafiles_path = os.path.join(self.distinfo_dir, 'DATAFILES')
+                logger.info('creating %s', datafiles_path)
+                f = open(datafiles_path, 'wb')
+                try:
+                    writer = csv.writer(f, delimiter=',',
+                                        lineterminator=os.linesep,
+                                        quotechar='"')
+                    install_data = self.get_finalized_command('install_data')
+                    if install_data.get_datafiles_out() != '':
+                        for tuple in install_data.get_datafiles_out():
+                            writer.writerow(tuple)
+
+                    self.outputs.append(datafiles_path)
+                finally:
+                    f.close()
+
             if not self.no_record:
                 record_path = os.path.join(self.distinfo_dir, 'RECORD')
                 logger.info('creating %s', record_path)
@@ -142,21 +163,6 @@ class install_distinfo(Command):
                     # add the RECORD file itself
                     writer.writerow((record_path, '', ''))
                     self.outputs.append(record_path)
-                finally:
-                    f.close()
-
-            if not self.no_datafiles:
-                datafiles_path = os.path.join(self.distinfo_dir, 'DATAFILES')
-                logger.info('creating %s', datafiles_path)
-                f = open(datafiles_path, 'wb')
-                try:
-                    writer = csv.writer(f, delimiter=',',
-                                        lineterminator=os.linesep,
-                                        quotechar='"')
-                    install_data = self.get_finalized_command('install_data')
-                    if install_data.get_datafiles_out() != '':
-                        for tuple in install_data.get_datafiles_out():
-                            writer.writerow(tuple)
                 finally:
                     f.close()
 
