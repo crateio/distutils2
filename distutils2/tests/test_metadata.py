@@ -1,10 +1,10 @@
-"""Tests for distutils.command.bdist."""
+"""Tests for distutils.metadata."""
 import os
 import sys
 import platform
 from StringIO import StringIO
 
-from distutils2.metadata import (DistributionMetadata, _interpret,
+from distutils2.metadata import (DistributionMetadata,
                                  PKG_INFO_PREFERRED_VERSION)
 from distutils2.tests import run_unittest, unittest
 from distutils2.tests.support import LoggingCatcher, WarningsCatcher
@@ -45,55 +45,6 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
                           fileobj=fp, mapping=d)
         self.assertRaises(TypeError, DistributionMetadata,
                           PKG_INFO, mapping=m, fileobj=fp)
-
-    def test_interpret(self):
-        sys_platform = sys.platform
-        version = sys.version.split()[0]
-        os_name = os.name
-        platform_version = platform.version()
-        platform_machine = platform.machine()
-
-        self.assertTrue(_interpret("sys.platform == '%s'" % sys_platform))
-        self.assertTrue(_interpret(
-            "sys.platform == '%s' or python_version == '2.4'" % sys_platform))
-        self.assertTrue(_interpret(
-            "sys.platform == '%s' and python_full_version == '%s'" %
-            (sys_platform, version)))
-        self.assertTrue(_interpret("'%s' == sys.platform" % sys_platform))
-        self.assertTrue(_interpret('os.name == "%s"' % os_name))
-        self.assertTrue(_interpret(
-            'platform.version == "%s" and platform.machine == "%s"' %
-            (platform_version, platform_machine)))
-
-        # stuff that need to raise a syntax error
-        ops = ('os.name == os.name', 'os.name == 2', "'2' == '2'",
-               'okpjonon', '', 'os.name ==', 'python_version == 2.4')
-        for op in ops:
-            self.assertRaises(SyntaxError, _interpret, op)
-
-        # combined operations
-        OP = 'os.name == "%s"' % os_name
-        AND = ' and '
-        OR = ' or '
-        self.assertTrue(_interpret(OP + AND + OP))
-        self.assertTrue(_interpret(OP + AND + OP + AND + OP))
-        self.assertTrue(_interpret(OP + OR + OP))
-        self.assertTrue(_interpret(OP + OR + OP + OR + OP))
-
-        # other operators
-        self.assertTrue(_interpret("os.name != 'buuuu'"))
-        self.assertTrue(_interpret("python_version > '1.0'"))
-        self.assertTrue(_interpret("python_version < '5.0'"))
-        self.assertTrue(_interpret("python_version <= '5.0'"))
-        self.assertTrue(_interpret("python_version >= '1.0'"))
-        self.assertTrue(_interpret("'%s' in os.name" % os_name))
-        self.assertTrue(_interpret("'buuuu' not in os.name"))
-        self.assertTrue(_interpret(
-            "'buuuu' not in os.name and '%s' in os.name" % os_name))
-
-        # execution context
-        self.assertTrue(_interpret('python_version == "0.1"',
-                                   {'python_version': '0.1'}))
 
     def test_metadata_read_write(self):
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
