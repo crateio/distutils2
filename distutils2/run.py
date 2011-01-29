@@ -124,6 +124,10 @@ def main():
                   action="store_true", dest="version", default=False,
                   help="Prints out the version of Distutils2 and exits.")
 
+    parser.add_option("-m", "--metadata",
+                  action="append", dest="metadata", default=[],
+                  help="List METADATA metadata or 'all' for all metadatas.")
+
     parser.add_option("-s", "--search",
                   action="store", dest="search", default=None,
                   help="Search for installed distributions.")
@@ -140,6 +144,31 @@ def main():
     if options.version:
         print('Distutils2 %s' % __version__)
 #        sys.exit(0)
+
+    if len(options.metadata):
+        from distutils2.dist import Distribution
+        dist = Distribution()
+        dist.parse_config_files()
+        metadata = dist.metadata
+
+        if 'all' in options.metadata:
+            keys = metadata.keys()
+        else:
+            keys = options.metadata
+            if len(keys) == 1:
+                print metadata[keys[0]]
+                sys.exit(0)
+
+        for key in keys:
+            if key in metadata:
+                print(metadata._convert_name(key)+':')
+                value = metadata[key]
+                if isinstance(value, list):
+                    for v in value:
+                        print('    '+v)
+                else:
+                    print('    '+value.replace('\n', '\n    '))
+        sys.exit(0)
 
     if options.search is not None:
         search = options.search.lower()
