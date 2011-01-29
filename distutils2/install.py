@@ -130,8 +130,10 @@ def install_dists(dists, path=None):
     :param dists: distributions to install
     :param path: base path to install distribution in
     """
+    path_is_tmp = False
     if not path:
         path = mkdtemp()
+        path_is_tmp = True
 
     installed_dists, installed_files = [], []
     for d in dists:
@@ -146,6 +148,10 @@ def install_dists(dists, path=None):
             for d in installed_dists:
                 uninstall(d)
             raise e
+        finally:
+            if path_is_tmp:
+                shutil.rmtree(path)
+        
     return installed_files
 
 
