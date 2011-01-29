@@ -1166,5 +1166,5 @@ def get_file_users(path):
         if dist.uses(path):
             yield dist
 
-def open(distribution_name, relative_path):
+def data_open(distribution_name, relative_path):
     pass
