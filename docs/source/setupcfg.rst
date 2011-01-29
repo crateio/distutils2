@@ -163,24 +163,6 @@ It means that every file which match the glob_syntax will be placed in the desti
 
 The destination path will be expanded at the installation time using categories's default-path in the sysconfig.cfg file in the system. For more information about categories's default-paths, take a look at next next sub-section destination_.
 
-So, if you have this source tree::
-
-  mailman-1.0/
-    README
-    scripts/
-      start.sh
-      start.py
-      start.bat
-      LAUNCH
-    docs/
-      index.rst
-    mailman/
-      databases/
-        main.db
-      mailman.py
-
-
-
 
 .. _globsyntax:
 
@@ -256,6 +238,109 @@ A special category exists, named {distribution.name} which will be expanded into
     man = {datadir}/man
 
 So, if you have this destination path : **{help}/api**, it will be expanded into **{datadir}/{distribution.name}/api**. {datadir} will be expanded depending on your system value (ex : confdir = datadir = /usr/share/).
+
+
+Simple-example
+--------------
+
+Source tree::
+
+  babar-1.0/
+    README
+    babar.sh
+    launch.sh
+    babar.py
+    
+Setup.cfg::
+
+  [RESOURCES]
+  README = {doc}
+  *.sh = {scripts}
+  
+So babar.sh and launch.sh will be placed in {scripts} directory.
+
+Now let's create to move all the scripts into a scripts/directory.
+
+Second-example
+--------------
+
+Source tree::
+
+  babar-1.1/
+    README
+    scripts/
+      babar.sh
+      launch.sh
+      LAUNCH
+    babar.py
+    
+Setup.cfg::
+
+  [RESOURCES]
+  README = {doc}
+  scripts/ LAUNCH = {scripts}
+  scripts/ *.sh = {scripts}
+  
+It's important to use the separator after scripts/ to install all the bash scripts into {scripts} instead of {scripts}/scripts.
+
+Now let's add some docs.
+
+Third-example
+-------------
+
+Source tree::
+
+  babar-1.2/
+    README
+    scripts/
+      babar.sh
+      launch.sh
+      LAUNCH
+    docs/
+      api
+      man
+    babar.py
+
+Setup.cfg::
+
+  [RESOURCES]
+  README = {doc}
+  scripts/ LAUNCH = {doc}
+  scripts/ *.sh = {scripts}
+  doc/ * = {doc}
+  doc/ man = {man}
+  
+You want to place all the file in the docs script into {doc} category, instead of man, which must be placed into {man} category, we will use the order of declaration of globs to choose the destination, the last glob that match the file is used.
+
+Now let's add some scripts for windows users.
+  
+Final example
+-------------
+
+Source tree::
+
+  babar-1.3/
+    README
+    doc/
+      api
+      man
+    scripts/  
+      babar.sh
+      launch.sh
+      babar.bat
+      launch.bat
+      LAUNCH
+
+Setup.cfg::
+
+  [RESOURCES]
+  README = {doc}
+  scripts/ LAUNCH = {doc}
+  scripts/ *.{sh,bat} = {scripts}
+  doc/ * = {doc}
+  doc/ man = {man}
+
+We use brace expansion syntax to place all the bash and batch scripts into {scripts} category.    
 
 command sections
 ================

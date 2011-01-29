@@ -613,7 +613,7 @@ def get_data(package, resource):
 # PEP 376 Implementation #
 ##########################
 
-DIST_FILES = ('INSTALLER', 'METADATA', 'RECORD', 'REQUESTED',)
+DIST_FILES = ('INSTALLER', 'METADATA', 'RECORD', 'REQUESTED', 'RESOURCES')
 
 # Cache
 _cache_name = {} # maps names to Distribution instances
@@ -1167,3 +1167,6 @@ def get_file_users(path):
     for dist in get_distributions():
         if dist.uses(path):
             yield dist
+
+def open(distribution_name, relative_path):
+    
