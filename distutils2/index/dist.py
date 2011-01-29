@@ -17,19 +17,19 @@ import tempfile
 import urllib
 import urlparse
 import zipfile
-
 try:
     import hashlib
 except ImportError:
     from distutils2._backport import hashlib
 
+from distutils2._backport.shutil import unpack_archive
 from distutils2.errors import IrrationalVersionError
 from distutils2.index.errors import (HashDoesNotMatch, UnsupportedHashName,
                                      CantParseArchiveName)
 from distutils2.version import (suggest_normalized_version, NormalizedVersion,
                                 get_version_predicate)
 from distutils2.metadata import DistributionMetadata
-from distutils2.util import untar_file, unzip_file, splitext
+from distutils2.util import splitext
 
 __all__ = ['ReleaseInfo', 'DistInfo', 'ReleasesList', 'get_infos_from_url']
 
@@ -206,6 +206,7 @@ class ReleaseInfo(IndexReference):
     __hash__ = object.__hash__
 
 
+
 class DistInfo(IndexReference):
     """Represents a distribution retrieved from an index (sdist, bdist, ...)
     """
@@ -313,17 +314,8 @@ class DistInfo(IndexReference):
 
             filename = self.download()
             content_type = mimetypes.guess_type(filename)[0]
+            self._unpacked_dir = unpack_archive(filename)
 
-            if (content_type == 'application/zip'
-                or filename.endswith('.zip')
-                or filename.endswith('.pybundle')
-                or zipfile.is_zipfile(filename)):
-                unzip_file(filename, path, flatten=not filename.endswith('.pybundle'))
-            elif (content_type == 'application/x-gzip'
-                  or tarfile.is_tarfile(filename)
-                  or splitext(filename)[1].lower() in ('.tar', '.tar.gz', '.tar.bz2', '.tgz', '.tbz')):
-                untar_file(filename, path)
-            self._unpacked_dir = path
         return self._unpacked_dir
 
     def _check_md5(self, filename):
