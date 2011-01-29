@@ -85,7 +85,7 @@ class Config(object):
                 if v != '']
         return value
 
-    def _read_setup_cfg(self, parser, filename):
+    def _read_setup_cfg(self, parser, cfg_filename):
         content = {}
         for section in parser.sections():
             content[section] = dict(parser.items(section))
@@ -173,15 +173,6 @@ class Config(object):
                 key, value = data
                 self.dist.package_data[key.strip()] = value.strip()
 
-            self.dist.data_files = []
-            for data in files.get('data_files', []):
-                data = data.split('=')
-                if len(data) != 2:
-                    continue
-                key, value = data
-                values = [v.strip() for v in value.split(',')]
-                self.dist.data_files.append((key, values))
-
             # manifest template
             self.dist.extra_files = files.get('extra_files', [])
 
@@ -199,7 +190,7 @@ class Config(object):
                     destination = None
                 resources.append((prefix, suffix, destination))
 
-            dir = os.path.dirname(os.path.join(os.getcwd(), filename))
+            dir = os.path.dirname(os.path.join(os.getcwd(), cfg_filename))
             data_files = resources_dests(dir, resources)
             self.dist.data_files = data_files
 

@@ -191,7 +191,7 @@ Common commands: (see '--help-commands' for more)
         self.include_dirs = []
         self.extra_path = None
         self.scripts = []
-        self.data_files = []
+        self.data_files = {}
         self.password = ''
         self.use_2to3 = False
         self.convert_2to3_doctests = []
