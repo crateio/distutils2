@@ -208,6 +208,13 @@ def _update_infos(infos, new_infos):
             infos[key].extend(new_infos[key])
 
 
+def remove(project_name):
+    """Removes a single project from the installation"""
+    pass
+
+
+
+
 def main(**attrs):
     if 'script_args' not in attrs:
         import sys

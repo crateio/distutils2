@@ -14,7 +14,8 @@ from tokenize import tokenize, NAME, OP, STRING, ENDMARKER
 from distutils2 import logger
 from distutils2.version import (is_valid_predicate, is_valid_version,
                                 is_valid_versions)
-from distutils2.errors import (MetadataConflictError,
+from distutils2.errors import (MetadataMissingError,
+                               MetadataConflictError,
                                MetadataUnrecognizedVersionError)
 
 try:
@@ -77,11 +78,12 @@ _345_MARKERS = ('Provides-Dist', 'Requires-Dist', 'Requires-Python',
                 'Obsoletes-Dist', 'Requires-External', 'Maintainer',
                 'Maintainer-email', 'Project-URL')
 
+_345_REQUIRED = ('Name', 'Version')
+
 _ALL_FIELDS = set()
 _ALL_FIELDS.update(_241_FIELDS)
 _ALL_FIELDS.update(_314_FIELDS)
 _ALL_FIELDS.update(_345_FIELDS)
-
 
 def _version2fieldlist(version):
     if version == '1.0':
@@ -172,14 +174,19 @@ _VERSION_FIELDS = ('Version',)
 _LISTFIELDS = ('Platform', 'Classifier', 'Obsoletes',
         'Requires', 'Provides', 'Obsoletes-Dist',
         'Provides-Dist', 'Requires-Dist', 'Requires-External',
-        'Project-URL')
+        'Project-URL', 'Supported-Platform')
 _LISTTUPLEFIELDS = ('Project-URL',)
 
 _ELEMENTSFIELD = ('Keywords',)
 
 _UNICODEFIELDS = ('Author', 'Maintainer', 'Summary', 'Description')
 
-_MISSING = object()
+class NoDefault(object):
+    """Marker object used for clean representation"""
+    def __repr__(self):
+        return '<NoDefault>'
+
+_MISSING = NoDefault()
 
 class DistributionMetadata(object):
     """The metadata of a release.
@@ -200,6 +207,7 @@ class DistributionMetadata(object):
         self._fields = {}
         self.display_warnings = display_warnings
         self.version = None
+        self.requires_files = []
         self.docutils_support = _HAS_DOCUTILS
         self.platform_dependent = platform_dependent
         self.execution_context = execution_context
@@ -292,13 +300,20 @@ class DistributionMetadata(object):
     # Public API
     #
     def get_fullname(self):
+        """Return the distribution name with version"""
         return '%s-%s' % (self['Name'], self['Version'])
 
     def is_metadata_field(self, name):
+        """return True if name is a valid metadata key"""
         name = self._convert_name(name)
         return name in _ALL_FIELDS
 
+    def is_multi_field(self, name):
+        name = self._convert_name(name)
+        return name in _LISTFIELDS
+
     def read(self, filepath):
+        """Read the metadata values from a file path."""
         self.read_file(open(filepath))
 
     def read_file(self, fileob):
@@ -451,11 +466,21 @@ class DistributionMetadata(object):
             return None
         return value
 
-    def check(self):
-        """Check if the metadata is compliant."""
+    def check(self, strict=False):
+        """Check if the metadata is compliant. If strict is False then raise if
+        no Name or Version are provided"""
         # XXX should check the versions (if the file was loaded)
         missing, warnings = [], []
-        for attr in ('Name', 'Version', 'Home-page'):
+
+        for attr in ('Name', 'Version'):
+            if attr not in self:
+                missing.append(attr)
+
+        if strict and missing != []:
+            msg = "missing required metadata: %s"  % ', '.join(missing)
+            raise MetadataMissingError(msg)
+
+        for attr in ('Home-page',):
             if attr not in self:
                 missing.append(attr)
 
@@ -483,12 +508,15 @@ class DistributionMetadata(object):
         return missing, warnings
 
     def keys(self):
+        """Dict like api"""
         return _version2fieldlist(self.version)
 
     def values(self):
+        """Dict like api"""
         return [self[key] for key in self.keys()]
 
     def items(self):
+        """Dict like api"""
         return [(key, self[key]) for key in self.keys()]
 
 

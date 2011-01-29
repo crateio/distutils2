@@ -1,0 +1,23 @@
+diff -r 5603e1bc5442 distutils2/util.py
+--- a/distutils2/util.py    Fri Jan 28 18:42:44 2011 +0100
++++ b/distutils2/util.py    Sat Jan 29 02:39:55 2011 +0100
+@@ -1203,12 +1203,13 @@
+         in_cfg_value = has_get_option(config, section, option)
+         if not in_cfg_value:
+             # There is no such option in the setup.cfg
+-            continue
+-
+-        if arg == "long_description":
+-            filename = has_get_option("description_file")
+-            if filename:
+-                in_cfg_value = open(filename).read()
++            if arg == "long_description":
++                filename = has_get_option(config, section, "description_file")
++                print "We have a filename", filename
++                if filename:
++                    in_cfg_value = open(filename).read()
++            else:
++                continue
+ 
+         if arg in MULTI_FIELDS:
+             # Special behaviour when we have a multi line option
