@@ -317,13 +317,13 @@ def _update_infos(infos, new_infos):
 
 def remove(project_name, paths=sys.path):
     """Removes a single project from the installation"""
-    tmp = tempfile.mkdtemp(prefix=project_name+'-uninstall')
     dist = get_distribution(project_name, paths=paths)
     if dist is None:
         raise DistutilsError('Distribution %s not found' % project_name)
     files = dist.get_installed_files(local=True)
     rmdirs = []
     rmfiles = []
+    tmp = tempfile.mkdtemp(prefix=project_name+'-uninstall')
 
     try:
         for file, md5, size in files:
@@ -339,8 +339,8 @@ def remove(project_name, paths=sys.path):
                     rmfiles.append(file)
                 if dirname not in rmdirs:
                     rmdirs.append(dirname)
-    except OSError:
-        os.rmdir(tmp)
+    finally:
+        shutil.rmtree(tmp)
 
     for file in rmfiles:
         os.remove(file)
