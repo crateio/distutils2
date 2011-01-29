@@ -1,6 +1,5 @@
 import os
 import re
-from os import path as osp
 from glob import iglob as simple_iglob
 
 __all__ = ['iglob', 'resources_dests']
@@ -14,16 +13,16 @@ class SmartGlob(object):
 
     def expand(self, basepath, destination):
         if self.base:
-            base = osp.join(basepath, self.base)
+            base = os.path.join(basepath, self.base)
         else:
             base = basepath
         if '*' in base or '{' in base or '}'  in base:
             raise NotImplementedError('glob are not supported into base part of datafiles definition. %r is an invalide basepath' % base)
-        absglob = osp.join(base, self.suffix)
+        absglob = os.path.join(base, self.suffix)
         for file in iglob(absglob):
             path_suffix = file[len(base):].lstrip('/')
             relpath = file[len(basepath):].lstrip('/')
-            dest = osp.join(destination, path_suffix)
+            dest = os.path.join(destination, path_suffix)
             yield relpath, dest
 
 RICH_GLOB = re.compile(r'\{([^}]*)\}')
@@ -51,7 +50,7 @@ def iglob(path_glob):
             else:
                 radical = radical.lstrip('/')
             for (path, dir, files) in os.walk(prefix):
-                for file in iglob(osp.join(prefix, path, radical)):
+                for file in iglob(os.path.join(prefix, path, radical)):
                    yield os.path.join(prefix, file)
 
 def resources_dests(resources_dir, rules):
