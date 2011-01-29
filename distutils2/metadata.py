@@ -174,7 +174,7 @@ _VERSION_FIELDS = ('Version',)
 _LISTFIELDS = ('Platform', 'Classifier', 'Obsoletes',
         'Requires', 'Provides', 'Obsoletes-Dist',
         'Provides-Dist', 'Requires-Dist', 'Requires-External',
-        'Project-URL')
+        'Project-URL', 'Supported-Platform')
 _LISTTUPLEFIELDS = ('Project-URL',)
 
 _ELEMENTSFIELD = ('Keywords',)
@@ -307,6 +307,10 @@ class DistributionMetadata(object):
         """return True if name is a valid metadata key"""
         name = self._convert_name(name)
         return name in _ALL_FIELDS
+
+    def is_multi_field(self, name):
+        name = self._convert_name(name)
+        return name in _LISTFIELDS
 
     def read(self, filepath):
         """Read the metadata values from a file path."""

@@ -76,10 +76,9 @@ class Config(object):
         return value
 
     def _multiline(self, value):
-        if '\n' in value:
-            value = [v for v in
-                        [v.strip() for v in value.split('\n')]
-                        if v != '']
+        value = [v for v in
+                [v.strip() for v in value.split('\n')]
+                if v != '']
         return value
 
     def _read_setup_cfg(self, parser):
@@ -100,7 +99,9 @@ class Config(object):
         if 'metadata' in content:
             for key, value in content['metadata'].iteritems():
                 key = key.replace('_', '-')
-                value = self._multiline(value)
+                if metadata.is_multi_field(key):
+                    value = self._multiline(value)
+
                 if key == 'project-url':
                     value = [(label.strip(), url.strip())
                              for label, url in
