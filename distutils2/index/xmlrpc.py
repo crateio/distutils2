@@ -127,10 +127,17 @@ class Client(BaseClient):
         return release
 
     def get_metadata(self, project_name, version):
-        """Retreive project metadatas.
+        """Retrieve project metadata.
 
         Return a ReleaseInfo object, with metadata informations filled in.
         """
+        # to be case-insensitive, get the informations from the XMLRPC API
+        projects = [d['name'] for d in
+                    self.proxy.search({'name': project_name})
+                    if d['name'].lower() == project_name]
+        if len(projects) > 0:
+            project_name = projects[0]
+
         metadata = self.proxy.release_data(project_name, version)
         project = self._get_project(project_name)
         if version not in project.get_versions():

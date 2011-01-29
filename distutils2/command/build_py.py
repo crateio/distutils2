@@ -8,7 +8,6 @@ import sys
 import logging
 from glob import glob
 
-import distutils2
 from distutils2.command.cmd import Command
 from distutils2.errors import DistutilsOptionError, DistutilsFileError
 from distutils2.util import convert_path
@@ -163,11 +162,13 @@ class build_py(Command, Mixin2to3):
 
         Helper function for `run()`.
         """
+        # FIXME add tests for this method
         for package, src_dir, build_dir, filenames in self.data_files:
             for filename in filenames:
                 target = os.path.join(build_dir, filename)
+                srcfile = os.path.join(src_dir, filename)
                 self.mkpath(os.path.dirname(target))
-                outf, copied = self.copy_file(os.path.join(src_dir, filename),
+                outf, copied = self.copy_file(srcfile,
                                target, preserve_mode=False)
                 if copied and srcfile in self.distribution.convert_2to3.doctests:
                     self._doctests_2to3.append(outf)

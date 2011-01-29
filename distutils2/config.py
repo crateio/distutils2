@@ -9,7 +9,8 @@ import re
 from ConfigParser import RawConfigParser
 
 from distutils2 import logger
-from distutils2.util import check_environ, resolve_name
+from distutils2.errors import DistutilsOptionError
+from distutils2.util import check_environ, resolve_name, strtobool
 from distutils2.compiler import set_compiler
 from distutils2.command import set_command
 from distutils2.datafiles import resources_dests
