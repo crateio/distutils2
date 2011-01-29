@@ -613,7 +613,7 @@ def get_data(package, resource):
 # PEP 376 Implementation #
 ##########################
 
-DIST_FILES = ('INSTALLER', 'METADATA', 'RECORD', 'REQUESTED', 'RESOURCES')
+DIST_FILES = ('INSTALLER', 'METADATA', 'RECORD', 'REQUESTED', 'DATAFILES')
 
 # Cache
 _cache_name = {} # maps names to Distribution instances
