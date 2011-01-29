@@ -139,7 +139,7 @@ def install_dists(dists, path=None):
 
             # reverting
             for d in installed_dists:
-                _uninstall(d)
+                uninstall(d)
             raise e
     return installed_files
 
@@ -226,8 +226,6 @@ def get_infos(requirements, index=None, installed=None, prefer_final=True):
     Conflict contains all the conflicting distributions, if there is a
     conflict.
     """
-    from ipdb import set_trace
-    set_trace()
     if not installed:
         logger.info('Reading installed distributions')
         installed = get_distributions(use_egg_info=True)
@@ -237,16 +235,20 @@ def get_infos(requirements, index=None, installed=None, prefer_final=True):
     predicate = get_version_predicate(requirements)
     found = False
     installed = list(installed)
+
+    # check that the project isnt already installed
     for installed_project in installed:
         # is it a compatible project ?
         if predicate.name.lower() != installed_project.name.lower():
             continue
         found = True
         logger.info('Found %s %s' % (installed_project.name,
-                                     installed_project.metadata.version))
-        if predicate.match(installed_project.metadata.version):
-            return infos
+                                     installed_project.version))
 
+        # if we already have something installed, check it matches the
+        # requirements
+        if predicate.match(installed_project.version):
+            return infos
         break
 
     if not found:
@@ -260,7 +262,7 @@ def get_infos(requirements, index=None, installed=None, prefer_final=True):
         releases = index.get_releases(requirements)
     except (ReleaseNotFound, ProjectNotFound), e:
         raise InstallationException('Release not found: "%s"' % requirements)
-
+    
     # Pick up a release, and try to get the dependency tree
     release = releases.get_last(requirements, prefer_final=prefer_final)
 
@@ -284,7 +286,7 @@ def get_infos(requirements, index=None, installed=None, prefer_final=True):
     # Get what the missing deps are
     dists = depgraph.missing[release]
     if dists:
-        logger.info("missing dependencies found, installing them")
+        logger.info("missing dependencies found, retrieving metadata")
         # we have missing deps
         for dist in dists:
             _update_infos(infos, get_infos(dist, index, installed))
@@ -333,7 +335,7 @@ def install(project):
                            install_path=install_path)
 
     except InstallationConflict, e:
-        projects = ['%s %s' % (p.name, p.metadata.version) for p in e.args[0]]
+        projects = ['%s %s' % (p.name, p.version) for p in e.args[0]]
         logger.info('"%s" conflicts with "%s"' % (project, ','.join(projects)))
 
 

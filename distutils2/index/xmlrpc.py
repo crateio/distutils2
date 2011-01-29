@@ -131,7 +131,7 @@ class Client(BaseClient):
 
         Return a ReleaseInfo object, with metadata informations filled in.
         """
-        # to be case-insensitive
+        # to be case-insensitive, get the informations from the XMLRPC API
         projects = [d['name'] for d in
                     self.proxy.search({'name': project_name})
                     if d['name'].lower() == project_name]
