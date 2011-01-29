@@ -14,16 +14,13 @@ class InstallDataTestCase(support.TempdirManager,
         cmd = install_data(dist)
         cmd.install_dir = inst = os.path.join(pkg_dir, 'inst')
 
-        # data_files can contain
-        #  - simple files
-        #  - a tuple with a path, and a list of file
         one = os.path.join(pkg_dir, 'one')
         self.write_file(one, 'xxx')
         inst2 = os.path.join(pkg_dir, 'inst2')
         two = os.path.join(pkg_dir, 'two')
         self.write_file(two, 'xxx')
 
-        cmd.data_files = [one, (inst2, [two])]
+        cmd.data_files = {'one' : '{appdata}/one', 'two' : '{appdata}/two'}
         self.assertEqual(cmd.get_inputs(), [one, (inst2, [two])])
 
         # let's run the command

@@ -205,11 +205,11 @@ class SDistTestCase(support.TempdirManager, support.LoggingCatcher,
         self.write_file((some_dir, 'file.txt'), '#')
         self.write_file((some_dir, 'other_file.txt'), '#')
 
-        dist.data_files = [('data', ['data/data.dt',
-                                     'inroot.txt',
-                                     'notexisting']),
-                           'some/file.txt',
-                           'some/other_file.txt']
+        dist.data_files = {'data/data.dt' : '{appdata}/data.dt',
+                           'inroot.txt' : '{appdata}/inroot.txt',
+                           'notexisting' : '{appdata}/notexisting',
+                           'some/file.txt' : '{appdata}/file.txt',
+                           'some/other_file.txt' : '{appdata}/other_file.txt'}
 
         # adding a script
         script_dir = join(self.tmp_dir, 'scripts')

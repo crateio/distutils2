@@ -4,16 +4,34 @@
 """
 import os.path
 import os
+import re
 import sys
 import re
 from ConfigParser import RawConfigParser
 
 from distutils2 import logger
 from distutils2.errors import DistutilsOptionError
+from distutils2.compiler.extension import Extension
 from distutils2.util import check_environ, resolve_name, strtobool
 from distutils2.compiler import set_compiler
 from distutils2.command import set_command
 from distutils2.datafiles import resources_dests
+
+
+def _pop_values(values_dct, key):
+    """Remove values from the dictionary and convert them as a list"""
+    vals_str = values_dct.pop(key, None)
+    if not vals_str:
+        return
+    # Get bash options like `gcc -print-file-name=libgcc.a`
+    vals = re.search('(`.*?`)', vals_str) or []
+    if vals:
+        vals = list(vals.groups())
+        vals_str = re.sub('`.*?`', '', vals_str)
+    vals.extend(vals_str.split())
+    if vals:
+        return vals
+
 
 class Config(object):
     """Reads configuration files and work with the Distribution instance
@@ -189,11 +207,37 @@ class Config(object):
                 if destination == '<exclude>':
                     destination = None
                 resources.append((prefix, suffix, destination))
-
+                
             dir = os.path.dirname(os.path.join(os.getcwd(), cfg_filename))
             data_files = resources_dests(dir, resources)
             self.dist.data_files = data_files
-
+                
+        ext_modules = self.dist.ext_modules
+        for section_key in content:
+            labels = section_key.split('=')
+            if (len(labels) == 2) and (labels[0] == 'extension'):
+                # labels[1] not used from now but should be implemented
+                # for extension build dependency
+                values_dct = content[section_key]
+                ext_modules.append(Extension(
+                    values_dct.pop('name'),
+                    _pop_values(values_dct, 'sources'),
+                    _pop_values(values_dct, 'include_dirs'),
+                    _pop_values(values_dct, 'define_macros'),
+                    _pop_values(values_dct, 'undef_macros'),
+                    _pop_values(values_dct, 'library_dirs'),
+                    _pop_values(values_dct, 'libraries'),
+                    _pop_values(values_dct, 'runtime_library_dirs'),
+                    _pop_values(values_dct, 'extra_objects'),
+                    _pop_values(values_dct, 'extra_compile_args'),
+                    _pop_values(values_dct, 'extra_link_args'),
+                    _pop_values(values_dct, 'export_symbols'),
+                    _pop_values(values_dct, 'swig_opts'),
+                    _pop_values(values_dct, 'depends'),
+                    values_dct.pop('language', None),
+                    values_dct.pop('optional', None),
+                    **values_dct
+                ))
 
     def parse_config_files(self, filenames=None):
         if filenames is None:
