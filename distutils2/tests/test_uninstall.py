@@ -2,7 +2,9 @@
 import os
 import sys
 from StringIO import StringIO
+from distutils2._backport.pkgutil import disable_cache, enable_cache
 from distutils2.tests import unittest, support, run_unittest
+from distutils2.errors import DistutilsError
 from distutils2.install import remove
 
 SETUP_CFG = """
@@ -25,7 +27,9 @@ class UninstallTestCase(support.TempdirManager,
         self.addCleanup(setattr, sys, 'stdout', sys.stdout)
         self.addCleanup(setattr, sys, 'stderr', sys.stderr)
         self.addCleanup(os.chdir, os.getcwd())
+        self.addCleanup(enable_cache)
         self.root_dir = self.mkdtemp()
+        disable_cache()
 
     def run_setup(self, *args):
         # run setup with args
@@ -67,6 +71,9 @@ class UninstallTestCase(support.TempdirManager,
         dist = self.run_setup('install_dist', '--prefix='+self.root_dir)
         install_lib = self.get_path(dist, 'purelib')
         return dist, install_lib
+
+    def test_uninstall_unknow_distribution(self):
+        self.assertRaises(DistutilsError, remove, 'foo', paths=[self.root_dir])
 
     def test_uninstall(self):
         dist, install_lib = self.install_dist()
