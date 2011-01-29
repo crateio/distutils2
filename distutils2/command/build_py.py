@@ -66,10 +66,9 @@ class build_py(Command, Mixin2to3):
         self.packages = self.distribution.packages
         self.py_modules = self.distribution.py_modules
         self.package_data = self.distribution.package_data
-        self.package_dir = {}
-        if self.distribution.package_dir:
-            for name, path in self.distribution.package_dir.iteritems():
-                self.package_dir[name] = convert_path(path)
+        self.package_dir = None
+        if self.distribution.package_dir is not None:
+            self.package_dir = convert_path(self.distribution.package_dir)
         self.data_files = self.get_data_files()
 
         # Ick, copied straight from install_lib.py (fancy_getopt needs a
@@ -179,41 +178,14 @@ class build_py(Command, Mixin2to3):
         """Return the directory, relative to the top of the source
            distribution, where package 'package' should be found
            (at least according to the 'package_dir' option, if any)."""
-
         path = package.split('.')
+        if self.package_dir is not None:
+            path.insert(0, self.package_dir)
 
-        if not self.package_dir:
-            if path:
-                return os.path.join(*path)
-            else:
-                return ''
-        else:
-            tail = []
-            while path:
-                try:
-                    pdir = self.package_dir['.'.join(path)]
-                except KeyError:
-                    tail.insert(0, path[-1])
-                    del path[-1]
-                else:
-                    tail.insert(0, pdir)
-                    return os.path.join(*tail)
-            else:
-                # Oops, got all the way through 'path' without finding a
-                # match in package_dir.  If package_dir defines a directory
-                # for the root (nameless) package, then fallback on it;
-                # otherwise, we might as well have not consulted
-                # package_dir at all, as we just use the directory implied
-                # by 'tail' (which should be the same as the original value
-                # of 'path' at this point).
-                pdir = self.package_dir.get('')
-                if pdir is not None:
-                    tail.insert(0, pdir)
+        if len(path) > 0:
+            return os.path.join(*path)
 
-                if tail:
-                    return os.path.join(*tail)
-                else:
-                    return ''
+        return ''
 
     def check_package(self, package, package_dir):
         """Helper function for `find_package_modules()` and `find_modules()'.

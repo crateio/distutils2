@@ -57,7 +57,7 @@ class check(Command):
 
         Warns if any are missing.
         """
-        missing, __ = self.distribution.metadata.check()
+        missing, __ = self.distribution.metadata.check(strict=True)
         if missing != []:
             self.warn("missing required metadata: %s"  % ', '.join(missing))
 

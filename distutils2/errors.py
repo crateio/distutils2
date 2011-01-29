@@ -110,6 +110,10 @@ class UnknownFileError(CCompilerError):
     """Attempt to process an unknown file type."""
 
 
+class MetadataMissingError(DistutilsError):
+    """A required metadata is missing"""
+
+
 class MetadataConflictError(DistutilsError):
     """Attempt to read or write metadata fields that are conflictual."""
 

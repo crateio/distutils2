@@ -1055,6 +1055,13 @@ This module contains some utility functions for operating on individual files.
    Create a file called *filename* and write *contents* (a sequence of strings
    without line terminators) to it.
 
+:mod:`distutils2.metadata` --- Metadata handling
+================================================================
+
+.. module:: distutils2.metadata
+
+.. autoclass:: distutils2.metadata.DistributionMetadata
+   :members:
 
 :mod:`distutils2.util` --- Miscellaneous other utility functions
 ================================================================

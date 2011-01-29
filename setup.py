@@ -7,10 +7,14 @@ import re
 from distutils2 import __version__ as VERSION
 from distutils2.util import find_packages
 from distutils import log
-from distutils.core import setup, Extension
 from distutils.ccompiler import new_compiler
 from distutils.command.sdist import sdist
 from distutils.command.install import install
+
+try:
+    from setuptools import setup, Extension
+except ImportError:
+    from distutils.core import setup, Extension
 
 f = open('README.txt')
 try:
