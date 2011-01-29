@@ -149,15 +149,38 @@ Example::
 data-files
 ==========
 
+###
+source -> destination
+
+fichier-final = destination + source
+
+There is an {alias} for each categories of datafiles
+-----
+source may be a glob (*, ?, **, {})
+
+order
+
+exclude
+--
+base-prefix
+
+####
+overwrite system config for {alias}
+
+####
+extra-categori
+
 This section describes the files used by the project which must not be installed in the same place that python modules or libraries.
 
 The format for specifing data files is :
 
- **glob_syntax** = **destination**
+ **source** = **destination**
  
 Example::
 
-    scripts/ *.bin = {scripts}
+    scripts/script1.bin = {scripts}
+    
+It means that the file scripts/script1.bin will be placed 
 
 It means that every file which match the glob_syntax will be placed in the destination. A part of the path of the file will be stripped when it will be expanded and another part will be append to the destination. For more informations about which part of the path will be stripped or not, take a look at next sub-section globsyntax_.
 

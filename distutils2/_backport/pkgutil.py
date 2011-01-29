@@ -1169,4 +1169,4 @@ def get_file_users(path):
             yield dist
 
 def open(distribution_name, relative_path):
-    
+    pass

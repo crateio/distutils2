@@ -9,7 +9,7 @@ platform-independent data files."""
 import os
 from distutils2.command.cmd import Command
 from distutils2.util import change_root, convert_path
-from distutils2._backport.sysconfig import _expand_vars, _subst_vars, get_paths
+from distutils2._backport.sysconfig import get_paths
 
 class install_data(Command):
 
@@ -55,8 +55,8 @@ class install_data(Command):
     def expand_categories(self, path_with_categories):
         local_vars = get_paths()
         local_vars['distribution.name'] = self.distribution.metadata['Name']
-        expanded_path = _subst_vars(path_with_categories, local_vars)
-        expanded_path = _subst_vars(expanded_path, local_vars)
+        expanded_path = get_paths(path_with_categories, local_vars)
+        expanded_path = get_paths(expanded_path, local_vars)
         if '{' in expanded_path and '}' in expanded_path:
             self.warn("Unable to expand %s, some categories may missing." %
                 path_with_categories)
@@ -66,7 +66,7 @@ class install_data(Command):
         sources = []
         for file in self.data_files:
             destination = convert_path(self.expand_categories(file[1]))
-            if os.path.file(destination):
+            if os.path.isfile(destination):
                 sources.append(destination)
         return sources
 
