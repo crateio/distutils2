@@ -11,7 +11,7 @@ class SmartGlob(object):
         self.suffix = suffix
 
 
-    def expand(self, basepath, category):
+    def expand(self, basepath, destination):
         if self.base:
             base = osp.join(basepath, self.base)
         else:
@@ -22,7 +22,8 @@ class SmartGlob(object):
         for file in iglob(absglob):
             path_suffix = file[len(base):].lstrip('/')
             relpath = file[len(basepath):].lstrip('/')
-            yield relpath, osp.join(category, path_suffix)
+            dest = osp.join(destination, path_suffix)
+            yield relpath, dest
 
 RICH_GLOB = re.compile(r'\{([^}]*)\}')
 
@@ -56,6 +57,15 @@ def resources_dests(resources_dir, rules):
     destinations = {}
     for (base, suffix, glob_dest) in rules:
         sglob = SmartGlob(base, suffix)
-        for file, file_dest in sglob.expand(resources_dir, glob_dest):
-            destinations[file] = file_dest
+        if glob_dest is None:
+            delete = True
+            dest = ''
+        else:
+            delete = False
+            dest = glob_dest
+        for file, file_dest in sglob.expand(resources_dir, dest):
+            if delete and file in destinations:
+                del destinations[file]
+            else:
+                destinations[file] = file_dest
     return destinations

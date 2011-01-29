@@ -178,6 +178,8 @@ class Config(object):
                 else:
                     prefix = splitted_glob[0]
                     suffix = splitted_glob[1]
+                if destination == '<exclude>':
+                    destination = None
                 resources.append((prefix, suffix, destination))
 
             dir = os.path.dirname(os.path.join(os.getcwd(), filename))
