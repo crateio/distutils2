@@ -5,14 +5,12 @@ import sys
 from StringIO import StringIO
 
 from distutils2.tests import unittest, support, run_unittest
-from distutils2.datafiles import resources_dests
+from distutils2.datafiles import resources_dests, RICH_GLOB
 import re
 from os import path as osp
 
 
 
-
-SLASH = re.compile(r'(?<=[^\\])(?:\\{2})*/')
 
 class DataFilesTestCase(support.TempdirManager,
                             support.LoggingCatcher,
@@ -23,19 +21,29 @@ class DataFilesTestCase(support.TempdirManager,
         self.addCleanup(setattr, sys, 'stdout', sys.stdout)
         self.addCleanup(setattr, sys, 'stderr', sys.stderr)
 
-    def assertFindGlob(self, rules, spec):
+
+    def build_spec(self, spec, clean=True):
         tempdir = self.mkdtemp()
         for filepath in spec:
-            filepath = osp.join(tempdir, *SLASH.split(filepath))
+            filepath = osp.join(tempdir, *filepath.split('/'))
             dirname = osp.dirname(filepath)
             if dirname and not osp.exists(dirname):
                 os.makedirs(dirname)
             self.write_file(filepath, 'babar')
-        for key, value in list(spec.items()):
-            if value is None:
-                del spec[key]
+        if clean:
+            for key, value in list(spec.items()):
+                if value is None:
+                    del spec[key]
+        return tempdir
+
+    def assertFindGlob(self, rules, spec):
+        tempdir = self.build_spec(spec)
         result = resources_dests(tempdir, rules)
         self.assertEquals(spec, result)
+
+    def test_regex_rich_glob(self):
+        matches = RICH_GLOB.findall(r"babar aime les {fraises} est les {huitres}")
+        self.assertEquals(["fraises","huitres"], matches)
 
     def test_simple_glob(self):
         rules = [('', '*.tpl', '{data}')]
@@ -50,6 +58,27 @@ class DataFilesTestCase(support.TempdirManager,
                  'Babarlikestrawberry': None}
         self.assertFindGlob(rules, spec)
 
+    def test_set_match(self):
+        rules = [('scripts', '*.{bin,sh}', '{appscript}')]
+        spec  = {'scripts/script.bin': '{appscript}/script.bin',
+                 'scripts/babar.sh':  '{appscript}/babar.sh',
+                 'Babarlikestrawberry': None}
+        self.assertFindGlob(rules, spec)
+
+    def test_set_match_multiple(self):
+        rules = [('scripts', 'script{s,}.{bin,sh}', '{appscript}')]
+        spec  = {'scripts/scripts.bin': '{appscript}/scripts.bin',
+                 'scripts/script.sh':  '{appscript}/script.sh',
+                 'Babarlikestrawberry': None}
+        self.assertFindGlob(rules, spec)
+
+    def test_glob_in_base(self):
+        rules = [('scrip*', '*.bin', '{appscript}')]
+        spec  = {'scripts/scripts.bin': '{appscript}/scripts.bin',
+                 'Babarlikestrawberry': None}
+        tempdir = self.build_spec(spec)
+        self.assertRaises(NotImplementedError, resources_dests, tempdir, rules)
+
     def test_recursive_glob(self):
         rules = [('', '**/*.bin', '{binary}')]
         spec  = {'binary0.bin': '{binary}/binary0.bin',
@@ -62,7 +91,7 @@ class DataFilesTestCase(support.TempdirManager,
         rules = [
             ('mailman/database/schemas/','*', '{appdata}/schemas'),
             ('', '**/*.tpl', '{appdata}/templates'),
-            ('developer-docs/', '**/*.txt', '{doc}'),
+            ('', 'developer-docs/**/*.txt', '{doc}'),
             ('', 'README', '{doc}'),
             ('mailman/etc/', '*', '{config}'),
             ('mailman/foo/', '**/bar/*.cfg', '{config}/baz'),
@@ -78,8 +107,8 @@ class DataFilesTestCase(support.TempdirManager,
             'mailman/etc/my.cnf': '{config}/my.cnf',
             'mailman/foo/some/path/bar/my.cfg': '{config}/hmm/some/path/bar/my.cfg',
             'mailman/foo/some/path/other.cfg': '{config}/hmm/some/path/other.cfg',
-            'developer-docs/index.txt': '{doc}/index.txt',
-            'developer-docs/api/toc.txt': '{doc}/api/toc.txt',
+            'developer-docs/index.txt': '{doc}/developer-docs/index.txt',
+            'developer-docs/api/toc.txt': '{doc}/developer-docs/api/toc.txt',
         }
         self.maxDiff = None
         self.assertFindGlob(rules, spec)
