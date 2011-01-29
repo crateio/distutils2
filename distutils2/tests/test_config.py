@@ -289,7 +289,9 @@ class ConfigTestCase(support.TempdirManager,
             os.mkdir(pkg)
             self.write_file(os.path.join(pkg, '__init__.py'), '#')
 
-        dist = self.run_setup('--version')
+        dist = self.run_setup('--description')
+        self.assertIn('yeah\nyeah\n', sys.stdout.getvalue())
+
         cmd = sdist(dist)
         cmd.finalize_options()
         cmd.get_file_list()
