@@ -10,14 +10,7 @@ import logging
 from distutils2.errors import DistutilsOptionError
 from distutils2 import util
 from distutils2 import logger
-
-# XXX see if we want to backport this
-from distutils2._backport.shutil import copytree, copyfile, move
-
-try:
-    from shutil import make_archive
-except ImportError:
-    from distutils2._backport.shutil import make_archive
+from distutils2._backport.shutil import copytree, copyfile, move, make_archive
 
 
 class Command(object):
