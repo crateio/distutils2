@@ -49,9 +49,11 @@ project_url =
   Fork in progress, http://bitbucket.org/Merwok/sample-distutils2-project
 
 [files]
+packages_root = src
+
 packages = one
-           src:two
-           src2:three
+           two
+           three
 
 modules = haven
 
@@ -140,6 +142,7 @@ class ConfigTestCase(support.TempdirManager,
             opts.update(kwargs)
         self.write_file('setup.cfg', SETUP_CFG % opts)
 
+
     def run_setup(self, *args):
         # run setup with args
         sys.stdout = StringIO()
@@ -198,7 +201,6 @@ class ConfigTestCase(support.TempdirManager,
                  'http://bitbucket.org/Merwok/sample-distutils2-project')]
         self.assertEqual(dist.metadata['Project-Url'], urls)
 
-
         self.assertEqual(dist.packages, ['one', 'two', 'three'])
         self.assertEqual(dist.py_modules, ['haven'])
         self.assertEqual(dist.package_data, {'cheese': 'data/templates/*'})
@@ -206,7 +208,8 @@ class ConfigTestCase(support.TempdirManager,
             [('bitmaps ', ['bm/b1.gif', 'bm/b2.gif']),
              ('config ', ['cfg/data.cfg']),
              ('/etc/init.d ', ['init-script'])])
-        self.assertEqual(dist.package_dir['two'], 'src')
+
+        self.assertEqual(dist.package_dir, 'src')
 
         # Make sure we get the foo command loaded.  We use a string comparison
         # instead of assertIsInstance because the class is not the same when
@@ -262,7 +265,9 @@ class ConfigTestCase(support.TempdirManager,
         os.mkdir('bin')
         self.write_file(os.path.join('bin', 'taunt'), '#')
 
-        for pkg in ('one', 'src', 'src2'):
+        os.mkdir('src')
+        for pkg in ('one', 'two', 'three'):
+            pkg = os.path.join('src', pkg)
             os.mkdir(pkg)
             self.write_file(os.path.join(pkg, '__init__.py'), '#')
 
@@ -285,7 +290,9 @@ class ConfigTestCase(support.TempdirManager,
         os.mkdir('bin')
         self.write_file(os.path.join('bin', 'taunt'), '#')
 
-        for pkg in ('one', 'src', 'src2'):
+        os.mkdir('src')
+        for pkg in ('one', 'two', 'three'):
+            pkg = os.path.join('src', pkg)
             os.mkdir(pkg)
             self.write_file(os.path.join(pkg, '__init__.py'), '#')
 
@@ -310,8 +317,10 @@ class ConfigTestCase(support.TempdirManager,
         self.write_file(os.path.join('scripts', 'find-coconuts'), '#')
         os.mkdir('bin')
         self.write_file(os.path.join('bin', 'taunt'), '#')
+        os.mkdir('src')
 
-        for pkg in ('one', 'src', 'src2'):
+        for pkg in ('one', 'two', 'three'):
+            pkg = os.path.join('src', pkg)
             os.mkdir(pkg)
             self.write_file(os.path.join(pkg, '__init__.py'), '#')
 

@@ -138,16 +138,12 @@ class Config(object):
             files = dict([(key, self._multiline(value))
                           for key, value in content['files'].iteritems()])
             self.dist.packages = []
-            self.dist.package_dir = {}
-
+            self.dist.package_dir = pkg_dir = files.get('packages_root')
             packages = files.get('packages', [])
             if isinstance(packages, str):
                 packages = [packages]
 
             for package in packages:
-                if ':' in package:
-                    dir_, package = package.split(':')
-                    self.dist.package_dir[package] = dir_
                 self.dist.packages.append(package)
 
             self.dist.py_modules = files.get('modules', [])
