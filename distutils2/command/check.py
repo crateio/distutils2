@@ -52,8 +52,7 @@ class check(Command):
     def check_metadata(self):
         """Ensures that all required elements of metadata are supplied.
 
-        name, version, URL, (author and author_email) or
-        (maintainer and maintainer_email)).
+        name, version, URL, author
 
         Warns if any are missing.
         """

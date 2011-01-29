@@ -220,17 +220,75 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
                           [('one', 'http://ok')])
         self.assertEqual(metadata.version, '1.2')
 
-    def test_check(self):
+    def test_check_version(self):
+        metadata = DistributionMetadata()
+        metadata['Name'] = 'vimpdb'
+        metadata['Home-page'] = 'http://pypi.python.org'
+        metadata['Author'] = 'Monty Python'
+        metadata.docutils_support = False
+        missing, warnings = metadata.check()
+        self.assertEqual(missing, ['Version'])
+
+    def test_check_version_strict(self):
+        metadata = DistributionMetadata()
+        metadata['Name'] = 'vimpdb'
+        metadata['Home-page'] = 'http://pypi.python.org'
+        metadata['Author'] = 'Monty Python'
+        metadata.docutils_support = False
+        from distutils2.errors import MetadataMissingError
+        self.assertRaises(MetadataMissingError, metadata.check, strict=True)
+
+    def test_check_name(self):
+        metadata = DistributionMetadata()
+        metadata['Version'] = '1.0'
+        metadata['Home-page'] = 'http://pypi.python.org'
+        metadata['Author'] = 'Monty Python'
+        metadata.docutils_support = False
+        missing, warnings = metadata.check()
+        self.assertEqual(missing, ['Name'])
+
+    def test_check_name_strict(self):
+        metadata = DistributionMetadata()
+        metadata['Version'] = '1.0'
+        metadata['Home-page'] = 'http://pypi.python.org'
+        metadata['Author'] = 'Monty Python'
+        metadata.docutils_support = False
+        from distutils2.errors import MetadataMissingError
+        self.assertRaises(MetadataMissingError, metadata.check, strict=True)
+
+    def test_check_author(self):
+        metadata = DistributionMetadata()
+        metadata['Version'] = '1.0'
+        metadata['Name'] = 'vimpdb'
+        metadata['Home-page'] = 'http://pypi.python.org'
+        metadata.docutils_support = False
+        missing, warnings = metadata.check()
+        self.assertEqual(missing, ['Author'])
+
+    def test_check_homepage(self):
+        metadata = DistributionMetadata()
+        metadata['Version'] = '1.0'
+        metadata['Name'] = 'vimpdb'
+        metadata['Author'] = 'Monty Python'
+        metadata.docutils_support = False
+        missing, warnings = metadata.check()
+        self.assertEqual(missing, ['Home-page'])
+
+    def test_check_predicates(self):
         metadata = DistributionMetadata()
         metadata['Version'] = 'rr'
+        metadata['Name'] = 'vimpdb'
+        metadata['Home-page'] = 'http://pypi.python.org'
+        metadata['Author'] = 'Monty Python'
         metadata['Requires-dist'] = ['Foo (a)']
+        metadata['Obsoletes-dist'] = ['Foo (a)']
+        metadata['Provides-dist'] = ['Foo (a)']
         if metadata.docutils_support:
             missing, warnings = metadata.check()
-            self.assertEqual(len(warnings), 2)
+            self.assertEqual(len(warnings), 4)
             metadata.docutils_support = False
         missing, warnings = metadata.check()
-        self.assertEqual(missing, ['Name', 'Home-page'])
-        self.assertEqual(len(warnings), 2)
+        self.assertEqual(len(warnings), 4)
 
     def test_best_choice(self):
         metadata = DistributionMetadata()

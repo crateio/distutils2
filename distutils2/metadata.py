@@ -466,7 +466,7 @@ class DistributionMetadata(object):
             msg = "missing required metadata: %s"  % ', '.join(missing)
             raise MetadataMissingError(msg)
 
-        for attr in ('Home-page',):
+        for attr in ('Home-page', 'Author'):
             if attr not in self:
                 missing.append(attr)
 
