@@ -167,6 +167,9 @@ class TempdirManager(object):
             raise AssertionError(
                     '%s not found. %s does not exist' % (file, dirname))
 
+    def assertIsNotFile(self, *args):
+        path = os.path.join(*args)
+        assert not os.path.isfile(path), "%s exist" % path
 
 class EnvironGuard(object):
     """TestCase-compatible mixin to save and restore the environment."""
