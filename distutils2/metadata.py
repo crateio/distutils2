@@ -5,13 +5,12 @@ Supports all metadata formats (1.0, 1.1, 1.2).
 
 import os
 import sys
-import platform
 import re
 from StringIO import StringIO
 from email import message_from_file
-from tokenize import tokenize, NAME, OP, STRING, ENDMARKER
 
 from distutils2 import logger
+from distutils2.markers import interpret
 from distutils2.version import (is_valid_predicate, is_valid_version,
                                 is_valid_versions)
 from distutils2.errors import (MetadataMissingError,
@@ -291,7 +290,7 @@ class DistributionMetadata(object):
         if not self.platform_dependent or ';' not in value:
             return True, value
         value, marker = value.split(';')
-        return _interpret(marker, self.execution_context), value
+        return interpret(marker, self.execution_context), value
 
     def _remove_line_prefix(self, value):
         return _LINE_PREFIX.sub('\n', value)
@@ -518,191 +517,3 @@ class DistributionMetadata(object):
     def items(self):
         """Dict like api"""
         return [(key, self[key]) for key in self.keys()]
-
-
-#
-# micro-language for PEP 345 environment markers
-#
-
-# allowed operators
-_OPERATORS = {'==': lambda x, y: x == y,
-              '!=': lambda x, y: x != y,
-              '>': lambda x, y: x > y,
-              '>=': lambda x, y: x >= y,
-              '<': lambda x, y: x < y,
-              '<=': lambda x, y: x <= y,
-              'in': lambda x, y: x in y,
-              'not in': lambda x, y: x not in y}
-
-
-def _operate(operation, x, y):
-    return _OPERATORS[operation](x, y)
-
-# restricted set of variables
-_VARS = {'sys.platform': sys.platform,
-         'python_version': sys.version[:3],
-         'python_full_version': sys.version.split(' ', 1)[0],
-         'os.name': os.name,
-         'platform.version': platform.version(),
-         'platform.machine': platform.machine()}
-
-
-class _Operation(object):
-
-    def __init__(self, execution_context=None):
-        self.left = None
-        self.op = None
-        self.right = None
-        if execution_context is None:
-            execution_context = {}
-        self.execution_context = execution_context
-
-    def _get_var(self, name):
-        if name in self.execution_context:
-            return self.execution_context[name]
-        return _VARS[name]
-
-    def __repr__(self):
-        return '%s %s %s' % (self.left, self.op, self.right)
-
-    def _is_string(self, value):
-        if value is None or len(value) < 2:
-            return False
-        for delimiter in '"\'':
-            if value[0] == value[-1] == delimiter:
-                return True
-        return False
-
-    def _is_name(self, value):
-        return value in _VARS
-
-    def _convert(self, value):
-        if value in _VARS:
-            return self._get_var(value)
-        return value.strip('"\'')
-
-    def _check_name(self, value):
-        if value not in _VARS:
-            raise NameError(value)
-
-    def _nonsense_op(self):
-        msg = 'This operation is not supported : "%s"' % self
-        raise SyntaxError(msg)
-
-    def __call__(self):
-        # make sure we do something useful
-        if self._is_string(self.left):
-            if self._is_string(self.right):
-                self._nonsense_op()
-            self._check_name(self.right)
-        else:
-            if not self._is_string(self.right):
-                self._nonsense_op()
-            self._check_name(self.left)
-
-        if self.op not in _OPERATORS:
-            raise TypeError('Operator not supported "%s"' % self.op)
-
-        left = self._convert(self.left)
-        right = self._convert(self.right)
-        return _operate(self.op, left, right)
-
-
-class _OR(object):
-    def __init__(self, left, right=None):
-        self.left = left
-        self.right = right
-
-    def filled(self):
-        return self.right is not None
-
-    def __repr__(self):
-        return 'OR(%r, %r)' % (self.left, self.right)
-
-    def __call__(self):
-        return self.left() or self.right()
-
-
-class _AND(object):
-    def __init__(self, left, right=None):
-        self.left = left
-        self.right = right
-
-    def filled(self):
-        return self.right is not None
-
-    def __repr__(self):
-        return 'AND(%r, %r)' % (self.left, self.right)
-
-    def __call__(self):
-        return self.left() and self.right()
-
-
-class _CHAIN(object):
-
-    def __init__(self, execution_context=None):
-        self.ops = []
-        self.op_starting = True
-        self.execution_context = execution_context
-
-    def eat(self, toktype, tokval, rowcol, line, logical_line):
-        if toktype not in (NAME, OP, STRING, ENDMARKER):
-            raise SyntaxError('Type not supported "%s"' % tokval)
-
-        if self.op_starting:
-            op = _Operation(self.execution_context)
-            if len(self.ops) > 0:
-                last = self.ops[-1]
-                if isinstance(last, (_OR, _AND)) and not last.filled():
-                    last.right = op
-                else:
-                    self.ops.append(op)
-            else:
-                self.ops.append(op)
-            self.op_starting = False
-        else:
-            op = self.ops[-1]
-
-        if (toktype == ENDMARKER or
-            (toktype == NAME and tokval in ('and', 'or'))):
-            if toktype == NAME and tokval == 'and':
-                self.ops.append(_AND(self.ops.pop()))
-            elif toktype == NAME and tokval == 'or':
-                self.ops.append(_OR(self.ops.pop()))
-            self.op_starting = True
-            return
-
-        if isinstance(op, (_OR, _AND)) and op.right is not None:
-            op = op.right
-
-        if ((toktype in (NAME, STRING) and tokval not in ('in', 'not'))
-            or (toktype == OP and tokval == '.')):
-            if op.op is None:
-                if op.left is None:
-                    op.left = tokval
-                else:
-                    op.left += tokval
-            else:
-                if op.right is None:
-                    op.right = tokval
-                else:
-                    op.right += tokval
-        elif toktype == OP or tokval in ('in', 'not'):
-            if tokval == 'in' and op.op == 'not':
-                op.op = 'not in'
-            else:
-                op.op = tokval
-
-    def result(self):
-        for op in self.ops:
-            if not op():
-                return False
-        return True
-
-
-def _interpret(marker, execution_context=None):
-    """Interpret a marker and return a result depending on environment."""
-    marker = marker.strip()
-    operations = _CHAIN(execution_context)
-    tokenize(StringIO(marker).readline, operations.eat)
-    return operations.result()
