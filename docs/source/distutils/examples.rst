@@ -301,7 +301,7 @@ You can read back this static file, by using the
 :class:`distutils2.dist.DistributionMetadata` class and its
 :func:`read_pkg_file` method::
 
-    >>> from distutils2.dist import DistributionMetadata
+    >>> from distutils2.metadata import DistributionMetadata
     >>> metadata = DistributionMetadata()
     >>> metadata.read_pkg_file(open('distribute-0.6.8-py2.7.egg-info'))
     >>> metadata.name

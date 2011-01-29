@@ -660,14 +660,14 @@ def clear_cache():
     _cache_generated_egg = False
 
 
-def _yield_distributions(include_dist, include_egg):
+def _yield_distributions(include_dist, include_egg, paths=sys.path):
     """
     Yield .dist-info and .egg(-info) distributions, based on the arguments
 
     :parameter include_dist: yield .dist-info distributions
     :parameter include_egg: yield .egg(-info) distributions
     """
-    for path in sys.path:
+    for path in paths:
         realpath = os.path.realpath(path)
         if not os.path.isdir(realpath):
             continue
@@ -679,7 +679,7 @@ def _yield_distributions(include_dist, include_egg):
                                   dir.endswith('.egg')):
                 yield EggInfoDistribution(dist_path)
 
-def _generate_cache(use_egg_info=False):
+def _generate_cache(use_egg_info=False, paths=sys.path):
     global _cache_generated, _cache_generated_egg
 
     if _cache_generated_egg or (_cache_generated and not use_egg_info):
@@ -688,7 +688,7 @@ def _generate_cache(use_egg_info=False):
         gen_dist = not _cache_generated
         gen_egg = use_egg_info
 
-        for dist in _yield_distributions(gen_dist, gen_egg):
+        for dist in _yield_distributions(gen_dist, gen_egg, paths):
             if isinstance(dist, Distribution):
                 _cache_path[dist.path] = dist
                 if not dist.name in _cache_name:
@@ -1017,7 +1017,7 @@ def distinfo_dirname(name, version):
     return '-'.join([name, normalized_version]) + file_extension
 
 
-def get_distributions(use_egg_info=False):
+def get_distributions(use_egg_info=False, paths=sys.path):
     """
     Provides an iterator that looks for ``.dist-info`` directories in
     ``sys.path`` and returns :class:`Distribution` instances for each one of
@@ -1028,7 +1028,7 @@ def get_distributions(use_egg_info=False):
             instances
     """
     if not _cache_enabled:
-        for dist in _yield_distributions(True, use_egg_info):
+        for dist in _yield_distributions(True, use_egg_info, paths):
             yield dist
     else:
         _generate_cache(use_egg_info)
@@ -1041,7 +1041,7 @@ def get_distributions(use_egg_info=False):
                 yield dist
 
 
-def get_distribution(name, use_egg_info=False):
+def get_distribution(name, use_egg_info=False, paths=sys.path):
     """
     Scans all elements in ``sys.path`` and looks for all directories
     ending with ``.dist-info``. Returns a :class:`Distribution`
@@ -1059,7 +1059,7 @@ def get_distribution(name, use_egg_info=False):
     :rtype: :class:`Distribution` or :class:`EggInfoDistribution` or None
     """
     if not _cache_enabled:
-        for dist in _yield_distributions(True, use_egg_info):
+        for dist in _yield_distributions(True, use_egg_info, paths):
             if dist.name == name:
                 return dist
     else:
