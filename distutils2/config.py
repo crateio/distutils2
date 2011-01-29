@@ -14,7 +14,8 @@ from distutils2.util import check_environ, resolve_name, strtobool
 from distutils2.compiler import set_compiler
 from distutils2.command import set_command
 
-def pop_values(values_dct, key):
+
+def _pop_values(values_dct, key):
     """Remove values from the dictionary and convert them as a list"""
     vals_str = values_dct.pop(key, None)
     if not vals_str:
@@ -208,19 +209,19 @@ class Config(object):
                 values_dct = content[section_key]
                 ext_modules.append(Extension(
                     values_dct.pop('name'),
-                    pop_values(values_dct, 'sources'),
-                    pop_values(values_dct, 'include_dirs'),
-                    pop_values(values_dct, 'define_macros'),
-                    pop_values(values_dct, 'undef_macros'),
-                    pop_values(values_dct, 'library_dirs'),
-                    pop_values(values_dct, 'libraries'),
-                    pop_values(values_dct, 'runtime_library_dirs'),
-                    pop_values(values_dct, 'extra_objects'),
-                    pop_values(values_dct, 'extra_compile_args'),
-                    pop_values(values_dct, 'extra_link_args'),
-                    pop_values(values_dct, 'export_symbols'),
-                    pop_values(values_dct, 'swig_opts'),
-                    pop_values(values_dct, 'depends'),
+                    _pop_values(values_dct, 'sources'),
+                    _pop_values(values_dct, 'include_dirs'),
+                    _pop_values(values_dct, 'define_macros'),
+                    _pop_values(values_dct, 'undef_macros'),
+                    _pop_values(values_dct, 'library_dirs'),
+                    _pop_values(values_dct, 'libraries'),
+                    _pop_values(values_dct, 'runtime_library_dirs'),
+                    _pop_values(values_dct, 'extra_objects'),
+                    _pop_values(values_dct, 'extra_compile_args'),
+                    _pop_values(values_dct, 'extra_link_args'),
+                    _pop_values(values_dct, 'export_symbols'),
+                    _pop_values(values_dct, 'swig_opts'),
+                    _pop_values(values_dct, 'depends'),
                     values_dct.pop('language', None),
                     values_dct.pop('optional', None),
                     **values_dct
