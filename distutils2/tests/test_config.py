@@ -280,7 +280,8 @@ class ConfigTestCase(support.TempdirManager,
     def test_metadata_requires_description_files(self):
         tempdir = self.mkdtemp()
         os.chdir(tempdir)
-        self.write_setup({'description-file': 'README\n  README2', 'extra-files':'\n  README2'})
+        self.write_setup({'description-file': 'README\n  README2',
+                          'extra-files':'\n  README2'})
         self.write_file('README', 'yeah')
         self.write_file('README2', 'yeah')
         self.write_file('haven.py', '#')
@@ -302,9 +303,16 @@ class ConfigTestCase(support.TempdirManager,
         cmd = sdist(dist)
         cmd.finalize_options()
         cmd.get_file_list()
+        self.assertRaises(DistutilsFileError, cmd.make_distribution)
+
+        self.write_setup({'description-file': 'README\n  README2',
+                          'extra-files': '\n  README2\n    README'})
+        dist = self.run_setup('--description')
+        cmd = sdist(dist)
+        cmd.finalize_options()
+        cmd.get_file_list()
         cmd.make_distribution()
         self.assertIn('README\nREADME2\n', open('MANIFEST').read())
-
 
     def test_sub_commands(self):
         tempdir = self.mkdtemp()

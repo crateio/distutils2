@@ -215,8 +215,6 @@ class sdist(Command):
 
     def add_defaults(self):
         """Add all the default files to self.filelist:
-          - README or README.txt
-          - test/test*.py
           - all pure Python modules mentioned in setup script
           - all files pointed by package_data (build_py)
           - all files defined in data_files.
@@ -226,32 +224,6 @@ class sdist(Command):
         Warns if (README or README.txt) or setup.py are missing; everything
         else is optional.
         """
-        standards = [('README', 'README.txt')]
-        for fn in standards:
-            if isinstance(fn, tuple):
-                alts = fn
-                got_it = 0
-                for fn in alts:
-                    if os.path.exists(fn):
-                        got_it = 1
-                        self.filelist.append(fn)
-                        break
-
-                if not got_it:
-                    self.warn("standard file not found: should have one of " +
-                              string.join(alts, ', '))
-            else:
-                if os.path.exists(fn):
-                    self.filelist.append(fn)
-                else:
-                    self.warn("standard file '%s' not found" % fn)
-
-        optional = ['test/test*.py', 'setup.cfg']
-        for pattern in optional:
-            files = filter(os.path.isfile, glob(pattern))
-            if files:
-                self.filelist.extend(files)
-
         for cmd_name in get_command_names():
             try:
                 cmd_obj = self.get_finalized_command(cmd_name)
@@ -323,7 +295,7 @@ class sdist(Command):
 
         for file in self.distribution.metadata.requires_files:
             if file not in files:
-                msg = "'%s' must be included explicitly extra-files metadata" % file
+                msg = "'%s' must be included explicitly in 'extra_files'" % file
                 raise DistutilsFileError(msg)
 
         for file in files:
@@ -383,4 +355,3 @@ class sdist(Command):
         # Now create them
         for dir in need_dirs:
             self.mkpath(dir, mode, verbose=verbose, dry_run=dry_run)
-
