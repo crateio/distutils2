@@ -1,5 +1,4 @@
 from tempfile import mkdtemp
-import logging
 import shutil
 import os
 import sys
@@ -8,11 +7,15 @@ import errno
 import itertools
 import tempfile
 
+from distutils2 import logger
 from distutils2._backport.pkgutil import get_distributions
+<<<<<<< local
 from distutils2._backport.pkgutil import get_distribution
+from distutils2._backport.sysconfig import get_config_var
 from distutils2.depgraph import generate_graph
 from distutils2.index import wrapper
 from distutils2.index.errors import ProjectNotFound, ReleaseNotFound
+from distutils2.version import get_version_predicate
 
 """Provides installations scripts.
 
@@ -57,7 +60,63 @@ def move_files(files, destination=None):
             else:
                 raise e
         os.rename(old, new)
-        yield(old, new)
+        yield (old, new)
+
+
+def _run_d1_install(archive_dir, path):
+    # backward compat: using setuptools or plain-distutils
+    cmd = '%s setup.py install --root=%s --record=%s'
+    setup_py = os.path.join(archive_dir, 'setup.py')
+    if 'setuptools' in open(setup_py).read():
+        cmd += ' --single-version-externally-managed'
+
+    # how to place this file in the egg-info dir
+    # for non-distutils2 projects ?
+    record_file = os.path.join(archive_dir, 'RECORD')
+    os.system(cmd % (sys.executable, path, record_file))
+    if not os.path.exists(record_file):
+        raise ValueError('Failed to install.')
+    return open(record_file).read().split('\n')
+
+
+def _run_d2_install(archive_dir, path):
+    # using our own install command
+    raise NotImplementedError()
+
+
+def _install_dist(dist, path):
+    """Install a distribution into a path.
+
+    This:
+
+    * unpack the distribution
+    * copy the files in "path"
+    * determine if the distribution is distutils2 or distutils1.
+    """
+    where = dist.unpack(archive)
+
+    # get into the dir
+    archive_dir = None
+    for item in os.listdir(where):
+        fullpath = os.path.join(where, item)
+        if os.path.isdir(fullpath):
+            archive_dir = fullpath
+            break
+
+    if archive_dir is None:
+        raise ValueError('Cannot locate the unpacked archive')
+
+    # install
+    old_dir = os.getcwd()
+    os.chdir(archive_dir)
+    try:
+        # distutils2 or distutils1 ?
+        if 'setup.py' in os.listdir(archive_dir):
+            return _run_d1_install(archive_dir, path)
+        else:
+            return _run_d2_install(archive_dir, path)
+    finally:
+        os.chdir(old_dir)
 
 
 def install_dists(dists, path=None):
@@ -69,19 +128,23 @@ def install_dists(dists, path=None):
     Return a list of installed files.
 
     :param dists: distributions to install
-    :param path: base path to install distribution on
+    :param path: base path to install distribution in
     """
     if not path:
         path = mkdtemp()
 
     installed_dists, installed_files = [], []
     for d in dists:
+        logger.info('Installing %s %s' % (d.name, d.version))
         try:
-            installed_files.extend(d.install(path))
+            installed_files.extend(_install_dist(d, path))
             installed_dists.append(d)
         except Exception, e :
+            logger.info('Failed. %s' % str(e))
+
+            # reverting
             for d in installed_dists:
-                d.uninstall()
+                uninstall(d)
             raise e
     return installed_files
 
@@ -127,15 +190,25 @@ def install_from_infos(install=[], remove=[], conflicts=[], install_path=None):
     try:
         if install:
             installed_files = install_dists(install, install_path)  # install to tmp first
-        for files in temp_files.itervalues():
-            for old, new in files:
-                os.remove(new)
 
-    except Exception,e:
+    except:
         # if an error occurs, put back the files in the good place.
-        for files in temp_files.itervalues():
+        for files in temp_files.values():
             for old, new in files:
                 shutil.move(new, old)
+
+        # now re-raising
+        raise
+
+    # we can remove them for good
+    for files in temp_files.values():
+        for old, new in files:
+            os.remove(new)
+
+
+def _get_setuptools_deps(release):
+    # NotImplementedError
+    pass
 
 
 def get_infos(requirements, index=None, installed=None, prefer_final=True):
@@ -158,44 +231,74 @@ def get_infos(requirements, index=None, installed=None, prefer_final=True):
     Conflict contains all the conflicting distributions, if there is a
     conflict.
     """
+    if not installed:
+        logger.info('Reading installed distributions')
+        installed = get_distributions(use_egg_info=True)
+
+    infos = {'install': [], 'remove': [], 'conflict': []}
+    # Is a compatible version of the project is already installed ?
+    predicate = get_version_predicate(requirements)
+    found = False
+    installed = list(installed)
+
+    # check that the project isnt already installed
+    for installed_project in installed:
+        # is it a compatible project ?
+        if predicate.name.lower() != installed_project.name.lower():
+            continue
+        found = True
+        logger.info('Found %s %s' % (installed_project.name,
+                                     installed_project.version))
+
+        # if we already have something installed, check it matches the
+        # requirements
+        if predicate.match(installed_project.version):
+            return infos
+        break
+
+    if not found:
+        logger.info('Project not installed.')
 
     if not index:
         index = wrapper.ClientWrapper()
-
-    if not installed:
-        installed = get_distributions(use_egg_info=True)
 
     # Get all the releases that match the requirements
     try:
         releases = index.get_releases(requirements)
     except (ReleaseNotFound, ProjectNotFound), e:
         raise InstallationException('Release not found: "%s"' % requirements)
-
+    
     # Pick up a release, and try to get the dependency tree
     release = releases.get_last(requirements, prefer_final=prefer_final)
 
-    # Iter since we found something without conflicts
+    if release is None:
+        logger.info('Could not find a matching project')
+        return infos
+
+    # this works for Metadata 1.2
     metadata = release.fetch_metadata()
 
-    # Get the distributions already_installed on the system
-    # and add the one we want to install
+    # for earlier, we need to build setuptools deps if any
+    if 'requires_dist' not in metadata:
+        deps = _get_setuptools_deps(release)
+    else:
+        deps = metadata['requires_dist']
 
     distributions = itertools.chain(installed, [release])
     depgraph = generate_graph(distributions)
 
     # Store all the already_installed packages in a list, in case of rollback.
-    infos = {'install': [], 'remove': [], 'conflict': []}
-
     # Get what the missing deps are
-    for dists in depgraph.missing.itervalues():
-        if dists:
-            logging.info("missing dependencies found, installing them")
-            # we have missing deps
-            for dist in dists:
-                _update_infos(infos, get_infos(dist, index, installed))
+    dists = depgraph.missing[release]
+    if dists:
+        logger.info("missing dependencies found, retrieving metadata")
+        # we have missing deps
+        for dist in dists:
+            _update_infos(infos, get_infos(dist, index, installed))
 
     # Fill in the infos
     existing = [d for d in installed if d.name == release.name]
+
     if existing:
         infos['remove'].append(existing[0])
         infos['conflict'].extend(depgraph.reverse_list[existing[0]])
@@ -207,7 +310,7 @@ def _update_infos(infos, new_infos):
     """extends the lists contained in the `info` dict with those contained
     in the `new_info` one
     """
-    for key, value in infos.iteritems():
+    for key, value in infos.items():
         if key in new_infos:
             infos[key].extend(new_infos[key])
 
@@ -252,6 +355,29 @@ def main(**attrs):
         import sys
         attrs['requirements'] = sys.argv[1]
     get_infos(**attrs)
+
+
+def install(project):
+    logger.info('Getting information about "%s".' % project)
+    try:
+        info = get_infos(project)
+    except InstallationException:
+        logger.info('Cound not find "%s".' % project)
+        return
+
+    if info['install'] == []:
+        logger.info('Nothing to install.')
+        return
+
+    install_path = get_config_var('base')
+    try:
+        install_from_infos(info['install'], info['remove'], info['conflict'],
+                           install_path=install_path)
+
+    except InstallationConflict, e:
+        projects = ['%s %s' % (p.name, p.version) for p in e.args[0]]
+        logger.info('"%s" conflicts with "%s"' % (project, ','.join(projects)))
+
 
 if __name__ == '__main__':
     main()

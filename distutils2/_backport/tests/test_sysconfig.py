@@ -4,7 +4,7 @@ import os
 import sys
 import subprocess
 import shutil
-from copy import copy, deepcopy
+from copy import copy
 from ConfigParser import RawConfigParser
 from StringIO import StringIO
 
@@ -15,13 +15,9 @@ from distutils2._backport.sysconfig import (
         get_scheme_names, _main, _SCHEMES)
 
 from distutils2.tests import unittest
-from distutils2.tests.support import EnvironGuard
+from distutils2.tests.support import EnvironGuard, skip_unless_symlink
 from test.test_support import TESTFN, unlink
-try:
-    from test.test_support import skip_unless_symlink
-except ImportError:
-    skip_unless_symlink = unittest.skip(
-        'requires test.test_support.skip_unless_symlink')
+
 
 class TestSysConfig(EnvironGuard, unittest.TestCase):
 

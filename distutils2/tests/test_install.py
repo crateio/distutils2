@@ -29,26 +29,15 @@ class InstalledDist(object):
 class ToInstallDist(object):
     """Distribution that will be installed"""
 
-    def __init__(self, raise_error=False, files=False):
-        self._raise_error = raise_error
+    def __init__(self, files=False):
         self._files = files
-        self.install_called = False
-        self.install_called_with = {}
         self.uninstall_called = False
         self._real_files = []
+        self.name = "fake"
+        self.version = "fake"
         if files:
             for f in range(0,3):
                self._real_files.append(mkstemp())
-
-    def install(self, *args):
-        self.install_called = True
-        self.install_called_with = args
-        if self._raise_error:
-            raise Exception('Oops !')
-        return ['/path/to/foo', '/path/to/bar']
-
-    def uninstall(self, **args):
-        self.uninstall_called = True
 
     def get_installed_files(self, **args):
         if self._files:
@@ -58,7 +47,49 @@ class ToInstallDist(object):
         return self.get_installed_files()
 
 
+class MagicMock(object):
+    def __init__(self, return_value=None, raise_exception=False):
+        self.called = False
+        self._times_called = 0
+        self._called_with = []
+        self._return_value = return_value
+        self._raise = raise_exception
+    
+    def __call__(self, *args, **kwargs):
+        self.called = True
+        self._times_called = self._times_called + 1
+        self._called_with.append((args, kwargs))
+        iterable = hasattr(self._raise, '__iter__')
+        if self._raise:
+            if ((not iterable and self._raise) 
+                    or self._raise[self._times_called - 1]):
+                raise Exception
+        return self._return_value
+
+    def called_with(self, *args, **kwargs):
+        return (args, kwargs) in self._called_with
+
+
+def patch(parent, to_patch):
+    """monkey match a module"""
+    def wrapper(func):
+        print func
+        print dir(func)
+        old_func = getattr(parent, to_patch)
+        def wrapped(*args, **kwargs):
+            parent.__dict__[to_patch] = MagicMock()
+            try:
+                out = func(*args, **kwargs)
+            finally:
+                setattr(parent, to_patch, old_func)
+            return out
+        return wrapped
+    return wrapper
+
+
 def get_installed_dists(dists):
+    """Return a list of fake installed dists. 
+    The list is name, version, deps"""
     objects = []
     for (name, version, deps) in dists:
         objects.append(InstalledDist(name, version, deps))
@@ -68,6 +99,12 @@ def get_installed_dists(dists):
 class TestInstall(TempdirManager, unittest.TestCase):
     def _get_client(self, server, *args, **kwargs):
         return Client(server.full_address, *args, **kwargs)
+
+    def _patch_run_install(self):
+        """Patch run install"""
+
+    def _unpatch_run_install(self):
+        """Unpatch run install for d2 and d1"""
 
     def _get_results(self, output):
         """return a list of results"""
@@ -150,6 +187,8 @@ class TestInstall(TempdirManager, unittest.TestCase):
         # Tests that conflicts are detected
         client = self._get_client(server)
         archive_path = '%s/distribution.tar.gz' % server.full_address
+
+        # choxie depends on towel-stuff, which depends on bacon.
         server.xmlrpc.set_distributions([
             {'name':'choxie',
              'version': '2.0.0.9',
@@ -164,7 +203,9 @@ class TestInstall(TempdirManager, unittest.TestCase):
              'requires_dist': [],
              'url': archive_path},
             ])
-        already_installed = [('bacon', '0.1', []),
+
+        # name, version, deps.
+        already_installed = [('bacon', '0.1', []), 
                              ('chicken', '1.1', ['bacon (0.1)'])]
         output = install.get_infos("choxie", index=client, installed=
                            get_installed_dists(already_installed))
@@ -221,23 +262,39 @@ class TestInstall(TempdirManager, unittest.TestCase):
         # if one of the distribution installation fails, call uninstall on all
         # installed distributions.
 
-        d1 = ToInstallDist()
-        d2 = ToInstallDist(raise_error=True)
-        self.assertRaises(Exception, install.install_dists, [d1, d2])
-        for dist in (d1, d2):
-            self.assertTrue(dist.install_called)
-        self.assertTrue(d1.uninstall_called)
-        self.assertFalse(d2.uninstall_called)
+        old_install_dist = install._install_dist
+        old_uninstall = getattr(install, 'uninstall', None)
+
+        install._install_dist = MagicMock(return_value=[], 
+                raise_exception=(False, True))
+        install.uninstall = MagicMock()
+        try:
+            d1 = ToInstallDist()
+            d2 = ToInstallDist()
+            path = self.mkdtemp()
+            self.assertRaises(Exception, install.install_dists, [d1, d2], path)
+            self.assertTrue(install._install_dist.called_with(d1, path))
+            self.assertTrue(install.uninstall.called)
+        finally:
+            install._install_dist = old_install_dist
+            install.uninstall = old_uninstall
+
 
     def test_install_dists_success(self):
-        # test that the install method is called on each of the distributions.
-        d1 = ToInstallDist()
-        d2 = ToInstallDist()
-        install.install_dists([d1, d2])
-        for dist in (d1, d2):
-            self.assertTrue(dist.install_called)
-        self.assertFalse(d1.uninstall_called)
-        self.assertFalse(d2.uninstall_called)
+        old_install_dist = install._install_dist
+        install._install_dist = MagicMock(return_value=[])
+        try:
+            # test that the install method is called on each of the distributions.
+            d1 = ToInstallDist()
+            d2 = ToInstallDist()
+
+            # should call install
+            path = self.mkdtemp()
+            install.install_dists([d1, d2], path)
+            for dist in (d1, d2):
+                self.assertTrue(install._install_dist.called_with(dist, path))
+        finally:
+            install._install_dist = old_install_dist
 
     def test_install_from_infos_conflict(self):
         # assert conflicts raise an exception
@@ -262,29 +319,46 @@ class TestInstall(TempdirManager, unittest.TestCase):
             install.install_dists = old_install_dists
 
     def test_install_from_infos_remove_rollback(self):
-        # assert that if an error occurs, the removed files are restored.
-        remove = []
-        for i in range(0,2):
-            remove.append(ToInstallDist(files=True, raise_error=True))
-        to_install = [ToInstallDist(raise_error=True),
-                   ToInstallDist()]
+        old_install_dist = install._install_dist
+        old_uninstall = getattr(install, 'uninstall', None)
 
-        install.install_from_infos(remove=remove, install=to_install)
-        # assert that the files are in the same place
-        # assert that the files have been removed
-        for dist in remove:
-            for f in dist.get_installed_files():
-                self.assertTrue(os.path.exists(f))
+        install._install_dist = MagicMock(return_value=[], 
+                raise_exception=(False, True))
+        install.uninstall = MagicMock()
+        try:
+            # assert that if an error occurs, the removed files are restored.
+            remove = []
+            for i in range(0,2):
+                remove.append(ToInstallDist(files=True))
+            to_install = [ToInstallDist(), ToInstallDist()]
+
+            self.assertRaises(Exception, install.install_from_infos, 
+                    remove=remove, install=to_install)
+            # assert that the files are in the same place
+            # assert that the files have been removed
+            for dist in remove:
+                for f in dist.get_installed_files():
+                    self.assertTrue(os.path.exists(f))
+        finally:
+            install.install_dist = old_install_dist
+            install.uninstall = old_uninstall
+
 
     def test_install_from_infos_install_succes(self):
-        # assert that the distribution can be installed
-        install_path = "my_install_path"
-        to_install = [ToInstallDist(), ToInstallDist()]
+        old_install_dist = install._install_dist
+        install._install_dist = MagicMock([])
+        try:
+            # assert that the distribution can be installed
+            install_path = "my_install_path"
+            to_install = [ToInstallDist(), ToInstallDist()]
 
-        install.install_from_infos(install=to_install,
-                                         install_path=install_path)
-        for dist in to_install:
-            self.assertEqual(dist.install_called_with, (install_path,))
+            install.install_from_infos(install=to_install,
+                                             install_path=install_path)
+            for dist in to_install:
+                install._install_dist.called_with(install_path)
+        finally:
+            install._install_dist = old_install_dist
+
 
 def test_suite():
     suite = unittest.TestSuite()
