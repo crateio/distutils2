@@ -152,26 +152,29 @@ Example::
 data-files
 ==========
 
-###
-source -> destination
 
-fichier-final = destination + source
+TODO :
 
-There is an {alias} for each categories of datafiles
------
-source may be a glob (*, ?, **, {})
-
-order
-
-exclude
---
-base-prefix
-
-####
-overwrite system config for {alias}
-
-####
-extra-categori
+        ###
+        source -> destination
+        
+        final-path = destination + source
+        
+        There is an {alias} for each categories of datafiles
+        -----
+        source may be a glob (*, ?, **, {})
+        
+        order
+        
+        exclude
+        --
+        base-prefix
+        
+        ####
+        overwrite system config for {alias}
+        
+        ####
+        extra-categories
 
 This section describes the files used by the project which must not be installed in the same place that python modules or libraries.
 
