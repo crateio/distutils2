@@ -1029,7 +1029,7 @@ def get_distributions(use_egg_info=False, paths=sys.path):
         for dist in _yield_distributions(True, use_egg_info, paths):
             yield dist
     else:
-        _generate_cache(use_egg_info)
+        _generate_cache(use_egg_info, paths)
 
         for dist in _cache_path.itervalues():
             yield dist
@@ -1061,7 +1061,7 @@ def get_distribution(name, use_egg_info=False, paths=sys.path):
             if dist.name == name:
                 return dist
     else:
-        _generate_cache(use_egg_info)
+        _generate_cache(use_egg_info, paths)
 
         if name in _cache_name:
             return _cache_name[name][0]

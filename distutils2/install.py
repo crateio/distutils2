@@ -1,15 +1,20 @@
 from tempfile import mkdtemp
 import shutil
 import os
+import sys
+import stat
 import errno
 import itertools
+import tempfile
 
 from distutils2 import logger
 from distutils2._backport.pkgutil import get_distributions
+from distutils2._backport.pkgutil import get_distribution
 from distutils2._backport.sysconfig import get_config_var
 from distutils2.depgraph import generate_graph
 from distutils2.index import wrapper
 from distutils2.index.errors import ProjectNotFound, ReleaseNotFound
+from distutils2.errors import DistutilsError
 from distutils2.version import get_version_predicate
 
 """Provides installations scripts.
@@ -310,10 +315,40 @@ def _update_infos(infos, new_infos):
             infos[key].extend(new_infos[key])
 
 
-def remove(project_name):
+def remove(project_name, paths=sys.path):
     """Removes a single project from the installation"""
-    pass
+    tmp = tempfile.mkdtemp(prefix=project_name+'-uninstall')
+    dist = get_distribution(project_name, paths=paths)
+    if dist is None:
+        raise DistutilsError('Distribution %s not found' % project_name)
+    files = dist.get_installed_files(local=True)
+    rmdirs = []
+    rmfiles = []
 
+    try:
+        for file, md5, size in files:
+            if os.path.isfile(file):
+                dirname, filename = os.path.split(file)
+                tmpfile = os.path.join(tmp, filename)
+                try:
+                    os.rename(file, tmpfile)
+                finally:
+                    if not os.path.isfile(file):
+                        os.rename(tmpfile, file)
+                if file not in rmfiles:
+                    rmfiles.append(file)
+                if dirname not in rmdirs:
+                    rmdirs.append(dirname)
+    except OSError:
+        os.rmdir(tmp)
+
+    for file in rmfiles:
+        os.remove(file)
+
+    for dirname in rmdirs:
+        if not os.listdir(dirname):
+            if bool(os.stat(dirname).st_mode & stat.S_IWUSR):
+                os.rmdir(dirname)
 
 
 
