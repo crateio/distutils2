@@ -180,8 +180,8 @@ class InstallTestCase(support.TempdirManager,
             cmd.user = 'user'
             self.assertRaises(DistutilsOptionError, cmd.finalize_options)
 
-    def test_record(self):
-
+    def test_old_record(self):
+        # test pre-PEP 376 --record option (outside dist-info dir)
         install_dir = self.mkdtemp()
         pkgdir, dist = self.create_dist()
 
@@ -189,11 +189,11 @@ class InstallTestCase(support.TempdirManager,
         cmd = install_dist(dist)
         dist.command_obj['install_dist'] = cmd
         cmd.root = install_dir
-        cmd.record = os.path.join(pkgdir, 'RECORD')
+        cmd.record = os.path.join(pkgdir, 'filelist')
         cmd.ensure_finalized()
         cmd.run()
 
-        # let's check the RECORD file was created with four
+        # let's check the record file was created with four
         # lines, one for each .dist-info entry: METADATA,
         # INSTALLER, REQUSTED, RECORD
         f = open(cmd.record)
