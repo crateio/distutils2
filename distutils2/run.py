@@ -109,6 +109,7 @@ def commands_main(**attrs):
 
         except (DistutilsError,
                 CCompilerError), msg:
+            raise
             raise SystemExit, "error: " + str(msg)
 
     return dist
