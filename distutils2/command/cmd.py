@@ -165,7 +165,10 @@ class Command(object):
             header = "command options for '%s':" % self.get_command_name()
         self.announce(indent + header, level=logging.INFO)
         indent = indent + "  "
+        negative_opt = getattr(self, 'negative_opt', ())
         for (option, _, _) in self.user_options:
+            if option in negative_opt:
+                continue
             option = option.replace('-', '_')
             if option[-1] == "=":
                 option = option[:-1]
