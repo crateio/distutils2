@@ -72,6 +72,14 @@ class DataFilesTestCase(support.TempdirManager,
                  'Babarlikestrawberry': None}
         self.assertFindGlob(rules, spec)
 
+    def test_set_match_exclude(self):
+        rules = [('scripts', '*', '{appscript}'),
+                 ('', '**/*.sh', None)]
+        spec  = {'scripts/scripts.bin': '{appscript}/scripts.bin',
+                 'scripts/script.sh':  None,
+                 'Babarlikestrawberry': None}
+        self.assertFindGlob(rules, spec)
+
     def test_glob_in_base(self):
         rules = [('scrip*', '*.bin', '{appscript}')]
         spec  = {'scripts/scripts.bin': '{appscript}/scripts.bin',
