@@ -212,7 +212,50 @@ means that all files with extensions bin in the directory scripts will be placed
 destination
 -----------
 
-The destination is a traditionnal path (with unix separator **/**) where some parts will be expanded at installation time.
+The destination is a traditionnal path (with unix separator **/**) where some parts will be expanded at installation time. These parts look like **{category}**, they will be expanded by reading system-wide default-path stored in sysconfig.cfg. Defaults categories are :
+
+* config
+* appdata
+* appdata.arch
+* appdata.persistent
+* appdata.disposable
+* help
+* icon
+* scripts
+* doc
+* info
+* man
+
+A special category exists, named {distribution.name} which will be expanded into your distribution name. You should not use it in your destination path, as they are may be used in defaults categories::
+
+    [globals]
+    # These are the useful categories that are sometimes referenced at runtime,
+    # using pkgutil.open():
+    # Configuration files
+    config = {confdir}/{distribution.name}
+    # Non-writable data that is independent of architecture (images, many xml/text files)
+    appdata = {datadir}/{distribution.name}
+    # Non-writable data that is architecture-dependent (some binary data formats)
+    appdata.arch = {libdir}/{distribution.name}
+    # Data, written by the package, that must be preserved (databases)
+    appdata.persistent = {statedir}/lib/{distribution.name}
+    # Data, written by the package, that can be safely discarded (cache)
+    appdata.disposable = {statedir}/cache/{distribution.name}
+    # Help or documentation files referenced at runtime
+    help = {datadir}/{distribution.name}
+    icon = {datadir}/pixmaps
+    scripts = {base}/bin
+    
+    # Non-runtime files.  These are valid categories for marking files for
+    # install, but they should not be referenced by the app at runtime:
+    # Help or documentation files not referenced by the package at runtime
+    doc = {datadir}/doc/{distribution.name}
+    # GNU info documentation files
+    info = {datadir}/info
+    # man pages
+    man = {datadir}/man
+
+So, if you have this destination path : **{help}/api**, it will be expanded into **{datadir}/{distribution.name}/api**. {datadir} will be expanded depending on your system value (ex : confdir = datadir = /usr/share/).
 
 command sections
 ================
