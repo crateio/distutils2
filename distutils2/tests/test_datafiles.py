@@ -7,7 +7,6 @@ from StringIO import StringIO
 from distutils2.tests import unittest, support, run_unittest
 from distutils2.datafiles import resources_dests, RICH_GLOB
 import re
-from os import path as osp
 
 
 
@@ -25,9 +24,9 @@ class DataFilesTestCase(support.TempdirManager,
     def build_spec(self, spec, clean=True):
         tempdir = self.mkdtemp()
         for filepath in spec:
-            filepath = osp.join(tempdir, *filepath.split('/'))
-            dirname = osp.dirname(filepath)
-            if dirname and not osp.exists(dirname):
+            filepath = os.path.join(tempdir, *filepath.split('/'))
+            dirname = os.path.dirname(filepath)
+            if dirname and not os.path.exists(dirname):
                 os.makedirs(dirname)
             self.write_file(filepath, 'babar')
         if clean:
