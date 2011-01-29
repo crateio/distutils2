@@ -135,11 +135,18 @@ class Config(object):
                 if metadata.is_metadata_field(key):
                     metadata[key] = self._convert_metadata(key, value)
 
+
         if 'files' in content:
-            files = dict([(key, self._multiline(value))
+            def _convert(key, value):
+                if key not in ('packages_root',):
+                    value = self._multiline(value)
+                return value
+
+            files = dict([(key, _convert(key, value))
                           for key, value in content['files'].iteritems()])
             self.dist.packages = []
             self.dist.package_dir = pkg_dir = files.get('packages_root')
+
             packages = files.get('packages', [])
             if isinstance(packages, str):
                 packages = [packages]
