@@ -805,7 +805,6 @@ def _spawn_posix(cmd, search_path=1, verbose=1, dry_run=0, env=None):
     cmd = ' '.join(cmd)
     if verbose:
         logger.info(cmd)
-        logger.info(env)
     if dry_run:
         return
     exit_status = sub_call(cmd, shell=True, env=env)
