@@ -28,7 +28,6 @@ else:
         # external release of same package for older versions
         import unittest2 as unittest
     except ImportError:
-        raise
         sys.exit('Error: You have to install unittest2')
 
 
