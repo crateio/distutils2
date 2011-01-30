@@ -8,6 +8,7 @@ import warnings
 from csv import reader as csv_reader
 from types import ModuleType
 from distutils2.errors import DistutilsError
+from distutils2.index.errors import DistributionNotFound
 from distutils2.metadata import DistributionMetadata
 from distutils2.version import suggest_normalized_version, VersionPredicate
 try:
@@ -742,14 +743,23 @@ class Distribution(object):
         return '%s-%s at %s' % (self.name, self.metadata.version, self.path)
 
     def _get_records(self, local=False):
-        RECORD = os.path.join(self.path, 'RECORD')
-        record_reader = csv_reader(open(RECORD, 'rb'), delimiter=',')
+        RECORD = self.get_distinfo_file('RECORD')
+        record_reader = csv_reader(RECORD, delimiter=',')
         for row in record_reader:
             path, md5, size = row[:] + [None for i in xrange(len(row), 3)]
             if local:
                 path = path.replace('/', os.sep)
                 path = os.path.join(sys.prefix, path)
             yield path, md5, size
+
+    def get_resource_path(self, relative_path):
+        datafiles_file = self.get_distinfo_file('DATAFILES')
+        datafiles_reader = csv_reader(datafiles_file, delimiter = ',')
+        for relative, destination in datafiles_reader:
+            if relative == relative_path:
+                return destination
+        raise KeyError('No data_file with relative path %s were installed' %
+                relative_path)
 
     def get_installed_files(self, local=False):
         """
@@ -1162,5 +1172,14 @@ def get_file_users(path):
         if dist.uses(path):
             yield dist
 
-def data_open(distribution_name, relative_path):
-    pass
+def resource_path(distribution_name, relative_path):
+     dist = get_distribution(distribution_name)
+     if dist != None:
+         return dist.get_resource_path(relative_path)
+     raise DistributionNotFound('No distribution named %s is installed.' %
+                    distribution_name)
+
+def resource_open(distribution_name, relative_path, *args, **kwargs):
+    file = open(resource_path(distribution_name, relative_path), *args,
+                **kwargs)
+    return file

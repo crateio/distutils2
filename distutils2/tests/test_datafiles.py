@@ -2,13 +2,10 @@
 """Tests for distutils.data."""
 import os
 import sys
-from StringIO import StringIO
 
 from distutils2.tests import unittest, support, run_unittest
 from distutils2.tests.test_glob import GlobTestCaseBase
 from distutils2.datafiles import resources_dests
-import re
-
 
 
 
@@ -103,6 +100,42 @@ class DataFilesTestCase(GlobTestCaseBase):
         }
         self.maxDiff = None
         self.assertRulesMatch(rules, spec)
+
+    def test_resource_open(self):
+        from distutils2._backport.sysconfig import _SCHEMES as sysconfig_SCHEMES
+        from distutils2._backport.sysconfig import _get_default_scheme
+            #dirty but hit marmoute
+
+        tempdir = self.mkdtemp()
+        
+        old_scheme = sysconfig_SCHEMES
+
+        sysconfig_SCHEMES.set(_get_default_scheme(), 'config',
+            tempdir)
+
+        pkg_dir, dist = self.create_dist()
+        dist_name = dist.metadata['name']
+
+        test_path = os.path.join(pkg_dir, 'test.cfg')
+        self.write_file(test_path, 'Config')
+        dist.data_files = {test_path : '{config}/test.cfg'}
+
+        cmd = install_dist(dist)
+        cmd.install_dir = os.path.join(pkg_dir, 'inst')
+        content = 'Config'        
+        
+        cmd.ensure_finalized()
+        cmd.run()
+
+        cfg_dest = os.path.join(tempdir, 'test.cfg')
+
+        self.assertEqual(resource_path(dist_name, test_path), cfg_dest)
+        self.assertRaises(KeyError, lambda: resource_path(dist_name, 'notexis'))
+
+        self.assertEqual(resource_open(dist_name, test_path).read(), content)
+        self.assertRaises(KeyError, lambda: resource_open(dist_name, 'notexis'))
+        
+        sysconfig_SCHEMES = old_scheme
 
 def test_suite():
     return unittest.makeSuite(DataFilesTestCase)
