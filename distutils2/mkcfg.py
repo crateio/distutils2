@@ -254,10 +254,12 @@ class MainProgram(object):
                       ('description', 'summary'),
                       ('long_description', 'description'),
                       ('url', 'home_page'),
-                      ('platforms', 'platform'),
-                      ('provides', 'provides-dist'),
-                      ('obsoletes', 'obsoletes-dist'),
-                      ('requires', 'requires-dist'),)
+                      ('platforms', 'platform'))
+
+            if sys.version[:3] >= '2.5':
+                labels += (('provides', 'provides-dist'),
+                           ('obsoletes', 'obsoletes-dist'),
+                           ('requires', 'requires-dist'),)
             get = lambda lab: getattr(dist.metadata, lab.replace('-', '_'))
             data.update((new, get(old)) for (old, new) in labels if get(old))
             # 2. retrieves data that requires special processings.
@@ -281,7 +283,7 @@ class MainProgram(object):
                     for tok, path in path_tokens:
                         if dest.startswith(path):
                             dest = ('{%s}' % tok) + dest[len(path):]
-                            files = [('/ '.join(src.rsplit('/', 1)), dest) 
+                            files = [('/ '.join(src.rsplit('/', 1)), dest)
                                      for src in srcs]
                             data['resources'].extend(files)
                             continue
