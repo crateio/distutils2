@@ -289,7 +289,7 @@ class BuildExtTestCase(support.TempdirManager,
 
         # inplace = 0, cmd.package = 'bar'
         build_py = cmd.get_finalized_command('build_py')
-        build_py.package_dir = {'': 'bar'}
+        build_py.package_dir = 'bar'
         path = cmd.get_ext_fullpath('foo')
         # checking that the last directory is the build_dir
         path = os.path.split(path)[0]
@@ -318,7 +318,7 @@ class BuildExtTestCase(support.TempdirManager,
         dist = Distribution()
         cmd = build_ext(dist)
         cmd.inplace = 1
-        cmd.distribution.package_dir = {'': 'src'}
+        cmd.distribution.package_dir = 'src'
         cmd.distribution.packages = ['lxml', 'lxml.html']
         curdir = os.getcwd()
         wanted = os.path.join(curdir, 'src', 'lxml', 'etree' + ext)
@@ -334,7 +334,7 @@ class BuildExtTestCase(support.TempdirManager,
 
         # building twisted.runner.portmap not inplace
         build_py = cmd.get_finalized_command('build_py')
-        build_py.package_dir = {}
+        build_py.package_dir = None
         cmd.distribution.packages = ['twisted', 'twisted.runner.portmap']
         path = cmd.get_ext_fullpath('twisted.runner.portmap')
         wanted = os.path.join(curdir, 'tmpdir', 'twisted', 'runner',

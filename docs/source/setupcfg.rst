@@ -128,6 +128,8 @@ files
 
 This section describes the files included in the project.
 
+- **packages_root**: the root directory containing all packages. If not provided
+  Distutils2 will use the current directory.  *\*optional*
 - **packages**: a list of packages the project includes *\*optional* *\*multi*
 - **modules**: a list of packages the project includes *\*optional* *\*multi*
 - **scripts**: a list of scripts the project includes *\*optional* *\*multi*
@@ -136,6 +138,7 @@ This section describes the files included in the project.
 Example::
 
     [files]
+    packages_root = src
     packages =
             pypi2rpm
             pypi2rpm.command

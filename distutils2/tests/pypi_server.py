@@ -375,6 +375,7 @@ class XMLRPCMockIndex(object):
 
     def __init__(self, dists=[]):
         self._dists = dists
+        self._search_result = []
 
     def add_distributions(self, dists):
         for dist in dists:

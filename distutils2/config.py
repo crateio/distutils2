@@ -7,7 +7,8 @@ import sys
 from ConfigParser import RawConfigParser
 
 from distutils2 import logger
-from distutils2.util import check_environ, resolve_name
+from distutils2.errors import DistutilsOptionError
+from distutils2.util import check_environ, resolve_name, strtobool
 from distutils2.compiler import set_compiler
 from distutils2.command import set_command
 
@@ -76,10 +77,9 @@ class Config(object):
         return value
 
     def _multiline(self, value):
-        if '\n' in value:
-            value = [v for v in
-                        [v.strip() for v in value.split('\n')]
-                        if v != '']
+        value = [v for v in
+                [v.strip() for v in value.split('\n')]
+                if v != '']
         return value
 
     def _read_setup_cfg(self, parser):
@@ -100,7 +100,9 @@ class Config(object):
         if 'metadata' in content:
             for key, value in content['metadata'].iteritems():
                 key = key.replace('_', '-')
-                value = self._multiline(value)
+                if metadata.is_multi_field(key):
+                    value = self._multiline(value)
+
                 if key == 'project-url':
                     value = [(label.strip(), url.strip())
                              for label, url in
@@ -112,30 +114,45 @@ class Config(object):
                                "mutually exclusive")
                         raise DistutilsOptionError(msg)
 
-                    f = open(value)    # will raise if file not found
-                    try:
-                        value = f.read()
-                    finally:
-                        f.close()
+                    if isinstance(value, list):
+                        filenames = value
+                    else:
+                        filenames = value.split()
+
+                    # concatenate each files
+                    value = ''
+                    for filename in filenames:
+                        f = open(filename)    # will raise if file not found
+                        try:
+                            value += f.read().strip() + '\n'
+                        finally:
+                            f.close()
+                        # add filename as a required file
+                        if filename not in metadata.requires_files:
+                            metadata.requires_files.append(filename)
+                    value = value.strip()
                     key = 'description'
 
                 if metadata.is_metadata_field(key):
                     metadata[key] = self._convert_metadata(key, value)
 
+
         if 'files' in content:
-            files = dict([(key, self._multiline(value))
+            def _convert(key, value):
+                if key not in ('packages_root',):
+                    value = self._multiline(value)
+                return value
+
+            files = dict([(key, _convert(key, value))
                           for key, value in content['files'].iteritems()])
             self.dist.packages = []
-            self.dist.package_dir = {}
+            self.dist.package_dir = pkg_dir = files.get('packages_root')
 
             packages = files.get('packages', [])
             if isinstance(packages, str):
                 packages = [packages]
 
             for package in packages:
-                if ':' in package:
-                    dir_, package = package.split(':')
-                    self.dist.package_dir[package] = dir_
                 self.dist.packages.append(package)
 
             self.dist.py_modules = files.get('modules', [])
