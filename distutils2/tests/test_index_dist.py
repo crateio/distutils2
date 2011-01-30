@@ -166,6 +166,7 @@ class TestDistInfo(TempdirManager, unittest.TestCase):
         there = dist.unpack(here)
         result = os.listdir(there)
         self.assertIn('paf', result)
+        os.remove('paf')
 
     def test_hashname(self):
         # Invalid hashnames raises an exception on assignation
