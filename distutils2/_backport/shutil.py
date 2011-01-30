@@ -742,6 +742,8 @@ def unpack_archive(filename, extract_dir=None, format=None):
     if extract_dir is None:
         extract_dir = os.getcwd()
 
+    func = None
+
     if format is not None:
         try:
             format_info = _UNPACK_FORMATS[format]
@@ -758,4 +760,7 @@ def unpack_archive(filename, extract_dir=None, format=None):
 
         func = _UNPACK_FORMATS[format][1]
         kwargs = dict(_UNPACK_FORMATS[format][2])
-    raise ValueError('Unknown archive format: %s' % filename)
+        func(filename, extract_dir, **kwargs)
+
+    if func is None:
+        raise ValueError('Unknown archive format: %s' % filename)
