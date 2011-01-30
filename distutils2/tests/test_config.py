@@ -103,7 +103,7 @@ packages = one
 [extension=speed_coconuts]
 name = one.speed_coconuts
 sources = c_src/speed_coconuts.c
-extra_link_args = `gcc -print-file-name=libgcc.a` -shared
+extra_link_args = "`gcc -print-file-name=libgcc.a`" -shared
 define_macros = HAVE_CAIRO HAVE_GTK2
 
 [extension=fast_taunt]

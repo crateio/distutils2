@@ -1,4 +1,11 @@
-from tempfile import mkdtemp
+"""Provides installations scripts.
+
+The goal of this script is to install a release from the indexes (eg.
+PyPI), including the dependencies of the releases if needed.
+
+It uses the work made in pkgutil and by the index crawlers to browse the
+installed distributions, and rely on the instalation commands to install.
+"""
 import shutil
 import os
 import sys
@@ -17,14 +24,9 @@ from distutils2.index.errors import ProjectNotFound, ReleaseNotFound
 from distutils2.errors import DistutilsError
 from distutils2.version import get_version_predicate
 
-"""Provides installations scripts.
 
-The goal of this script is to install a release from the indexes (eg.
-PyPI), including the dependencies of the releases if needed.
-
-It uses the work made in pkgutil and by the index crawlers to browse the
-installed distributions, and rely on the instalation commands to install.
-"""
+__all__ = ['install_dists', 'install_from_infos', 'get_infos', 'remove',
+           'install']
 
 
 class InstallationException(Exception):
@@ -35,7 +37,7 @@ class InstallationConflict(InstallationException):
     """Raised when a conflict is detected"""
 
 
-def move_files(files, destination=None):
+def _move_files(files, destination):
     """Move the list of files in the destination folder, keeping the same
     structure.
 
@@ -43,13 +45,11 @@ def move_files(files, destination=None):
 
     :param files: a list of files to move.
     :param destination: the destination directory to put on the files.
-                        if not defined, create a new one, using mkdtemp
     """
-    if not destination:
-        destination = mkdtemp()
-
     for old in files:
-        new = '%s%s' % (destination, old)
+        # not using os.path.join() because basename() might not be
+        # unique in destination
+        new = "%s%s" % (destination, old)
 
         # try to make the paths.
         try:
@@ -60,7 +60,7 @@ def move_files(files, destination=None):
             else:
                 raise e
         os.rename(old, new)
-        yield (old, new)
+        yield old, new
 
 
 def _run_d1_install(archive_dir, path):
@@ -93,7 +93,7 @@ def _install_dist(dist, path):
     * copy the files in "path"
     * determine if the distribution is distutils2 or distutils1.
     """
-    where = dist.unpack(archive)
+    where = dist.unpack(path)
 
     # get into the dir
     archive_dir = None
@@ -119,7 +119,7 @@ def _install_dist(dist, path):
         os.chdir(old_dir)
 
 
-def install_dists(dists, path=None):
+def install_dists(dists, path, paths=sys.path):
     """Install all distributions provided in dists, with the given prefix.
 
     If an error occurs while installing one of the distributions, uninstall all
@@ -129,27 +129,28 @@ def install_dists(dists, path=None):
 
     :param dists: distributions to install
     :param path: base path to install distribution in
+    :param paths: list of paths (defaults to sys.path) to look for info
     """
-    if not path:
-        path = mkdtemp()
 
     installed_dists, installed_files = [], []
-    for d in dists:
-        logger.info('Installing %s %s' % (d.name, d.version))
+    for dist in dists:
+        logger.info('Installing %s %s' % (dist.name, dist.version))
         try:
-            installed_files.extend(_install_dist(d, path))
-            installed_dists.append(d)
-        except Exception, e :
+            installed_files.extend(_install_dist(dist, path))
+            installed_dists.append(dist)
+        except Exception, e:
             logger.info('Failed. %s' % str(e))
 
             # reverting
-            for d in installed_dists:
-                uninstall(d)
+            for installed_dist in installed_dists:
+                _remove_dist(installed_dist, paths)
             raise e
+
     return installed_files
 
 
-def install_from_infos(install=[], remove=[], conflicts=[], install_path=None):
+def install_from_infos(install_path=None, install=[], remove=[], conflicts=[],
+                       paths=sys.path):
     """Install and remove the given distributions.
 
     The function signature is made to be compatible with the one of get_infos.
@@ -168,35 +169,43 @@ def install_from_infos(install=[], remove=[], conflicts=[], install_path=None):
         4. Else, move the distributions to the right locations, and remove for
            real the distributions thats need to be removed.
 
-    :param install: list of distributions that will be installed.
+    :param install_path: the installation path where we want to install the
+                         distributions.
+    :param install: list of distributions that will be installed; install_path
+                    must be provided if this list is not empty.
     :param remove: list of distributions that will be removed.
     :param conflicts: list of conflicting distributions, eg. that will be in
                       conflict once the install and remove distribution will be
                       processed.
-    :param install_path: the installation path where we want to install the
-                         distributions.
+    :param paths: list of paths (defaults to sys.path) to look for info
     """
     # first of all, if we have conflicts, stop here.
     if conflicts:
         raise InstallationConflict(conflicts)
 
+    if install and not install_path:
+        raise ValueError("Distributions are to be installed but `install_path`"
+                         " is not provided.")
+
     # before removing the files, we will start by moving them away
     # then, if any error occurs, we could replace them in the good place.
     temp_files = {}  # contains lists of {dist: (old, new)} paths
+    temp_dir = None
     if remove:
+        temp_dir = tempfile.mkdtemp()
         for dist in remove:
             files = dist.get_installed_files()
-            temp_files[dist] = move_files(files)
+            temp_files[dist] = _move_files(files, temp_dir)
     try:
         if install:
-            installed_files = install_dists(install, install_path)  # install to tmp first
-
+            install_dists(install, install_path, paths)
     except:
-        # if an error occurs, put back the files in the good place.
+        # if an error occurs, put back the files in the right place.
         for files in temp_files.values():
             for old, new in files:
                 shutil.move(new, old)
-
+        if temp_dir:
+            shutil.rmtree(temp_dir)
         # now re-raising
         raise
 
@@ -204,6 +213,8 @@ def install_from_infos(install=[], remove=[], conflicts=[], install_path=None):
     for files in temp_files.values():
         for old, new in files:
             os.remove(new)
+    if temp_dir:
+        shutil.rmtree(temp_dir)
 
 
 def _get_setuptools_deps(release):
@@ -265,9 +276,9 @@ def get_infos(requirements, index=None, installed=None, prefer_final=True):
     # Get all the releases that match the requirements
     try:
         releases = index.get_releases(requirements)
-    except (ReleaseNotFound, ProjectNotFound), e:
+    except (ReleaseNotFound, ProjectNotFound):
         raise InstallationException('Release not found: "%s"' % requirements)
-    
+
     # Pick up a release, and try to get the dependency tree
     release = releases.get_last(requirements, prefer_final=prefer_final)
 
@@ -283,6 +294,8 @@ def get_infos(requirements, index=None, installed=None, prefer_final=True):
         deps = _get_setuptools_deps(release)
     else:
         deps = metadata['requires_dist']
+
+    # XXX deps not used
 
     distributions = itertools.chain(installed, [release])
     depgraph = generate_graph(distributions)
@@ -315,16 +328,19 @@ def _update_infos(infos, new_infos):
             infos[key].extend(new_infos[key])
 
 
+def _remove_dist(dist, paths=sys.path):
+    remove(dist.name, paths)
+
+
 def remove(project_name, paths=sys.path):
     """Removes a single project from the installation"""
-    tmp = tempfile.mkdtemp(prefix=project_name+'-uninstall')
     dist = get_distribution(project_name, paths=paths)
     if dist is None:
         raise DistutilsError('Distribution %s not found' % project_name)
     files = dist.get_installed_files(local=True)
     rmdirs = []
     rmfiles = []
-
+    tmp = tempfile.mkdtemp(prefix=project_name + '-uninstall')
     try:
         for file, md5, size in files:
             if os.path.isfile(file):
@@ -339,8 +355,8 @@ def remove(project_name, paths=sys.path):
                     rmfiles.append(file)
                 if dirname not in rmdirs:
                     rmdirs.append(dirname)
-    except OSError:
-        os.rmdir(tmp)
+    finally:
+        shutil.rmtree(tmp)
 
     for file in rmfiles:
         os.remove(file)
@@ -349,14 +365,6 @@ def remove(project_name, paths=sys.path):
         if not os.listdir(dirname):
             if bool(os.stat(dirname).st_mode & stat.S_IWUSR):
                 os.rmdir(dirname)
-
-
-
-def main(**attrs):
-    if 'script_args' not in attrs:
-        import sys
-        attrs['requirements'] = sys.argv[1]
-    get_infos(**attrs)
 
 
 def install(project):
@@ -373,13 +381,20 @@ def install(project):
 
     install_path = get_config_var('base')
     try:
-        install_from_infos(info['install'], info['remove'], info['conflict'],
-                           install_path=install_path)
+        install_from_infos(install_path,
+                           info['install'], info['remove'], info['conflict'])
 
     except InstallationConflict, e:
         projects = ['%s %s' % (p.name, p.version) for p in e.args[0]]
         logger.info('"%s" conflicts with "%s"' % (project, ','.join(projects)))
 
 
+def _main(**attrs):
+    if 'script_args' not in attrs:
+        import sys
+        attrs['requirements'] = sys.argv[1]
+    get_infos(**attrs)
+
+
 if __name__ == '__main__':
-    main()
+    _main()

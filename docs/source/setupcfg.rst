@@ -7,24 +7,35 @@ Distutils2 to replace the :file:`setup.py` file.
 
 Each section contains a description of its options.
 
-- Options that are marked *\*multi* can have multiple values, one value
-  per line.
+- Options that are marked *\*multi* can have multiple values, one value per
+  line.
 - Options that are marked *\*optional* can be omited.
-- Options that are marked *\*environ* can use environement markes, as described
-  in PEP 345.
+- Options that are marked *\*environ* can use environment markers, as described
+  in :PEP:`345`.
+
 
 The sections are:
 
-- global
-- metadata
-- files
-- command sections
+global
+    Global options for Distutils2.
+
+metadata
+    The metadata section contains the metadata for the project as described in
+    :PEP:`345`.
+
+files
+    Declaration of package files included in the project.
+
+`command` sections
+    Redefinition of user options for Distutils2 commands.
 
 
 global
 ======
 
-Contains global options for Distutils2. This section is shared with Distutils1.
+Contains global options for Distutils2. This section is shared with Distutils1
+(legacy version distributed in python 2.X standard library).
+
 
 - **commands**: Defined Distutils2 command. A command is defined by its fully
   qualified name.
@@ -38,13 +49,13 @@ Contains global options for Distutils2. This section is shared with Distutils1.
   *\*optional* *\*multi*
 
 - **compilers**: Defined Distutils2 compiler. A compiler is defined by its fully
-  qualified name. 
+  qualified name.
 
   Example::
 
     [global]
     compiler =
-        package.compilers.CustomCCompiler
+        package.compiler.CustomCCompiler
 
   *\*optional* *\*multi*
 
@@ -52,21 +63,29 @@ Contains global options for Distutils2. This section is shared with Distutils1.
   :file:`setup.cfg` file is read. The callable receives the configuration
   in form of a mapping and can make some changes to it. *\*optional*
 
+  Example::
+
+    [global]
+    setup_hook =
+        distutils2.tests.test_config.hook
+
 
 metadata
 ========
 
 The metadata section contains the metadata for the project as described in
-PEP 345.
+:PEP:`345`.
 
+.. Note::
+    Field names are case-insensitive.
 
 Fields:
 
 - **name**: Name of the project.
-- **version**: Version of the project. Must comply with PEP 386.
+- **version**: Version of the project. Must comply with :PEP:`386`.
 - **platform**: Platform specification describing an operating system supported
   by the distribution which is not listed in the "Operating System" Trove
-  classifiers. *\*multi* *\*optional*
+  classifiers (:PEP:`301`). *\*multi* *\*optional*
 - **supported-platform**: Binary distributions containing a PKG-INFO file will
   use the Supported-Platform field in their metadata to specify the OS and
   CPU for which the binary distribution was compiled.  The semantics of
@@ -113,14 +132,18 @@ Example::
     name = pypi2rpm
     version = 0.1
     author = Tarek Ziade
-    author_email = tarek@ziade.org
+    author-email = tarek@ziade.org
     summary = Script that transforms a sdist archive into a rpm archive
     description-file = README
-    home_page = http://bitbucket.org/tarek/pypi2rpm
+    home-page = http://bitbucket.org/tarek/pypi2rpm
+    project-url: RSS feed, https://bitbucket.org/tarek/pypi2rpm/rss
 
     classifier = Development Status :: 3 - Alpha
         License :: OSI Approved :: Mozilla Public License 1.1 (MPL 1.1)
 
+.. Note::
+    Some metadata fields seen in :PEP:`345` are automatically generated
+    (for instance Metadata-Version value).
 
 
 files
@@ -148,6 +171,10 @@ Example::
 
     extra_files =
             setup.py
+            README
+
+.. Note::
+    In Distutils2, setup.cfg will be implicitly included.
 
 data-files
 ==========
@@ -369,17 +396,27 @@ Setup.cfg::
   doc/ * = {doc}
   doc/ man = {man}
 
-We use brace expansion syntax to place all the bash and batch scripts into {scripts} category.    
+We use brace expansion syntax to place all the bash and batch scripts into {scripts} category.
 
-command sections
-================
+.. Warning::
+    In Distutils2, setup.py and README (or README.txt) files are not more
+    included in source distribution by default
 
-Each command can have its options described in :file:`setup.cfg`
 
+`command` sections
+==================
+
+Each Distutils2 command can have its own user options defined in :file:`setup.cfg`
 
 Example::
 
     [sdist]
-    manifest_makers = package.module.Maker
+    manifest-builders = package.module.Maker
+
+
+To override the build class in order to generate Python3 code from your Python2 base::
+
+    [build_py]
+    use-2to3 = True
 
 

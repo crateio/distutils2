@@ -922,10 +922,6 @@ class EggInfoDistribution(object):
                 for field in ('Obsoletes', 'Requires', 'Provides'):
                     del self.metadata[field]
 
-            provides = "%s (%s)" % (self.metadata['name'],
-                                    self.metadata['version'])
-            self.metadata['Provides-Dist'] += (provides,)
-
         reqs = []
 
         if requires is not None:

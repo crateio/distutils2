@@ -86,14 +86,17 @@ source distribution:
   distributions, but in the future there will be a standard for testing Python
   module distributions)
 
-* :file:`README.txt` (or :file:`README`), :file:`setup.py` (or whatever  you
-  called your setup script), and :file:`setup.cfg`
+* The configuration file :file:`setup.cfg`
 
 * all files that matches the ``package_data`` metadata.
   See :ref:`distutils-installing-package-data`.
 
 * all files that matches the ``data_files`` metadata.
   See :ref:`distutils-additional-files`.
+
+.. Warning::
+    In Distutils2, setup.py and README (or README.txt) files are not more
+    included in source distribution by default
 
 Sometimes this is enough, but usually you will want to specify additional files
 to distribute.  The typical way to do this is to write a *manifest template*,

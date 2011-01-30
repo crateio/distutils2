@@ -39,6 +39,11 @@ class ToInstallDist(object):
             for f in range(0,3):
                self._real_files.append(mkstemp())
 
+    def _unlink_installed_files(self):
+        if self._files:
+            for f in self._real_files:
+                os.unlink(f[1])
+
     def get_installed_files(self, **args):
         if self._files:
             return [f[1] for f in self._real_files]
@@ -54,14 +59,14 @@ class MagicMock(object):
         self._called_with = []
         self._return_value = return_value
         self._raise = raise_exception
-    
+
     def __call__(self, *args, **kwargs):
         self.called = True
         self._times_called = self._times_called + 1
         self._called_with.append((args, kwargs))
         iterable = hasattr(self._raise, '__iter__')
         if self._raise:
-            if ((not iterable and self._raise) 
+            if ((not iterable and self._raise)
                     or self._raise[self._times_called - 1]):
                 raise Exception
         return self._return_value
@@ -70,25 +75,8 @@ class MagicMock(object):
         return (args, kwargs) in self._called_with
 
 
-def patch(parent, to_patch):
-    """monkey match a module"""
-    def wrapper(func):
-        print func
-        print dir(func)
-        old_func = getattr(parent, to_patch)
-        def wrapped(*args, **kwargs):
-            parent.__dict__[to_patch] = MagicMock()
-            try:
-                out = func(*args, **kwargs)
-            finally:
-                setattr(parent, to_patch, old_func)
-            return out
-        return wrapped
-    return wrapper
-
-
 def get_installed_dists(dists):
-    """Return a list of fake installed dists. 
+    """Return a list of fake installed dists.
     The list is name, version, deps"""
     objects = []
     for (name, version, deps) in dists:
@@ -99,12 +87,6 @@ def get_installed_dists(dists):
 class TestInstall(TempdirManager, unittest.TestCase):
     def _get_client(self, server, *args, **kwargs):
         return Client(server.full_address, *args, **kwargs)
-
-    def _patch_run_install(self):
-        """Patch run install"""
-
-    def _unpatch_run_install(self):
-        """Unpatch run install for d2 and d1"""
 
     def _get_results(self, output):
         """return a list of results"""
@@ -205,7 +187,7 @@ class TestInstall(TempdirManager, unittest.TestCase):
             ])
 
         # name, version, deps.
-        already_installed = [('bacon', '0.1', []), 
+        already_installed = [('bacon', '0.1', []),
                              ('chicken', '1.1', ['bacon (0.1)'])]
         output = install.get_infos("choxie", index=client, installed=
                            get_installed_dists(already_installed))
@@ -236,7 +218,7 @@ class TestInstall(TempdirManager, unittest.TestCase):
         files = [os.path.join(path, '%s' % x) for x in range(1, 20)]
         for f in files:
             file(f, 'a+')
-        output = [o for o in install.move_files(files, newpath)]
+        output = [o for o in install._move_files(files, newpath)]
 
         # check that output return the list of old/new places
         for f in files:
@@ -265,19 +247,19 @@ class TestInstall(TempdirManager, unittest.TestCase):
         old_install_dist = install._install_dist
         old_uninstall = getattr(install, 'uninstall', None)
 
-        install._install_dist = MagicMock(return_value=[], 
+        install._install_dist = MagicMock(return_value=[],
                 raise_exception=(False, True))
-        install.uninstall = MagicMock()
+        install.remove = MagicMock()
         try:
             d1 = ToInstallDist()
             d2 = ToInstallDist()
             path = self.mkdtemp()
             self.assertRaises(Exception, install.install_dists, [d1, d2], path)
             self.assertTrue(install._install_dist.called_with(d1, path))
-            self.assertTrue(install.uninstall.called)
+            self.assertTrue(install.remove.called)
         finally:
             install._install_dist = old_install_dist
-            install.uninstall = old_uninstall
+            install.remove = old_uninstall
 
 
     def test_install_dists_success(self):
@@ -322,7 +304,7 @@ class TestInstall(TempdirManager, unittest.TestCase):
         old_install_dist = install._install_dist
         old_uninstall = getattr(install, 'uninstall', None)
 
-        install._install_dist = MagicMock(return_value=[], 
+        install._install_dist = MagicMock(return_value=[],
                 raise_exception=(False, True))
         install.uninstall = MagicMock()
         try:
@@ -331,14 +313,17 @@ class TestInstall(TempdirManager, unittest.TestCase):
             for i in range(0,2):
                 remove.append(ToInstallDist(files=True))
             to_install = [ToInstallDist(), ToInstallDist()]
+            temp_dir = self.mkdtemp()
 
-            self.assertRaises(Exception, install.install_from_infos, 
-                    remove=remove, install=to_install)
+            self.assertRaises(Exception, install.install_from_infos,
+                              install_path=temp_dir, install=to_install,
+                              remove=remove)
             # assert that the files are in the same place
             # assert that the files have been removed
             for dist in remove:
                 for f in dist.get_installed_files():
                     self.assertTrue(os.path.exists(f))
+                dist._unlink_installed_files()
         finally:
             install.install_dist = old_install_dist
             install.uninstall = old_uninstall
@@ -352,8 +337,7 @@ class TestInstall(TempdirManager, unittest.TestCase):
             install_path = "my_install_path"
             to_install = [ToInstallDist(), ToInstallDist()]
 
-            install.install_from_infos(install=to_install,
-                                             install_path=install_path)
+            install.install_from_infos(install_path, install=to_install)
             for dist in to_install:
                 install._install_dist.called_with(install_path)
         finally:

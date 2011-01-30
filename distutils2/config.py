@@ -8,6 +8,7 @@ import re
 import sys
 import re
 from ConfigParser import RawConfigParser
+from shlex import split
 
 from distutils2 import logger
 from distutils2.errors import DistutilsOptionError
@@ -20,15 +21,9 @@ from distutils2.datafiles import resources_dests
 
 def _pop_values(values_dct, key):
     """Remove values from the dictionary and convert them as a list"""
-    vals_str = values_dct.pop(key, None)
-    if not vals_str:
-        return
+    vals_str = values_dct.pop(key, '')
     # Get bash options like `gcc -print-file-name=libgcc.a`
-    vals = re.search('(`.*?`)', vals_str) or []
-    if vals:
-        vals = list(vals.groups())
-        vals_str = re.sub('`.*?`', '', vals_str)
-    vals.extend(vals_str.split())
+    vals = split(vals_str)
     if vals:
         return vals
 
