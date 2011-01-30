@@ -11,7 +11,7 @@ from distutils2.dist import Distribution
 from distutils2 import __version__
 from distutils2._backport.pkgutil import get_distributions, get_distribution
 from distutils2.depgraph import generate_graph
-from distutils2.install import install
+from distutils2.install import install, remove
 
 # This is a barebones help message generated displayed when the user
 # runs the setup script with no arguments at all.  More useful help
@@ -223,6 +223,10 @@ def main():
 
     if options.install is not None:
         install(options.install)
+        return 0
+
+    if options.remove is not None:
+        remove(options.remove)
         return 0
 
     if len(args) == 0:
