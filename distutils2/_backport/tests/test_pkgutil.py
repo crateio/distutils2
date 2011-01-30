@@ -389,6 +389,7 @@ class TestPkgUtilPEP376(support.LoggingCatcher, support.WarningsCatcher,
 
         # Now, test if the egg-info distributions are found correctly as well
         fake_dists += [('bacon', '0.1'), ('cheese', '2.0.2'),
+                       ('coconuts-aster', '10.3'),
                        ('banana', '0.4'), ('strawberry', '0.6'),
                        ('truffles', '5.0'), ('nut', 'funkyversion')]
         found_dists = []
@@ -494,18 +495,18 @@ class TestPkgUtilPEP376(support.LoggingCatcher, support.WarningsCatcher,
 
         l = [dist.name for dist in provides_distribution('truffles', '>1.5',
                                                          use_egg_info=True)]
-        checkLists(l, ['bacon', 'truffles'])
+        checkLists(l, ['bacon'])
 
         l = [dist.name for dist in provides_distribution('truffles', '>=1.0')]
         checkLists(l, ['choxie', 'towel-stuff'])
 
         l = [dist.name for dist in provides_distribution('strawberry', '0.6',
                                                          use_egg_info=True)]
-        checkLists(l, ['strawberry'])
+        checkLists(l, ['coconuts-aster'])
 
         l = [dist.name for dist in provides_distribution('strawberry', '>=0.5',
                                                          use_egg_info=True)]
-        checkLists(l, ['strawberry'])
+        checkLists(l, ['coconuts-aster'])
 
         l = [dist.name for dist in provides_distribution('strawberry', '>0.6',
                                                          use_egg_info=True)]
@@ -513,11 +514,11 @@ class TestPkgUtilPEP376(support.LoggingCatcher, support.WarningsCatcher,
 
         l = [dist.name for dist in provides_distribution('banana', '0.4',
                                                          use_egg_info=True)]
-        checkLists(l, ['banana'])
+        checkLists(l, ['coconuts-aster'])
 
         l = [dist.name for dist in provides_distribution('banana', '>=0.3',
                                                          use_egg_info=True)]
-        checkLists(l, ['banana'])
+        checkLists(l, ['coconuts-aster'])
 
         l = [dist.name for dist in provides_distribution('banana', '!=0.4',
                                                          use_egg_info=True)]
@@ -557,7 +558,7 @@ class TestPkgUtilPEP376(support.LoggingCatcher, support.WarningsCatcher,
 
         eggs = [('bacon', '0.1'), ('banana', '0.4'), ('strawberry', '0.6'),
                 ('truffles', '5.0'), ('cheese', '2.0.2'),
-                ('nut', 'funkyversion')]
+                ('coconuts-aster', '10.3'), ('nut', 'funkyversion')]
         dists = [('choxie', '2.0.0.9'), ('grammar', '1.0a4'),
                  ('towel-stuff', '0.1')]
 
