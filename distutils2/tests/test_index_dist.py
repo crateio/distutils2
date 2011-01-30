@@ -127,7 +127,7 @@ class TestDistInfo(TempdirManager, unittest.TestCase):
         url = "%s/simple/foobar/foobar-0.1.tar.gz" % server.full_address
         # check md5 if given
         dist = Dist(url=url, hashname="md5",
-                    hashval="d41d8cd98f00b204e9800998ecf8427e")
+                    hashval="fe18804c5b722ff024cabdf514924fc4")
         dist.download(self.mkdtemp())
 
         # a wrong md5 fails
@@ -148,6 +148,24 @@ class TestDistInfo(TempdirManager, unittest.TestCase):
         dist4 = Dist(url=url)
         path2 = dist4.download(path=path2_base)
         self.assertTrue(path2_base in path2)
+
+    def test_hashname(self):
+        # Invalid hashnames raises an exception on assignation
+        Dist(hashname="md5", hashval="value")
+
+        self.assertRaises(UnsupportedHashName, Dist,
+                          hashname="invalid_hashname",
+                          hashval="value")
+
+    @use_pypi_server('downloads_with_md5')
+    def test_unpack(self, server):
+        url = "%s/simple/foobar/foobar-0.1.tar.gz" % server.full_address
+        dist = Dist(url=url)
+        # doing an unpack
+        here = self.mkdtemp()
+        there = dist.unpack(here)
+        result = os.listdir(there)
+        self.assertIn('paf', result)
 
     def test_hashname(self):
         # Invalid hashnames raises an exception on assignation

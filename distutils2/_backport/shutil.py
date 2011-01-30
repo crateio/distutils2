@@ -764,3 +764,5 @@ def unpack_archive(filename, extract_dir=None, format=None):
 
     if func is None:
         raise ValueError('Unknown archive format: %s' % filename)
+
+    return extract_dir

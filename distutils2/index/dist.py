@@ -149,6 +149,16 @@ class ReleaseInfo(IndexReference):
                 dist = self.dists.values()[0]
             return dist
 
+    def unpack(self, path=None, prefer_source=True):
+        """Unpack the distribution to the given path.
+
+        If not destination is given, creates a temporary location.
+
+        Returns the location of the extracted files (root).
+        """
+        return self.get_distribution(prefer_source=prefer_source)\
+                   .unpack(path=path)
+
     def download(self, temp_path=None, prefer_source=True):
         """Download the distribution, using the requirements.
 
@@ -312,7 +322,7 @@ class DistInfo(IndexReference):
             if path is None:
                 path = tempfile.mkdtemp()
 
-            filename = self.download()
+            filename = self.download(path)
             content_type = mimetypes.guess_type(filename)[0]
             self._unpacked_dir = unpack_archive(filename)
 
@@ -332,8 +342,11 @@ class DistInfo(IndexReference):
                     % (hashval.hexdigest(), expected_hashval))
 
     def __repr__(self):
+        if self.release is None:
+            return "<? ? %s>" % self.dist_type
+
         return "<%s %s %s>" % (
-            self.release.name, self.release.version, self.dist_type or "")
+                self.release.name, self.release.version, self.dist_type or "")
 
 
 class ReleasesList(IndexReference):
