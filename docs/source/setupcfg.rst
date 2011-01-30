@@ -7,8 +7,8 @@ Distutils2 to replace the :file:`setup.py` file.
 
 Each section contains a description of its options.
 
-- Options that are marked *\*multi* can have multiple values, one value
-  per line.
+- Options that are marked *\*multi* can have multiple values, one value per
+  line.
 - Options that are marked *\*optional* can be omited.
 - Options that are marked *\*environ* can use environment markers, as described
   in :PEP:`345`.
@@ -49,7 +49,7 @@ Contains global options for Distutils2. This section is shared with Distutils1
   *\*optional* *\*multi*
 
 - **compilers**: Defined Distutils2 compiler. A compiler is defined by its fully
-  qualified name. 
+  qualified name.
 
   Example::
 
@@ -66,7 +66,8 @@ Contains global options for Distutils2. This section is shared with Distutils1
   Example::
 
     [global]
-    setup_hook = distutils2.tests.test_config.hook
+    setup_hook =
+        distutils2.tests.test_config.hook
 
 
 metadata
@@ -142,7 +143,7 @@ Example::
 
 .. Note::
     Some metadata fields seen in :PEP:`345` are automatically generated
-    as the Metadata-Version value for instance.
+    (for instance Metadata-Version value).
 
 
 files
@@ -170,6 +171,14 @@ Example::
 
     extra_files =
             setup.py
+            README
+
+.. Note::
+    In Distutils2, setup.cfg will be implicitly included.
+
+.. Warning::
+    In Distutils2, setup.py and README (or README.txt) files are not more
+    included in source distribution by default
 
 
 `command` sections
@@ -183,7 +192,7 @@ Example::
     manifest-builders = package.module.Maker
 
 
-To override the building class in order to compile your python2 files to python3::
+To override the build class in order to generate Python3 code from your Python2 base::
 
     [build_py]
     use-2to3 = True
