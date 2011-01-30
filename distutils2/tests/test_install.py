@@ -331,9 +331,11 @@ class TestInstall(TempdirManager, unittest.TestCase):
             for i in range(0,2):
                 remove.append(ToInstallDist(files=True))
             to_install = [ToInstallDist(), ToInstallDist()]
+            temp_dir = self.mkdtemp()
 
             self.assertRaises(Exception, install.install_from_infos, 
-                    remove=remove, install=to_install)
+                              install_path=temp_dir, install=to_install, 
+                              remove=remove)
             # assert that the files are in the same place
             # assert that the files have been removed
             for dist in remove:
@@ -352,8 +354,7 @@ class TestInstall(TempdirManager, unittest.TestCase):
             install_path = "my_install_path"
             to_install = [ToInstallDist(), ToInstallDist()]
 
-            install.install_from_infos(install=to_install,
-                                             install_path=install_path)
+            install.install_from_infos(install_path, install=to_install)
             for dist in to_install:
                 install._install_dist.called_with(install_path)
         finally:

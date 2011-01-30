@@ -35,7 +35,7 @@ class InstallationConflict(InstallationException):
     """Raised when a conflict is detected"""
 
 
-def move_files(files, destination=None):
+def move_files(files, destination):
     """Move the list of files in the destination folder, keeping the same
     structure.
 
@@ -43,13 +43,11 @@ def move_files(files, destination=None):
 
     :param files: a list of files to move.
     :param destination: the destination directory to put on the files.
-                        if not defined, create a new one, using mkdtemp
     """
-    if not destination:
-        destination = mkdtemp()
-
     for old in files:
-        new = '%s%s' % (destination, old)
+        # not using os.path.join() because basename() might not be
+        # unique in destination
+        new = "%s%s" % (destination, old)
 
         # try to make the paths.
         try:
@@ -119,7 +117,7 @@ def _install_dist(dist, path):
         os.chdir(old_dir)
 
 
-def install_dists(dists, path=None):
+def install_dists(dists, path):
     """Install all distributions provided in dists, with the given prefix.
 
     If an error occurs while installing one of the distributions, uninstall all
@@ -130,10 +128,6 @@ def install_dists(dists, path=None):
     :param dists: distributions to install
     :param path: base path to install distribution in
     """
-    path_is_tmp = False
-    if not path:
-        path = mkdtemp()
-        path_is_tmp = True
 
     installed_dists, installed_files = [], []
     for d in dists:
@@ -148,14 +142,11 @@ def install_dists(dists, path=None):
             for d in installed_dists:
                 uninstall(d)
             raise e
-        finally:
-            if path_is_tmp:
-                shutil.rmtree(path)
         
     return installed_files
 
 
-def install_from_infos(install=[], remove=[], conflicts=[], install_path=None):
+def install_from_infos(install_path=None, install=[], remove=[], conflicts=[]):
     """Install and remove the given distributions.
 
     The function signature is made to be compatible with the one of get_infos.
@@ -174,35 +165,42 @@ def install_from_infos(install=[], remove=[], conflicts=[], install_path=None):
         4. Else, move the distributions to the right locations, and remove for
            real the distributions thats need to be removed.
 
-    :param install: list of distributions that will be installed.
+    :param install_path: the installation path where we want to install the
+                         distributions.
+    :param install: list of distributions that will be installed; install_path
+                    must be provided if this list is not empty.
     :param remove: list of distributions that will be removed.
     :param conflicts: list of conflicting distributions, eg. that will be in
                       conflict once the install and remove distribution will be
                       processed.
-    :param install_path: the installation path where we want to install the
-                         distributions.
     """
     # first of all, if we have conflicts, stop here.
     if conflicts:
         raise InstallationConflict(conflicts)
 
+    if install and not install_path:
+        raise ValueError("Distributions are to be installed but `install_path`"
+                         " is not provided.")
+
     # before removing the files, we will start by moving them away
     # then, if any error occurs, we could replace them in the good place.
     temp_files = {}  # contains lists of {dist: (old, new)} paths
+    temp_dir = None
     if remove:
+        temp_dir = tempfile.mkdtemp()
         for dist in remove:
             files = dist.get_installed_files()
-            temp_files[dist] = move_files(files)
+            temp_files[dist] = move_files(files, temp_dir)
     try:
         if install:
-            installed_files = install_dists(install, install_path)  # install to tmp first
-
+            installed_files = install_dists(install, install_path)
     except:
-        # if an error occurs, put back the files in the good place.
+        # if an error occurs, put back the files in the right place.
         for files in temp_files.values():
             for old, new in files:
                 shutil.move(new, old)
-
+        if temp_dir:
+            shutil.rmtree(temp_dir)
         # now re-raising
         raise
 
@@ -210,6 +208,8 @@ def install_from_infos(install=[], remove=[], conflicts=[], install_path=None):
     for files in temp_files.values():
         for old, new in files:
             os.remove(new)
+    if temp_dir:
+        shutil.rmtree(temp_dir)
 
 
 def _get_setuptools_deps(release):
@@ -379,8 +379,8 @@ def install(project):
 
     install_path = get_config_var('base')
     try:
-        install_from_infos(info['install'], info['remove'], info['conflict'],
-                           install_path=install_path)
+        install_from_infos(install_path, 
+                           info['install'], info['remove'], info['conflict'])
 
     except InstallationConflict, e:
         projects = ['%s %s' % (p.name, p.version) for p in e.args[0]]
