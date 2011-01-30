@@ -117,7 +117,6 @@ class MkcfgTestCase(support.TempdirManager,
         fid = open(osp.join(self.wdir, 'setup.cfg'))
         lines = set([line.rstrip() for line in fid])
         fid.close()
-        raise Exception(lines)
         self.assertEqual(lines, set(['',
             '[metadata]',
             'version = 0.2',
