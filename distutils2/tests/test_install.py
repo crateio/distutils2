@@ -39,6 +39,11 @@ class ToInstallDist(object):
             for f in range(0,3):
                self._real_files.append(mkstemp())
 
+    def _unlink_installed_files(self):
+        if self._files:
+            for f in self._real_files:
+                os.unlink(f[1])
+
     def get_installed_files(self, **args):
         if self._files:
             return [f[1] for f in self._real_files]
@@ -341,6 +346,7 @@ class TestInstall(TempdirManager, unittest.TestCase):
             for dist in remove:
                 for f in dist.get_installed_files():
                     self.assertTrue(os.path.exists(f))
+                dist._unlink_installed_files()
         finally:
             install.install_dist = old_install_dist
             install.uninstall = old_uninstall
