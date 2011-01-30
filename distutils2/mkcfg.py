@@ -266,23 +266,25 @@ class MainProgram(object):
             data['packages'].extend(dist.packages or [])
             data['modules'].extend(dist.py_modules or [])
             # 2.1 data_files -> resources.
-            if len(dist.data_files) < 2 or isinstance(dist.data_files[1], str):
-                dist.data_files = [('', dist.data_files)]
-            #add tokens in the destination paths
-            vars = {'distribution.name':data['name']}
-            path_tokens = sysconfig.get_paths(vars=vars).items()
-            #sort tokens to use the longest one first
-            path_tokens.sort(cmp=lambda x,y: cmp(len(y), len(x)),
-                             key=lambda x: x[1])
-            for dest, srcs in (dist.data_files or []):
-                dest = os.path.join(sys.prefix, dest)
-                for tok, path in path_tokens:
-                    if dest.startswith(path):
-                        dest = ('{%s}' % tok) + dest[len(path):]
-                        files = [('/ '.join(src.rsplit('/', 1)), dest) 
-                                 for src in srcs]
-                        data['resources'].extend(files)
-                        continue
+            if dist.data_files:
+                if len(dist.data_files) < 2 or \
+                   isinstance(dist.data_files[1], str):
+                    dist.data_files = [('', dist.data_files)]
+                #add tokens in the destination paths
+                vars = {'distribution.name':data['name']}
+                path_tokens = sysconfig.get_paths(vars=vars).items()
+                #sort tokens to use the longest one first
+                path_tokens.sort(cmp=lambda x,y: cmp(len(y), len(x)),
+                                 key=lambda x: x[1])
+                for dest, srcs in (dist.data_files or []):
+                    dest = os.path.join(sys.prefix, dest)
+                    for tok, path in path_tokens:
+                        if dest.startswith(path):
+                            dest = ('{%s}' % tok) + dest[len(path):]
+                            files = [('/ '.join(src.rsplit('/', 1)), dest) 
+                                     for src in srcs]
+                            data['resources'].extend(files)
+                            continue
             # 2.2 package_data -> extra_files
             package_dirs = dist.package_dir or {}
             for package, extras in dist.package_data.iteritems() or []:
