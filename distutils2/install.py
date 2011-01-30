@@ -334,37 +334,65 @@ def _remove_dist(dist, paths=sys.path):
 
 def remove(project_name, paths=sys.path):
     """Removes a single project from the installation"""
-    dist = get_distribution(project_name, paths=paths)
+    dist = get_distribution(project_name, use_egg_info=True, paths=paths)
     if dist is None:
-        raise DistutilsError('Distribution %s not found' % project_name)
+        raise DistutilsError('Distribution "%s" not found' % project_name)
     files = dist.get_installed_files(local=True)
     rmdirs = []
     rmfiles = []
     tmp = tempfile.mkdtemp(prefix=project_name + '-uninstall')
     try:
-        for file, md5, size in files:
-            if os.path.isfile(file):
-                dirname, filename = os.path.split(file)
+        for file_, md5, size in files:
+            if os.path.isfile(file_):
+                dirname, filename = os.path.split(file_)
                 tmpfile = os.path.join(tmp, filename)
                 try:
-                    os.rename(file, tmpfile)
+                    os.rename(file_, tmpfile)
                 finally:
-                    if not os.path.isfile(file):
-                        os.rename(tmpfile, file)
-                if file not in rmfiles:
-                    rmfiles.append(file)
+                    if not os.path.isfile(file_):
+                        os.rename(tmpfile, file_)
+                if file_ not in rmfiles:
+                    rmfiles.append(file_)
                 if dirname not in rmdirs:
                     rmdirs.append(dirname)
     finally:
         shutil.rmtree(tmp)
 
-    for file in rmfiles:
-        os.remove(file)
+    logger.info('Removing %r...' % project_name)
 
+    file_count = 0
+    for file_ in rmfiles:
+        os.remove(file_)
+        file_count +=1
+
+    dir_count = 0
     for dirname in rmdirs:
-        if not os.listdir(dirname):
-            if bool(os.stat(dirname).st_mode & stat.S_IWUSR):
-                os.rmdir(dirname)
+        if not os.path.exists(dirname):
+            # could
+            continue
+
+        files_count = 0
+        for root, dir, files in os.walk(dirname):
+            files_count += len(files)
+
+        if files_count > 0:
+            # XXX Warning
+            continue
+
+        # empty dirs with only empty dirs
+        if bool(os.stat(dirname).st_mode & stat.S_IWUSR):
+            # XXX Add a callable in shutil.rmtree to count
+            # the number of deleted elements
+            shutil.rmtree(dirname)
+            dir_count += 1
+
+    # removing the top path
+    # XXX count it ?
+    if os.path.exists(dist.path):
+        shutil.rmtree(dist.path)
+
+    logger.info('Success ! Removed %d files and %d dirs' % \
+            (file_count, dir_count))
 
 
 def install(project):
