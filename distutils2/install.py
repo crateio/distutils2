@@ -388,7 +388,8 @@ def remove(project_name, paths=sys.path):
 
     # removing the top path
     # XXX count it ?
-    shutil.rmtree(dist.path)
+    if os.path.exists(dist.path):
+        shutil.rmtree(dist.path)
 
     logger.info('Success ! Removed %d files and %d dirs' % \
             (file_count, dir_count))
