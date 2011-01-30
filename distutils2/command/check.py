@@ -56,9 +56,11 @@ class check(Command):
 
         Warns if any are missing.
         """
-        missing, __ = self.distribution.metadata.check(strict=True)
+        missing, warnings = self.distribution.metadata.check(strict=True)
         if missing != []:
             self.warn("missing required metadata: %s"  % ', '.join(missing))
+        for warning in warnings:
+            self.warn(warning)
 
     def check_restructuredtext(self):
         """Checks if the long string fields are reST-compliant."""

@@ -48,6 +48,43 @@ class CheckTestCase(support.LoggingCatcher,
         cmd = self._run(metadata, strict=1)
         self.assertEqual(len(cmd._warnings), 0)
 
+    def test_check_metadata_1_2(self):
+        # let's run the command with no metadata at all
+        # by default, check is checking the metadata
+        # should have some warnings
+        cmd = self._run()
+        self.assertTrue(len(cmd._warnings) > 0)
+
+        # now let's add the required fields
+        # and run it again, to make sure we don't get
+        # any warning anymore
+        # let's use requires_python as a marker to enforce
+        # Metadata-Version 1.2
+        metadata = {'home_page': 'xxx', 'author': 'xxx',
+                    'author_email': 'xxx',
+                    'name': 'xxx', 'version': 'xxx',
+                    'requires_python': '2.4',
+                    }
+        cmd = self._run(metadata)
+        self.assertEqual(len(cmd._warnings), 1)
+
+        # now with the strict mode, we should
+        # get an error if there are missing metadata
+        self.assertRaises(MetadataMissingError, self._run, {}, **{'strict': 1})
+        self.assertRaises(DistutilsSetupError, self._run, {'name':'xxx', 'version':'xxx'}, **{'strict': 1})
+
+        # complain about version format
+        self.assertRaises(DistutilsSetupError, self._run, metadata, **{'strict': 1})
+
+        # now with correct version format
+        metadata = {'home_page': 'xxx', 'author': 'xxx',
+                    'author_email': 'xxx',
+                    'name': 'xxx', 'version': '1.2',
+                    'requires_python': '2.4',
+                    }
+        cmd = self._run(metadata, strict=1)
+        self.assertEqual(len(cmd._warnings), 0)
+
     @unittest.skipUnless(_HAS_DOCUTILS, "requires docutils")
     def test_check_restructuredtext(self):
         # let's see if it detects broken rest in long_description
@@ -79,7 +116,7 @@ class CheckTestCase(support.LoggingCatcher,
         cmd = check(dist)
         cmd.check_hooks_resolvable()
         self.assertEqual(len(cmd._warnings), 1)
-        
+
 
 def test_suite():
     return unittest.makeSuite(CheckTestCase)
