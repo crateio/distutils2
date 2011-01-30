@@ -66,7 +66,7 @@ class install_data(Command):
         return self.data_files.keys()
 
     def get_inputs(self):
-        return self.data_files or []
+        return self.data_files.keys()
 
     def get_outputs(self):
         return self.outfiles

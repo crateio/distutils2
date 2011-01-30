@@ -207,7 +207,6 @@ class SDistTestCase(support.TempdirManager, support.LoggingCatcher,
 
         dist.data_files = {'data/data.dt' : '{appdata}/data.dt',
                            'inroot.txt' : '{appdata}/inroot.txt',
-                           'notexisting' : '{appdata}/notexisting',
                            'some/file.txt' : '{appdata}/file.txt',
                            'some/other_file.txt' : '{appdata}/other_file.txt'}
 
