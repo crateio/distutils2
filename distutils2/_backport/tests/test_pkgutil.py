@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 """Tests for PEP 376 pkgutil functionality"""
-import sys
-import os
-import csv
 import imp
-import tempfile
+import sys
+
+import csv
+import os
 import shutil
+import tempfile
 import zipfile
 try:
     from hashlib import md5
@@ -18,9 +19,9 @@ from distutils2.tests import unittest, run_unittest, support
 
 from distutils2._backport import pkgutil
 from distutils2._backport.pkgutil import (
-    Distribution, EggInfoDistribution, get_distribution, get_distributions,
-    provides_distribution, obsoletes_distribution, get_file_users,
-    distinfo_dirname, _yield_distributions)
+                                          Distribution, EggInfoDistribution, get_distribution, get_distributions,
+                                          provides_distribution, obsoletes_distribution, get_file_users,
+                                          distinfo_dirname, _yield_distributions)
 
 try:
     from os.path import relpath
@@ -123,7 +124,6 @@ class TestPkgUtilData(unittest.TestCase):
 
         del sys.modules[pkg]
 
-
 # Adapted from Python 2.7's trunk
 
 
@@ -182,7 +182,7 @@ class TestPkgUtilDistribution(unittest.TestCase):
     def setUp(self):
         super(TestPkgUtilDistribution, self).setUp()
         self.fake_dists_path = os.path.abspath(
-            os.path.join(os.path.dirname(__file__), 'fake_dists'))
+                                               os.path.join(os.path.dirname(__file__), 'fake_dists'))
         pkgutil.disable_cache()
 
         self.distinfo_dirs = [os.path.join(self.fake_dists_path, dir)
@@ -205,7 +205,7 @@ class TestPkgUtilDistribution(unittest.TestCase):
             # Setup the RECORD file for this dist
             record_file = os.path.join(distinfo_dir, 'RECORD')
             record_writer = csv.writer(open(record_file, 'w'), delimiter=',',
-                quoting=csv.QUOTE_NONE)
+                                       quoting=csv.QUOTE_NONE)
             dist_location = distinfo_dir.replace('.dist-info', '')
 
             for path, dirs, files in os.walk(dist_location):
@@ -214,15 +214,15 @@ class TestPkgUtilDistribution(unittest.TestCase):
                                            os.path.join(path, f)))
             for file in ['INSTALLER', 'METADATA', 'REQUESTED']:
                 record_writer.writerow(record_pieces(
-                    os.path.join(distinfo_dir, file)))
+                                       os.path.join(distinfo_dir, file)))
             record_writer.writerow([relpath(record_file, sys.prefix)])
             del record_writer  # causes the RECORD file to close
             record_reader = csv.reader(open(record_file, 'rb'))
             record_data = []
             for row in record_reader:
                 path, md5_, size = row[:] + \
-                                   [None for i in xrange(len(row), 3)]
-                record_data.append([path, (md5_, size,)])
+                    [None for i in xrange(len(row), 3)]
+                record_data.append([path, (md5_, size, )])
             self.records[distinfo_dir] = dict(record_data)
 
     def tearDown(self):
@@ -240,7 +240,7 @@ class TestPkgUtilDistribution(unittest.TestCase):
         name = 'choxie'
         version = '2.0.0.9'
         dist_path = os.path.join(here, 'fake_dists',
-            distinfo_dirname(name, version))
+                                 distinfo_dirname(name, version))
         dist = Distribution(dist_path)
 
         self.assertEqual(dist.name, name)
@@ -264,9 +264,9 @@ class TestPkgUtilDistribution(unittest.TestCase):
         # Criteria to test against
         distinfo_name = 'grammar-1.0a4'
         distinfo_dir = os.path.join(self.fake_dists_path,
-            distinfo_name + '.dist-info')
+                                    distinfo_name + '.dist-info')
         true_path = [self.fake_dists_path, distinfo_name, \
-                     'grammar', 'utils.py']
+            'grammar', 'utils.py']
         true_path = relpath(os.path.join(*true_path), sys.prefix)
         false_path = [self.fake_dists_path, 'towel_stuff-0.1', 'towel_stuff',
             '__init__.py']
@@ -282,7 +282,7 @@ class TestPkgUtilDistribution(unittest.TestCase):
         distinfo_name = 'choxie-2.0.0.9'
         other_distinfo_name = 'grammar-1.0a4'
         distinfo_dir = os.path.join(self.fake_dists_path,
-            distinfo_name + '.dist-info')
+                                    distinfo_name + '.dist-info')
         dist = Distribution(distinfo_dir)
         # Test for known good file matches
         distinfo_files = [
@@ -301,9 +301,9 @@ class TestPkgUtilDistribution(unittest.TestCase):
 
         # Test an absolute path that is part of another distributions dist-info
         other_distinfo_file = os.path.join(self.fake_dists_path,
-            other_distinfo_name + '.dist-info', 'REQUESTED')
+                                           other_distinfo_name + '.dist-info', 'REQUESTED')
         self.assertRaises(DistutilsError, dist.get_distinfo_file,
-            other_distinfo_file)
+                          other_distinfo_file)
         # Test for a file that does not exist and should not exist
         self.assertRaises(DistutilsError, dist.get_distinfo_file, \
                           'ENTRYPOINTS')
@@ -312,7 +312,7 @@ class TestPkgUtilDistribution(unittest.TestCase):
         # Test for the iteration of RECORD path entries.
         distinfo_name = 'towel_stuff-0.1'
         distinfo_dir = os.path.join(self.fake_dists_path,
-            distinfo_name + '.dist-info')
+                                    distinfo_name + '.dist-info')
         dist = Distribution(distinfo_dir)
         # Test for the iteration of the raw path
         distinfo_record_paths = self.records[distinfo_dir].keys()
@@ -323,6 +323,16 @@ class TestPkgUtilDistribution(unittest.TestCase):
             for path in self.records[distinfo_dir]]
         found = [path for path in dist.get_distinfo_files(local=True)]
         self.assertEqual(sorted(found), sorted(distinfo_record_paths))
+
+    def test_get_resources_path(self):
+        distinfo_name = 'babar-0.1'
+        distinfo_dir = os.path.join(self.fake_dists_path,
+                                    distinfo_name + '.dist-info')
+        dist = Distribution(distinfo_dir)
+        resource_path = dist.get_resource_path('babar.png')
+        self.assertEqual(resource_path, 'babar.png')
+        self.assertRaises(KeyError, lambda: dist.get_resource_path('notexist'))
+
 
 
 class TestPkgUtilPEP376(support.LoggingCatcher, support.WarningsCatcher,
@@ -347,7 +357,7 @@ class TestPkgUtilPEP376(support.LoggingCatcher, support.WarningsCatcher,
         # Given a name and a version, we expect the distinfo_dirname function
         # to return a standard distribution information directory name.
 
-        items = [  # (name, version, standard_dirname)
+        items = [# (name, version, standard_dirname)
             # Test for a very simple single word name and decimal
             # version number
             ('docutils', '0.5', 'docutils-0.5.dist-info'),
@@ -375,10 +385,10 @@ class TestPkgUtilPEP376(support.LoggingCatcher, support.WarningsCatcher,
         for dist in dists:
             if not isinstance(dist, Distribution):
                 self.fail("item received was not a Distribution instance: "
-                    "%s" % type(dist))
+                          "%s" % type(dist))
             if dist.name in dict(fake_dists) and \
-               dist.path.startswith(self.fake_dists_path):
-                found_dists.append((dist.name, dist.metadata['version'],))
+                dist.path.startswith(self.fake_dists_path):
+                    found_dists.append((dist.name, dist.metadata['version'], ))
             else:
                 # check that it doesn't find anything more than this
                 self.assertFalse(dist.path.startswith(self.fake_dists_path))
@@ -389,9 +399,9 @@ class TestPkgUtilPEP376(support.LoggingCatcher, support.WarningsCatcher,
 
         # Now, test if the egg-info distributions are found correctly as well
         fake_dists += [('bacon', '0.1'), ('cheese', '2.0.2'),
-                       ('coconuts-aster', '10.3'),
-                       ('banana', '0.4'), ('strawberry', '0.6'),
-                       ('truffles', '5.0'), ('nut', 'funkyversion')]
+            ('coconuts-aster', '10.3'),
+            ('banana', '0.4'), ('strawberry', '0.6'),
+            ('truffles', '5.0'), ('nut', 'funkyversion')]
         found_dists = []
 
         dists = [dist for dist in get_distributions(use_egg_info=True)]
@@ -401,8 +411,8 @@ class TestPkgUtilPEP376(support.LoggingCatcher, support.WarningsCatcher,
                 self.fail("item received was not a Distribution or "
                           "EggInfoDistribution instance: %s" % type(dist))
             if dist.name in dict(fake_dists) and \
-               dist.path.startswith(self.fake_dists_path):
-                found_dists.append((dist.name, dist.metadata['version']))
+                dist.path.startswith(self.fake_dists_path):
+                    found_dists.append((dist.name, dist.metadata['version']))
             else:
                 self.assertFalse(dist.path.startswith(self.fake_dists_path))
 
@@ -453,7 +463,7 @@ class TestPkgUtilPEP376(support.LoggingCatcher, support.WarningsCatcher,
         # Test the iteration of distributions that use a file.
         name = 'towel_stuff-0.1'
         path = os.path.join(self.fake_dists_path, name,
-            'towel_stuff', '__init__.py')
+                            'towel_stuff', '__init__.py')
         for dist in get_file_users(path):
             self.assertTrue(isinstance(dist, Distribution))
             self.assertEqual(dist.name, name)
@@ -484,7 +494,7 @@ class TestPkgUtilPEP376(support.LoggingCatcher, support.WarningsCatcher,
 
         l = [dist.name for dist in provides_distribution('truffles', \
                                                          '!=1.1,<=2.0',
-                                                          use_egg_info=True)]
+                                                         use_egg_info=True)]
         checkLists(l, ['choxie', 'bacon', 'cheese'])
 
         l = [dist.name for dist in provides_distribution('truffles', '>1.0')]
@@ -557,27 +567,29 @@ class TestPkgUtilPEP376(support.LoggingCatcher, support.WarningsCatcher,
         checkLists = lambda x, y: self.assertListEqual(sorted(x), sorted(y))
 
         eggs = [('bacon', '0.1'), ('banana', '0.4'), ('strawberry', '0.6'),
-                ('truffles', '5.0'), ('cheese', '2.0.2'),
-                ('coconuts-aster', '10.3'), ('nut', 'funkyversion')]
+            ('truffles', '5.0'), ('cheese', '2.0.2'),
+            ('coconuts-aster', '10.3'), ('nut', 'funkyversion')]
         dists = [('choxie', '2.0.0.9'), ('grammar', '1.0a4'),
-                 ('towel-stuff', '0.1')]
+            ('towel-stuff', '0.1'), ('babar', '0.1')]
 
         checkLists([], _yield_distributions(False, False))
 
         found = [(dist.name, dist.metadata['Version'])
-                for dist in _yield_distributions(False, True)
-                if dist.path.startswith(self.fake_dists_path)]
+            for dist in _yield_distributions(False, True)
+            if dist.path.startswith(self.fake_dists_path)]
         checkLists(eggs, found)
 
         found = [(dist.name, dist.metadata['Version'])
-                for dist in _yield_distributions(True, False)
-                if dist.path.startswith(self.fake_dists_path)]
+            for dist in _yield_distributions(True, False)
+            if dist.path.startswith(self.fake_dists_path)]
         checkLists(dists, found)
 
         found = [(dist.name, dist.metadata['Version'])
-                for dist in _yield_distributions(True, True)
-                if dist.path.startswith(self.fake_dists_path)]
+            for dist in _yield_distributions(True, True)
+            if dist.path.startswith(self.fake_dists_path)]
         checkLists(dists + eggs, found)
+
+
 
 
 def test_suite():
