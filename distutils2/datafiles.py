@@ -1,6 +1,6 @@
 import os
 import re
-from glob import iglob as simple_iglob
+from distutils2.util import iglob
 
 __all__ = ['iglob', 'resources_dests']
 
@@ -24,34 +24,6 @@ class SmartGlob(object):
             relpath = file[len(basepath):].lstrip('/')
             dest = os.path.join(destination, path_suffix)
             yield relpath, dest
-
-RICH_GLOB = re.compile(r'\{([^}]*)\}')
-
-# r'\\\{' match "\{"
-
-def iglob(path_glob):
-    rich_path_glob = RICH_GLOB.split(path_glob, 1)
-    if len(rich_path_glob) > 1:
-        assert len(rich_path_glob) == 3, rich_path_glob
-        prefix, set, suffix = rich_path_glob
-        for item in set.split(','):
-            for path in iglob( ''.join((prefix, item, suffix))):
-                yield path
-    else:
-        if '**' not in path_glob:
-            for item in simple_iglob(path_glob):
-                yield item
-        else:
-            prefix, radical = path_glob.split('**', 1)
-            if prefix == '':
-                prefix = '.'
-            if radical == '':
-                radical = '*'
-            else:
-                radical = radical.lstrip('/')
-            for (path, dir, files) in os.walk(prefix):
-                for file in iglob(os.path.join(prefix, path, radical)):
-                   yield os.path.join(prefix, file)
 
 def resources_dests(resources_dir, rules):
     destinations = {}

@@ -14,6 +14,7 @@ import tarfile
 import zipfile
 from copy import copy
 from fnmatch import fnmatchcase
+from glob import iglob as std_iglob
 from ConfigParser import RawConfigParser
 from inspect import getsource
 
@@ -1051,6 +1052,33 @@ class Mixin2to3:
         """ Issues a call to util.run_2to3. """
         return run_2to3(files, doctests_only, self.fixer_names,
                         self.options, self.explicit)
+
+RICH_GLOB = re.compile(r'\{([^}]*)\}')
+def iglob(path_glob):
+    """Richer glob than the std glob module support ** and {opt1,opt2,opt3}"""
+    rich_path_glob = RICH_GLOB.split(path_glob, 1)
+    if len(rich_path_glob) > 1:
+        assert len(rich_path_glob) == 3, rich_path_glob
+        prefix, set, suffix = rich_path_glob
+        for item in set.split(','):
+            for path in iglob( ''.join((prefix, item, suffix))):
+                yield path
+    else:
+        if '**' not in path_glob:
+            for item in std_iglob(path_glob):
+                yield item
+        else:
+            prefix, radical = path_glob.split('**', 1)
+            if prefix == '':
+                prefix = '.'
+            if radical == '':
+                radical = '*'
+            else:
+                radical = radical.lstrip('/')
+            for (path, dir, files) in os.walk(prefix):
+                path = os.path.normpath(path)
+                for file in iglob(os.path.join(path, radical)):
+                   yield file
 
 
 def generate_distutils_kwargs_from_setup_cfg(file='setup.cfg'):
