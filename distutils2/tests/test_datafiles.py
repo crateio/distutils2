@@ -6,7 +6,8 @@ import sys
 from distutils2.tests import unittest, support, run_unittest
 from distutils2.tests.test_glob import GlobTestCaseBase
 from distutils2.datafiles import resources_dests
-
+from distutils2.command.install_dist import install_dist
+from distutils2._backport.pkgutil import resource_open, resource_path
 
 
 class DataFilesTestCase(GlobTestCaseBase):
