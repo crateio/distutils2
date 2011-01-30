@@ -75,23 +75,6 @@ class MagicMock(object):
         return (args, kwargs) in self._called_with
 
 
-def patch(parent, to_patch):
-    """monkey match a module"""
-    def wrapper(func):
-        print func
-        print dir(func)
-        old_func = getattr(parent, to_patch)
-        def wrapped(*args, **kwargs):
-            parent.__dict__[to_patch] = MagicMock()
-            try:
-                out = func(*args, **kwargs)
-            finally:
-                setattr(parent, to_patch, old_func)
-            return out
-        return wrapped
-    return wrapper
-
-
 def get_installed_dists(dists):
     """Return a list of fake installed dists.
     The list is name, version, deps"""
@@ -104,12 +87,6 @@ def get_installed_dists(dists):
 class TestInstall(TempdirManager, unittest.TestCase):
     def _get_client(self, server, *args, **kwargs):
         return Client(server.full_address, *args, **kwargs)
-
-    def _patch_run_install(self):
-        """Patch run install"""
-
-    def _unpatch_run_install(self):
-        """Unpatch run install for d2 and d1"""
 
     def _get_results(self, output):
         """return a list of results"""
