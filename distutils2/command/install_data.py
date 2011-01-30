@@ -10,6 +10,7 @@ import os
 from distutils2.command.cmd import Command
 from distutils2.util import change_root, convert_path
 from distutils2._backport.sysconfig import get_paths, format_value
+from distutils2._backport.shutil import Error
 
 class install_data(Command):
 
@@ -47,7 +48,11 @@ class install_data(Command):
             dir_dest = os.path.abspath(os.path.dirname(destination))
             
             self.mkpath(dir_dest)
-            (out, _) = self.copy_file(file[0], dir_dest)
+            try:
+                (out, _) = self.copy_file(file[0], dir_dest)
+            except Error, e:
+                self.warn(e.message)
+                out = destination
 
             self.outfiles.append(out)
             self.data_files_out.append((file[0], destination))
