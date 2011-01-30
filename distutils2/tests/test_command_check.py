@@ -6,13 +6,14 @@ from distutils2.tests import unittest, support
 from distutils2.errors import DistutilsSetupError
 from distutils2.errors import MetadataMissingError
 
+
 class CheckTestCase(support.LoggingCatcher,
                     support.TempdirManager,
                     unittest.TestCase):
 
     def _run(self, metadata=None, **options):
         if metadata is None:
-            metadata = {'name':'xxx', 'version':'xxx'}
+            metadata = {'name': 'xxx', 'version': 'xxx'}
         pkg_info, dist = self.create_dist(**metadata)
         cmd = check(dist)
         cmd.initialize_options()
@@ -34,7 +35,7 @@ class CheckTestCase(support.LoggingCatcher,
         # any warning anymore
         metadata = {'home_page': 'xxx', 'author': 'xxx',
                     'author_email': 'xxx',
-                    'name': 'xxx', 'version': 'xxx'
+                    'name': 'xxx', 'version': 'xxx',
                     }
         cmd = self._run(metadata)
         self.assertEqual(len(cmd._warnings), 0)
@@ -42,7 +43,8 @@ class CheckTestCase(support.LoggingCatcher,
         # now with the strict mode, we should
         # get an error if there are missing metadata
         self.assertRaises(MetadataMissingError, self._run, {}, **{'strict': 1})
-        self.assertRaises(DistutilsSetupError, self._run, {'name':'xxx', 'version':'xxx'}, **{'strict': 1})
+        self.assertRaises(DistutilsSetupError, self._run,
+            {'name': 'xxx', 'version': 'xxx'}, **{'strict': 1})
 
         # and of course, no error when all metadata fields are present
         cmd = self._run(metadata, strict=1)
@@ -71,10 +73,12 @@ class CheckTestCase(support.LoggingCatcher,
         # now with the strict mode, we should
         # get an error if there are missing metadata
         self.assertRaises(MetadataMissingError, self._run, {}, **{'strict': 1})
-        self.assertRaises(DistutilsSetupError, self._run, {'name':'xxx', 'version':'xxx'}, **{'strict': 1})
+        self.assertRaises(DistutilsSetupError, self._run,
+            {'name': 'xxx', 'version': 'xxx'}, **{'strict': 1})
 
         # complain about version format
-        self.assertRaises(DistutilsSetupError, self._run, metadata, **{'strict': 1})
+        self.assertRaises(DistutilsSetupError, self._run, metadata,
+            **{'strict': 1})
 
         # now with correct version format
         metadata = {'home_page': 'xxx', 'author': 'xxx',
@@ -102,7 +106,7 @@ class CheckTestCase(support.LoggingCatcher,
     def test_check_all(self):
 
         self.assertRaises(DistutilsSetupError, self._run,
-                          {'name':'xxx', 'version':'xxx'}, **{'strict': 1,
+                          {'name': 'xxx', 'version': 'xxx'}, **{'strict': 1,
                                  'all': 1})
         self.assertRaises(MetadataMissingError, self._run,
                           {}, **{'strict': 1,
