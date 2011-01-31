@@ -1156,12 +1156,18 @@ def generate_distutils_setup_py():
         raise DistutilsFileError("A pre existing setup.py file exists")
 
     handle = open("setup.py", "w")
-    handle.write("# Distutils script using distutils2 setup.cfg to call the\n")
-    handle.write("# distutils.core.setup() with the right args.\n\n\n")
-    handle.write("import os\n")
-    handle.write("from distutils.core import setup\n")
-    handle.write("from ConfigParser import RawConfigParser\n\n")
-    handle.write(getsource(generate_distutils_kwargs_from_setup_cfg))
-    handle.write("\n\nkwargs = generate_distutils_kwargs_from_setup_cfg()\n")
-    handle.write("setup(**kwargs)")
-    handle.close()
+    try:
+        handle.write(
+            "# Distutils script using distutils2 setup.cfg to call the\n"
+            "# distutils.core.setup() with the right args.\n\n"
+            "import os\n"
+            "from distutils.core import setup\n"
+            "from ConfigParser import RawConfigParser\n\n"
+            "" + getsource(generate_distutils_kwargs_from_setup_cfg) + "\n\n"
+            "kwargs = generate_distutils_kwargs_from_setup_cfg()\n"
+            "setup(**kwargs)\n"
+        )
+    finally:
+        handle.close()
+
+generate_distutils_setup_py()
