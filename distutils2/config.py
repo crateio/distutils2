@@ -4,9 +4,7 @@
 """
 import os.path
 import os
-import re
 import sys
-import re
 from ConfigParser import RawConfigParser
 from shlex import split
 
@@ -138,11 +136,12 @@ class Config(object):
                     # concatenate each files
                     value = ''
                     for filename in filenames:
-                        f = open(filename)    # will raise if file not found
+                        # will raise if file not found
+                        description_file = open(filename)
                         try:
-                            value += f.read().strip() + '\n'
+                            value += description_file.read().strip() + '\n'
                         finally:
-                            f.close()
+                            description_file.close()
                         # add filename as a required file
                         if filename not in metadata.requires_files:
                             metadata.requires_files.append(filename)
@@ -203,8 +202,8 @@ class Config(object):
                     destination = None
                 resources.append((prefix, suffix, destination))
                 
-            dir = os.path.dirname(os.path.join(os.getcwd(), cfg_filename))
-            data_files = resources_dests(dir, resources)
+            directory = os.path.dirname(os.path.join(os.getcwd(), cfg_filename))
+            data_files = resources_dests(directory, resources)
             self.dist.data_files = data_files
                 
         ext_modules = self.dist.ext_modules
