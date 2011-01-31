@@ -1128,7 +1128,6 @@ def generate_distutils_kwargs_from_setup_cfg(file='setup.cfg'):
             # There is no such option in the setup.cfg
             if arg == "long_description":
                 filename = has_get_option(config, section, "description_file")
-                print "We have a filename", filename
                 if filename:
                     in_cfg_value = open(filename).read()
             else:
