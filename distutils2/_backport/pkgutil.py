@@ -15,7 +15,6 @@ except ImportError:
     from md5 import md5
 
 from distutils2.errors import DistutilsError
-from distutils2.index.errors import DistributionNotFound
 from distutils2.metadata import DistributionMetadata
 from distutils2.version import suggest_normalized_version, VersionPredicate
 try:
@@ -1210,7 +1209,7 @@ def resource_path(distribution_name, relative_path):
      dist = get_distribution(distribution_name)
      if dist != None:
          return dist.get_resource_path(relative_path)
-     raise DistributionNotFound('No distribution named %s is installed.' %
+     raise LookupError('No distribution named %s is installed.' %
                     distribution_name)
 
 def resource_open(distribution_name, relative_path, *args, **kwargs):
