@@ -331,7 +331,7 @@ class TestPkgUtilDistribution(unittest.TestCase):
         dist = Distribution(distinfo_dir)
         resource_path = dist.get_resource_path('babar.png')
         self.assertEqual(resource_path, 'babar.png')
-        self.assertRaises(KeyError, lambda: dist.get_resource_path('notexist'))
+        self.assertRaises(KeyError, dist.get_resource_path, 'notexist')
 
 
 
