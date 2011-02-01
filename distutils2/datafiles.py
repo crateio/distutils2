@@ -1,7 +1,7 @@
 import os
 from distutils2.util import iglob
 
-__all__ = ['iglob', 'resources_dests']
+__all__ = ['resources_dests']
 
 class SmartGlob(object):
 
