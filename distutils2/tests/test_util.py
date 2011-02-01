@@ -414,6 +414,10 @@ class UtilTestCase(support.EnvironGuard,
     @unittest.skipUnless(os.name in ('nt', 'posix'),
                          'runs only under posix or nt')
     def test_spawn(self):
+        # Do not patch subprocess on unix because
+        # distutils2.util._spawn_posix uses it
+        if os.name in 'posix':
+            subprocess.Popen = self.old_popen
         tmpdir = self.mkdtemp()
 
         # creating something executable

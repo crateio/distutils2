@@ -93,6 +93,34 @@ setup_hook = distutils2.tests.test_config.hook
 sub_commands = foo
 """
 
+# Can not be merged with SETUP_CFG else install_dist
+# command will fail when trying to compile C sources
+EXT_SETUP_CFG = """
+[files]
+packages = one
+           two
+
+[extension=speed_coconuts]
+name = one.speed_coconuts
+sources = c_src/speed_coconuts.c
+extra_link_args = "`gcc -print-file-name=libgcc.a`" -shared
+define_macros = HAVE_CAIRO HAVE_GTK2
+libraries = gecodeint gecodekernel -- sys.platform != 'win32'
+    GecodeInt GecodeKernel -- sys.platform == 'win32'
+
+[extension=fast_taunt]
+name = three.fast_taunt
+sources = cxx_src/utils_taunt.cxx
+          cxx_src/python_module.cxx
+include_dirs = /usr/include/gecode
+    /usr/include/blitz
+extra_compile_args = -fPIC -O2
+    -DGECODE_VERSION=$(./gecode_version) -- sys.platform != 'win32'
+    /DGECODE_VERSION='win32' -- sys.platform == 'win32'
+language = cxx
+
+"""
+
 
 class DCompiler(object):
     name = 'd'
@@ -134,7 +162,14 @@ class ConfigTestCase(support.TempdirManager,
         super(ConfigTestCase, self).setUp()
         self.addCleanup(setattr, sys, 'stdout', sys.stdout)
         self.addCleanup(setattr, sys, 'stderr', sys.stderr)
+        sys.stdout = sys.stderr = StringIO()
+
         self.addCleanup(os.chdir, os.getcwd())
+        tempdir = self.mkdtemp()
+        os.chdir(tempdir)
+        self.tempdir = tempdir
+
+        self.addCleanup(setattr, sys, 'argv', sys.argv)
 
     def write_setup(self, kwargs=None):
         opts = {'description-file': 'README', 'extra-files':''}
@@ -156,8 +191,6 @@ class ConfigTestCase(support.TempdirManager,
         return dist
 
     def test_config(self):
-        tempdir = self.mkdtemp()
-        os.chdir(tempdir)
         self.write_setup()
         self.write_file('README', 'yeah')
 
@@ -232,9 +265,6 @@ class ConfigTestCase(support.TempdirManager,
 
 
     def test_multiple_description_file(self):
-        tempdir = self.mkdtemp()
-        os.chdir(tempdir)
-
         self.write_setup({'description-file': 'README  CHANGES'})
         self.write_file('README', 'yeah')
         self.write_file('CHANGES', 'changelog2')
@@ -242,9 +272,6 @@ class ConfigTestCase(support.TempdirManager,
         self.assertEqual(dist.metadata.requires_files, ['README', 'CHANGES'])
 
     def test_multiline_description_file(self):
-        tempdir = self.mkdtemp()
-        os.chdir(tempdir)
-
         self.write_setup({'description-file': 'README\n  CHANGES'})
         self.write_file('README', 'yeah')
         self.write_file('CHANGES', 'changelog')
@@ -252,9 +279,37 @@ class ConfigTestCase(support.TempdirManager,
         self.assertEqual(dist.metadata['description'], 'yeah\nchangelog')
         self.assertEqual(dist.metadata.requires_files, ['README', 'CHANGES'])
 
+    def test_parse_extensions_in_config(self):
+        self.write_file('setup.cfg', EXT_SETUP_CFG)
+        dist = self.run_setup('--version')
+
+        ext_modules = dict((mod.name, mod) for mod in dist.ext_modules)
+        self.assertEqual(len(ext_modules), 2)
+        ext = ext_modules.get('one.speed_coconuts')
+        self.assertEqual(ext.sources, ['c_src/speed_coconuts.c'])
+        self.assertEqual(ext.define_macros, ['HAVE_CAIRO', 'HAVE_GTK2'])
+        libs = ['gecodeint', 'gecodekernel']
+        if sys.platform == 'win32':
+            libs = ['GecodeInt', 'GecodeKernel']
+        self.assertEqual(ext.libraries, libs)
+        self.assertEqual(ext.extra_link_args,
+            ['`gcc -print-file-name=libgcc.a`', '-shared'])
+
+        ext = ext_modules.get('three.fast_taunt')
+        self.assertEqual(ext.sources,
+            ['cxx_src/utils_taunt.cxx', 'cxx_src/python_module.cxx'])
+        self.assertEqual(ext.include_dirs,
+            ['/usr/include/gecode', '/usr/include/blitz'])
+        cargs = ['-fPIC', '-O2']
+        if sys.platform == 'win32':
+            cargs.append("/DGECODE_VERSION='win32'")
+        else:
+            cargs.append('-DGECODE_VERSION=$(./gecode_version)')
+        self.assertEqual(ext.extra_compile_args, cargs)
+        self.assertEqual(ext.language, 'cxx')
+
+
     def test_metadata_requires_description_files_missing(self):
-        tempdir = self.mkdtemp()
-        os.chdir(tempdir)
         self.write_setup({'description-file': 'README\n  README2'})
         self.write_file('README', 'yeah')
         self.write_file('README2', 'yeah')
@@ -278,8 +333,6 @@ class ConfigTestCase(support.TempdirManager,
         self.assertRaises(DistutilsFileError, cmd.make_distribution)
 
     def test_metadata_requires_description_files(self):
-        tempdir = self.mkdtemp()
-        os.chdir(tempdir)
         self.write_setup({'description-file': 'README\n  README2',
                           'extra-files':'\n  README2'})
         self.write_file('README', 'yeah')
@@ -315,8 +368,6 @@ class ConfigTestCase(support.TempdirManager,
         self.assertIn('README\nREADME2\n', open('MANIFEST').read())
 
     def test_sub_commands(self):
-        tempdir = self.mkdtemp()
-        os.chdir(tempdir)
         self.write_setup()
         self.write_file('README', 'yeah')
         self.write_file('haven.py', '#')

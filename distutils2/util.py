@@ -12,6 +12,7 @@ import sys
 import shutil
 import tarfile
 import zipfile
+from subprocess import call as sub_call
 from copy import copy
 from fnmatch import fnmatchcase
 from ConfigParser import RawConfigParser
@@ -800,65 +801,16 @@ def _spawn_os2(cmd, search_path=1, verbose=0, dry_run=0, env=None):
                   "command '%s' failed with exit status %d" % (cmd[0], rc))
 
 
-def _spawn_posix(cmd, search_path=1, verbose=0, dry_run=0, env=None):
-    logger.info(' '.join(cmd))
+def _spawn_posix(cmd, search_path=1, verbose=1, dry_run=0, env=None):
+    cmd = ' '.join(cmd)
+    if verbose:
+        logger.info(cmd)
     if dry_run:
         return
-
-    if env is None:
-        exec_fn = search_path and os.execvp or os.execv
-    else:
-        exec_fn = search_path and os.execvpe or os.execve
-
-    pid = os.fork()
-
-    if pid == 0:  # in the child
-        try:
-            if env is None:
-                exec_fn(cmd[0], cmd)
-            else:
-                exec_fn(cmd[0], cmd, env)
-        except OSError, e:
-            sys.stderr.write("unable to execute %s: %s\n" %
-                             (cmd[0], e.strerror))
-            os._exit(1)
-
-        sys.stderr.write("unable to execute %s for unknown reasons" % cmd[0])
-        os._exit(1)
-    else:   # in the parent
-        # Loop until the child either exits or is terminated by a signal
-        # (ie. keep waiting if it's merely stopped)
-        while 1:
-            try:
-                pid, status = os.waitpid(pid, 0)
-            except OSError, exc:
-                import errno
-                if exc.errno == errno.EINTR:
-                    continue
-                raise DistutilsExecError(
-                      "command '%s' failed: %s" % (cmd[0], exc[-1]))
-            if os.WIFSIGNALED(status):
-                raise DistutilsExecError(
-                      "command '%s' terminated by signal %d" % \
-                      (cmd[0], os.WTERMSIG(status)))
-
-            elif os.WIFEXITED(status):
-                exit_status = os.WEXITSTATUS(status)
-                if exit_status == 0:
-                    return   # hey, it succeeded!
-                else:
-                    raise DistutilsExecError(
-                          "command '%s' failed with exit status %d" % \
-                          (cmd[0], exit_status))
-
-            elif os.WIFSTOPPED(status):
-                continue
-
-            else:
-                raise DistutilsExecError(
-                      "unknown error executing '%s': termination status %d" % \
-                      (cmd[0], status))
-
+    exit_status = sub_call(cmd, shell=True, env=env)
+    if exit_status != 0:
+        msg = "command '%s' failed with exit status %d"
+        raise DistutilsExecError(msg % (cmd, exit_status))
 
 def find_executable(executable, path=None):
     """Tries to find 'executable' in the directories listed in 'path'.
@@ -1128,7 +1080,6 @@ def generate_distutils_kwargs_from_setup_cfg(file='setup.cfg'):
             # There is no such option in the setup.cfg
             if arg == "long_description":
                 filename = has_get_option(config, section, "description_file")
-                print "We have a filename", filename
                 if filename:
                     in_cfg_value = open(filename).read()
             else:
@@ -1156,12 +1107,18 @@ def generate_distutils_setup_py():
         raise DistutilsFileError("A pre existing setup.py file exists")
 
     handle = open("setup.py", "w")
-    handle.write("# Distutils script using distutils2 setup.cfg to call the\n")
-    handle.write("# distutils.core.setup() with the right args.\n\n\n")
-    handle.write("import os\n")
-    handle.write("from distutils.core import setup\n")
-    handle.write("from ConfigParser import RawConfigParser\n\n")
-    handle.write(getsource(generate_distutils_kwargs_from_setup_cfg))
-    handle.write("\n\nkwargs = generate_distutils_kwargs_from_setup_cfg()\n")
-    handle.write("setup(**kwargs)")
-    handle.close()
+    try:
+        handle.write(
+            "# Distutils script using distutils2 setup.cfg to call the\n"
+            "# distutils.core.setup() with the right args.\n\n"
+            "import os\n"
+            "from distutils.core import setup\n"
+            "from ConfigParser import RawConfigParser\n\n"
+            "" + getsource(generate_distutils_kwargs_from_setup_cfg) + "\n\n"
+            "kwargs = generate_distutils_kwargs_from_setup_cfg()\n"
+            "setup(**kwargs)\n"
+        )
+    finally:
+        handle.close()
+
+generate_distutils_setup_py()

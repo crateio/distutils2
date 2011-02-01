@@ -7,6 +7,13 @@ import re
 import warnings
 from csv import reader as csv_reader
 from types import ModuleType
+from stat import ST_SIZE
+
+try:
+    from hashlib import md5
+except ImportError:
+    from md5 import md5
+
 from distutils2.errors import DistutilsError
 from distutils2.metadata import DistributionMetadata
 from distutils2.version import suggest_normalized_version, VersionPredicate
@@ -922,10 +929,6 @@ class EggInfoDistribution(object):
                 for field in ('Obsoletes', 'Requires', 'Provides'):
                     del self.metadata[field]
 
-            provides = "%s (%s)" % (self.metadata['name'],
-                                    self.metadata['version'])
-            self.metadata['Provides-Dist'] += (provides,)
-
         reqs = []
 
         if requires is not None:
@@ -973,6 +976,33 @@ class EggInfoDistribution(object):
         return '%s-%s at %s' % (self.name, self.metadata.version, self.path)
 
     def get_installed_files(self, local=False):
+
+        def _md5(path):
+            f = open(path)
+            try:
+                content = f.read()
+            finally:
+                f.close()
+            return md5(content).hexdigest()
+
+        def _size(path):
+            return os.stat(path)[ST_SIZE]
+
+        path = self.path
+        if local:
+            path = path.replace('/', os.sep)
+
+        # XXX What about scripts and data files ?
+        if os.path.isfile(path):
+            return [(path, _md5(path), _size(path))]
+        else:
+            files = []
+            for root, dir, files_ in os.walk(path):
+                for item in files_:
+                    item = os.path.join(root, item)
+                    files.append((item, _md5(item), _size(item)))
+            return files
+
         return []
 
     def uses(self, path):
@@ -1029,7 +1059,7 @@ def get_distributions(use_egg_info=False, paths=sys.path):
         for dist in _yield_distributions(True, use_egg_info, paths):
             yield dist
     else:
-        _generate_cache(use_egg_info)
+        _generate_cache(use_egg_info, paths)
 
         for dist in _cache_path.itervalues():
             yield dist
@@ -1061,7 +1091,7 @@ def get_distribution(name, use_egg_info=False, paths=sys.path):
             if dist.name == name:
                 return dist
     else:
-        _generate_cache(use_egg_info)
+        _generate_cache(use_egg_info, paths)
 
         if name in _cache_name:
             return _cache_name[name][0]
