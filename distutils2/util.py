@@ -1120,5 +1120,3 @@ def generate_distutils_setup_py():
         )
     finally:
         handle.close()
-
-generate_distutils_setup_py()
