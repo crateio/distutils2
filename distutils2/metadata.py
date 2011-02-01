@@ -465,7 +465,7 @@ class DistributionMetadata(object):
             return None
         return value
 
-    def check(self, strict=False):
+    def check(self, strict=False, restructuredtext=False):
         """Check if the metadata is compliant. If strict is False then raise if
         no Name or Version are provided"""
         # XXX should check the versions (if the file was loaded)
@@ -483,7 +483,7 @@ class DistributionMetadata(object):
             if attr not in self:
                 missing.append(attr)
 
-        if _HAS_DOCUTILS:
+        if _HAS_DOCUTILS and restructuredtext:
             warnings.extend(self._check_rst_data(self['Description']))
 
         # checking metadata 1.2 (XXX needs to check 1.1, 1.0)

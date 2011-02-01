@@ -64,7 +64,7 @@ class check(Command):
 
     def check_restructuredtext(self):
         """Checks if the long string fields are reST-compliant."""
-        missing, warnings = self.distribution.metadata.check()
+        missing, warnings = self.distribution.metadata.check(restructuredtext=True)
         if self.distribution.metadata.docutils_support:
             for warning in warnings:
                 line = warning[-1].get('line')
