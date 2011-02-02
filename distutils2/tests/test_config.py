@@ -105,6 +105,8 @@ name = one.speed_coconuts
 sources = c_src/speed_coconuts.c
 extra_link_args = "`gcc -print-file-name=libgcc.a`" -shared
 define_macros = HAVE_CAIRO HAVE_GTK2
+libraries = gecodeint gecodekernel -- sys.platform != 'win32'
+    GecodeInt GecodeKernel -- sys.platform == 'win32'
 
 [extension=fast_taunt]
 name = three.fast_taunt
@@ -113,6 +115,8 @@ sources = cxx_src/utils_taunt.cxx
 include_dirs = /usr/include/gecode
     /usr/include/blitz
 extra_compile_args = -fPIC -O2
+    -DGECODE_VERSION=$(./gecode_version) -- sys.platform != 'win32'
+    /DGECODE_VERSION='win32' -- sys.platform == 'win32'
 language = cxx
 
 """
@@ -291,6 +295,10 @@ class ConfigTestCase(support.TempdirManager,
         ext = ext_modules.get('one.speed_coconuts')
         self.assertEqual(ext.sources, ['c_src/speed_coconuts.c'])
         self.assertEqual(ext.define_macros, ['HAVE_CAIRO', 'HAVE_GTK2'])
+        libs = ['gecodeint', 'gecodekernel']
+        if sys.platform == 'win32':
+            libs = ['GecodeInt', 'GecodeKernel']
+        self.assertEqual(ext.libraries, libs)
         self.assertEqual(ext.extra_link_args,
             ['`gcc -print-file-name=libgcc.a`', '-shared'])
 
@@ -299,7 +307,12 @@ class ConfigTestCase(support.TempdirManager,
             ['cxx_src/utils_taunt.cxx', 'cxx_src/python_module.cxx'])
         self.assertEqual(ext.include_dirs,
             ['/usr/include/gecode', '/usr/include/blitz'])
-        self.assertEqual(ext.extra_compile_args, ['-fPIC', '-O2'])
+        cargs = ['-fPIC', '-O2']
+        if sys.platform == 'win32':
+            cargs.append("/DGECODE_VERSION='win32'")
+        else:
+            cargs.append('-DGECODE_VERSION=$(./gecode_version)')
+        self.assertEqual(ext.extra_compile_args, cargs)
         self.assertEqual(ext.language, 'cxx')
 
 

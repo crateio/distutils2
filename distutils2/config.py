@@ -15,13 +15,22 @@ from distutils2.util import check_environ, resolve_name, strtobool
 from distutils2.compiler import set_compiler
 from distutils2.command import set_command
 from distutils2.datafiles import resources_dests
+from distutils2.markers import interpret
 
 
 def _pop_values(values_dct, key):
     """Remove values from the dictionary and convert them as a list"""
     vals_str = values_dct.pop(key, '')
+    if not vals_str:
+        return
+    fields = []
+    for field in vals_str.split(os.linesep):
+        tmp_vals = field.split('--')
+        if (len(tmp_vals) == 2) and (not interpret(tmp_vals[1])):
+            continue
+        fields.append(tmp_vals[0])
     # Get bash options like `gcc -print-file-name=libgcc.a`
-    vals = split(vals_str)
+    vals = split(' '.join(fields))
     if vals:
         return vals
 
