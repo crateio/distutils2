@@ -10,6 +10,9 @@ standards.
 
 See the documentation at http://packages.python.org/Distutils2 for more info.
 
+If you want to contribute, please have a look to 
+http://distutils2.notmyidea.org/contributing.html
+
 **Beware that Distutils2 is in its early stage and should not be used in
 production. Its API is subject to changes**
 
