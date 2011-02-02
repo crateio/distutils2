@@ -14,7 +14,7 @@ from distutils2.compiler.extension import Extension
 from distutils2.util import check_environ, resolve_name, strtobool
 from distutils2.compiler import set_compiler
 from distutils2.command import set_command
-from distutils2.datafiles import resources_dests
+from distutils2.resources import resources_dests
 from distutils2.markers import interpret
 
 

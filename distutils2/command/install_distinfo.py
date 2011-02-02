@@ -39,11 +39,11 @@ class install_distinfo(Command):
          "do not generate a REQUESTED file"),
         ('no-record', None,
          "do not generate a RECORD file"),
-        ('no-datafiles', None,
+        ('no-resources', None,
          "do not generate a DATAFILES list installed file")
     ]
 
-    boolean_options = ['requested', 'no-record', 'no-datafiles']
+    boolean_options = ['requested', 'no-record', 'no-resources']
 
     negative_opt = {'no-requested': 'requested'}
 
@@ -52,7 +52,7 @@ class install_distinfo(Command):
         self.installer = None
         self.requested = None
         self.no_record = None
-        self.no_datafiles = None
+        self.no_resources = None
 
     def finalize_options(self):
         self.set_undefined_options('install_dist',
@@ -69,8 +69,8 @@ class install_distinfo(Command):
             self.requested = True
         if self.no_record is None:
             self.no_record = False
-        if self.no_datafiles is None:
-            self.no_datafiles = False
+        if self.no_resources is None:
+            self.no_resources = False
 
 
         metadata = self.distribution.metadata
@@ -120,20 +120,20 @@ class install_distinfo(Command):
                 self.outputs.append(requested_path)
 
 
-            if not self.no_datafiles:
+            if not self.no_resources:
                 install_data = self.get_finalized_command('install_data')
-                if install_data.get_datafiles_out() != []:
-                    datafiles_path = os.path.join(self.distinfo_dir, 'DATAFILES')
-                    logger.info('creating %s', datafiles_path)
-                    f = open(datafiles_path, 'wb')
+                if install_data.get_resources_out() != []:
+                    resources_path = os.path.join(self.distinfo_dir, 'DATAFILES')
+                    logger.info('creating %s', resources_path)
+                    f = open(resources_path, 'wb')
                     try:
                         writer = csv.writer(f, delimiter=',',
                                             lineterminator=os.linesep,
                                             quotechar='"')
-                        for tuple in install_data.get_datafiles_out():
+                        for tuple in install_data.get_resources_out():
                             writer.writerow(tuple)
 
-                        self.outputs.append(datafiles_path)
+                        self.outputs.append(resources_path)
                     finally:
                         f.close()
 

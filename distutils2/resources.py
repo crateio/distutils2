@@ -17,7 +17,7 @@ class SmartGlob(object):
             base = basepath
         if '*' in base or '{' in base or '}'  in base:
             raise NotImplementedError('glob are not supported into base part\
-                of datafiles definition. %r is an invalide basepath' % base)
+                of resources definition. %r is an invalide basepath' % base)
         absglob = os.path.join(base, self.suffix)
         for glob_file in iglob(absglob):
             path_suffix = glob_file[len(base):].lstrip('/')

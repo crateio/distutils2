@@ -76,5 +76,5 @@ class install_data(Command):
     def get_outputs(self):
         return self.outfiles
 
-    def get_datafiles_out(self):
+    def get_resources_out(self):
         return self.data_files_out

@@ -759,9 +759,9 @@ class Distribution(object):
             yield path, md5, size
 
     def get_resource_path(self, relative_path):
-        datafiles_file = self.get_distinfo_file('DATAFILES')
-        datafiles_reader = csv_reader(datafiles_file, delimiter = ',')
-        for relative, destination in datafiles_reader:
+        resources_file = self.get_distinfo_file('DATAFILES')
+        resources_reader = csv_reader(resources_file, delimiter = ',')
+        for relative, destination in resources_reader:
             if relative == relative_path:
                 return destination
         raise KeyError('No data_file with relative path %s were installed' %
