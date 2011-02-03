@@ -25,18 +25,15 @@
 
 import os
 import sys
-import re
-import shutil
 import glob
 import re
+import shutil
 from ConfigParser import RawConfigParser
 from textwrap import dedent
-if sys.version_info[:2] < (2, 6):
-    from sets import Set as set
 try:
     from hashlib import md5
 except ImportError:
-    from md5 import md5
+    from distutils2._backport.hashlib  import md5
 # importing this with an underscore as it should be replaced by the
 # dict form or another structures for all purposes
 from distutils2._trove import all_classifiers as _CLASSIFIERS_LIST
@@ -92,10 +89,10 @@ license, and then you can select a list of license specifiers.
 Optionally, you can set other trove identifiers for things such as the
 human language, programming language, user interface, etc...
 ''',
-    'setup.py found':'''
+    'setup.py found': '''
 The setup.py script will be executed to retrieve the metadata.
 A wizard will be run if you answer "n",
-'''
+''',
 }
 
 # XXX everything needs docstrings and tests (both low-level tests of various
@@ -162,6 +159,7 @@ def _build_classifiers_dict(classifiers):
 
 CLASSIFIERS = _build_classifiers_dict(_CLASSIFIERS_LIST)
 
+
 def _build_licences(classifiers):
     res = []
     for index, item in enumerate(classifiers):
@@ -171,6 +169,7 @@ def _build_licences(classifiers):
     return res
 
 LICENCES = _build_licences(_CLASSIFIERS_LIST)
+
 
 class MainProgram(object):
     def __init__(self):
@@ -235,8 +234,8 @@ class MainProgram(object):
             if ans != 'y':
                 return
 
-        #_______mock setup start
         data = self.data
+
         def setup(**attrs):
             """Mock the setup(**attrs) in order to retrive metadata."""
             # use the distutils v1 processings to correctly parse metadata.
@@ -272,11 +271,12 @@ class MainProgram(object):
                 if len(dist.data_files) < 2 or \
                    isinstance(dist.data_files[1], str):
                     dist.data_files = [('', dist.data_files)]
-                #add tokens in the destination paths
-                vars = {'distribution.name':data['name']}
+                # add tokens in the destination paths
+                vars = {'distribution.name': data['name']}
                 path_tokens = sysconfig.get_paths(vars=vars).items()
-                #sort tokens to use the longest one first
-                path_tokens.sort(cmp=lambda x,y: cmp(len(y), len(x)),
+                # sort tokens to use the longest one first
+                # TODO chain two sorted with key arguments, remove cmp
+                path_tokens.sort(cmp=lambda x, y: cmp(len(y), len(x)),
                                  key=lambda x: x[1])
                 for dest, srcs in (dist.data_files or []):
                     dest = os.path.join(sys.prefix, dest)
@@ -291,29 +291,31 @@ class MainProgram(object):
             package_dirs = dist.package_dir or {}
             for package, extras in dist.package_data.iteritems() or []:
                 package_dir = package_dirs.get(package, package)
-                fils = [os.path.join(package_dir, fil) for fil in extras]
-                data['extra_files'].extend(fils)
+                files = [os.path.join(package_dir, f) for f in extras]
+                data['extra_files'].extend(files)
 
             # Use README file if its content is the desciption
             if "description" in data:
                 ref = md5(re.sub('\s', '', self.data['description']).lower())
                 ref = ref.digest()
                 for readme in glob.glob('README*'):
-                    fob = open(readme)
-                    val = md5(re.sub('\s', '', fob.read()).lower()).digest()
-                    fob.close()
+                    fp = open(readme)
+                    try:
+                        contents = fp.read()
+                    finally:
+                        fp.close()
+                    val = md5(re.sub('\s', '', contents.lower())).digest()
                     if val == ref:
                         del data['description']
                         data['description-file'] = readme
                         break
-        #_________ mock setup end
 
         # apply monkey patch to distutils (v1) and setuptools (if needed)
         # (abord the feature if distutils v1 has been killed)
         try:
             import distutils.core as DC
-            getattr(DC, 'setup') # ensure distutils v1
-        except ImportError, AttributeError:
+            DC.setup  # ensure distutils v1
+        except (ImportError, AttributeError):
             return
         saved_setups = [(DC, DC.setup)]
         DC.setup = setup
@@ -321,15 +323,15 @@ class MainProgram(object):
             import setuptools
             saved_setups.append((setuptools, setuptools.setup))
             setuptools.setup = setup
-        except ImportError, AttributeError:
+        except (ImportError, AttributeError):
             pass
         # get metadata by executing the setup.py with the patched setup(...)
-        success = False # for python < 2.4
+        success = False  # for python < 2.4
         try:
             pyenv = globals().copy()
             execfile(setuppath, pyenv)
             success = True
-        finally: #revert monkey patches
+        finally:  # revert monkey patches
             for patched_module, original_setup in saved_setups:
                 patched_module.setup = original_setup
         if not self.data:
@@ -339,7 +341,8 @@ class MainProgram(object):
     def inspect_file(self, path):
         fp = open(path, 'r')
         try:
-            for line in [fp.readline() for _ in range(10)]:
+            for _ in xrange(10):
+                line = fp.readline()
                 m = re.match(r'^#!.*python((?P<major>\d)(\.\d+)?)?$', line)
                 if m:
                     if m.group('major') == '3':
@@ -393,7 +396,6 @@ class MainProgram(object):
                         helptext=_helptext['extra_files']) == 'y':
                 self._set_multi('Extra file/dir name', 'extra_files')
 
-
         if ask_yn('Do you want to set Trove classifiers?',
                   helptext=_helptext['do_classifier']) == 'y':
             self.set_classifier()
@@ -412,7 +414,6 @@ class MainProgram(object):
         scanned = []
         _pref = ['lib', 'include', 'dist', 'build', '.', '~']
         _suf = ['.pyc']
-
 
         def to_skip(path):
             path = relative(path)
