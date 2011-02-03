@@ -5,7 +5,7 @@ from tempfile import mkstemp
 
 from distutils2 import install
 from distutils2.index.xmlrpc import Client
-from distutils2.metadata import DistributionMetadata
+from distutils2.metadata import Metadata
 from distutils2.tests import run_unittest
 from distutils2.tests.support import TempdirManager
 from distutils2.tests.pypi_server import use_xmlrpc_server
@@ -18,7 +18,7 @@ class InstalledDist(object):
     def __init__(self, name, version, deps):
         self.name = name
         self.version = version
-        self.metadata = DistributionMetadata()
+        self.metadata = Metadata()
         self.metadata['Requires-Dist'] = deps
         self.metadata['Provides-Dist'] = ['%s (%s)' % (name, version)]
 

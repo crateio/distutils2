@@ -1060,7 +1060,9 @@ This module contains some utility functions for operating on individual files.
 
 .. module:: distutils2.metadata
 
-.. autoclass:: distutils2.metadata.DistributionMetadata
+.. FIXME CPython/stdlib docs don't use autoclass, write doc manually here
+
+.. autoclass:: distutils2.metadata.Metadata
    :members:
 
 :mod:`distutils2.util` --- Miscellaneous other utility functions

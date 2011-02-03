@@ -15,7 +15,7 @@ except ImportError:
     from md5 import md5
 
 from distutils2.errors import DistutilsError
-from distutils2.metadata import DistributionMetadata
+from distutils2.metadata import Metadata
 from distutils2.version import suggest_normalized_version, VersionPredicate
 try:
     import cStringIO as StringIO
@@ -725,7 +725,7 @@ class Distribution(object):
     name = ''
     """The name of the distribution."""
     metadata = None
-    """A :class:`distutils2.metadata.DistributionMetadata` instance loaded with
+    """A :class:`distutils2.metadata.Metadata` instance loaded with
     the distribution's ``METADATA`` file."""
     requested = False
     """A boolean that indicates whether the ``REQUESTED`` metadata file is
@@ -737,7 +737,7 @@ class Distribution(object):
             self.metadata = _cache_path[path].metadata
         else:
             metadata_path = os.path.join(path, 'METADATA')
-            self.metadata = DistributionMetadata(path=metadata_path)
+            self.metadata = Metadata(path=metadata_path)
 
         self.path = path
         self.name = self.metadata['name']
@@ -858,7 +858,7 @@ class EggInfoDistribution(object):
     name = ''
     """The name of the distribution."""
     metadata = None
-    """A :class:`distutils2.metadata.DistributionMetadata` instance loaded with
+    """A :class:`distutils2.metadata.Metadata` instance loaded with
     the distribution's ``METADATA`` file."""
     _REQUIREMENT = re.compile( \
         r'(?P<name>[-A-Za-z0-9_.]+)\s*' \
@@ -893,7 +893,7 @@ class EggInfoDistribution(object):
         if path.endswith('.egg'):
             if os.path.isdir(path):
                 meta_path = os.path.join(path, 'EGG-INFO', 'PKG-INFO')
-                self.metadata = DistributionMetadata(path=meta_path)
+                self.metadata = Metadata(path=meta_path)
                 try:
                     req_path = os.path.join(path, 'EGG-INFO', 'requires.txt')
                     requires = open(req_path, 'r').read()
@@ -903,7 +903,7 @@ class EggInfoDistribution(object):
                 # FIXME handle the case where zipfile is not available
                 zipf = zipimport.zipimporter(path)
                 fileobj = StringIO.StringIO(zipf.get_data('EGG-INFO/PKG-INFO'))
-                self.metadata = DistributionMetadata(fileobj=fileobj)
+                self.metadata = Metadata(fileobj=fileobj)
                 try:
                     requires = zipf.get_data('EGG-INFO/requires.txt')
                 except IOError:
@@ -917,7 +917,7 @@ class EggInfoDistribution(object):
                     requires = req_f.read()
                 except IOError:
                     requires = None
-            self.metadata = DistributionMetadata(path=path)
+            self.metadata = Metadata(path=path)
             self.name = self.metadata['name']
         else:
             raise ValueError('The path must end with .egg-info or .egg')

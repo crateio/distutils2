@@ -28,7 +28,7 @@ from distutils2.index.errors import (HashDoesNotMatch, UnsupportedHashName,
                                      CantParseArchiveName)
 from distutils2.version import (suggest_normalized_version, NormalizedVersion,
                                 get_version_predicate)
-from distutils2.metadata import DistributionMetadata
+from distutils2.metadata import Metadata
 from distutils2.util import splitext
 
 __all__ = ['ReleaseInfo', 'DistInfo', 'ReleasesList', 'get_infos_from_url']
@@ -66,7 +66,7 @@ class ReleaseInfo(IndexReference):
         self._version = None
         self.version = version
         if metadata:
-            self.metadata = DistributionMetadata(mapping=metadata)
+            self.metadata = Metadata(mapping=metadata)
         else:
             self.metadata = None
         self.dists = {}
@@ -174,7 +174,7 @@ class ReleaseInfo(IndexReference):
 
     def set_metadata(self, metadata):
         if not self.metadata:
-            self.metadata = DistributionMetadata()
+            self.metadata = Metadata()
         self.metadata.update(metadata)
 
     def __getitem__(self, item):
@@ -214,7 +214,6 @@ class ReleaseInfo(IndexReference):
 
     # See http://docs.python.org/reference/datamodel#object.__hash__
     __hash__ = object.__hash__
-
 
 
 class DistInfo(IndexReference):
@@ -346,7 +345,7 @@ class DistInfo(IndexReference):
             return "<? ? %s>" % self.dist_type
 
         return "<%s %s %s>" % (
-                self.release.name, self.release.version, self.dist_type or "")
+            self.release.name, self.release.version, self.dist_type or "")
 
 
 class ReleasesList(IndexReference):

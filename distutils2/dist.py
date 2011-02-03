@@ -15,7 +15,7 @@ from distutils2.errors import (DistutilsOptionError, DistutilsArgError,
 from distutils2.fancy_getopt import FancyGetopt
 from distutils2.util import strtobool, resolve_name
 from distutils2 import logger
-from distutils2.metadata import DistributionMetadata
+from distutils2.metadata import Metadata
 from distutils2.config import Config
 from distutils2.command import get_command_class
 
@@ -145,7 +145,7 @@ Common commands: (see '--help-commands' for more)
         # forth) in a separate object -- we're getting to have enough
         # information here (and enough command-line options) that it's
         # worth it.
-        self.metadata = DistributionMetadata()
+        self.metadata = Metadata()
 
         # 'cmdclass' maps command names to class objects, so we
         # can 1) quickly figure out which class to instantiate when
