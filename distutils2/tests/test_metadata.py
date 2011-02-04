@@ -4,7 +4,7 @@ import sys
 import platform
 from StringIO import StringIO
 
-from distutils2.metadata import (DistributionMetadata,
+from distutils2.metadata import (Metadata,
                                  PKG_INFO_PREFERRED_VERSION)
 from distutils2.tests import run_unittest, unittest
 from distutils2.tests.support import LoggingCatcher, WarningsCatcher
@@ -12,7 +12,7 @@ from distutils2.errors import (MetadataConflictError,
                                MetadataUnrecognizedVersionError)
 
 
-class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
+class MetadataTestCase(LoggingCatcher, WarningsCatcher,
                                    unittest.TestCase):
 
     def test_instantiation(self):
@@ -24,35 +24,35 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
             fp.close()
         fp = StringIO(contents)
 
-        m = DistributionMetadata()
+        m = Metadata()
         self.assertRaises(MetadataUnrecognizedVersionError, m.items)
 
-        m = DistributionMetadata(PKG_INFO)
+        m = Metadata(PKG_INFO)
         self.assertEqual(len(m.items()), 22)
 
-        m = DistributionMetadata(fileobj=fp)
+        m = Metadata(fileobj=fp)
         self.assertEqual(len(m.items()), 22)
 
-        m = DistributionMetadata(mapping=dict(name='Test', version='1.0'))
+        m = Metadata(mapping=dict(name='Test', version='1.0'))
         self.assertEqual(len(m.items()), 11)
 
         d = dict(m.items())
-        self.assertRaises(TypeError, DistributionMetadata,
+        self.assertRaises(TypeError, Metadata,
                           PKG_INFO, fileobj=fp)
-        self.assertRaises(TypeError, DistributionMetadata,
+        self.assertRaises(TypeError, Metadata,
                           PKG_INFO, mapping=d)
-        self.assertRaises(TypeError, DistributionMetadata,
+        self.assertRaises(TypeError, Metadata,
                           fileobj=fp, mapping=d)
-        self.assertRaises(TypeError, DistributionMetadata,
+        self.assertRaises(TypeError, Metadata,
                           PKG_INFO, mapping=m, fileobj=fp)
 
     def test_metadata_read_write(self):
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
-        metadata = DistributionMetadata(PKG_INFO)
+        metadata = Metadata(PKG_INFO)
         out = StringIO()
         metadata.write_file(out)
         out.seek(0)
-        res = DistributionMetadata()
+        res = Metadata()
         res.read_file(out)
         for k in metadata.keys():
             self.assertTrue(metadata[k] == res[k])
@@ -62,7 +62,7 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
         content = open(PKG_INFO).read()
         content = content % sys.platform
-        metadata = DistributionMetadata(platform_dependent=True)
+        metadata = Metadata(platform_dependent=True)
         metadata.read_file(StringIO(content))
         self.assertEqual(metadata['Requires-Dist'], ['bar'])
         metadata['Name'] = "baz; sys.platform == 'blah'"
@@ -72,7 +72,7 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
 
         # test with context
         context = {'sys.platform': 'okook'}
-        metadata = DistributionMetadata(platform_dependent=True,
+        metadata = Metadata(platform_dependent=True,
                                         execution_context=context)
         metadata.read_file(StringIO(content))
         self.assertEqual(metadata['Requires-Dist'], ['foo'])
@@ -81,7 +81,7 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
         content = open(PKG_INFO).read()
         content = content % sys.platform
-        metadata = DistributionMetadata()
+        metadata = Metadata()
         metadata.read_file(StringIO(content))
 
         # see if we can read the description now
@@ -100,7 +100,7 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
         content = open(PKG_INFO).read()
         content = content % sys.platform
-        metadata = DistributionMetadata(fileobj=StringIO(content))
+        metadata = Metadata(fileobj=StringIO(content))
         self.assertIn('Version', metadata.keys())
         self.assertIn('0.5', metadata.values())
         self.assertIn(('Version', '0.5'), metadata.items())
@@ -111,7 +111,7 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
         self.assertEqual(metadata['Version'], '0.7')
 
     def test_versions(self):
-        metadata = DistributionMetadata()
+        metadata = Metadata()
         metadata['Obsoletes'] = 'ok'
         self.assertEqual(metadata['Metadata-Version'], '1.1')
 
@@ -142,7 +142,7 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
 
     # XXX Spurious Warnings were disabled
     def XXXtest_warnings(self):
-        metadata = DistributionMetadata()
+        metadata = Metadata()
 
         # these should raise a warning
         values = (('Requires-Dist', 'Funky (Groovie)'),
@@ -155,7 +155,7 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
         self.assertEqual(len(self.logs), 2)
 
     def test_multiple_predicates(self):
-        metadata = DistributionMetadata()
+        metadata = Metadata()
 
         # see for "3" instead of "3.0"  ???
         # its seems like the MINOR VERSION can be omitted
@@ -165,14 +165,14 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
         self.assertEqual(len(self.warnings), 0)
 
     def test_project_url(self):
-        metadata = DistributionMetadata()
+        metadata = Metadata()
         metadata['Project-URL'] = [('one', 'http://ok')]
         self.assertEqual(metadata['Project-URL'],
                           [('one', 'http://ok')])
         self.assertEqual(metadata.version, '1.2')
 
     def test_check_version(self):
-        metadata = DistributionMetadata()
+        metadata = Metadata()
         metadata['Name'] = 'vimpdb'
         metadata['Home-page'] = 'http://pypi.python.org'
         metadata['Author'] = 'Monty Python'
@@ -181,7 +181,7 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
         self.assertEqual(missing, ['Version'])
 
     def test_check_version_strict(self):
-        metadata = DistributionMetadata()
+        metadata = Metadata()
         metadata['Name'] = 'vimpdb'
         metadata['Home-page'] = 'http://pypi.python.org'
         metadata['Author'] = 'Monty Python'
@@ -190,7 +190,7 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
         self.assertRaises(MetadataMissingError, metadata.check, strict=True)
 
     def test_check_name(self):
-        metadata = DistributionMetadata()
+        metadata = Metadata()
         metadata['Version'] = '1.0'
         metadata['Home-page'] = 'http://pypi.python.org'
         metadata['Author'] = 'Monty Python'
@@ -199,7 +199,7 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
         self.assertEqual(missing, ['Name'])
 
     def test_check_name_strict(self):
-        metadata = DistributionMetadata()
+        metadata = Metadata()
         metadata['Version'] = '1.0'
         metadata['Home-page'] = 'http://pypi.python.org'
         metadata['Author'] = 'Monty Python'
@@ -208,7 +208,7 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
         self.assertRaises(MetadataMissingError, metadata.check, strict=True)
 
     def test_check_author(self):
-        metadata = DistributionMetadata()
+        metadata = Metadata()
         metadata['Version'] = '1.0'
         metadata['Name'] = 'vimpdb'
         metadata['Home-page'] = 'http://pypi.python.org'
@@ -217,7 +217,7 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
         self.assertEqual(missing, ['Author'])
 
     def test_check_homepage(self):
-        metadata = DistributionMetadata()
+        metadata = Metadata()
         metadata['Version'] = '1.0'
         metadata['Name'] = 'vimpdb'
         metadata['Author'] = 'Monty Python'
@@ -226,7 +226,7 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
         self.assertEqual(missing, ['Home-page'])
 
     def test_check_predicates(self):
-        metadata = DistributionMetadata()
+        metadata = Metadata()
         metadata['Version'] = 'rr'
         metadata['Name'] = 'vimpdb'
         metadata['Home-page'] = 'http://pypi.python.org'
@@ -242,7 +242,7 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
         self.assertEqual(len(warnings), 4)
 
     def test_best_choice(self):
-        metadata = DistributionMetadata()
+        metadata = Metadata()
         metadata['Version'] = '1.0'
         self.assertEqual(metadata.version, PKG_INFO_PREFERRED_VERSION)
         metadata['Classifier'] = ['ok']
@@ -251,7 +251,7 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
     def test_project_urls(self):
         # project-url is a bit specific, make sure we write it
         # properly in PKG-INFO
-        metadata = DistributionMetadata()
+        metadata = Metadata()
         metadata['Version'] = '1.0'
         metadata['Project-Url'] = [('one', 'http://ok')]
         self.assertEqual(metadata['Project-Url'], [('one', 'http://ok')])
@@ -262,13 +262,13 @@ class DistributionMetadataTestCase(LoggingCatcher, WarningsCatcher,
         self.assertIn('Project-URL: one,http://ok', res)
 
         file_.seek(0)
-        metadata = DistributionMetadata()
+        metadata = Metadata()
         metadata.read_file(file_)
         self.assertEqual(metadata['Project-Url'], [('one', 'http://ok')])
 
 
 def test_suite():
-    return unittest.makeSuite(DistributionMetadataTestCase)
+    return unittest.makeSuite(MetadataTestCase)
 
 if __name__ == '__main__':
     run_unittest(test_suite())

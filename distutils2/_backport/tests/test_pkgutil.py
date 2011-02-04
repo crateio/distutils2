@@ -14,7 +14,7 @@ except ImportError:
     from distutils2._backport.hashlib import md5
 
 from distutils2.errors import DistutilsError
-from distutils2.metadata import DistributionMetadata
+from distutils2.metadata import Metadata
 from distutils2.tests import unittest, run_unittest, support
 
 from distutils2._backport import pkgutil
@@ -244,7 +244,7 @@ class TestPkgUtilDistribution(unittest.TestCase):
         dist = Distribution(dist_path)
 
         self.assertEqual(dist.name, name)
-        self.assertTrue(isinstance(dist.metadata, DistributionMetadata))
+        self.assertTrue(isinstance(dist.metadata, Metadata))
         self.assertEqual(dist.metadata['version'], version)
         self.assertTrue(isinstance(dist.requested, type(bool())))
 

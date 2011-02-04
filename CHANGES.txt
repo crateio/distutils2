@@ -10,6 +10,7 @@ CHANGES
 - Issue #10409: Fixed the Licence selector in mkcfg [tarek]
 - Issue #9558: Fix build_ext with VS 8.0 [éric]
 - Issue #6007: Add disclaimer about MinGW compatibility in docs [éric]
+- Renamed DistributionMetadata to Metadata [ccomb]
 
 1.0a3 - 2010-10-08
 ------------------

@@ -888,7 +888,7 @@ tarballs or zipfiles.
 .. function:: make_zipfile(base_name, base_dir[, verbose=0, dry_run=0])
 
    Create a zip file from all files in and under *base_dir*.  The output zip file
-   will be named *base_dir* + :file:`.zip`.  Uses either the :mod:`zipfile` Python
+   will be named *base_name* + :file:`.zip`.  Uses either the :mod:`zipfile` Python
    module (if available) or the InfoZIP :file:`zip` utility (if installed and
    found on the default search path).  If neither tool is available, raises
    :exc:`DistutilsExecError`.  Returns the name of the output zip file.
@@ -1060,7 +1060,9 @@ This module contains some utility functions for operating on individual files.
 
 .. module:: distutils2.metadata
 
-.. autoclass:: distutils2.metadata.DistributionMetadata
+.. FIXME CPython/stdlib docs don't use autoclass, write doc manually here
+
+.. autoclass:: distutils2.metadata.Metadata
    :members:
 
 :mod:`distutils2.util` --- Miscellaneous other utility functions

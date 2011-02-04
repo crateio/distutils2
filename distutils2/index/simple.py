@@ -22,7 +22,7 @@ from distutils2.index.errors import (DistutilsIndexError, DownloadError,
                                      UnableToDownload, CantParseArchiveName,
                                      ReleaseNotFound, ProjectNotFound)
 from distutils2.index.mirrors import get_mirrors
-from distutils2.metadata import DistributionMetadata
+from distutils2.metadata import Metadata
 from distutils2.version import get_version_predicate
 from distutils2 import __version__ as __distutils2_version__
 
@@ -203,7 +203,7 @@ class Crawler(BaseClient):
         if not release._metadata:
             location = release.get_distribution().unpack()
             pkg_info = os.path.join(location, 'PKG-INFO')
-            release._metadata = DistributionMetadata(pkg_info)
+            release._metadata = Metadata(pkg_info)
         return release
 
     def _switch_to_next_mirror(self):

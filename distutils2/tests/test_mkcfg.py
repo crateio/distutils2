@@ -1,11 +1,8 @@
 # -*- coding: utf-8 -*-
 """Tests for distutils.mkcfg."""
 import os
-import os.path as osp
 import sys
 import StringIO
-if sys.version_info[:2] < (2, 6):
-    from sets import Set as set
 from textwrap import dedent
 
 from distutils2.tests import run_unittest, support, unittest
@@ -114,9 +111,11 @@ class MkcfgTestCase(support.TempdirManager,
         sys.stdin.write('y\n')
         sys.stdin.seek(0)
         main()
-        fid = open(osp.join(self.wdir, 'setup.cfg'))
-        lines = set([line.rstrip() for line in fid])
-        fid.close()
+        fp = open(os.path.join(self.wdir, 'setup.cfg'))
+        try:
+            lines = set([line.rstrip() for line in fp])
+        finally:
+            fp.close()
         self.assertEqual(lines, set(['',
             '[metadata]',
             'version = 0.2',
@@ -183,9 +182,11 @@ ho, baby !
         sys.stdin.write('y\n')
         sys.stdin.seek(0)
         main()
-        fid = open(osp.join(self.wdir, 'setup.cfg'))
-        lines = set([line.strip() for line in fid])
-        fid.close()
+        fp = open(os.path.join(self.wdir, 'setup.cfg'))
+        try:
+            lines = set([line.strip() for line in fp])
+        finally:
+            fp.close()
         self.assertEqual(lines, set(['',
             '[metadata]',
             'version = 0.2',

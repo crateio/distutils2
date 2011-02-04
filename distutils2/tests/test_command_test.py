@@ -17,10 +17,6 @@ from distutils2.command import set_command
 from distutils2.dist import Distribution
 from distutils2._backport import pkgutil
 
-try:
-    any
-except NameError:
-    from distutils2._backport import any
 
 EXPECTED_OUTPUT_RE = r'''FAIL: test_blah \(myowntestmodule.SomeTest\)
 ----------------------------------------------------------------------

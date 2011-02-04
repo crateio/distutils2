@@ -298,11 +298,11 @@ in the Metadata, and ``pyX.X`` the major and minor version of Python like
 ``2.7`` or ``3.2``.
 
 You can read back this static file, by using the
-:class:`distutils2.dist.DistributionMetadata` class and its
+:class:`distutils2.dist.Metadata` class and its
 :func:`read_pkg_file` method::
 
-    >>> from distutils2.metadata import DistributionMetadata
-    >>> metadata = DistributionMetadata()
+    >>> from distutils2.metadata import Metadata
+    >>> metadata = Metadata()
     >>> metadata.read_pkg_file(open('distribute-0.6.8-py2.7.egg-info'))
     >>> metadata.name
     'distribute'
@@ -315,7 +315,7 @@ Notice that the class can also be instantiated with a metadata file path to
 loads its values::
 
     >>> pkg_info_path = 'distribute-0.6.8-py2.7.egg-info'
-    >>> DistributionMetadata(pkg_info_path).name
+    >>> Metadata(pkg_info_path).name
     'distribute'
 
 

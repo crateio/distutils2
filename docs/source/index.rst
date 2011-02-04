@@ -29,7 +29,7 @@ a library used to package, distribute, build and install Python projects.
 .. __: http://bitbucket.org/tarek/distutils2/wiki/GSoC_2010_teams
 
 If you’re looking for information on how to contribute, head to
-:doc:`devresources`.
+:doc:`devresources`, and be sure to have a look at :doc:`contributing`.
 
 
 Documentation
@@ -76,6 +76,7 @@ The documentation is split in four sections, as in the standard Python docs:
    distutils/index
    library/distutils2
    library/pkgutil
+   contributing
 
 
 Indices and tables
