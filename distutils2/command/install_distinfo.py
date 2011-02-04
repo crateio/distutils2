@@ -12,12 +12,12 @@ automatically by the ``install_dist`` command.
 
 # This file was created from the code for the former command install_egg_info
 
-import os
 import csv
-import re
-from distutils2.command.cmd import Command
 from distutils2 import logger
 from distutils2._backport.shutil import rmtree
+from distutils2.command.cmd import Command
+import os
+import re
 try:
     import hashlib
 except ImportError:
@@ -40,7 +40,7 @@ class install_distinfo(Command):
         ('no-record', None,
          "do not generate a RECORD file"),
         ('no-resources', None,
-         "do not generate a DATAFILES list installed file")
+         "do not generate a RESSOURCES list installed file")
     ]
 
     boolean_options = ['requested', 'no-record', 'no-resources']
@@ -76,9 +76,9 @@ class install_distinfo(Command):
         metadata = self.distribution.metadata
 
         basename = "%s-%s.dist-info" % (
-            to_filename(safe_name(metadata['Name'])),
-            to_filename(safe_version(metadata['Version'])),
-        )
+                                        to_filename(safe_name(metadata['Name'])),
+                                        to_filename(safe_version(metadata['Version'])),
+                                        )
 
         self.distinfo_dir = os.path.join(self.distinfo_dir, basename)
         self.outputs = []
@@ -123,7 +123,8 @@ class install_distinfo(Command):
             if not self.no_resources:
                 install_data = self.get_finalized_command('install_data')
                 if install_data.get_resources_out() != []:
-                    resources_path = os.path.join(self.distinfo_dir, 'DATAFILES')
+                    resources_path = os.path.join(self.distinfo_dir,
+                                                  'RESOURCES')
                     logger.info('creating %s', resources_path)
                     f = open(resources_path, 'wb')
                     try:

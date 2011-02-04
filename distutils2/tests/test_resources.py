@@ -1,13 +1,19 @@
 # -*- encoding: utf-8 -*-
 """Tests for distutils.data."""
-import os
+import pkgutil
 import sys
 
-from distutils2.tests import unittest, support, run_unittest
-from distutils2.tests.test_util import GlobTestCaseBase
-from distutils2.resources import resources_dests
+from distutils2._backport.pkgutil import resource_open
+from distutils2._backport.pkgutil import resource_path
+from distutils2._backport.pkgutil import disable_cache
+from distutils2._backport.pkgutil import enable_cache
 from distutils2.command.install_dist import install_dist
-from distutils2._backport.pkgutil import resource_open, resource_path
+from distutils2.resources import resources_dests
+from distutils2.tests import run_unittest
+from distutils2.tests import unittest
+from distutils2.tests.test_util import GlobTestCaseBase
+import os
+import tempfile
 
 
 class DataFilesTestCase(GlobTestCaseBase):
@@ -29,56 +35,56 @@ class DataFilesTestCase(GlobTestCaseBase):
     def test_simple_glob(self):
         rules = [('', '*.tpl', '{data}')]
         spec  = {'coucou.tpl': '{data}/coucou.tpl',
-                 'Donotwant': None}
+            'Donotwant': None}
         self.assertRulesMatch(rules, spec)
 
     def test_multiple_match(self):
         rules = [('scripts', '*.bin', '{appdata}'),
-                 ('scripts', '*', '{appscript}')]
+            ('scripts', '*', '{appscript}')]
         spec  = {'scripts/script.bin': '{appscript}/script.bin',
-                 'Babarlikestrawberry': None}
+            'Babarlikestrawberry': None}
         self.assertRulesMatch(rules, spec)
 
     def test_set_match(self):
         rules = [('scripts', '*.{bin,sh}', '{appscript}')]
         spec  = {'scripts/script.bin': '{appscript}/script.bin',
-                 'scripts/babar.sh':  '{appscript}/babar.sh',
-                 'Babarlikestrawberry': None}
+            'scripts/babar.sh':  '{appscript}/babar.sh',
+            'Babarlikestrawberry': None}
         self.assertRulesMatch(rules, spec)
 
     def test_set_match_multiple(self):
         rules = [('scripts', 'script{s,}.{bin,sh}', '{appscript}')]
         spec  = {'scripts/scripts.bin': '{appscript}/scripts.bin',
-                 'scripts/script.sh':  '{appscript}/script.sh',
-                 'Babarlikestrawberry': None}
+            'scripts/script.sh':  '{appscript}/script.sh',
+            'Babarlikestrawberry': None}
         self.assertRulesMatch(rules, spec)
 
     def test_set_match_exclude(self):
         rules = [('scripts', '*', '{appscript}'),
-                 ('', '**/*.sh', None)]
+            ('', '**/*.sh', None)]
         spec  = {'scripts/scripts.bin': '{appscript}/scripts.bin',
-                 'scripts/script.sh':  None,
-                 'Babarlikestrawberry': None}
+            'scripts/script.sh':  None,
+            'Babarlikestrawberry': None}
         self.assertRulesMatch(rules, spec)
 
     def test_glob_in_base(self):
         rules = [('scrip*', '*.bin', '{appscript}')]
         spec  = {'scripts/scripts.bin': '{appscript}/scripts.bin',
-                 'Babarlikestrawberry': None}
+            'Babarlikestrawberry': None}
         tempdir = self.build_files_tree(spec)
         self.assertRaises(NotImplementedError, resources_dests, tempdir, rules)
 
     def test_recursive_glob(self):
         rules = [('', '**/*.bin', '{binary}')]
         spec  = {'binary0.bin': '{binary}/binary0.bin',
-                 'scripts/binary1.bin': '{binary}/scripts/binary1.bin',
-                 'scripts/bin/binary2.bin': '{binary}/scripts/bin/binary2.bin',
-                 'you/kill/pandabear.guy': None}
+            'scripts/binary1.bin': '{binary}/scripts/binary1.bin',
+            'scripts/bin/binary2.bin': '{binary}/scripts/bin/binary2.bin',
+            'you/kill/pandabear.guy': None}
         self.assertRulesMatch(rules, spec)
 
     def test_final_exemple_glob(self):
         rules = [
-            ('mailman/database/schemas/','*', '{appdata}/schemas'),
+            ('mailman/database/schemas/', '*', '{appdata}/schemas'),
             ('', '**/*.tpl', '{appdata}/templates'),
             ('', 'developer-docs/**/*.txt', '{doc}'),
             ('', 'README', '{doc}'),
@@ -103,40 +109,62 @@ class DataFilesTestCase(GlobTestCaseBase):
         self.assertRulesMatch(rules, spec)
 
     def test_resource_open(self):
-        from distutils2._backport.sysconfig import _SCHEMES as sysconfig_SCHEMES
-        from distutils2._backport.sysconfig import _get_default_scheme
-            #dirty but hit marmoute
 
-        tempdir = self.mkdtemp()
-        
-        old_scheme = sysconfig_SCHEMES
 
-        sysconfig_SCHEMES.set(_get_default_scheme(), 'config',
-            tempdir)
+        #Create a fake-dist
+        temp_site_packages = tempfile.mkdtemp()
 
-        pkg_dir, dist = self.create_dist()
-        dist_name = dist.metadata['name']
+        dist_name = 'test'
+        dist_info = os.path.join(temp_site_packages, 'test-0.1.dist-info')
+        os.mkdir(dist_info)
 
-        test_path = os.path.join(pkg_dir, 'test.cfg')
-        self.write_file(test_path, 'Config')
-        dist.data_files = {test_path : '{config}/test.cfg'}
+        metadata_path = os.path.join(dist_info, 'METADATA')
+        resources_path = os.path.join(dist_info, 'RESOURCES')
 
-        cmd = install_dist(dist)
-        cmd.install_dir = os.path.join(pkg_dir, 'inst')
-        content = 'Config'        
-        
-        cmd.ensure_finalized()
-        cmd.run()
+        metadata_file = open(metadata_path, 'w')
 
-        cfg_dest = os.path.join(tempdir, 'test.cfg')
+        metadata_file.write(
+"""Metadata-Version: 1.2
+Name: test
+Version: 0.1
+Summary: test
+Author: me
+        """)
 
-        self.assertEqual(resource_path(dist_name, test_path), cfg_dest)
-        self.assertRaises(KeyError, lambda: resource_path(dist_name, 'notexis'))
+        metadata_file.close()
+
+        test_path = 'test.cfg'
+
+        _, test_resource_path = tempfile.mkstemp()
+
+        test_resource_file = open(test_resource_path, 'w')
+
+        content = 'Config'
+        test_resource_file.write(content)
+        test_resource_file.close()
+
+        resources_file = open(resources_path, 'w')
+
+        resources_file.write("""%s,%s""" % (test_path, test_resource_path))
+        resources_file.close()
+
+        #Add fake site-packages to sys.path to retrieve fake dist
+        old_sys_path = sys.path
+        sys.path.insert(0, temp_site_packages)
+
+        #Force pkgutil to rescan the sys.path
+        disable_cache()
+
+        #Try to retrieve resources paths and files
+        self.assertEqual(resource_path(dist_name, test_path), test_resource_path)
+        self.assertRaises(KeyError, resource_path, dist_name, 'notexis')
 
         self.assertEqual(resource_open(dist_name, test_path).read(), content)
-        self.assertRaises(KeyError, lambda: resource_open(dist_name, 'notexis'))
-        
-        sysconfig_SCHEMES = old_scheme
+        self.assertRaises(KeyError, resource_open, dist_name, 'notexis')
+
+        sys.path = old_sys_path
+
+        enable_cache()
 
 def test_suite():
     return unittest.makeSuite(DataFilesTestCase)
