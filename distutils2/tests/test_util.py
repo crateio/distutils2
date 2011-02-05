@@ -625,6 +625,34 @@ class GlobTestCase(GlobTestCaseBase):
                  'Donotwant': False}
         self.assertGlobMatch(glob, spec)
 
+    def test_invalid_glob_pattern(self):
+        invalids = [
+            'ppooa**',
+            'azzaeaz4**/',
+            '/**ddsfs',
+            '**##1e"&e',
+            'DSFb**c009',
+            '{'
+            '{aaQSDFa'
+            '}'
+            'aQSDFSaa}'
+            '{**a,'
+            ',**a}'
+            '{a**,'
+            ',b**}'
+            '{a**a,babar}'
+            '{bob,b**z}'
+            ]
+        msg = "%r is not supposed to be a valid pattern"
+        for pattern in invalids:
+            try:
+                iglob(pattern)
+            except ValueError:
+                continue
+            else:
+                self.fail("%r is not a valid iglob pattern" % pattern)
+
+
 
 def test_suite():
     suite = unittest.makeSuite(UtilTestCase)
