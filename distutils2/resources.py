@@ -3,39 +3,39 @@ from distutils2.util import iglob
 
 __all__ = ['resources_dests']
 
-class SmartGlob(object):
+def _expand(root_dir, glob_base, glob_suffix, destination):
+    """search for file in a directory and return they expected destination.
 
-    def __init__(self, base, suffix):
-        self.base = base
-        self.suffix = suffix
-
-
-    def expand(self, basepath, destination):
-        if self.base:
-            base = os.path.join(basepath, self.base)
-        else:
-            base = basepath
-        if '*' in base or '{' in base or '}'  in base:
-            raise NotImplementedError('glob are not supported into base part\
-                of resources definition. %r is an invalide basepath' % base)
-        absglob = os.path.join(base, self.suffix)
-        for glob_file in iglob(absglob):
-            path_suffix = glob_file[len(base):].lstrip('/')
-            relpath = glob_file[len(basepath):].lstrip('/')
-            dest = os.path.join(destination, path_suffix)
-            yield relpath, dest
+    root_dir:    directory where to search for resources.
+    glob_base:   part of the path not included in destination.
+    glob_suffix: part of the path reused in the destination.
+    destination: base part of the destination.
+    """
+    if glob_base:
+        base = os.path.join(root_dir, glob_base)
+    else:
+        base = root_dir
+    if '*' in base or '{' in base or '}'  in base:
+        raise NotImplementedError('glob are not supported into base part\
+            of resources definition. %r is an invalide root_dir' % base)
+    absglob = os.path.join(base, glob_suffix)
+    for glob_file in iglob(absglob):
+        path_suffix = glob_file[len(base):].lstrip('/')
+        relpath = glob_file[len(root_dir):].lstrip('/')
+        dest = os.path.join(destination, path_suffix)
+        yield relpath, dest
 
 def resources_dests(resources_dir, rules):
+    """find destination of ressources files"""
     destinations = {}
     for (base, suffix, glob_dest) in rules:
-        sglob = SmartGlob(base, suffix)
         if glob_dest is None:
             delete = True
             dest = ''
         else:
             delete = False
             dest = glob_dest
-        for resource_file, file_dest in sglob.expand(resources_dir, dest):
+        for resource_file, file_dest in _expand(resources_dir, base, suffix, dest):
             if delete and resource_file in destinations:
                 del destinations[resource_file]
             else:
