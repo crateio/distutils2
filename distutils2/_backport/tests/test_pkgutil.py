@@ -377,7 +377,7 @@ class TestPkgUtilPEP376(support.LoggingCatcher, support.WarningsCatcher,
         # Lookup all distributions found in the ``sys.path``.
         # This test could potentially pick up other installed distributions
         fake_dists = [('grammar', '1.0a4'), ('choxie', '2.0.0.9'),
-            ('towel-stuff', '0.1')]
+                      ('towel-stuff', '0.1'), ('babar', '0.1')]
         found_dists = []
 
         # Verify the fake dists have been found.
