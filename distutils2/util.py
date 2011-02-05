@@ -15,7 +15,10 @@ import zipfile
 from subprocess import call as sub_call
 from copy import copy
 from fnmatch import fnmatchcase
-from glob import iglob as std_iglob
+try:
+    from glob import iglob as std_iglob
+except ImportError:
+    from glob import glob as std_iglob # for python < 2.5
 from ConfigParser import RawConfigParser
 from inspect import getsource
 
