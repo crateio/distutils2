@@ -3,6 +3,10 @@ from distutils2.util import iglob
 
 __all__ = ['resources_dests']
 
+def _rel_path(base, path):
+    assert path.startswith(base)
+    return path[len(base):].lstrip('/')
+
 def _expand(root_dir, glob_base, glob_suffix):
     """search for file in a directory and return they radical part.
 
@@ -19,8 +23,8 @@ def _expand(root_dir, glob_base, glob_suffix):
             of resources definition. %r is an invalide root_dir' % base)
     absglob = os.path.join(base, glob_suffix)
     for glob_file in iglob(absglob):
-        path_suffix = glob_file[len(base):].lstrip('/')
-        relpath = glob_file[len(root_dir):].lstrip('/')
+        path_suffix = _rel_path(base, glob_file)
+        relpath = _rel_path(root_dir, glob_file)
         yield relpath, path_suffix
 
 def resources_dests(resources_dir, rules):
