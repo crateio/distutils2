@@ -18,14 +18,12 @@ def _expand(root_dir, glob_base, glob_suffix):
         base = os.path.join(root_dir, glob_base)
     else:
         base = root_dir
-    if '*' in base or '{' in base or '}'  in base:
-        raise NotImplementedError('glob are not supported into base part\
-            of resources definition. %r is an invalide root_dir' % base)
-    absglob = os.path.join(base, glob_suffix)
-    for glob_file in iglob(absglob):
-        path_suffix = _rel_path(base, glob_file)
-        relpath = _rel_path(root_dir, glob_file)
-        yield relpath, path_suffix
+    for base_dir in iglob(base):
+        absglob = os.path.join(base_dir, glob_suffix)
+        for glob_file in iglob(absglob):
+            path_suffix = _rel_path(base_dir, glob_file)
+            relpath = _rel_path(root_dir, glob_file)
+            yield relpath, path_suffix
 
 def resources_dests(resources_dir, rules):
     """find destination of ressources files"""

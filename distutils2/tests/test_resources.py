@@ -70,9 +70,10 @@ class DataFilesTestCase(GlobTestCaseBase):
     def test_glob_in_base(self):
         rules = [('scrip*', '*.bin', '{appscript}')]
         spec  = {'scripts/scripts.bin': '{appscript}/scripts.bin',
-            'Babarlikestrawberry': None}
-        tempdir = self.build_files_tree(spec)
-        self.assertRaises(NotImplementedError, resources_dests, tempdir, rules)
+                 'scripouille/babar.bin': '{appscript}/babar.bin',
+                 'scriptortu/lotus.bin': '{appscript}/lotus.bin',
+                 'Babarlikestrawberry': None}
+        self.assertRulesMatch(rules, spec)
 
     def test_recursive_glob(self):
         rules = [('', '**/*.bin', '{binary}')]
