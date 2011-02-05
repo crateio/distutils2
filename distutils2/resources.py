@@ -1,37 +1,22 @@
 import os
 from distutils2.util import iglob
 
-__all__ = ['resources_dests']
-
 def _rel_path(base, path):
     assert path.startswith(base)
     return path[len(base):].lstrip('/')
 
-def _expand(root_dir, glob_base, glob_suffix):
-    """search for file in a directory and return they radical part.
-
-    root_dir:    directory where to search for resources.
-    glob_base:   part of the path not included in radical.
-    glob_suffix: part of the path used as radical.
-    """
-    if glob_base:
-        base = os.path.join(root_dir, glob_base)
-    else:
-        base = root_dir
-    for base_dir in iglob(base):
-        absglob = os.path.join(base_dir, glob_suffix)
-        for glob_file in iglob(absglob):
-            path_suffix = _rel_path(base_dir, glob_file)
-            relpath = _rel_path(root_dir, glob_file)
-            yield relpath, path_suffix
-
-def resources_dests(resources_dir, rules):
+def resources_dests(resources_root, rules):
     """find destination of ressources files"""
     destinations = {}
-    for (base, suffix, glob_dest) in rules:
-        for resource_file, radical in _expand(resources_dir, base, suffix):
-            if glob_dest is None:
-                destinations.pop(resource_file, None) #remove the entry if it was here
-            else:
-                destinations[resource_file] = os.path.join(glob_dest, radical)
+    for (base, suffix, dest) in rules:
+        prefix = os.path.join(resources_root, base)
+        for abs_base in iglob(prefix):
+            abs_glob = os.path.join(abs_base, suffix)
+            for abs_path in iglob(abs_glob):
+                resource_file = _rel_path(resources_root, abs_path)
+                if dest is None: #remove the entry if it was here
+                    destinations.pop(resource_file, None)
+                else:
+                    rel_path = _rel_path(abs_base, abs_path)
+                    destinations[resource_file] = os.path.join(dest, rel_path)
     return destinations
