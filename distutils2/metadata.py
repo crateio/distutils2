@@ -41,8 +41,8 @@ except ImportError:
     _HAS_DOCUTILS = False
 
 # public API of this module
-__all__ = ('Metadata', 'PKG_INFO_ENCODING',
-           'PKG_INFO_PREFERRED_VERSION')
+__all__ = ['Metadata', 'PKG_INFO_ENCODING',
+           'PKG_INFO_PREFERRED_VERSION']
 
 # Encoding used for the PKG-INFO files
 PKG_INFO_ENCODING = 'utf-8'
