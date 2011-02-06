@@ -629,9 +629,11 @@ class MainProgram(object):
                     continue
                 fp.write('%s = %s\n'
                          % (name, '\n    '.join(self.data[name]).strip()))
-            fp.write('\n[resources]\n')
+            fp.write('\nresources =\n')
             for src, dest in self.data['resources']:
-                fp.write('%s = %s\n' % (src, dest))
+                fp.write('    %s = %s\n' % (src, dest))
+            fp.write('\n')
+
         finally:
             fp.close()
 

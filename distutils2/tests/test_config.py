@@ -73,10 +73,10 @@ sdist_extra =
   recursive-include examples *.txt *.py
   prune examples/sample?/build
 
-[resources]
-bm/ {b1,b2}.gif = {icon}
-cfg/ data.cfg = {config}
-init_script = {script}
+resources=
+  bm/ {b1,b2}.gif = {icon}
+  Cf*/ *.CFG = {config}/baBar/
+  init_script = {script}/JunGle/
 
 [global]
 commands =
@@ -196,8 +196,8 @@ class ConfigTestCase(support.TempdirManager,
         os.mkdir('bm')
         self.write_file(os.path.join('bm', 'b1.gif'), '')
         self.write_file(os.path.join('bm', 'b2.gif'), '')
-        os.mkdir('cfg')
-        self.write_file(os.path.join('cfg', 'data.cfg'), '')
+        os.mkdir('Cfg')
+        self.write_file(os.path.join('Cfg', 'data.CFG'), '')
         self.write_file('init_script', '')
 
         # try to load the metadata now
@@ -243,11 +243,12 @@ class ConfigTestCase(support.TempdirManager,
         self.assertEqual(dist.packages, ['one', 'two', 'three'])
         self.assertEqual(dist.py_modules, ['haven'])
         self.assertEqual(dist.package_data, {'cheese': 'data/templates/*'})
-        self.assertEqual(dist.data_files,
+        self.assertEqual(
             {'bm/b1.gif' : '{icon}/b1.gif',
              'bm/b2.gif' : '{icon}/b2.gif',
-             'cfg/data.cfg' : '{config}/data.cfg',
-             'init_script' : '{script}/init_script'})
+             'Cfg/data.CFG' : '{config}/baBar/data.CFG',
+             'init_script' : '{script}/JunGle/init_script'},
+             dist.data_files)
 
         self.assertEqual(dist.package_dir, 'src')
 

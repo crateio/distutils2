@@ -106,6 +106,7 @@ class Config(object):
         return value
 
     def _read_setup_cfg(self, parser, cfg_filename):
+        cfg_directory = os.path.dirname(os.path.abspath(cfg_filename))
         content = {}
         for section in parser.sections():
             content[section] = dict(parser.items(section))
@@ -197,24 +198,21 @@ class Config(object):
             # manifest template
             self.dist.extra_files = files.get('extra_files', [])
 
-        if 'resources' in content:
             resources = []
-            for glob, destination in content['resources'].iteritems():
-                splitted_glob = glob.split(' ', 1)
-                if len(splitted_glob) == 1:
-                    prefix = ''
-                    suffix = splitted_glob[0]
+            for rule in files.get('resources', []):
+                glob , destination  = rule.split('=', 1)
+                rich_glob = glob.strip().split(' ', 1)
+                if len(rich_glob) == 2:
+                    prefix, suffix = rich_glob
                 else:
-                    prefix = splitted_glob[0]
-                    suffix = splitted_glob[1]
+                    assert len(rich_glob) == 1
+                    prefix = ''
+                    suffix = glob
                 if destination == '<exclude>':
                     destination = None
-                resources.append((prefix, suffix, destination))
-                
-            directory = os.path.dirname(os.path.join(os.getcwd(), cfg_filename))
-            data_files = resources_dests(directory, resources)
-            self.dist.data_files = data_files
-                
+                resources.append((prefix.strip(), suffix.strip(), destination.strip()))
+                self.dist.data_files = resources_dests(cfg_directory, resources)
+
         ext_modules = self.dist.ext_modules
         for section_key in content:
             labels = section_key.split('=')
