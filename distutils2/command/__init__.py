@@ -5,6 +5,9 @@ commands."""
 from distutils2.errors import DistutilsModuleError
 from distutils2.util import resolve_name
 
+__all__ = ['get_command_names', 'set_command', 'get_command_class',
+           'STANDARD_COMMANDS']
+
 _COMMANDS = {
     'check': 'distutils2.command.check.check',
     'test': 'distutils2.command.test.test',
@@ -28,6 +31,8 @@ _COMMANDS = {
     'register': 'distutils2.command.register.register',
     'upload': 'distutils2.command.upload.upload',
     'upload_docs': 'distutils2.command.upload_docs.upload_docs'}
+
+STANDARD_COMMANDS = set(_COMMANDS)
 
 
 def get_command_names():

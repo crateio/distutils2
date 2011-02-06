@@ -17,7 +17,7 @@ from distutils2.util import strtobool, resolve_name
 from distutils2 import logger
 from distutils2.metadata import Metadata
 from distutils2.config import Config
-from distutils2.command import get_command_class
+from distutils2.command import get_command_class, STANDARD_COMMANDS
 
 # Regex to define acceptable Distutils command names.  This is not *quite*
 # the same as a Python NAME -- I don't allow leading underscores.  The fact
@@ -589,31 +589,26 @@ Common commands: (see '--help-commands' for more)
         print(header + ":")
 
         for cmd in commands:
-            cls = self.cmdclass.get(cmd)
-            if not cls:
-                cls = get_command_class(cmd)
-            try:
-                description = cls.description
-            except AttributeError:
-                description = "(no description available)"
+            cls = self.cmdclass.get(cmd) or get_command_class(cmd)
+            description = getattr(cls, 'description',
+                                  '(no description available)')
 
             print("  %-*s  %s" % (max_length, cmd, description))
 
     def _get_command_groups(self):
         """Helper function to retrieve all the command class names divided
-        into standard commands (listed in distutils2.command.__all__)
-        and extra commands (given in self.cmdclass and not standard
-        commands).
+        into standard commands (listed in
+        distutils2.command.STANDARD_COMMANDS) and extra commands (given in
+        self.cmdclass and not standard commands).
         """
-        from distutils2.command import __all__ as std_commands
         extra_commands = [cmd for cmd in self.cmdclass
-                          if cmd not in std_commands]
-        return std_commands, extra_commands
+                          if cmd not in STANDARD_COMMANDS]
+        return STANDARD_COMMANDS, extra_commands
 
     def print_commands(self):
         """Print out a help message listing all available commands with a
         description of each.  The list is divided into standard commands
-        (listed in distutils2.command.__all__) and extra commands
+        (listed in distutils2.command.STANDARD_COMMANDS) and extra commands
         (given in self.cmdclass and not standard commands).  The
         descriptions come from the command class attribute
         'description'.
@@ -633,9 +628,7 @@ Common commands: (see '--help-commands' for more)
                                     "Extra commands",
                                     max_length)
 
-
     # -- Command class/object methods ----------------------------------
-
 
     def get_command_obj(self, command, create=1):
         """Return the command object for 'command'.  Normally this object
