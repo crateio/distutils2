@@ -190,7 +190,7 @@ class Config(object):
             for data in files.get('package_data', []):
                 data = data.split('=')
                 if len(data) != 2:
-                    continue
+                    continue # XXX error should never pass silently
                 key, value = data
                 self.dist.package_data[key.strip()] = value.strip()
 
