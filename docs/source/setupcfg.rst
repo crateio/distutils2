@@ -176,81 +176,46 @@ Example::
 .. Note::
     In Distutils2, setup.cfg will be implicitly included.
 
-data-files
-==========
+Resources
+=========
 
+This section describes the files used by the project which must not be installed in the same place that python modules or libraries, they are called **resources**. They are for example documentation files, script files, databases, etc...
 
-TODO :
+For declaring resources, you must use this notation ::
 
-        ###
-        source -> destination
+    source = destination
+
+Data-files are declared in the **resources** field in the **file** section, for example::
+
+    [files]
+    resources =
+        source1 = destination1
+        source2 = destination2
+
+The **source** part of the declaration are relative paths of resources files (using unix path separator **/**). For example, if you've this source tree::
+
+    foo/
+        doc/
+            doc.man
+        scripts/
+            foo.sh
+            
+Your setup.cfg will look like::
+
+    [files]
+    resources =
+        doc/doc.man = destination_doc
+        scripts/foo.sh = destination_scripts
         
-        final-path = destination + source
-        
-        There is an {alias} for each categories of datafiles
-        -----
-        source may be a glob (*, ?, **, {})
-        
-        order
-        
-        exclude
-        --
-        base-prefix
-        
-        ####
-        overwrite system config for {alias}
-        
-        ####
-        extra-categories
+The final paths where files will be placed are composed by : **source** + **destination**. In the previous example, **doc/doc.man** will be placed in **destination_doc/doc/doc.man** and **scripts/foo.sh** will be placed in **destination_scripts/scripts/foo.sh**. (If you want more control on the final path, take a look at base_prefix_).
 
-This section describes the files used by the project which must not be installed in the same place that python modules or libraries.
+The **destination** part of resources declaration are paths with categories. Indeed, it's generally a bad idea to give absolute path as it will be cross incompatible. So, you must use resources categories in your **destination** declaration. Categories will be replaced by their real path at the installation time. Using categories is all benefit, your declaration will be simpler, cross platform and it will allow packager to place resources files where they want without breaking your code.
 
-The format for specifing data files is :
+Categories can be specified by using this syntax::
 
- **source** = **destination**
- 
-Example::
-
-    scripts/script1.bin = {scripts}
+    {category}
     
-It means that the file scripts/script1.bin will be placed 
-
-It means that every file which match the glob_syntax will be placed in the destination. A part of the path of the file will be stripped when it will be expanded and another part will be append to the destination. For more informations about which part of the path will be stripped or not, take a look at next sub-section globsyntax_.
-
-The destination path will be expanded at the installation time using categories's default-path in the sysconfig.cfg file in the system. For more information about categories's default-paths, take a look at next next sub-section destination_.
-
-
-.. _globsyntax:
-
-glob_syntax
------------
-
-The glob syntax is traditionnal glob syntax (with unix separator **/**) with one more information : what part of the path will be stripped when path will be expanded ?
-
-The special character which indicate the end of the part that will be stripped and the beginning of the part that will be added is whitespace, which can follow or replace a path separator.
-
-Example::
-
-    scripts/ *.bin
-    
-is equivalent to::
-
-    scripts *.bin
-
-Theses examples means that all files with extensions bin in the directory scripts will be placed directly on **destination** directory.
-
-This glob example::
-
-    scripts/*.bin
-    
-means that all files with extensions bin in the directory scripts will be placed directly on **destination/scripts** directory.
-
-.. _destination:
-
-destination
------------
-
-The destination is a traditionnal path (with unix separator **/**) where some parts will be expanded at installation time. These parts look like **{category}**, they will be expanded by reading system-wide default-path stored in sysconfig.cfg. Defaults categories are :
+Default categories are::
 
 * config
 * appdata
@@ -264,40 +229,199 @@ The destination is a traditionnal path (with unix separator **/**) where some pa
 * info
 * man
 
-A special category exists, named {distribution.name} which will be expanded into your distribution name. You should not use it in your destination path, as they are may be used in defaults categories::
+A special category also exists **{distribution.name}** that will be replaced by the name of the distribution, but as most of the defaults categories use them, so it's not necessary to add **{distribution.name}** into your destination.
 
-    [globals]
-    # These are the useful categories that are sometimes referenced at runtime,
-    # using pkgutil.open():
-    # Configuration files
-    config = {confdir}/{distribution.name}
-    # Non-writable data that is independent of architecture (images, many xml/text files)
-    appdata = {datadir}/{distribution.name}
-    # Non-writable data that is architecture-dependent (some binary data formats)
-    appdata.arch = {libdir}/{distribution.name}
-    # Data, written by the package, that must be preserved (databases)
-    appdata.persistent = {statedir}/lib/{distribution.name}
-    # Data, written by the package, that can be safely discarded (cache)
-    appdata.disposable = {statedir}/cache/{distribution.name}
-    # Help or documentation files referenced at runtime
-    help = {datadir}/{distribution.name}
-    icon = {datadir}/pixmaps
-    scripts = {base}/bin
+If you use categories in your declarations, and you are encouraged to do, final path will be::
+
+    source + destination_expanded
+
+.. _example_final_path:
+
+For example, if you have this setup.cfg::
+
+    [metadata]
+    name = foo
+
+    [files]
+    resources =
+        doc/doc.man = {doc}
+
+And if **{doc}** is replaced by **{datadir}/doc/{distribution.name}**, final path will be::
+
+    {datadir}/doc/foo/doc/doc.man
     
-    # Non-runtime files.  These are valid categories for marking files for
-    # install, but they should not be referenced by the app at runtime:
-    # Help or documentation files not referenced by the package at runtime
+Where {datafir} category will be platform-dependent.
+
+    
+More control on source part
+---------------------------
+
+Glob syntax
+___________
+
+When you declare source file, you can use a glob-like syntax to match multiples file, for example::
+
+    scripts/* = {script}
+    
+Will match all the files in the scripts directory and placed them in the script category.
+
+Glob tokens are:
+
+ * * : match all files.
+ * ? : match any character.
+ * ** : match any level of tree recursion (even 0).
+ * {} : will match any part separated by comma (example : {sh,bat}).
+ 
+TODO ::
+
+    Add an example
+    
+Order of declaration
+____________________
+
+The order of declaration is important if one file match multiple rules. The last rules matched by file is used, this is useful if you have this source tree::
+
+    foo/
+        doc/
+            index.rst
+            setup.rst
+            documentation.txt
+            doc.tex
+            README
+            
+And you want all the files in the doc directory to be placed in {doc} category, but README must be placed in {help} category, instead of listing all the files one by one, you can declare them in this way::
+
+    [files]
+    resources =
+        doc/* = {doc}
+        doc/README = {help}
+        
+Exclude
+_______
+
+You can exclude some files of resources declaration by giving no destination, it can be useful if you have a non-resources file in the same directory of resources files::
+
+    foo/
+        doc/
+           RELEASES
+           doc.tex
+           documentation.txt
+           docu.rst
+           
+Your **file** section will be::
+
+    [files]
+    resources =
+        doc/* = {doc}
+        doc/RELEASES =
+        
+More control on destination part
+--------------------------------  
+
+.. _base_prefix:
+
+Define a base-prefix
+____________________
+
+When you define your resources, you can have more control of how the final path is compute.
+
+By default, the final path is::
+
+    destination + source
+    
+This can generate long paths, for example (example_final_path_)::
+
+    {datadir}/doc/foo/doc/doc.man
+    
+When you declare your source, you can use a separator to split the source in **prefix** **suffix**. The supported separator are :
+
+ * Whitespace
+ 
+So, for example, if you have this source::
+
+    docs/ doc.man
+    
+The **prefix** is "docs/" and the **suffix** is "doc.html".
+
+.. note::
+
+    Separator can be placed after a path separator or replace it. So theses two sources are equivalent::
+    
+        docs/ doc.man
+        docs doc.man
+
+.. note::
+
+    Glob syntax is working the same way with standard source and splitted source. So theses rules::
+    
+        docs/*
+        docs/ *
+        docs *
+        
+    Will match all the files in the docs directory.
+    
+When you use splitted source, the final path is compute in this way::
+
+    destination + prefix
+    
+So for example, if you have this setup.cfg::
+
+    [metadata]
+    name = foo
+
+    [files]
+    resources =
+        doc/ doc.man = {doc}
+
+And if **{doc}** is replaced by **{datadir}/doc/{distribution.name}**, final path will be::
+
+    {datadir}/doc/foo/doc.man
+    
+    
+Overwrite paths for categories
+------------------------------
+
+.. warning::
+
+    This part is intended for system administrator or packager.
+    
+The real paths of categories are registered in the *sysconfig.cfg* file installed in your python installation. The format of this file is INI-like. The content of the file is  organized into several sections :
+
+ * globals : Standard categories's paths.
+ * posix_prefix : Standard paths for categories and installation paths for posix system.
+ * other one...
+ 
+Standard categories's paths are platform independent, they generally refers to other categories, which are platform dependent. Sysconfig module will choose these category from sections matching os.name. For example::
+
     doc = {datadir}/doc/{distribution.name}
-    # GNU info documentation files
-    info = {datadir}/info
-    # man pages
-    man = {datadir}/man
 
-So, if you have this destination path : **{help}/api**, it will be expanded into **{datadir}/{distribution.name}/api**. {datadir} will be expanded depending on your system value (ex : confdir = datadir = /usr/share/).
+It refers to datadir category, which can be different between platforms. In posix system, it may be::
 
+    datadir = /usr/share
+    
+So the final path will be::
 
-Simple-example
---------------
+    doc = /usr/share/doc/{distribution.name}
+    
+The platform dependent categories are :
+ 
+ * confdir
+ * datadir
+ * libdir
+ * base
+
+Define extra-categories
+-----------------------
+
+Examples
+--------
+
+.. note::
+
+    These examples are incremental but works unitarily.
+
+Resources in root dir
+_____________________
 
 Source tree::
 
@@ -309,16 +433,17 @@ Source tree::
     
 Setup.cfg::
 
-  [RESOURCES]
-  README = {doc}
-  *.sh = {scripts}
+    [files]
+    resources =
+        README = {doc}
+        *.sh = {scripts}
   
 So babar.sh and launch.sh will be placed in {scripts} directory.
 
-Now let's create to move all the scripts into a scripts/directory.
+Now let's move all the scripts into a scripts directory.
 
-Second-example
---------------
+Resources in sub-directory
+__________________________
 
 Source tree::
 
@@ -332,17 +457,18 @@ Source tree::
     
 Setup.cfg::
 
-  [RESOURCES]
-  README = {doc}
-  scripts/ LAUNCH = {scripts}
-  scripts/ *.sh = {scripts}
+    [files]
+    resources =
+        README = {doc}
+        scripts/ LAUNCH = {doc}
+        scripts/ *.sh = {scripts}
   
 It's important to use the separator after scripts/ to install all the bash scripts into {scripts} instead of {scripts}/scripts.
 
 Now let's add some docs.
 
-Third-example
--------------
+Resources in multiple sub-directories
+_____________________________________
 
 Source tree::
 
@@ -359,19 +485,20 @@ Source tree::
 
 Setup.cfg::
 
-  [RESOURCES]
-  README = {doc}
-  scripts/ LAUNCH = {doc}
-  scripts/ *.sh = {scripts}
-  doc/ * = {doc}
-  doc/ man = {man}
+   [files]
+   resources =
+        README = {doc}
+        scripts/ LAUNCH = {doc}
+        scripts/ *.sh = {scripts}
+        doc/ * = {doc}
+        doc/ man = {man}
   
 You want to place all the file in the docs script into {doc} category, instead of man, which must be placed into {man} category, we will use the order of declaration of globs to choose the destination, the last glob that match the file is used.
 
 Now let's add some scripts for windows users.
   
-Final example
--------------
+Complete example
+________________
 
 Source tree::
 
@@ -389,19 +516,19 @@ Source tree::
 
 Setup.cfg::
 
-  [RESOURCES]
-  README = {doc}
-  scripts/ LAUNCH = {doc}
-  scripts/ *.{sh,bat} = {scripts}
-  doc/ * = {doc}
-  doc/ man = {man}
+    [files]
+    resources = 
+        README = {doc}
+        scripts/ LAUNCH = {doc}
+        scripts/ *.{sh,bat} = {scripts}
+        doc/ * = {doc}
+        doc/ man = {man}
 
 We use brace expansion syntax to place all the bash and batch scripts into {scripts} category.
 
 .. Warning::
     In Distutils2, setup.py and README (or README.txt) files are not more
     included in source distribution by default
-
 
 `command` sections
 ==================
