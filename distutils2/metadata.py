@@ -3,8 +3,6 @@
 Supports all metadata formats (1.0, 1.1, 1.2).
 """
 
-import os
-import sys
 import re
 from StringIO import StringIO
 from email import message_from_file
@@ -82,6 +80,7 @@ _ALL_FIELDS.update(_241_FIELDS)
 _ALL_FIELDS.update(_314_FIELDS)
 _ALL_FIELDS.update(_345_FIELDS)
 
+
 def _version2fieldlist(version):
     if version == '1.0':
         return _241_FIELDS
@@ -138,45 +137,47 @@ def _best_version(fields):
     # default marker when 1.0 is disqualified
     return '1.2'
 
-_ATTR2FIELD = {'metadata_version': 'Metadata-Version',
-        'name': 'Name',
-        'version': 'Version',
-        'platform': 'Platform',
-        'supported_platform': 'Supported-Platform',
-        'summary': 'Summary',
-        'description': 'Description',
-        'keywords': 'Keywords',
-        'home_page': 'Home-page',
-        'author': 'Author',
-        'author_email': 'Author-email',
-        'maintainer': 'Maintainer',
-        'maintainer_email': 'Maintainer-email',
-        'license': 'License',
-        'classifier': 'Classifier',
-        'download_url': 'Download-URL',
-        'obsoletes_dist': 'Obsoletes-Dist',
-        'provides_dist': 'Provides-Dist',
-        'requires_dist': 'Requires-Dist',
-        'requires_python': 'Requires-Python',
-        'requires_external': 'Requires-External',
-        'requires': 'Requires',
-        'provides': 'Provides',
-        'obsoletes': 'Obsoletes',
-        'project_url': 'Project-URL',
-        }
+_ATTR2FIELD = {
+    'metadata_version': 'Metadata-Version',
+    'name': 'Name',
+    'version': 'Version',
+    'platform': 'Platform',
+    'supported_platform': 'Supported-Platform',
+    'summary': 'Summary',
+    'description': 'Description',
+    'keywords': 'Keywords',
+    'home_page': 'Home-page',
+    'author': 'Author',
+    'author_email': 'Author-email',
+    'maintainer': 'Maintainer',
+    'maintainer_email': 'Maintainer-email',
+    'license': 'License',
+    'classifier': 'Classifier',
+    'download_url': 'Download-URL',
+    'obsoletes_dist': 'Obsoletes-Dist',
+    'provides_dist': 'Provides-Dist',
+    'requires_dist': 'Requires-Dist',
+    'requires_python': 'Requires-Python',
+    'requires_external': 'Requires-External',
+    'requires': 'Requires',
+    'provides': 'Provides',
+    'obsoletes': 'Obsoletes',
+    'project_url': 'Project-URL',
+}
 
 _PREDICATE_FIELDS = ('Requires-Dist', 'Obsoletes-Dist', 'Provides-Dist')
 _VERSIONS_FIELDS = ('Requires-Python',)
 _VERSION_FIELDS = ('Version',)
 _LISTFIELDS = ('Platform', 'Classifier', 'Obsoletes',
-        'Requires', 'Provides', 'Obsoletes-Dist',
-        'Provides-Dist', 'Requires-Dist', 'Requires-External',
-        'Project-URL', 'Supported-Platform')
+               'Requires', 'Provides', 'Obsoletes-Dist',
+               'Provides-Dist', 'Requires-Dist', 'Requires-External',
+               'Project-URL', 'Supported-Platform')
 _LISTTUPLEFIELDS = ('Project-URL',)
 
 _ELEMENTSFIELD = ('Keywords',)
 
 _UNICODEFIELDS = ('Author', 'Maintainer', 'Summary', 'Description')
+
 
 class NoDefault(object):
     """Marker object used for clean representation"""
@@ -184,6 +185,7 @@ class NoDefault(object):
         return '<NoDefault>'
 
 _MISSING = NoDefault()
+
 
 class Metadata(object):
     """The metadata of a release.
@@ -474,7 +476,7 @@ class Metadata(object):
                 missing.append(attr)
 
         if strict and missing != []:
-            msg = "missing required metadata: %s"  % ', '.join(missing)
+            msg = 'missing required metadata: %s' % ', '.join(missing)
             raise MetadataMissingError(msg)
 
         for attr in ('Home-page', 'Author'):
@@ -504,14 +506,13 @@ class Metadata(object):
 
         return missing, warnings
 
+    # Mapping API
+
     def keys(self):
-        """Dict like api"""
         return _version2fieldlist(self.version)
 
     def values(self):
-        """Dict like api"""
         return [self[key] for key in self.keys()]
 
     def items(self):
-        """Dict like api"""
         return [(key, self[key]) for key in self.keys()]
