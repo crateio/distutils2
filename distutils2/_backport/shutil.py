@@ -408,7 +408,7 @@ def _make_tarball(base_name, base_dir, compress="gzip", verbose=0, dry_run=0,
     from distutils2._backport import tarfile
 
     if logger is not None:
-        logger.info('Creating tar archive')
+        logger.info('creating tar archive')
 
     uid = _get_uid(owner)
     gid = _get_gid(group)

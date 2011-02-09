@@ -44,9 +44,9 @@ except ImportError:
         RegError = win32api.error
 
     except ImportError:
-        logger.info("Warning: Can't read registry to find the "
+        logger.info("warning: can't read registry to find the "
                  "necessary compiler setting\n"
-                 "Make sure that Python modules _winreg, "
+                 "make sure that Python modules _winreg, "
                  "win32api or win32con are installed.")
         pass
 
@@ -653,7 +653,7 @@ class MSVCCompiler (CCompiler) :
 
 
 if get_build_version() >= 8.0:
-    logger.debug("Importing new compiler from distutils.msvc9compiler")
+    logger.debug("importing new compiler from distutils.msvc9compiler")
     OldMSVCCompiler = MSVCCompiler
     from distutils2.compiler.msvc9compiler import MSVCCompiler
     # get_build_architecture not really relevant now we support cross-compile
