@@ -1,6 +1,5 @@
 """Tests for distutils.manifest."""
 import os
-import sys
 import logging
 from StringIO import StringIO
 
@@ -25,10 +24,11 @@ file1
 
 
 class ManifestTestCase(support.TempdirManager,
+                       # enable this after LoggingCatcher is fixed
+                       #support.LoggingCatcher,
                        unittest.TestCase):
 
     def test_manifest_reader(self):
-
         tmpdir = self.mkdtemp()
         MANIFEST = os.path.join(tmpdir, 'MANIFEST.in')
         f = open(MANIFEST, 'w')
@@ -38,9 +38,10 @@ class ManifestTestCase(support.TempdirManager,
             f.close()
         manifest = Manifest()
 
+        # remove this when LoggingCatcher is fixed
         warns = []
-        def _warn(msg):
-            warns.append(msg)
+        def _warn(*args):
+            warns.append(args[0])
 
         old_warn = logging.warning
         logging.warning = _warn

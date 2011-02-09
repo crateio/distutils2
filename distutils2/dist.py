@@ -293,10 +293,10 @@ Common commands: (see '--help-commands' for more)
             opt_dict = self.command_options.get(cmd_name)
             if opt_dict is None:
                 self.announce(indent +
-                              "no option dict for '%s' command" % cmd_name)
+                              "no option dict for %r command" % cmd_name)
             else:
                 self.announce(indent +
-                              "option dict for '%s' command:" % cmd_name)
+                              "option dict for %r command:" % cmd_name)
                 out = pformat(opt_dict)
                 for line in out.split('\n'):
                     self.announce(indent + "  " + line)
@@ -401,7 +401,7 @@ Common commands: (see '--help-commands' for more)
         # Pull the current command from the head of the command line
         command = args[0]
         if not command_re.match(command):
-            raise SystemExit("invalid command name '%s'" % command)
+            raise SystemExit("invalid command name %r" % command)
         self.commands.append(command)
 
         # Dig up the command class that implements this command, so we
@@ -420,15 +420,15 @@ Common commands: (see '--help-commands' for more)
             if hasattr(cmd_class, meth):
                 continue
             raise DistutilsClassError(
-                  'command "%s" must implement "%s"' % (cmd_class, meth))
+                'command %r must implement %r' % (cmd_class, meth))
 
         # Also make sure that the command object provides a list of its
         # known options.
         if not (hasattr(cmd_class, 'user_options') and
                 isinstance(cmd_class.user_options, list)):
             raise DistutilsClassError(
-                  ("command class %s must provide "
-                   "'user_options' attribute (a list of tuples)") % cmd_class)
+                "command class %s must provide "
+                "'user_options' attribute (a list of tuples)" % cmd_class)
 
         # If the command class has a list of negative alias options,
         # merge it in with the global negative aliases.
@@ -466,7 +466,7 @@ Common commands: (see '--help-commands' for more)
                         func()
                     else:
                         raise DistutilsClassError(
-                            "invalid help function %r for help option '%s': "
+                            "invalid help function %r for help option %r: "
                             "must be a callable object (function, etc.)"
                             % (func, help_option))
 
@@ -537,7 +537,7 @@ Common commands: (see '--help-commands' for more)
                                         fix_help_options(cls.help_options))
             else:
                 parser.set_option_table(cls.user_options)
-            parser.print_help("Options for '%s' command:" % cls.__name__)
+            parser.print_help("Options for %r command:" % cls.__name__)
             print('')
 
         print(gen_usage(self.script_name))
@@ -639,7 +639,7 @@ Common commands: (see '--help-commands' for more)
         cmd_obj = self.command_obj.get(command)
         if not cmd_obj and create:
             logger.debug("Distribution.get_command_obj(): " \
-                         "creating '%s' command object" % command)
+                         "creating %r command object", command)
 
             cls = get_command_class(command)
             cmd_obj = self.command_obj[command] = cls(self)
@@ -669,10 +669,10 @@ Common commands: (see '--help-commands' for more)
         if option_dict is None:
             option_dict = self.get_option_dict(command_name)
 
-        logger.debug("  setting options for '%s' command:" % command_name)
+        logger.debug("  setting options for %r command:", command_name)
 
         for (option, (source, value)) in option_dict.iteritems():
-            logger.debug("    %s = %s (from %s)" % (option, value, source))
+            logger.debug("    %s = %s (from %s)", option, value, source)
             try:
                 bool_opts = [x.replace('-', '_')
                              for x in command_obj.boolean_options]
@@ -693,7 +693,7 @@ Common commands: (see '--help-commands' for more)
                     setattr(command_obj, option, value)
                 else:
                     raise DistutilsOptionError(
-                        "error in %s: command '%s' has no such option '%s'" %
+                        "error in %s: command %r has no such option %r" %
                         (source, command_name, option))
             except ValueError, msg:
                 raise DistutilsOptionError(msg)

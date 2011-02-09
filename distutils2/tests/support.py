@@ -51,6 +51,9 @@ class LoggingCatcher(object):
 
     def setUp(self):
         super(LoggingCatcher, self).setUp()
+        # TODO read the new logging docs and/or the python-dev posts about
+        # logging and tests to properly use a handler instead of
+        # monkey-patching
         self.old_log = logger._log
         logger._log = self._log
         logger.setLevel(logging.INFO)

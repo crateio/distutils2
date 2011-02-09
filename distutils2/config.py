@@ -3,8 +3,8 @@
     Know how to read all config files Distutils2 uses.
 """
 import os
-import re
 import sys
+import logging
 from ConfigParser import RawConfigParser
 from shlex import split
 
@@ -90,7 +90,8 @@ class Config(object):
         if os.path.isfile(local_file):
             files.append(local_file)
 
-        logger.debug("using config files: %s" % ', '.join(files))
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("using config files: %s", ', '.join(files))
         return files
 
     def _convert_metadata(self, name, value):
@@ -168,7 +169,7 @@ class Config(object):
             files = dict([(key, _convert(key, value))
                           for key, value in content['files'].iteritems()])
             self.dist.packages = []
-            self.dist.package_dir = pkg_dir = files.get('packages_root')
+            self.dist.package_dir = files.get('packages_root')
 
             packages = files.get('packages', [])
             if isinstance(packages, str):
@@ -241,7 +242,7 @@ class Config(object):
         parser = RawConfigParser()
 
         for filename in filenames:
-            logger.debug("  reading %s" % filename)
+            logger.debug("  reading %s", filename)
             parser.read(filename)
 
             if os.path.split(filename)[-1] == 'setup.cfg':

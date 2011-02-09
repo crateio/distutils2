@@ -418,7 +418,7 @@ class install_dist(Command):
             else:
                 opt_name = opt_name.replace('-', '_')
                 val = getattr(self, opt_name)
-            logger.debug("  %s: %s" % (opt_name, val))
+            logger.debug("  %s: %s", opt_name, val)
 
     def select_scheme(self, name):
         """Set the install directories by applying the install schemes."""

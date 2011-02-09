@@ -165,7 +165,7 @@ class Client(BaseClient):
                     p['version'], metadata={'summary': p['summary']},
                     index=self._index))
             except IrrationalVersionError, e:
-                logging.warn("Irrational version error found: %s" % e)
+                logging.warn("Irrational version error found: %s", e)
         return [self._projects[p['name'].lower()] for p in projects]
 
     def get_all_projects(self):

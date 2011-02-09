@@ -95,9 +95,6 @@ class SDistTestCase(support.TempdirManager, support.LoggingCatcher,
         dist.include_package_data = True
         cmd = sdist(dist)
         cmd.dist_dir = 'dist'
-        def _warn(*args):
-            pass
-        cmd.warn = _warn
         return dist, cmd
 
     @unittest.skipUnless(zlib, "requires zlib")
@@ -251,7 +248,7 @@ class SDistTestCase(support.TempdirManager, support.LoggingCatcher,
         cmd.ensure_finalized()
         cmd.run()
         warnings = self.get_logs(logging.WARN)
-        self.assertEqual(len(warnings), 1)
+        self.assertEqual(len(warnings), 2)
 
         # trying with a complete set of metadata
         self.clear_logs()
@@ -263,7 +260,8 @@ class SDistTestCase(support.TempdirManager, support.LoggingCatcher,
         # removing manifest generated warnings
         warnings = [warn for warn in warnings if
                     not warn.endswith('-- skipping')]
-        self.assertEqual(len(warnings), 0)
+        # the remaining warning is about the use of the default file list
+        self.assertEqual(len(warnings), 1)
 
 
     def test_show_formats(self):

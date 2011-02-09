@@ -2,10 +2,7 @@
 
 Implements the Distutils 'sdist' command (create a source distribution)."""
 import os
-import string
 import sys
-from glob import glob
-from warnings import warn
 from shutil import rmtree
 import re
 from StringIO import StringIO
@@ -18,11 +15,10 @@ except ImportError:
 from distutils2.command import get_command_names
 from distutils2.command.cmd import Command
 from distutils2.errors import (DistutilsPlatformError, DistutilsOptionError,
-                               DistutilsTemplateError, DistutilsModuleError,
-                               DistutilsFileError)
+                               DistutilsModuleError, DistutilsFileError)
 from distutils2.manifest import Manifest
 from distutils2 import logger
-from distutils2.util import convert_path, resolve_name
+from distutils2.util import resolve_name
 
 def show_formats():
     """Print all possible values for the 'formats' option (used by
@@ -300,7 +296,7 @@ class sdist(Command):
 
         for file in files:
             if not os.path.isfile(file):
-                logger.warn("'%s' not a regular file -- skipping" % file)
+                logger.warn("'%s' not a regular file -- skipping", file)
             else:
                 dest = os.path.join(base_dir, file)
                 self.copy_file(file, dest, link=link)
@@ -336,7 +332,7 @@ class sdist(Command):
 
         if not self.keep_temp:
             if self.dry_run:
-                logger.info('Removing %s' % base_dir)
+                logger.info('Removing %s', base_dir)
             else:
                 rmtree(base_dir)
 

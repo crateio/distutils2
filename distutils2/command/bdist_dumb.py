@@ -87,7 +87,7 @@ class bdist_dumb (Command):
         install.skip_build = self.skip_build
         install.warn_dir = 0
 
-        logger.info("installing to %s" % self.bdist_dir)
+        logger.info("installing to %s", self.bdist_dir)
         self.run_command('install_dist')
 
         # And make an archive relative to the root of the
@@ -106,11 +106,10 @@ class bdist_dumb (Command):
         else:
             if (self.distribution.has_ext_modules() and
                 (install.install_base != install.install_platbase)):
-                raise DistutilsPlatformError, \
-                      ("can't make a dumb built distribution where "
-                       "base and platbase are different (%s, %s)"
-                       % (repr(install.install_base),
-                          repr(install.install_platbase)))
+                raise DistutilsPlatformError(
+                    "can't make a dumb built distribution where base and "
+                    "platbase are different (%r, %r)" %
+                    (install.install_base, install.install_platbase))
             else:
                 archive_root = os.path.join(
                     self.bdist_dir,
@@ -129,7 +128,7 @@ class bdist_dumb (Command):
 
         if not self.keep_temp:
             if self.dry_run:
-                logger.info('Removing %s' % self.bdist_dir)
+                logger.info('Removing %s', self.bdist_dir)
             else:
                 rmtree(self.bdist_dir)
 

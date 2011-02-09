@@ -48,7 +48,7 @@ class clean(Command):
         # gone)
         if os.path.exists(self.build_temp):
             if self.dry_run:
-                logger.info('Removing %s' % self.build_temp)
+                logger.info('Removing %s', self.build_temp)
             else:
                 rmtree(self.build_temp)
         else:
@@ -62,7 +62,7 @@ class clean(Command):
                               self.build_scripts):
                 if os.path.exists(directory):
                     if self.dry_run:
-                        logger.info('Removing %s' % directory)
+                        logger.info('Removing %s', directory)
                     else:
                         rmtree(directory)
                 else:

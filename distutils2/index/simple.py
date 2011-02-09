@@ -11,7 +11,6 @@ import socket
 import sys
 import urllib2
 import urlparse
-import logging
 import os
 
 from distutils2 import logger
@@ -168,7 +167,7 @@ class Crawler(BaseClient):
         if predicate.name.lower() in self._projects and not force_update:
             return self._projects.get(predicate.name.lower())
         prefer_final = self._get_prefer_final(prefer_final)
-        logger.info('Reading info on PyPI about %s' % predicate.name)
+        logger.info('Reading info on PyPI about %s', predicate.name)
         self._process_index_page(predicate.name)
 
         if predicate.name.lower() not in self._projects:
@@ -306,8 +305,8 @@ class Crawler(BaseClient):
                             infos = get_infos_from_url(link, project_name,
                                         is_external=not self.index_url in url)
                         except CantParseArchiveName, e:
-                            logging.warning("version has not been parsed: %s"
-                                            % e)
+                            logger.warning(
+                                "version has not been parsed: %s", e)
                         else:
                             self._register_release(release_info=infos)
                     else:

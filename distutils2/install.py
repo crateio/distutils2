@@ -12,6 +12,7 @@ import sys
 import stat
 import errno
 import itertools
+import logging
 import tempfile
 
 from distutils2 import logger
@@ -134,12 +135,12 @@ def install_dists(dists, path, paths=sys.path):
 
     installed_dists, installed_files = [], []
     for dist in dists:
-        logger.info('Installing %s %s' % (dist.name, dist.version))
+        logger.info('Installing %s %s', dist.name, dist.version)
         try:
             installed_files.extend(_install_dist(dist, path))
             installed_dists.append(dist)
         except Exception, e:
-            logger.info('Failed. %s' % str(e))
+            logger.info('Failed. %s', e)
 
             # reverting
             for installed_dist in installed_dists:
@@ -258,8 +259,8 @@ def get_infos(requirements, index=None, installed=None, prefer_final=True):
         if predicate.name.lower() != installed_project.name.lower():
             continue
         found = True
-        logger.info('Found %s %s' % (installed_project.name,
-                                     installed_project.version))
+        logger.info('Found %s %s', installed_project.name,
+                    installed_project.version)
 
         # if we already have something installed, check it matches the
         # requirements
@@ -358,7 +359,7 @@ def remove(project_name, paths=sys.path):
     finally:
         shutil.rmtree(tmp)
 
-    logger.info('Removing %r...' % project_name)
+    logger.info('Removing %r...', project_name)
 
     file_count = 0
     for file_ in rmfiles:
@@ -391,16 +392,16 @@ def remove(project_name, paths=sys.path):
     if os.path.exists(dist.path):
         shutil.rmtree(dist.path)
 
-    logger.info('Success ! Removed %d files and %d dirs' % \
-            (file_count, dir_count))
+    logger.info('Success! Removed %d files and %d dirs',
+                file_count, dir_count)
 
 
 def install(project):
-    logger.info('Getting information about "%s".' % project)
+    logger.info('Getting information about "%s".', project)
     try:
         info = get_infos(project)
     except InstallationException:
-        logger.info('Cound not find "%s".' % project)
+        logger.info('Cound not find "%s".', project)
         return
 
     if info['install'] == []:
@@ -413,8 +414,9 @@ def install(project):
                            info['install'], info['remove'], info['conflict'])
 
     except InstallationConflict, e:
-        projects = ['%s %s' % (p.name, p.version) for p in e.args[0]]
-        logger.info('"%s" conflicts with "%s"' % (project, ','.join(projects)))
+        if logger.isEnabledFor(logging.INFO):
+            projects = ['%s %s' % (p.name, p.version) for p in e.args[0]]
+            logger.info('%r conflicts with %s', project, ','.join(projects))
 
 
 def _main(**attrs):
