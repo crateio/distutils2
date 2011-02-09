@@ -77,8 +77,6 @@ _345_MARKERS = ('Provides-Dist', 'Requires-Dist', 'Requires-Python',
                 'Obsoletes-Dist', 'Requires-External', 'Maintainer',
                 'Maintainer-email', 'Project-URL')
 
-_345_REQUIRED = ('Name', 'Version')
-
 _ALL_FIELDS = set()
 _ALL_FIELDS.update(_241_FIELDS)
 _ALL_FIELDS.update(_314_FIELDS)
@@ -471,7 +469,7 @@ class Metadata(object):
         # XXX should check the versions (if the file was loaded)
         missing, warnings = [], []
 
-        for attr in ('Name', 'Version'):
+        for attr in ('Name', 'Version'):  # required by PEP 345
             if attr not in self:
                 missing.append(attr)
 
