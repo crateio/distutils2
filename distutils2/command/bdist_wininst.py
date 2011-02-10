@@ -192,7 +192,7 @@ class bdist_wininst (Command):
 
         if not self.keep_temp:
             if self.dry_run:
-                logger.info('Removing %s', self.bdist_dir)
+                logger.info('removing %s', self.bdist_dir)
             else:
                 rmtree(self.bdist_dir)
 

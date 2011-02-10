@@ -9,6 +9,7 @@ _WRAPPER_MAPPINGS = {'get_release': 'simple',
 _WRAPPER_INDEXES = {'xmlrpc': xmlrpc.Client,
                     'simple': simple.Crawler}
 
+
 def switch_index_if_fails(func, wrapper):
     """Decorator that switch of index (for instance from xmlrpc to simple)
     if the first mirror return an empty list or raises an exception.
@@ -82,11 +83,11 @@ class ClientWrapper(object):
                 other_indexes = [i for i in self._indexes
                                  if i != self._default_index]
                 for index in other_indexes:
-                    real_method = getattr(self._indexes[index], method_name, None)
+                    real_method = getattr(self._indexes[index], method_name,
+                                          None)
                     if real_method:
                         break
         if real_method:
             return switch_index_if_fails(real_method, self)
         else:
             raise AttributeError("No index have attribute '%s'" % method_name)
-

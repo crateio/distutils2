@@ -191,7 +191,7 @@ class BCPPCompiler(CCompiler) :
             self._fix_lib_args (libraries, library_dirs, runtime_library_dirs)
 
         if runtime_library_dirs:
-            logger.warning("I don't know what to do with "
+            logger.warning("don't know what to do with "
                            "'runtime_library_dirs': %r", runtime_library_dirs)
 
         if output_dir is not None:

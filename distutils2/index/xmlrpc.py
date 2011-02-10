@@ -103,7 +103,6 @@ class Client(BaseClient):
         project.sort_releases(prefer_final)
         return project
 
-
     def get_distributions(self, project_name, version):
         """Grab informations about distributions from XML-RPC.
 

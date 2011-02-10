@@ -167,7 +167,7 @@ class Crawler(BaseClient):
         if predicate.name.lower() in self._projects and not force_update:
             return self._projects.get(predicate.name.lower())
         prefer_final = self._get_prefer_final(prefer_final)
-        logger.info('Reading info on PyPI about %s', predicate.name)
+        logger.info('reading info on PyPI about %s', predicate.name)
         self._process_index_page(predicate.name)
 
         if predicate.name.lower() not in self._projects:

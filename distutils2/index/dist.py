@@ -109,7 +109,8 @@ class ReleaseInfo(IndexReference):
                 self.dists = {}
         return self.dists
 
-    def add_distribution(self, dist_type='sdist', python_version=None, **params):
+    def add_distribution(self, dist_type='sdist', python_version=None,
+                         **params):
         """Add distribution informations to this release.
         If distribution information is already set for this distribution type,
         add the given url paths to the distribution. This can be useful while

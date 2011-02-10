@@ -92,7 +92,7 @@ class register(Command):
         '''
         # send the info to the server and report the result
         code, result = self.post_to_server(self.build_post_data('verify'))
-        logger.info('Server response (%s): %s', code, result)
+        logger.info('server response (%s): %s', code, result)
 
 
     def send_metadata(self):
@@ -206,9 +206,9 @@ Your selection [default 1]: ''', logging.INFO)
                 data['email'] = raw_input('   EMail: ')
             code, result = self.post_to_server(data)
             if code != 200:
-                logger.info('Server response (%s): %s', code, result)
+                logger.info('server response (%s): %s', code, result)
             else:
-                logger.info('You will receive an email shortly; follow the '
+                logger.info('you will receive an email shortly; follow the '
                             'instructions in it to complete registration.')
         elif choice == '3':
             data = {':action': 'password_reset'}
@@ -216,7 +216,7 @@ Your selection [default 1]: ''', logging.INFO)
             while not data['email']:
                 data['email'] = raw_input('Your email address: ')
             code, result = self.post_to_server(data)
-            logger.info('Server response (%s): %s', (code, result))
+            logger.info('server response (%s): %s', code, result)
 
     def build_post_data(self, action):
         # figure the data to send - the metadata plus some additional

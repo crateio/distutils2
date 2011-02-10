@@ -99,7 +99,7 @@ def _darwin_compiler_fixup(compiler_so, cc_args):
 
     if sysroot and not os.path.isdir(sysroot):
         logger.warning(
-            "Compiling with an SDK that doesn't seem to exist: %r;\n"
+            "compiling with an SDK that doesn't seem to exist: %r;\n"
             "please check your Xcode installation", sysroot)
 
     return compiler_so

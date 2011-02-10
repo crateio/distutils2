@@ -332,7 +332,7 @@ class sdist(Command):
 
         if not self.keep_temp:
             if self.dry_run:
-                logger.info('Removing %s', base_dir)
+                logger.info('removing %s', base_dir)
             else:
                 rmtree(base_dir)
 

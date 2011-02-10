@@ -229,14 +229,14 @@ def find_vcvarsall(version):
                 logger.debug("%s is not a valid directory", productdir)
                 return None
         else:
-            logger.debug("Env var %s is not set or invalid", toolskey)
+            logger.debug("env var %s is not set or invalid", toolskey)
     if not productdir:
-        logger.debug("No productdir found")
+        logger.debug("no productdir found")
         return None
     vcvarsall = os.path.join(productdir, "vcvarsall.bat")
     if os.path.isfile(vcvarsall):
         return vcvarsall
-    logger.debug("Unable to find vcvarsall.bat")
+    logger.debug("unable to find vcvarsall.bat")
     return None
 
 def query_vcvarsall(version, arch="x86"):
@@ -248,7 +248,7 @@ def query_vcvarsall(version, arch="x86"):
 
     if vcvarsall is None:
         raise DistutilsPlatformError("Unable to find vcvarsall.bat")
-    logger.debug("Calling 'vcvarsall.bat %s' (version=%s)", arch, version)
+    logger.debug("calling 'vcvarsall.bat %s' (version=%s)", arch, version)
     popen = subprocess.Popen('"%s" %s & set' % (vcvarsall, arch),
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)

@@ -76,7 +76,7 @@ def _run_d1_install(archive_dir, path):
     record_file = os.path.join(archive_dir, 'RECORD')
     os.system(cmd % (sys.executable, path, record_file))
     if not os.path.exists(record_file):
-        raise ValueError('Failed to install.')
+        raise ValueError('failed to install')
     return open(record_file).read().split('\n')
 
 
@@ -135,12 +135,12 @@ def install_dists(dists, path, paths=sys.path):
 
     installed_dists, installed_files = [], []
     for dist in dists:
-        logger.info('Installing %s %s', dist.name, dist.version)
+        logger.info('installing %s %s', dist.name, dist.version)
         try:
             installed_files.extend(_install_dist(dist, path))
             installed_dists.append(dist)
         except Exception, e:
-            logger.info('Failed. %s', e)
+            logger.info('failed: %s', e)
 
             # reverting
             for installed_dist in installed_dists:
@@ -244,7 +244,7 @@ def get_infos(requirements, index=None, installed=None, prefer_final=True):
     conflict.
     """
     if not installed:
-        logger.info('Reading installed distributions')
+        logger.info('reading installed distributions')
         installed = get_distributions(use_egg_info=True)
 
     infos = {'install': [], 'remove': [], 'conflict': []}
@@ -259,7 +259,7 @@ def get_infos(requirements, index=None, installed=None, prefer_final=True):
         if predicate.name.lower() != installed_project.name.lower():
             continue
         found = True
-        logger.info('Found %s %s', installed_project.name,
+        logger.info('found %s %s', installed_project.name,
                     installed_project.version)
 
         # if we already have something installed, check it matches the
@@ -269,7 +269,7 @@ def get_infos(requirements, index=None, installed=None, prefer_final=True):
         break
 
     if not found:
-        logger.info('Project not installed.')
+        logger.info('project not installed')
 
     if not index:
         index = wrapper.ClientWrapper()
@@ -284,7 +284,7 @@ def get_infos(requirements, index=None, installed=None, prefer_final=True):
     release = releases.get_last(requirements, prefer_final=prefer_final)
 
     if release is None:
-        logger.info('Could not find a matching project')
+        logger.info('could not find a matching project')
         return infos
 
     # this works for Metadata 1.2
@@ -359,7 +359,7 @@ def remove(project_name, paths=sys.path):
     finally:
         shutil.rmtree(tmp)
 
-    logger.info('Removing %r...', project_name)
+    logger.info('removing %r...', project_name)
 
     file_count = 0
     for file_ in rmfiles:
@@ -392,20 +392,20 @@ def remove(project_name, paths=sys.path):
     if os.path.exists(dist.path):
         shutil.rmtree(dist.path)
 
-    logger.info('Success! Removed %d files and %d dirs',
+    logger.info('success: removed %d files and %d dirs',
                 file_count, dir_count)
 
 
 def install(project):
-    logger.info('Getting information about "%s".', project)
+    logger.info('getting information about %r', project)
     try:
         info = get_infos(project)
     except InstallationException:
-        logger.info('Cound not find "%s".', project)
+        logger.info('cound not find %r', project)
         return
 
     if info['install'] == []:
-        logger.info('Nothing to install.')
+        logger.info('nothing to install')
         return
 
     install_path = get_config_var('base')
