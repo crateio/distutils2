@@ -14,9 +14,9 @@ import logging
 
 from distutils2.command.cmd import Command
 from distutils2 import logger
-from distutils2.util import (metadata_to_dict, read_pypirc, generate_pypirc,
-                             DEFAULT_REPOSITORY, DEFAULT_REALM,
-                             get_pypirc_path)
+from distutils2.metadata import metadata_to_dict
+from distutils2.util import (read_pypirc, generate_pypirc, DEFAULT_REPOSITORY,
+                             DEFAULT_REALM, get_pypirc_path)
 
 class register(Command):
 

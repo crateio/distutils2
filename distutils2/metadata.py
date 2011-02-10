@@ -39,8 +39,8 @@ except ImportError:
     _HAS_DOCUTILS = False
 
 # public API of this module
-__all__ = ['Metadata', 'PKG_INFO_ENCODING',
-           'PKG_INFO_PREFERRED_VERSION']
+__all__ = ['Metadata', 'get_metadata_version', 'metadata_to_dict',
+           'PKG_INFO_ENCODING', 'PKG_INFO_PREFERRED_VERSION']
 
 # Encoding used for the PKG-INFO files
 PKG_INFO_ENCODING = 'utf-8'
@@ -137,6 +137,53 @@ def _best_version(fields):
     # default marker when 1.0 is disqualified
     return '1.2'
 
+
+def get_metadata_version(metadata):
+    """Return the Metadata-Version attribute
+
+    - *metadata* give a METADATA object
+    """
+    return metadata['Metadata-Version']
+
+
+def metadata_to_dict(metadata):
+    """Convert a metadata object to a dict
+
+    - *metadata* give a METADATA object
+    """
+    data = {
+        'metadata_version': metadata['Metadata-Version'],
+        'name': metadata['Name'],
+        'version': metadata['Version'],
+        'summary': metadata['Summary'],
+        'home_page': metadata['Home-page'],
+        'author': metadata['Author'],
+        'author_email': metadata['Author-email'],
+        'license': metadata['License'],
+        'description': metadata['Description'],
+        'keywords': metadata['Keywords'],
+        'platform': metadata['Platform'],
+        'classifier': metadata['Classifier'],
+        'download_url': metadata['Download-URL'],
+    }
+
+    if metadata['Metadata-Version'] == '1.2':
+        data['requires_dist'] = metadata['Requires-Dist']
+        data['requires_python'] = metadata['Requires-Python']
+        data['requires_external'] = metadata['Requires-External']
+        data['provides_dist'] = metadata['Provides-Dist']
+        data['obsoletes_dist'] = metadata['Obsoletes-Dist']
+        data['project_url'] = [','.join(url) for url in
+                               metadata['Project-URL']]
+
+    elif metadata['Metadata-Version'] == '1.1':
+        data['provides'] = metadata['Provides']
+        data['requires'] = metadata['Requires']
+        data['obsoletes'] = metadata['Obsoletes']
+
+    return data
+
+
 _ATTR2FIELD = {
     'metadata_version': 'Metadata-Version',
     'name': 'Name',
@@ -205,7 +252,6 @@ class Metadata(object):
                  display_warnings=False):
         self._fields = {}
         self.display_warnings = display_warnings
-        self.version = None
         self.requires_files = []
         self.docutils_support = _HAS_DOCUTILS
         self.platform_dependent = platform_dependent
@@ -220,8 +266,7 @@ class Metadata(object):
             self.update(mapping)
 
     def _set_best_version(self):
-        self.version = _best_version(self._fields)
-        self._fields['Metadata-Version'] = self.version
+        self._fields['Metadata-Version'] = _best_version(self._fields)
 
     def _write_field(self, file, name, value):
         file.write('%s: %s\n' % (name, value))
@@ -318,9 +363,9 @@ class Metadata(object):
     def read_file(self, fileob):
         """Read the metadata values from a file object."""
         msg = message_from_file(fileob)
-        self.version = msg['metadata-version']
+        self._fields['Metadata-Version'] = msg['metadata-version']
 
-        for field in _version2fieldlist(self.version):
+        for field in _version2fieldlist(self['Metadata-Version']):
             if field in _LISTFIELDS:
                 # we can have multiple lines
                 values = msg.get_all(field)
@@ -344,7 +389,7 @@ class Metadata(object):
     def write_file(self, fileobject):
         """Write the PKG-INFO format data to a file object."""
         self._set_best_version()
-        for field in _version2fieldlist(self.version):
+        for field in _version2fieldlist(self['Metadata-Version']):
             values = self.get(field)
             if field in _ELEMENTSFIELD:
                 self._write_field(fileobject, field, ','.join(values))
@@ -509,7 +554,7 @@ class Metadata(object):
     # Mapping API
 
     def keys(self):
-        return _version2fieldlist(self.version)
+        return _version2fieldlist(self['Metadata-Version'])
 
     def values(self):
         return [self[key] for key in self.keys()]
