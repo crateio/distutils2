@@ -850,6 +850,7 @@ main (int argc, char **argv) {
 
     # -- Utility methods -----------------------------------------------
 
+    # TODO use logging.info
     def announce(self, msg, level=None):
         logger.debug(msg)
 
@@ -858,6 +859,7 @@ main (int argc, char **argv) {
         if DEBUG:
             print msg
 
+    # TODO use logging.warn
     def warn(self, msg):
         sys.stderr.write("warning: %s\n" % msg)
 

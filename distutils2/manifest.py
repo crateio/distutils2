@@ -206,44 +206,43 @@ class Manifest(object):
         if action == 'include':
             for pattern in patterns:
                 if not self._include_pattern(pattern, anchor=1):
-                    logging.warning("warning: no files found matching %r",
-                                    pattern)
+                    logging.warning("no files found matching %r", pattern)
 
         elif action == 'exclude':
             for pattern in patterns:
                 if not self.exclude_pattern(pattern, anchor=1):
-                    logging.warning("warning: no previously-included files "
+                    logging.warning("no previously-included files "
                                     "found matching %r", pattern)
 
         elif action == 'global-include':
             for pattern in patterns:
                 if not self._include_pattern(pattern, anchor=0):
-                    logging.warning("warning: no files found matching %r "
+                    logging.warning("no files found matching %r "
                                     "anywhere in distribution", pattern)
 
         elif action == 'global-exclude':
             for pattern in patterns:
                 if not self.exclude_pattern(pattern, anchor=0):
-                    logging.warning("warning: no previously-included files "
+                    logging.warning("no previously-included files "
                                     "matching %r found anywhere in "
                                     "distribution", pattern)
 
         elif action == 'recursive-include':
             for pattern in patterns:
                 if not self._include_pattern(pattern, prefix=dir):
-                    logging.warning("warning: no files found matching %r "
+                    logging.warning("no files found matching %r "
                                     "under directory %r", pattern, dir)
 
         elif action == 'recursive-exclude':
             for pattern in patterns:
                 if not self.exclude_pattern(pattern, prefix=dir):
-                    logging.warning("warning: no previously-included files "
+                    logging.warning("no previously-included files "
                                     "matching %r found under directory %r",
                                     pattern, dir)
 
         elif action == 'graft':
             if not self._include_pattern(None, prefix=dir_pattern):
-                logging.warning("warning: no directories found matching %r",
+                logging.warning("no directories found matching %r",
                                 dir_pattern)
 
         elif action == 'prune':

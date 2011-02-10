@@ -182,7 +182,7 @@ class Command(object):
         raise RuntimeError(
             "abstract method -- subclass %s must override" % self.__class__)
 
-    # TODO remove this method, just use logging
+    # TODO remove this method, just use logging.info
     def announce(self, msg, level=logging.INFO):
         """If the current verbosity level is of greater than or equal to
         'level' print 'msg' to stdout.
@@ -364,7 +364,7 @@ class Command(object):
 
     # -- External world manipulation -----------------------------------
 
-    # TODO remove this method, just use logging
+    # TODO remove this method, just use logging.warn
     def warn(self, msg):
         logger.warning("warning: %s: %s\n", self.get_command_name(), msg)
 

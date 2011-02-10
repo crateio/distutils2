@@ -44,11 +44,10 @@ except ImportError:
         RegError = win32api.error
 
     except ImportError:
-        logger.info("Warning: Can't read registry to find the "
-                 "necessary compiler setting\n"
-                 "Make sure that Python modules _winreg, "
-                 "win32api or win32con are installed.")
-        pass
+        logger.warning(
+            "Can't read registry to find the necessary compiler setting;\n"
+            "make sure that Python modules _winreg, win32api or win32con "
+            "are installed.")
 
 if _can_read_reg:
     HKEYS = (hkey_mod.HKEY_USERS,

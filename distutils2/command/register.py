@@ -208,9 +208,8 @@ Your selection [default 1]: ''', logging.INFO)
             if code != 200:
                 logger.info('Server response (%s): %s', code, result)
             else:
-                logger.info('You will receive an email shortly.')
-                logger.info('Follow the instructions in it to '
-                            'complete registration.')
+                logger.info('You will receive an email shortly; follow the '
+                            'instructions in it to complete registration.')
         elif choice == '3':
             data = {':action': 'password_reset'}
             data['email'] = ''
