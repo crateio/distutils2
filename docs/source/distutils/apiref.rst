@@ -1166,15 +1166,6 @@ other utility module.
    an underscore. No { } or ( ) style quoting is available.
 
 
-.. function:: grok_environment_error(exc[, prefix='error: '])
-
-   Generate a useful error message from an :exc:`EnvironmentError`
-   (:exc:`IOError` or :exc:`OSError`) exception object. Does what it can to deal
-   with exception objects that don't have a filename (which happens when the
-   error is due to a two-file operation, such as :func:`rename` or
-   :func:`link`).  Returns the error message as a string prefixed with *prefix*.
-
-
 .. function:: split_quoted(s)
 
    Split a string up according to Unix shell-like rules for quotes and

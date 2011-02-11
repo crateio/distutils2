@@ -4,7 +4,6 @@ from optparse import OptionParser
 import logging
 
 from distutils2 import logger
-from distutils2.util import grok_environment_error
 from distutils2.errors import (DistutilsSetupError, DistutilsArgError,
                                DistutilsError, CCompilerError)
 from distutils2.dist import Distribution
@@ -106,12 +105,7 @@ def commands_main(**attrs):
             dist.run_commands()
         except KeyboardInterrupt:
             raise SystemExit("interrupted")
-        except (IOError, os.error), exc:
-            error = grok_environment_error(exc)
-            raise SystemExit(error)
-
-        except (DistutilsError,
-                CCompilerError), msg:
+        except (IOError, os.error, DistutilsError, CCompilerError), msg:
             raise SystemExit("error: " + str(msg))
 
     return dist
