@@ -4,7 +4,7 @@ import sys
 import platform
 from StringIO import StringIO
 
-from distutils2.metadata import (Metadata,
+from distutils2.metadata import (Metadata, get_metadata_version,
                                  PKG_INFO_PREFERRED_VERSION)
 from distutils2.tests import run_unittest, unittest
 from distutils2.tests.support import LoggingCatcher, WarningsCatcher
@@ -126,18 +126,23 @@ class MetadataTestCase(LoggingCatcher, WarningsCatcher,
         del metadata['Obsoletes-Dist']
         metadata['Version'] = '1'
         self.assertEqual(metadata['Metadata-Version'], '1.0')
+        self.assertEqual(get_metadata_version(metadata), '1.0')
 
         PKG_INFO = os.path.join(os.path.dirname(__file__),
                                 'SETUPTOOLS-PKG-INFO')
         metadata.read_file(StringIO(open(PKG_INFO).read()))
         self.assertEqual(metadata['Metadata-Version'], '1.0')
+        self.assertEqual(get_metadata_version(metadata), '1.0')
 
         PKG_INFO = os.path.join(os.path.dirname(__file__),
                                 'SETUPTOOLS-PKG-INFO2')
         metadata.read_file(StringIO(open(PKG_INFO).read()))
         self.assertEqual(metadata['Metadata-Version'], '1.1')
+        self.assertEqual(get_metadata_version(metadata), '1.1')
 
-        metadata.version = '1.618'
+        # Update the _fields dict directly to prevent 'Metadata-Version'
+        # from being updated by the _set_best_version() method.
+        metadata._fields['Metadata-Version'] = '1.618'
         self.assertRaises(MetadataUnrecognizedVersionError, metadata.keys)
 
     # XXX Spurious Warnings were disabled
@@ -169,7 +174,7 @@ class MetadataTestCase(LoggingCatcher, WarningsCatcher,
         metadata['Project-URL'] = [('one', 'http://ok')]
         self.assertEqual(metadata['Project-URL'],
                           [('one', 'http://ok')])
-        self.assertEqual(metadata.version, '1.2')
+        self.assertEqual(metadata['Metadata-Version'], '1.2')
 
     def test_check_version(self):
         metadata = Metadata()
@@ -244,9 +249,13 @@ class MetadataTestCase(LoggingCatcher, WarningsCatcher,
     def test_best_choice(self):
         metadata = Metadata()
         metadata['Version'] = '1.0'
-        self.assertEqual(metadata.version, PKG_INFO_PREFERRED_VERSION)
+        self.assertEqual(metadata['Metadata-Version'],
+                         PKG_INFO_PREFERRED_VERSION)
+        self.assertEqual(get_metadata_version(metadata),
+                         PKG_INFO_PREFERRED_VERSION)
         metadata['Classifier'] = ['ok']
-        self.assertEqual(metadata.version, '1.2')
+        self.assertEqual(metadata['Metadata-Version'], '1.2')
+        self.assertEqual(get_metadata_version(metadata), '1.2')
 
     def test_project_urls(self):
         # project-url is a bit specific, make sure we write it

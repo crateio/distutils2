@@ -20,8 +20,8 @@ except ImportError:
 from distutils2.errors import DistutilsOptionError
 from distutils2.util import spawn
 from distutils2.command.cmd import Command
-from distutils2.util import (metadata_to_dict, read_pypirc,
-                             DEFAULT_REPOSITORY, DEFAULT_REALM)
+from distutils2.metadata import metadata_to_dict
+from distutils2.util import read_pypirc, DEFAULT_REPOSITORY, DEFAULT_REALM
 
 
 class upload(Command):
