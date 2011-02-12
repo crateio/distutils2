@@ -8,6 +8,7 @@ from textwrap import dedent
 from distutils2.tests import run_unittest, support, unittest
 from distutils2.mkcfg import MainProgram
 from distutils2.mkcfg import ask_yn, ask, main
+from distutils2._backport import sysconfig
 
 
 class MkcfgTestCase(support.TempdirManager,
@@ -22,12 +23,18 @@ class MkcfgTestCase(support.TempdirManager,
         self._cwd = os.getcwd()
         self.wdir = self.mkdtemp()
         os.chdir(self.wdir)
+        # patch sysconfig
+        self._old_get_paths = sysconfig.get_paths
+        sysconfig.get_paths = lambda *args, **kwargs: {
+                'man': sys.prefix + '/share/man', 
+                'doc': sys.prefix + '/share/doc/pyxfoil',}
 
     def tearDown(self):
         super(MkcfgTestCase, self).tearDown()
         sys.stdin = self._stdin
         sys.stdout = self._stdout
         os.chdir(self._cwd)
+        sysconfig.get_paths = self._old_get_paths
 
     def test_ask_yn(self):
         sys.stdin.write('y\n')
