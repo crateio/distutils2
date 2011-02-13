@@ -1,15 +1,14 @@
 """Tests for the distutils2.install module."""
 
 import os
-from tempfile import mkstemp
 
+from tempfile import mkstemp
 from distutils2 import install
 from distutils2.index.xmlrpc import Client
 from distutils2.metadata import Metadata
 from distutils2.tests import run_unittest
-from distutils2.tests.support import TempdirManager
+from distutils2.tests.support import LoggingCatcher, TempdirManager, unittest
 from distutils2.tests.pypi_server import use_xmlrpc_server
-from distutils2.tests.support import unittest
 
 
 class InstalledDist(object):
@@ -84,7 +83,7 @@ def get_installed_dists(dists):
     return objects
 
 
-class TestInstall(TempdirManager, unittest.TestCase):
+class TestInstall(LoggingCatcher, TempdirManager, unittest.TestCase):
     def _get_client(self, server, *args, **kwargs):
         return Client(server.full_address, *args, **kwargs)
 
