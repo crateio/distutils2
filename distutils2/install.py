@@ -22,20 +22,13 @@ from distutils2._backport.sysconfig import get_config_var
 from distutils2.depgraph import generate_graph
 from distutils2.index import wrapper
 from distutils2.index.errors import ProjectNotFound, ReleaseNotFound
-from distutils2.errors import DistutilsError
+from distutils2.errors import (DistutilsError, InstallationException,
+                               InstallationConflict)
 from distutils2.version import get_version_predicate
 
 
 __all__ = ['install_dists', 'install_from_infos', 'get_infos', 'remove',
            'install']
-
-
-class InstallationException(Exception):
-    """Base exception for installation scripts"""
-
-
-class InstallationConflict(InstallationException):
-    """Raised when a conflict is detected"""
 
 
 def _move_files(files, destination):
@@ -364,7 +357,7 @@ def remove(project_name, paths=sys.path):
     file_count = 0
     for file_ in rmfiles:
         os.remove(file_)
-        file_count +=1
+        file_count += 1
 
     dir_count = 0
     for dirname in rmdirs:
