@@ -153,9 +153,9 @@ class MkcfgTestCase(support.TempdirManager,
             '    pyxfoil/fengine.so',
             'scripts = my_script',
             '    bin/run',
-            '[resources]',
-            'README.rst = {doc}',
-            'pyxfoil.1 = {man}',
+            'resources =',
+            '    README.rst = {doc}',
+            '    pyxfoil.1 = {man}',
         ]))
 
     def test_convert_setup_py_to_cfg_with_description_in_readme(self):
@@ -173,7 +173,7 @@ class MkcfgTestCase(support.TempdirManager,
               url='http://www.python-science.org/project/pyxfoil',
               license='GPLv2',
               packages=['pyxfoil'],
-              package_data={'pyxfoil' : ['fengine.so']},
+              package_data={'pyxfoil' : ['fengine.so', 'babar.so']},
               data_files=[
                 ('share/doc/pyxfoil', ['README.rst']),
                 ('share/man', ['pyxfoil.1']),
@@ -191,7 +191,7 @@ ho, baby !
         main()
         fp = open(os.path.join(self.wdir, 'setup.cfg'))
         try:
-            lines = set([line.strip() for line in fp])
+            lines = set([line.rstrip() for line in fp])
         finally:
             fp.close()
         self.assertEqual(lines, set(['',
@@ -207,9 +207,10 @@ ho, baby !
             '[files]',
             'packages = pyxfoil',
             'extra_files = pyxfoil/fengine.so',
-            '[resources]',
-            'README.rst = {doc}',
-            'pyxfoil.1 = {man}',
+            '    pyxfoil/babar.so',
+            'resources =',
+            '    README.rst = {doc}',
+            '    pyxfoil.1 = {man}',
         ]))
 
 

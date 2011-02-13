@@ -120,6 +120,14 @@ def _expand_vars(scheme, vars):
         res[key] = os.path.normpath(_subst_vars(value, vars))
     return res
 
+def format_value(value, vars):
+    def _replacer(matchobj):
+         name = matchobj.group(1)
+         if name in vars:
+             return vars[name]
+         return matchobj.group(0)
+    return _VAR_REPL.sub(_replacer, value)
+ 
 
 def _get_default_scheme():
     if os.name == 'posix':

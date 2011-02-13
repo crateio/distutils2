@@ -15,6 +15,10 @@ import zipfile
 from subprocess import call as sub_call
 from copy import copy
 from fnmatch import fnmatchcase
+try:
+    from glob import iglob as std_iglob
+except ImportError:
+    from glob import glob as std_iglob # for python < 2.5
 from ConfigParser import RawConfigParser
 from inspect import getsource
 
@@ -945,6 +949,47 @@ class Mixin2to3:
         """ Issues a call to util.run_2to3. """
         return run_2to3(files, doctests_only, self.fixer_names,
                         self.options, self.explicit)
+
+RICH_GLOB = re.compile(r'\{([^}]*)\}')
+_CHECK_RECURSIVE_GLOB = re.compile(r'[^/,{]\*\*|\*\*[^/,}]')
+_CHECK_MISMATCH_SET = re.compile(r'^[^{]*\}|\{[^}]*$')
+
+def iglob(path_glob):
+    """Richer glob than the std glob module support ** and {opt1,opt2,opt3}"""
+    if _CHECK_RECURSIVE_GLOB.search(path_glob):
+        msg = """Invalid glob %r: Recursive glob "**" must be used alone"""
+        raise ValueError(msg % path_glob)
+    if _CHECK_MISMATCH_SET.search(path_glob):
+        msg = """Invalid glob %r: Mismatching set marker '{' or '}'"""
+        raise ValueError(msg % path_glob)
+    return _iglob(path_glob)
+
+
+def _iglob(path_glob):
+    """Actual logic of the iglob function"""
+    rich_path_glob = RICH_GLOB.split(path_glob, 1)
+    if len(rich_path_glob) > 1:
+        assert len(rich_path_glob) == 3, rich_path_glob
+        prefix, set, suffix = rich_path_glob
+        for item in set.split(','):
+            for path in _iglob( ''.join((prefix, item, suffix))):
+                yield path
+    else:
+        if '**' not in path_glob:
+            for item in std_iglob(path_glob):
+                yield item
+        else:
+            prefix, radical = path_glob.split('**', 1)
+            if prefix == '':
+                prefix = '.'
+            if radical == '':
+                radical = '*'
+            else:
+                radical = radical.lstrip('/')
+            for (path, dir, files) in os.walk(prefix):
+                path = os.path.normpath(path)
+                for file in _iglob(os.path.join(path, radical)):
+                   yield file
 
 
 def generate_distutils_kwargs_from_setup_cfg(file='setup.cfg'):

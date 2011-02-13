@@ -65,11 +65,6 @@ scripts =
 package_data =
   cheese = data/templates/*
 
-data_files =
-  bitmaps = bm/b1.gif, bm/b2.gif
-  config = cfg/data.cfg
-  /etc/init.d = init-script
-
 extra_files = %(extra-files)s
 
 # Replaces MANIFEST.in
@@ -77,6 +72,11 @@ sdist_extra =
   include THANKS HACKING
   recursive-include examples *.txt *.py
   prune examples/sample?/build
+
+resources=
+  bm/ {b1,b2}.gif = {icon}
+  Cf*/ *.CFG = {config}/baBar/
+  init_script = {script}/JunGle/
 
 [global]
 commands =
@@ -193,6 +193,12 @@ class ConfigTestCase(support.TempdirManager,
     def test_config(self):
         self.write_setup()
         self.write_file('README', 'yeah')
+        os.mkdir('bm')
+        self.write_file(os.path.join('bm', 'b1.gif'), '')
+        self.write_file(os.path.join('bm', 'b2.gif'), '')
+        os.mkdir('Cfg')
+        self.write_file(os.path.join('Cfg', 'data.CFG'), '')
+        self.write_file('init_script', '')
 
         # try to load the metadata now
         dist = self.run_setup('--version')
@@ -237,10 +243,12 @@ class ConfigTestCase(support.TempdirManager,
         self.assertEqual(dist.packages, ['one', 'two', 'three'])
         self.assertEqual(dist.py_modules, ['haven'])
         self.assertEqual(dist.package_data, {'cheese': 'data/templates/*'})
-        self.assertEqual(dist.data_files,
-            [('bitmaps ', ['bm/b1.gif', 'bm/b2.gif']),
-             ('config ', ['cfg/data.cfg']),
-             ('/etc/init.d ', ['init-script'])])
+        self.assertEqual(
+            {'bm/b1.gif' : '{icon}/b1.gif',
+             'bm/b2.gif' : '{icon}/b2.gif',
+             'Cfg/data.CFG' : '{config}/baBar/data.CFG',
+             'init_script' : '{script}/JunGle/init_script'},
+             dist.data_files)
 
         self.assertEqual(dist.package_dir, 'src')
 

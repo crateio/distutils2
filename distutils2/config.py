@@ -2,6 +2,7 @@
 
     Know how to read all config files Distutils2 uses.
 """
+import os.path
 import os
 import sys
 import logging
@@ -14,6 +15,7 @@ from distutils2.compiler.extension import Extension
 from distutils2.util import check_environ, resolve_name, strtobool
 from distutils2.compiler import set_compiler
 from distutils2.command import set_command
+from distutils2.resources import resources_dests
 from distutils2.markers import interpret
 
 
@@ -105,7 +107,8 @@ class Config(object):
                 if v != '']
         return value
 
-    def _read_setup_cfg(self, parser):
+    def _read_setup_cfg(self, parser, cfg_filename):
+        cfg_directory = os.path.dirname(os.path.abspath(cfg_filename))
         content = {}
         for section in parser.sections():
             content[section] = dict(parser.items(section))
@@ -145,11 +148,12 @@ class Config(object):
                     # concatenate each files
                     value = ''
                     for filename in filenames:
-                        f = open(filename)    # will raise if file not found
+                        # will raise if file not found
+                        description_file = open(filename)
                         try:
-                            value += f.read().strip() + '\n'
+                            value += description_file.read().strip() + '\n'
                         finally:
-                            f.close()
+                            description_file.close()
                         # add filename as a required file
                         if filename not in metadata.requires_files:
                             metadata.requires_files.append(filename)
@@ -189,21 +193,27 @@ class Config(object):
             for data in files.get('package_data', []):
                 data = data.split('=')
                 if len(data) != 2:
-                    continue
+                    continue # XXX error should never pass silently
                 key, value = data
                 self.dist.package_data[key.strip()] = value.strip()
 
-            self.dist.data_files = []
-            for data in files.get('data_files', []):
-                data = data.split('=')
-                if len(data) != 2:
-                    continue
-                key, value = data
-                values = [v.strip() for v in value.split(',')]
-                self.dist.data_files.append((key, values))
-
             # manifest template
             self.dist.extra_files = files.get('extra_files', [])
+
+            resources = []
+            for rule in files.get('resources', []):
+                glob , destination  = rule.split('=', 1)
+                rich_glob = glob.strip().split(' ', 1)
+                if len(rich_glob) == 2:
+                    prefix, suffix = rich_glob
+                else:
+                    assert len(rich_glob) == 1
+                    prefix = ''
+                    suffix = glob
+                if destination == '<exclude>':
+                    destination = None
+                resources.append((prefix.strip(), suffix.strip(), destination.strip()))
+                self.dist.data_files = resources_dests(cfg_directory, resources)
 
         ext_modules = self.dist.ext_modules
         for section_key in content:
@@ -232,7 +242,6 @@ class Config(object):
                     **values_dct
                 ))
 
-
     def parse_config_files(self, filenames=None):
         if filenames is None:
             filenames = self.find_config_files()
@@ -246,7 +255,7 @@ class Config(object):
             parser.read(filename)
 
             if os.path.split(filename)[-1] == 'setup.cfg':
-                self._read_setup_cfg(parser)
+                self._read_setup_cfg(parser, filename)
 
             for section in parser.sections():
                 if section == 'global':

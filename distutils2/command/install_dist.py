@@ -87,6 +87,8 @@ class install_dist(Command):
         ('record=', None,
          "filename in which to record a list of installed files "
          "(not PEP 376-compliant)"),
+        ('resources=', None,
+         "data files mapping"),
 
         # .dist-info related arguments, read by install_dist_info
         ('no-distinfo', None,
@@ -184,12 +186,14 @@ class install_dist(Command):
         #self.install_info = None
 
         self.record = None
+        self.resources = None
 
         # .dist-info related options
         self.no_distinfo = None
         self.installer = None
         self.requested = None
         self.no_record = None
+        self.no_resources = None
 
     # -- Option finalizing methods -------------------------------------
     # (This is rather more involved than for most commands,

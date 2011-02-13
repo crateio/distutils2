@@ -9,6 +9,8 @@ platform-independent data files."""
 import os
 from distutils2.command.cmd import Command
 from distutils2.util import change_root, convert_path
+from distutils2._backport.sysconfig import get_paths, format_value
+from distutils2._backport.shutil import Error
 
 class install_data(Command):
 
@@ -28,6 +30,7 @@ class install_data(Command):
     def initialize_options(self):
         self.install_dir = None
         self.outfiles = []
+        self.data_files_out = []
         self.root = None
         self.force = 0
         self.data_files = self.distribution.data_files
@@ -40,54 +43,38 @@ class install_data(Command):
 
     def run(self):
         self.mkpath(self.install_dir)
-        for f in self.data_files:
-            if isinstance(f, str):
-                # it's a simple file, so copy it
-                f = convert_path(f)
-                if self.warn_dir:
-                    self.warn("setup script did not provide a directory for "
-                              "'%s' -- installing right in '%s'" %
-                              (f, self.install_dir))
-                (out, _) = self.copy_file(f, self.install_dir)
-                self.outfiles.append(out)
-            else:
-                # it's a tuple with path to install to and a list of files
-                dir = convert_path(f[0])
-                if not os.path.isabs(dir):
-                    dir = os.path.join(self.install_dir, dir)
-                elif self.root:
-                    dir = change_root(self.root, dir)
-                self.mkpath(dir)
+        for file in self.data_files.items():
+            destination = convert_path(self.expand_categories(file[1]))
+            dir_dest = os.path.abspath(os.path.dirname(destination))
+            
+            self.mkpath(dir_dest)
+            try:
+                (out, _) = self.copy_file(file[0], dir_dest)
+            except Error, e:
+                self.warn(e.message)
+                out = destination
 
-                if f[1] == []:
-                    # If there are no files listed, the user must be
-                    # trying to create an empty directory, so add the
-                    # directory to the list of output files.
-                    self.outfiles.append(dir)
-                else:
-                    # Copy files, adding them to the list of output files.
-                    for data in f[1]:
-                        data = convert_path(data)
-                        (out, _) = self.copy_file(data, dir)
-                        self.outfiles.append(out)
+            self.outfiles.append(out)
+            self.data_files_out.append((file[0], destination))
+
+    def expand_categories(self, path_with_categories):
+        local_vars = get_paths()
+        local_vars['distribution.name'] = self.distribution.metadata['Name']
+        expanded_path = format_value(path_with_categories, local_vars)
+        expanded_path = format_value(expanded_path, local_vars)
+        if '{' in expanded_path and '}' in expanded_path:
+            self.warn("Unable to expand %s, some categories may missing." %
+                path_with_categories)
+        return expanded_path
 
     def get_source_files(self):
-        sources = []
-        for item in self.data_files:
-            if isinstance(item, str): # plain file
-                item = convert_path(item)
-                if os.path.isfile(item):
-                    sources.append(item)
-            else:    # a (dirname, filenames) tuple
-                dirname, filenames = item
-                for f in filenames:
-                    f = convert_path(f)
-                    if os.path.isfile(f):
-                        sources.append(f)
-        return sources
+        return self.data_files.keys()
 
     def get_inputs(self):
-        return self.data_files or []
+        return self.data_files.keys()
 
     def get_outputs(self):
         return self.outfiles
+
+    def get_resources_out(self):
+        return self.data_files_out

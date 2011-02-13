@@ -1,13 +1,14 @@
 """Utilities to support packages."""
 
-import os
-import sys
 import imp
-import re
-import warnings
+import sys
+
 from csv import reader as csv_reader
-from types import ModuleType
+import os
+import re
 from stat import ST_SIZE
+from types import ModuleType
+import warnings
 
 try:
     from hashlib import md5
@@ -55,7 +56,7 @@ def simplegeneric(func):
     """Make a trivial single-dispatch generic function"""
     registry = {}
 
-    def wrapper(*args, **kw):
+    def wrapper(*args, ** kw):
         ob = args[0]
         try:
             cls = ob.__class__
@@ -70,12 +71,12 @@ def simplegeneric(func):
                     pass
                 mro = cls.__mro__[1:]
             except TypeError:
-                mro = object,   # must be an ExtensionClass or some such  :(
+                mro = object, # must be an ExtensionClass or some such  :(
         for t in mro:
             if t in registry:
-                return registry[t](*args, **kw)
+                return registry[t](*args, ** kw)
         else:
-            return func(*args, **kw)
+            return func(*args, ** kw)
     try:
         wrapper.__name__ = func.__name__
     except (TypeError, AttributeError):
@@ -620,7 +621,7 @@ def get_data(package, resource):
 # PEP 376 Implementation #
 ##########################
 
-DIST_FILES = ('INSTALLER', 'METADATA', 'RECORD', 'REQUESTED',)
+DIST_FILES = ('INSTALLER', 'METADATA', 'RECORD', 'REQUESTED', 'RESOURCES')
 
 # Cache
 _cache_name = {}  # maps names to Distribution instances
@@ -659,7 +660,7 @@ def disable_cache():
 def clear_cache():
     """ Clears the internal cache. """
     global _cache_name, _cache_name_egg, _cache_path, _cache_path_egg, \
-           _cache_generated, _cache_generated_egg
+        _cache_generated, _cache_generated_egg
 
     _cache_name = {}
     _cache_name_egg = {}
@@ -749,14 +750,23 @@ class Distribution(object):
         return '%s-%s at %s' % (self.name, self.metadata.version, self.path)
 
     def _get_records(self, local=False):
-        RECORD = os.path.join(self.path, 'RECORD')
-        record_reader = csv_reader(open(RECORD, 'rb'), delimiter=',')
+        RECORD = self.get_distinfo_file('RECORD')
+        record_reader = csv_reader(RECORD, delimiter=',')
         for row in record_reader:
             path, md5, size = row[:] + [None for i in xrange(len(row), 3)]
             if local:
                 path = path.replace('/', os.sep)
                 path = os.path.join(sys.prefix, path)
             yield path, md5, size
+
+    def get_resource_path(self, relative_path):
+        resources_file = self.get_distinfo_file('RESOURCES')
+        resources_reader = csv_reader(resources_file, delimiter=',')
+        for relative, destination in resources_reader:
+            if relative == relative_path:
+                return destination
+        raise KeyError('No resource file with relative path %s were installed' %
+                       relative_path)
 
     def get_installed_files(self, local=False):
         """
@@ -815,13 +825,13 @@ class Distribution(object):
             distinfo_dirname, path = path.split(os.sep)[-2:]
             if distinfo_dirname != self.path.split(os.sep)[-1]:
                 raise DistutilsError("Requested dist-info file does not "
-                    "belong to the %s distribution. '%s' was requested." \
-                    % (self.name, os.sep.join([distinfo_dirname, path])))
+                                     "belong to the %s distribution. '%s' was requested." \
+                                     % (self.name, os.sep.join([distinfo_dirname, path])))
 
         # The file must be relative
         if path not in DIST_FILES:
             raise DistutilsError("Requested an invalid dist-info file: "
-                "%s" % path)
+                                 "%s" % path)
 
         # Convert the relative path back to absolute
         path = os.path.join(self.path, path)
@@ -860,11 +870,11 @@ class EggInfoDistribution(object):
     metadata = None
     """A :class:`distutils2.metadata.Metadata` instance loaded with
     the distribution's ``METADATA`` file."""
-    _REQUIREMENT = re.compile( \
-        r'(?P<name>[-A-Za-z0-9_.]+)\s*' \
-        r'(?P<first>(?:<|<=|!=|==|>=|>)[-A-Za-z0-9_.]+)?\s*' \
-        r'(?P<rest>(?:\s*,\s*(?:<|<=|!=|==|>=|>)[-A-Za-z0-9_.]+)*)\s*' \
-        r'(?P<extras>\[.*\])?')
+    _REQUIREMENT = re.compile(\
+                              r'(?P<name>[-A-Za-z0-9_.]+)\s*' \
+                              r'(?P<first>(?:<|<=|!=|==|>=|>)[-A-Za-z0-9_.]+)?\s*' \
+                              r'(?P<rest>(?:\s*,\s*(?:<|<=|!=|==|>=|>)[-A-Za-z0-9_.]+)*)\s*' \
+                              r'(?P<extras>\[.*\])?')
 
     def __init__(self, path, display_warnings=False):
         self.path = path
@@ -950,8 +960,8 @@ class EggInfoDistribution(object):
                     else:
                         if match.group('extras'):
                             s = (('Distribution %s uses extra requirements '
-                                  'which are not supported in distutils') \
-                                         % (self.name))
+                                 'which are not supported in distutils') \
+                                 % (self.name))
                             warnings.warn(s)
                         name = match.group('name')
                         version = None
@@ -1010,7 +1020,7 @@ class EggInfoDistribution(object):
 
     def __eq__(self, other):
         return isinstance(other, EggInfoDistribution) and \
-               self.path == other.path
+            self.path == other.path
 
     # See http://docs.python.org/reference/datamodel#object.__hash__
     __hash__ = object.__hash__
@@ -1069,7 +1079,7 @@ def get_distributions(use_egg_info=False, paths=sys.path):
                 yield dist
 
 
-def get_distribution(name, use_egg_info=False, paths=sys.path):
+def get_distribution(name, use_egg_info=False, paths=None):
     """
     Scans all elements in ``sys.path`` and looks for all directories
     ending with ``.dist-info``. Returns a :class:`Distribution`
@@ -1086,6 +1096,9 @@ def get_distribution(name, use_egg_info=False, paths=sys.path):
 
     :rtype: :class:`Distribution` or :class:`EggInfoDistribution` or None
     """
+    if paths == None:
+        paths = sys.path
+
     if not _cache_enabled:
         for dist in _yield_distributions(True, use_egg_info, paths):
             if dist.name == name:
@@ -1128,7 +1141,7 @@ def obsoletes_distribution(name, version=None, use_egg_info=False):
                     predicate = VersionPredicate(obs)
                 except ValueError:
                     raise DistutilsError(('Distribution %s has ill formed' +
-                                          ' obsoletes field') % (dist.name,))
+                                         ' obsoletes field') % (dist.name,))
                 if name == o_components[0] and predicate.match(version):
                     yield dist
                     break
@@ -1174,8 +1187,8 @@ def provides_distribution(name, version=None, use_egg_info=False):
                 p_name, p_ver = p_components
                 if len(p_ver) < 2 or p_ver[0] != '(' or p_ver[-1] != ')':
                     raise DistutilsError(('Distribution %s has invalid ' +
-                                          'provides field: %s') \
-                                           % (dist.name, p))
+                                         'provides field: %s') \
+                                         % (dist.name, p))
                 p_ver = p_ver[1:-1]  # trim off the parenthesis
                 if p_name == name and predicate.match(p_ver):
                     yield dist
@@ -1195,3 +1208,15 @@ def get_file_users(path):
     for dist in get_distributions():
         if dist.uses(path):
             yield dist
+
+def resource_path(distribution_name, relative_path):
+    dist = get_distribution(distribution_name)
+    if dist != None:
+        return dist.get_resource_path(relative_path)
+    raise LookupError('No distribution named %s is installed.' %
+                      distribution_name)
+
+def resource_open(distribution_name, relative_path, * args, ** kwargs):
+    file = open(resource_path(distribution_name, relative_path), * args,
+                ** kwargs)
+    return file

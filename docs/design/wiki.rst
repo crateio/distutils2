@@ -250,8 +250,8 @@ Here's where we want the files to end up in a typical Linux distribution:
 ==  ====================================  ===================================================================================================
 1   mailman/database/schemas/blah.schema  /var/mailman/schemas/blah.schema
 2   some.tpl                              /var/mailman/templates/some.tpl
-3   path/to/some.tpl                      /var/mailman/templates/path/to/some.tpl
-4   mailman/database/mailman.db           /var/mailman/database/mailman.db
+3   path/to/some.tpl                      /var/mailman/templates/path/to/some.tpl !
+4   mailman/database/mailman.db           /var/mailman/database/mailman.db !
 5   developer-docs/index.txt              /usr/share/doc/mailman/developer-docs/index.txt
 6   developer-docs/api/toc.txt            /usr/share/doc/mailman/developer-docs/api/toc.txt
 7   README                                /usr/share/doc/mailman/README
@@ -259,7 +259,7 @@ Here's where we want the files to end up in a typical Linux distribution:
 9   mailman/foo/some/path/bar/my.cfg      /etc/mailman/baz/some/path/bar/my.cfg AND
                                           /etc/mailman/hmm/some/path/bar/my.cfg + 
                                           emit a warning
-10  mailman/foo/some/path/other.cfg       /etc/mailman/some/path/other.cfg
+10  mailman/foo/some/path/other.cfg       /etc/mailman/some/path/other.cfg !
 11  some-new-semantic.sns                 /var/funky/mailman/some-new-semantic.sns
 ==  ====================================  ===================================================================================================
 
