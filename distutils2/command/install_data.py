@@ -51,7 +51,7 @@ class install_data(Command):
             try:
                 (out, _) = self.copy_file(file[0], dir_dest)
             except Error, e:
-                self.warn(e.message)
+                self.warn(e)
                 out = destination
 
             self.outfiles.append(out)
