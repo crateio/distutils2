@@ -104,6 +104,26 @@ setup script). Indirectly provides the :class:`distutils2.dist.Distribution` and
    | *package_dir*      | A mapping of package to        | a dictionary                                                |
    |                    | directory names                |                                                             |
    +--------------------+--------------------------------+-------------------------------------------------------------+
+   | *extra_path*       | Information about an           | a string, 1-tuple or 2-tuple                                |
+   |                    | intervening directory the      |                                                             |
+   |                    | install directory and the      |                                                             |
+   |                    | actual installation directory. |                                                             |
+   |                    |                                |                                                             |
+   |                    | If the value is a string is is |                                                             |
+   |                    | treated as a comma-separated   |                                                             |
+   |                    | tuple.                         |                                                             |
+   |                    |                                |                                                             |
+   |                    | If the value is a 2-tuple,     |                                                             |
+   |                    | the first element is the       |                                                             |
+   |                    | ``.pth`` file and the second   |                                                             |
+   |                    | is the name of the intervening |                                                             |
+   |                    | directory.                     |                                                             |
+   |                    |                                |                                                             |
+   |                    | If the value is a 1-tuple that |                                                             |
+   |                    | element is both the name of    |                                                             |
+   |                    | the ``.pth`` file and the      |                                                             |
+   |                    | intervening directory.         |                                                             |
+   +--------------------+--------------------------------+-------------------------------------------------------------+
 
 
 
