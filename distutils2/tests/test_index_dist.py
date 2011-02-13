@@ -160,13 +160,23 @@ class TestDistInfo(TempdirManager, unittest.TestCase):
     @use_pypi_server('downloads_with_md5')
     def test_unpack(self, server):
         url = "%s/simple/foobar/foobar-0.1.tar.gz" % server.full_address
-        dist = Dist(url=url)
+        dist1 = Dist(url=url)
         # doing an unpack
-        here = self.mkdtemp()
-        there = dist.unpack(here)
-        result = os.listdir(there)
-        self.assertIn('paf', result)
-        os.remove('paf')
+        dist1_here = self.mkdtemp()
+        dist1_there = dist1.unpack(path=dist1_here)
+        # assert we unpack to the path provided
+        self.assertEqual(dist1_here, dist1_there)
+        dist1_result = os.listdir(dist1_there)
+        self.assertIn('paf', dist1_result)
+        os.remove(os.path.join(dist1_there, 'paf'))
+
+        # Test unpack works without a path argument
+        dist2 = Dist(url=url)
+        # doing an unpack
+        dist2_there = dist2.unpack()
+        dist2_result = os.listdir(dist2_there)
+        self.assertIn('paf', dist2_result)
+        os.remove(os.path.join(dist2_there, 'paf'))
 
     def test_hashname(self):
         # Invalid hashnames raises an exception on assignation

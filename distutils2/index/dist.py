@@ -324,7 +324,7 @@ class DistInfo(IndexReference):
 
             filename = self.download(path)
             content_type = mimetypes.guess_type(filename)[0]
-            self._unpacked_dir = unpack_archive(filename)
+            self._unpacked_dir = unpack_archive(filename, path)
 
         return self._unpacked_dir
 
