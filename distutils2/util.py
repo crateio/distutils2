@@ -9,9 +9,6 @@ import posixpath
 import re
 import string
 import sys
-import shutil
-import tarfile
-import zipfile
 from subprocess import call as sub_call
 from copy import copy
 from fnmatch import fnmatchcase
@@ -525,9 +522,9 @@ def newer_group(sources, target, missing='error'):
             if missing == 'error':      # blow up when we stat() the file
                 pass
             elif missing == 'ignore':   # missing source dropped from
-                continue                #  target's dependency list
+                continue                # target's dependency list
             elif missing == 'newer':    # missing source means target is
-                return True             #  out-of-date
+                return True             # out-of-date
 
         if os.stat(source).st_mtime > target_mtime:
             return True
@@ -793,6 +790,7 @@ def _spawn_posix(cmd, search_path=1, verbose=1, dry_run=0, env=None):
         msg = "command '%s' failed with exit status %d"
         raise DistutilsExecError(msg % (cmd, exit_status))
 
+
 def find_executable(executable, path=None):
     """Tries to find 'executable' in the directories listed in 'path'.
 
@@ -924,7 +922,8 @@ def run_2to3(files, doctests_only=False, fixer_names=None,
 
     if fixer_names:
         for fixername in fixer_names:
-            fixers.extend([fixer for fixer in get_fixers_from_package(fixername)])
+            fixers.extend([fixer for fixer in
+                           get_fixers_from_package(fixername)])
     r = RefactoringTool(fixers, options=options)
     r.refactor(files, write=True, doctests_only=doctests_only)
 
@@ -992,7 +991,7 @@ def _iglob(path_glob):
                    yield file
 
 
-def generate_distutils_kwargs_from_setup_cfg(file='setup.cfg'):
+def cfg_to_args(path='setup.cfg'):
     """ Distutils2 to distutils1 compatibility util.
 
         This method uses an existing setup.cfg to generate a dictionnary of
@@ -1006,29 +1005,28 @@ def generate_distutils_kwargs_from_setup_cfg(file='setup.cfg'):
     """
     # We need to declare the following constants here so that it's easier to
     # generate the setup.py afterwards, using inspect.getsource.
-    D1_D2_SETUP_ARGS = {
-        # D1 name             : (D2_section, D2_name)
-        "name"                : ("metadata",),
-        "version"             : ("metadata",),
-        "author"              : ("metadata",),
-        "author_email"        : ("metadata",),
-        "maintainer"          : ("metadata",),
-        "maintainer_email"    : ("metadata",),
-        "url"                 : ("metadata", "home_page"),
-        "description"         : ("metadata", "summary"),
-        "long_description"    : ("metadata", "description"),
-        "download-url"        : ("metadata",),
-        "classifiers"         : ("metadata", "classifier"),
-        "platforms"           : ("metadata", "platform"), # Needs testing
-        "license"             : ("metadata",),
-        "requires"            : ("metadata", "requires_dist"),
-        "provides"            : ("metadata", "provides_dist"), # Needs testing
-        "obsoletes"           : ("metadata", "obsoletes_dist"), # Needs testing
-    
-        "packages"            : ("files",),
-        "scripts"             : ("files",),
-        "py_modules"          : ("files", "modules"), # Needs testing
-    }
+
+    # XXX ** == needs testing
+    D1_D2_SETUP_ARGS = {"name": ("metadata",),
+                        "version": ("metadata",),
+                        "author": ("metadata",),
+                        "author_email": ("metadata",),
+                        "maintainer": ("metadata",),
+                        "maintainer_email": ("metadata",),
+                        "url": ("metadata", "home_page"),
+                        "description": ("metadata", "summary"),
+                        "long_description": ("metadata", "description"),
+                        "download-url": ("metadata",),
+                        "classifiers": ("metadata", "classifier"),
+                        "platforms": ("metadata", "platform"),  # **
+                        "license": ("metadata",),
+                        "requires": ("metadata", "requires_dist"),
+                        "provides": ("metadata", "provides_dist"),  # **
+                        "obsoletes": ("metadata", "obsoletes_dist"),  # **
+                        "packages": ("files",),
+                        "scripts": ("files",),
+                        "py_modules": ("files", "modules"),  # **
+                        }
 
     MULTI_FIELDS = ("classifiers",
                     "requires",
@@ -1049,7 +1047,7 @@ def generate_distutils_kwargs_from_setup_cfg(file='setup.cfg'):
     if not os.path.exists(file):
         raise DistutilsFileError("file '%s' does not exist" %
                                  os.path.abspath(file))
-    config.read(file)
+    config.read(path)
 
     kwargs = {}
     for arg in D1_D2_SETUP_ARGS:
@@ -1084,8 +1082,20 @@ def generate_distutils_kwargs_from_setup_cfg(file='setup.cfg'):
     return kwargs
 
 
-def generate_distutils_setup_py():
-    """ Generate a distutils compatible setup.py using an existing setup.cfg.
+_SETUP_TMPL = """\
+# This script was automatically generated by Distutils2
+import os
+from distutils.core import setup
+from ConfigParser import RawConfigParser
+
+%(func)s
+
+setup(**cfg_to_args())
+"""
+
+
+def generate_setup_py():
+    """Generates a distutils compatible setup.py using an existing setup.cfg.
 
         :raises DistutilsFileError:
             When a setup.py already exists.
@@ -1095,15 +1105,6 @@ def generate_distutils_setup_py():
 
     handle = open("setup.py", "w")
     try:
-        handle.write(
-            "# Distutils script using distutils2 setup.cfg to call the\n"
-            "# distutils.core.setup() with the right args.\n\n"
-            "import os\n"
-            "from distutils.core import setup\n"
-            "from ConfigParser import RawConfigParser\n\n"
-            "" + getsource(generate_distutils_kwargs_from_setup_cfg) + "\n\n"
-            "kwargs = generate_distutils_kwargs_from_setup_cfg()\n"
-            "setup(**kwargs)\n"
-        )
+        handle.write(_SETUP_TMPL % {'func': getsource(cfg_to_args)})
     finally:
         handle.close()

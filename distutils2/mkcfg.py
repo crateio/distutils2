@@ -650,7 +650,7 @@ def main():
         program.query_user()
         program.update_config_file()
     program.write_setup_script()
-    # istutils2.util.generate_distutils_setup_py()
+    # distutils2.util.cfg_to_args()
 
 
 if __name__ == '__main__':
