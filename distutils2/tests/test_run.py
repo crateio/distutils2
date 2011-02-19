@@ -6,6 +6,7 @@ import shutil
 import sys
 
 import distutils2
+from distutils2.run import main
 from distutils2.tests import captured_stdout
 from distutils2.tests import unittest, support
 
@@ -53,6 +54,7 @@ class CoreTestCase(support.EnvironGuard, unittest.TestCase):
     def write_setup(self, text, path=distutils2.tests.TESTFN):
         open(path, "w").write(text)
         return path
+
 
 def test_suite():
     return unittest.makeSuite(CoreTestCase)

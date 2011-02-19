@@ -25,6 +25,16 @@ from distutils2.command import get_command_class, STANDARD_COMMANDS
 # to look for a Python module named after the command.
 command_re = re.compile(r'^[a-zA-Z]([a-zA-Z0-9_]*)$')
 
+USAGE = """\
+usage: %(script)s [global_opts] cmd1 [cmd1_opts] [cmd2 [cmd2_opts] ...]
+   or: %(script)s --help [cmd1 cmd2 ...]
+   or: %(script)s --help-commands
+   or: %(script)s cmd --help
+"""
+
+def gen_usage(script_name):
+    script = os.path.basename(script_name)
+    return USAGE % {'script': script}
 
 class Distribution(object):
     """The core of the Distutils.  Most of the work hiding behind 'setup'
@@ -507,7 +517,6 @@ Common commands: (see '--help-commands' for more)
         in 'commands'.
         """
         # late import because of mutual dependence between these modules
-        from distutils2.run import gen_usage
         from distutils2.command.cmd import Command
 
         if global_options:
@@ -548,8 +557,6 @@ Common commands: (see '--help-commands' for more)
         line, display the requested info and return true; else return
         false.
         """
-        from distutils2.run import gen_usage
-
         # User just wants a list of commands -- we'll print it out and stop
         # processing now (ie. if they ran "setup --help-commands foo bar",
         # we ignore "foo bar").
@@ -752,7 +759,7 @@ Common commands: (see '--help-commands' for more)
 
     # -- Methods that operate on its Commands --------------------------
 
-    def run_command(self, command):
+    def run_command(self, command, options=None):
         """Do whatever it takes to run a command (including nothing at all,
         if the command has already been run).  Specifically: if we have
         already created and run the command named by 'command', return
@@ -763,6 +770,9 @@ Common commands: (see '--help-commands' for more)
         # Already been here, done that? then return silently.
         if self.have_run.get(command):
             return
+
+        if options is not None:
+            self.command_options[command] = options
 
         cmd_obj = self.get_command_obj(command)
         cmd_obj.ensure_finalized()

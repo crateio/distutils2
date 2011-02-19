@@ -180,14 +180,9 @@ class ConfigTestCase(support.TempdirManager,
 
     def run_setup(self, *args):
         # run setup with args
-        sys.stdout = StringIO()
-        sys.argv[:] = [''] + list(args)
-        old_sys = sys.argv[:]
-        try:
-            from distutils2.run import commands_main
-            dist = commands_main()
-        finally:
-            sys.argv[:] = old_sys
+        args = ['', 'run'] + list(args)
+        from distutils2.run import main
+        dist = main(args)
         return dist
 
     def test_config(self):
