@@ -21,6 +21,7 @@ Thanks to:
 - Andrew Francis
 - Yannick Gingras
 - Alexandre Hamelin
+- Kelsey Hightower
 - Christian Hudon
 - Jeremy Kloth
 - Amos Latteier
