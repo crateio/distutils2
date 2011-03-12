@@ -5,6 +5,7 @@ Parses the command line.
 import logging
 import re
 import os
+import sys
 
 from distutils2.errors import DistutilsError, CCompilerError
 from distutils2._backport.pkgutil import get_distributions, get_distribution
