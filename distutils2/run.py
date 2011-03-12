@@ -180,13 +180,20 @@ def _remove(distpatcher, args, **kw):
     remove(options.remove)
     return 0
 
+def _create(distpatcher, args, **kw):
+    from distutils2.mkcfg import main
+    main()
+    return 0
+
 
 actions = [('run', 'Run one or several commands', _run),
            ('metadata', 'Display the metadata of a project', _metadata),
            ('install', 'Install a project', _install),
            ('remove', 'Remove a project', _remove),
            ('search', 'Search for a project', _search),
-           ('graph', 'Display a graph', _graph),]
+           ('graph', 'Display a graph', _graph),
+           ('create', 'Create a Project', _create),]
+
 
 
 
