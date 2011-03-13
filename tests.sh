@@ -39,7 +39,37 @@ else
 fi
 
 echo -n "Running tests for Python 3.1... "
-python3.1 -Wd -bb runtests.py -q 2> /dev/null
+python3.1 setup.py build -q 2> /dev/null > /dev/null
+cp runtests.py build/
+cd build
+PYTHONPATH=lib.linux-x86_64-3.1/ python3.1 runtests.py -q 2> /dev/null
+
+if [ $? -ne 0 ];then
+    echo Failed
+    exit 1
+else
+    echo Success
+fi
+
+echo -n "Running tests for Python 3.2... "
+python3.2 setup.py build -q 2> /dev/null > /dev/null
+cp runtests.py build/
+cd build
+PYTHONPATH=lib.linux-x86_64-3.1/ python3.2 runtests.py -q 2> /dev/null
+
+if [ $? -ne 0 ];then
+    echo Failed
+    exit 1
+else
+    echo Success
+fi
+
+echo -n "Running tests for Python 3.3... "
+python3.2 setup.py build -q 2> /dev/null > /dev/null
+cp runtests.py build/
+cd build
+PYTHONPATH=lib.linux-x86_64-3.1/ python3.3 runtests.py -q 2> /dev/null
+
 if [ $? -ne 0 ];then
     echo Failed
     exit 1
