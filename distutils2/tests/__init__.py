@@ -30,8 +30,11 @@ else:
     except ImportError:
         sys.exit('Error: You have to install unittest2')
 
-
-from test.test_support import TESTFN    # use TESTFN from stdlib/test_support.
+# use TESTFN from stdlib, pull in unlink for other modules to use as well
+if sys.version_info[0] == 3:
+  from test.support import TESTFN, unlink
+else :
+  from test.test_support import TESTFN, unlink
 
 here = os.path.dirname(__file__) or os.curdir
 

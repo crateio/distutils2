@@ -15,7 +15,7 @@ except ImportError:
 
 from distutils2.errors import DistutilsError
 from distutils2.metadata import Metadata
-from distutils2.tests import unittest, run_unittest, support
+from distutils2.tests import unittest, run_unittest, support, TESTFN
 
 from distutils2._backport import pkgutil
 from distutils2._backport.pkgutil import (

@@ -15,7 +15,7 @@ from fnmatch import fnmatchcase
 try:
     from glob import iglob as std_iglob
 except ImportError:
-    from glob import glob as std_iglob # for python < 2.5
+    from glob import glob as std_iglob  # for python < 2.5
 from ConfigParser import RawConfigParser
 from inspect import getsource
 
@@ -953,6 +953,7 @@ RICH_GLOB = re.compile(r'\{([^}]*)\}')
 _CHECK_RECURSIVE_GLOB = re.compile(r'[^/,{]\*\*|\*\*[^/,}]')
 _CHECK_MISMATCH_SET = re.compile(r'^[^{]*\}|\{[^}]*$')
 
+
 def iglob(path_glob):
     """Richer glob than the std glob module support ** and {opt1,opt2,opt3}"""
     if _CHECK_RECURSIVE_GLOB.search(path_glob):
@@ -971,7 +972,7 @@ def _iglob(path_glob):
         assert len(rich_path_glob) == 3, rich_path_glob
         prefix, set, suffix = rich_path_glob
         for item in set.split(','):
-            for path in _iglob( ''.join((prefix, item, suffix))):
+            for path in _iglob(''.join((prefix, item, suffix))):
                 yield path
     else:
         if '**' not in path_glob:
@@ -988,7 +989,7 @@ def _iglob(path_glob):
             for (path, dir, files) in os.walk(prefix):
                 path = os.path.normpath(path)
                 for file in _iglob(os.path.join(path, radical)):
-                   yield file
+                    yield file
 
 
 def cfg_to_args(path='setup.cfg'):

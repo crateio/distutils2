@@ -64,7 +64,7 @@ def coverage_report(opts):
         # running coverage 2.x
         cov.cache = COVERAGE_FILE
         cov.restore()
-        morfs = [m for m in cov.cexecuted if "distutils2" in m]
+        morfs = [m for m in list(cov.cexecuted.keys()) if "distutils2" in m]
 
     prefixes = ["runtests", "distutils2/tests", "distutils2/_backport"]
     prefixes += ignore_prefixes(unittest)

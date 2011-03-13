@@ -29,16 +29,23 @@ It could be simple to have one HTTP server, relaying the requests to the two
 implementations (static HTTP and XMLRPC over HTTP).
 """
 
-import Queue
-import SocketServer
 import os.path
 import select
 import socket
 import threading
 
-from BaseHTTPServer import HTTPServer
-from SimpleHTTPServer import SimpleHTTPRequestHandler
-from SimpleXMLRPCServer import SimpleXMLRPCServer
+# several packages had different names in Python 2.x
+try:
+    import queue
+    import socketserver
+    from http.server import HTTPServer, SimpleHTTPRequestHandler
+    from xmlrpc.server import SimpleXMLRPCServer
+except ImportError:
+    import Queue as queue
+    import SocketServer as socketserver
+    from BaseHTTPServer import HTTPServer    
+    from SimpleHTTPServer import SimpleHTTPRequestHandler
+    from SimpleXMLRPCServer import SimpleXMLRPCServer
 
 from distutils2.tests import unittest
 
@@ -109,7 +116,7 @@ class PyPIServer(threading.Thread):
             self.server = HTTPServer(('127.0.0.1', 0), PyPIRequestHandler)
             self.server.RequestHandlerClass.pypi_server = self
 
-            self.request_queue = Queue.Queue()
+            self.request_queue = queue.Queue()
             self._requests = []
             self.default_response_status = 200
             self.default_response_headers = [('Content-type', 'text/plain')]
@@ -157,7 +164,7 @@ class PyPIServer(threading.Thread):
         while True:
             try:
                 self._requests.append(self.request_queue.get_nowait())
-            except Queue.Empty:
+            except queue.Empty:
                 break
         return self._requests
 
@@ -252,7 +259,7 @@ class PyPIRequestHandler(SimpleHTTPRequestHandler):
 class PyPIXMLRPCServer(SimpleXMLRPCServer):
     def server_bind(self):
         """Override server_bind to store the server name."""
-        SocketServer.TCPServer.server_bind(self)
+        socketserver.TCPServer.server_bind(self)
         host, port = self.socket.getsockname()[:2]
         self.server_name = socket.getfqdn(host)
         self.server_port = port

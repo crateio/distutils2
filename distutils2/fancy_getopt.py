@@ -13,6 +13,7 @@ import sys
 import string
 import re
 import getopt
+import textwrap
 from distutils2.errors import DistutilsGetoptError, DistutilsArgError
 
 # Much like command_re in distutils.core, this is close to but not quite
@@ -334,7 +335,7 @@ class FancyGetopt(object):
 
         for option in self.option_table:
             long, short, help = option[:3]
-            text = wrap_text(help, text_width)
+            text = textwrap.wrap(help, text_width)
             if long[-1] == '=':
                 long = long[0:-1]
 
@@ -373,7 +374,12 @@ def fancy_getopt(options, negative_opt, object, args):
     return parser.getopt(args, object)
 
 
-WS_TRANS = string.maketrans(string.whitespace, ' ' * len(string.whitespace))
+if 'maketrans' in str.__dict__ :
+    # Python 3.2+
+    WS_TRANS = str.maketrans(string.whitespace, ' ' * len(string.whitespace))
+else :
+    # Depreciated syntax
+    WS_TRANS = string.maketrans(string.whitespace, ' ' * len(string.whitespace))
 
 
 def wrap_text(text, width):
