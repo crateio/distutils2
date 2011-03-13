@@ -13,14 +13,15 @@ from distutils.command.install import install
 # Python 3.x hook to run 2to3 automatically
 try:
     from distutils.command.build_py import build_py_2to3 as build_py
+    from distutils.core import setup, Extension
 except ImportError:
     # 2.x, try to use setuptools if available
     try :
-        from setuptools import setup, Extension
         from setuptools.command.build_py import build_py
+        from setuptools import setup, Extension
     except ImportError:
-        from distutils.core import setup, Extension
         from distutils.command.build_py import build_py
+        from distutils.core import setup, Extension
 
 
 f = open('README.txt')

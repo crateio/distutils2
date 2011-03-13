@@ -374,8 +374,12 @@ def fancy_getopt(options, negative_opt, object, args):
     return parser.getopt(args, object)
 
 
-
-WS_TRANS = string.maketrans(string.whitespace, ' ' * len(string.whitespace))
+if 'maketrans' in str.__dict__ :
+    # Python 3.2+
+    WS_TRANS = str.maketrans(string.whitespace, ' ' * len(string.whitespace))
+else :
+    # Depreciated syntax
+    WS_TRANS = string.maketrans(string.whitespace, ' ' * len(string.whitespace))
 
 
 def wrap_text(text, width):
