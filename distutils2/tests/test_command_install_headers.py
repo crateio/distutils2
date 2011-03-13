@@ -1,7 +1,5 @@
 """Tests for distutils.command.install_headers."""
-import sys
 import os
-import getpass
 
 from distutils2.command.install_headers import install_headers
 from distutils2.tests import unittest, support

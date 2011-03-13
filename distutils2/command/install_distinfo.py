@@ -12,12 +12,12 @@ automatically by the ``install_dist`` command.
 
 # This file was created from the code for the former command install_egg_info
 
-import os
 import csv
-import re
-from distutils2.command.cmd import Command
 from distutils2 import logger
 from distutils2._backport.shutil import rmtree
+from distutils2.command.cmd import Command
+import os
+import re
 try:
     import hashlib
 except ImportError:
@@ -39,9 +39,11 @@ class install_distinfo(Command):
          "do not generate a REQUESTED file"),
         ('no-record', None,
          "do not generate a RECORD file"),
+        ('no-resources', None,
+         "do not generate a RESSOURCES list installed file")
     ]
 
-    boolean_options = ['requested', 'no-record']
+    boolean_options = ['requested', 'no-record', 'no-resources']
 
     negative_opt = {'no-requested': 'requested'}
 
@@ -50,6 +52,7 @@ class install_distinfo(Command):
         self.installer = None
         self.requested = None
         self.no_record = None
+        self.no_resources = None
 
     def finalize_options(self):
         self.set_undefined_options('install_dist',
@@ -66,13 +69,16 @@ class install_distinfo(Command):
             self.requested = True
         if self.no_record is None:
             self.no_record = False
+        if self.no_resources is None:
+            self.no_resources = False
+
 
         metadata = self.distribution.metadata
 
         basename = "%s-%s.dist-info" % (
-            to_filename(safe_name(metadata['Name'])),
-            to_filename(safe_version(metadata['Version'])),
-        )
+                                        to_filename(safe_name(metadata['Name'])),
+                                        to_filename(safe_version(metadata['Version'])),
+                                        )
 
         self.distinfo_dir = os.path.join(self.distinfo_dir, basename)
         self.outputs = []
@@ -113,6 +119,25 @@ class install_distinfo(Command):
                 f.close()
                 self.outputs.append(requested_path)
 
+
+            if not self.no_resources:
+                install_data = self.get_finalized_command('install_data')
+                if install_data.get_resources_out() != []:
+                    resources_path = os.path.join(self.distinfo_dir,
+                                                  'RESOURCES')
+                    logger.info('creating %s', resources_path)
+                    f = open(resources_path, 'wb')
+                    try:
+                        writer = csv.writer(f, delimiter=',',
+                                            lineterminator=os.linesep,
+                                            quotechar='"')
+                        for tuple in install_data.get_resources_out():
+                            writer.writerow(tuple)
+
+                        self.outputs.append(resources_path)
+                    finally:
+                        f.close()
+
             if not self.no_record:
                 record_path = os.path.join(self.distinfo_dir, 'RECORD')
                 logger.info('creating %s', record_path)
@@ -141,6 +166,7 @@ class install_distinfo(Command):
                     self.outputs.append(record_path)
                 finally:
                     f.close()
+
 
     def get_outputs(self):
         return self.outputs

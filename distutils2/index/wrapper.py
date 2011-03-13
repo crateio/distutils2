@@ -1,5 +1,4 @@
-import xmlrpc
-import simple
+from distutils2.index import simple, xmlrpc
 
 _WRAPPER_MAPPINGS = {'get_release': 'simple',
                      'get_releases': 'simple',
@@ -9,6 +8,7 @@ _WRAPPER_MAPPINGS = {'get_release': 'simple',
 
 _WRAPPER_INDEXES = {'xmlrpc': xmlrpc.Client,
                     'simple': simple.Crawler}
+
 
 def switch_index_if_fails(func, wrapper):
     """Decorator that switch of index (for instance from xmlrpc to simple)
@@ -58,7 +58,7 @@ class ClientWrapper(object):
 
         # instantiate the classes and set their _project attribute to the one
         # of the wrapper.
-        for name, cls in index_classes.items():
+        for name, cls in index_classes.iteritems():
             obj = self._indexes.setdefault(name, cls())
             obj._projects = self._projects
             obj._index = self
@@ -83,11 +83,11 @@ class ClientWrapper(object):
                 other_indexes = [i for i in self._indexes
                                  if i != self._default_index]
                 for index in other_indexes:
-                    real_method = getattr(self._indexes[index], method_name, None)
+                    real_method = getattr(self._indexes[index], method_name,
+                                          None)
                     if real_method:
                         break
         if real_method:
             return switch_index_if_fails(real_method, self)
         else:
             raise AttributeError("No index have attribute '%s'" % method_name)
-

@@ -1,7 +1,7 @@
 """index.simple
 
 Contains the class "SimpleIndexCrawler", a simple spider to find and retrieve
-distributions on the Python Package Index, using it's "simple" API,
+distributions on the Python Package Index, using its "simple" API,
 avalaible at http://pypi.python.org/simple/
 """
 from fnmatch import translate
@@ -11,9 +11,9 @@ import socket
 import sys
 import urllib2
 import urlparse
-import logging
 import os
 
+from distutils2 import logger
 from distutils2.index.base import BaseClient
 from distutils2.index.dist import (ReleasesList, EXTENSIONS,
                                    get_infos_from_url, MD5_HASH)
@@ -21,7 +21,7 @@ from distutils2.index.errors import (DistutilsIndexError, DownloadError,
                                      UnableToDownload, CantParseArchiveName,
                                      ReleaseNotFound, ProjectNotFound)
 from distutils2.index.mirrors import get_mirrors
-from distutils2.metadata import DistributionMetadata
+from distutils2.metadata import Metadata
 from distutils2.version import get_version_predicate
 from distutils2 import __version__ as __distutils2_version__
 
@@ -167,6 +167,7 @@ class Crawler(BaseClient):
         if predicate.name.lower() in self._projects and not force_update:
             return self._projects.get(predicate.name.lower())
         prefer_final = self._get_prefer_final(prefer_final)
+        logger.info('reading info on PyPI about %s', predicate.name)
         self._process_index_page(predicate.name)
 
         if predicate.name.lower() not in self._projects:
@@ -201,7 +202,7 @@ class Crawler(BaseClient):
         if not release._metadata:
             location = release.get_distribution().unpack()
             pkg_info = os.path.join(location, 'PKG-INFO')
-            release._metadata = DistributionMetadata(pkg_info)
+            release._metadata = Metadata(pkg_info)
         return release
 
     def _switch_to_next_mirror(self):
@@ -304,8 +305,8 @@ class Crawler(BaseClient):
                             infos = get_infos_from_url(link, project_name,
                                         is_external=not self.index_url in url)
                         except CantParseArchiveName, e:
-                            logging.warning("version has not been parsed: %s"
-                                            % e)
+                            logger.warning(
+                                "version has not been parsed: %s", e)
                         else:
                             self._register_release(release_info=infos)
                     else:

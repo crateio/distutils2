@@ -52,18 +52,19 @@ class check(Command):
     def check_metadata(self):
         """Ensures that all required elements of metadata are supplied.
 
-        name, version, URL, (author and author_email) or
-        (maintainer and maintainer_email)).
+        name, version, URL, author
 
         Warns if any are missing.
         """
-        missing, __ = self.distribution.metadata.check()
+        missing, warnings = self.distribution.metadata.check(strict=True)
         if missing != []:
             self.warn("missing required metadata: %s"  % ', '.join(missing))
+        for warning in warnings:
+            self.warn(warning)
 
     def check_restructuredtext(self):
         """Checks if the long string fields are reST-compliant."""
-        missing, warnings = self.distribution.metadata.check()
+        missing, warnings = self.distribution.metadata.check(restructuredtext=True)
         if self.distribution.metadata.docutils_support:
             for warning in warnings:
                 line = warning[-1].get('line')
@@ -76,11 +77,11 @@ class check(Command):
             raise DistutilsSetupError('The docutils package is needed.')
 
     def check_hooks_resolvable(self):
-        for options in self.distribution.command_options.values():
+        for options in self.distribution.command_options.itervalues():
             for hook_kind in ("pre_hook", "post_hook"):
                 if hook_kind not in options:
                     break
-                for hook_name in options[hook_kind][1].values():
+                for hook_name in options[hook_kind][1].itervalues():
                     try:
                         resolve_name(hook_name)
                     except ImportError:

@@ -11,13 +11,12 @@ import getpass
 import urlparse
 import StringIO
 import logging
-from warnings import warn
 
 from distutils2.command.cmd import Command
 from distutils2 import logger
-from distutils2.util import (metadata_to_dict, read_pypirc, generate_pypirc,
-                             DEFAULT_REPOSITORY, DEFAULT_REALM,
-                             get_pypirc_path)
+from distutils2.metadata import metadata_to_dict
+from distutils2.util import (read_pypirc, generate_pypirc, DEFAULT_REPOSITORY,
+                             DEFAULT_REALM, get_pypirc_path)
 
 class register(Command):
 
@@ -33,8 +32,7 @@ class register(Command):
          "stop the registration if the metadata is not fully compliant")
         ]
 
-    boolean_options = ['show-response', 'verify', 'list-classifiers',
-                       'strict']
+    boolean_options = ['show-response', 'list-classifiers', 'strict']
 
     def initialize_options(self):
         self.repository = None
@@ -48,16 +46,15 @@ class register(Command):
             self.repository = DEFAULT_REPOSITORY
         if self.realm is None:
             self.realm = DEFAULT_REALM
-        # setting options for the `check` subcommand
-        check_options = {'strict': ('register', self.strict),
-                         'all': ('register', 1)}
-        self.distribution.command_options['check'] = check_options
 
     def run(self):
         self.finalize_options()
         self._set_config()
 
         # Check the package metadata
+        check = self.distribution.get_command_obj('check')
+        check.strict = self.strict
+        check.all = 1
         self.run_command('check')
 
         if self.dry_run:
@@ -66,16 +63,6 @@ class register(Command):
             self.classifiers()
         else:
             self.send_metadata()
-
-    def check_metadata(self):
-        """Deprecated API."""
-        warn("distutils.command.register.check_metadata is deprecated, \
-              use the check command instead", PendingDeprecationWarning)
-        check = self.distribution.get_command_obj('check')
-        check.ensure_finalized()
-        check.strict = self.strict
-        check.all = 1
-        check.run()
 
     def _set_config(self):
         ''' Reads the configuration file and set attributes.
@@ -105,7 +92,7 @@ class register(Command):
         '''
         # send the info to the server and report the result
         code, result = self.post_to_server(self.build_post_data('verify'))
-        logger.info('Server response (%s): %s' % (code, result))
+        logger.info('server response (%s): %s', code, result)
 
 
     def send_metadata(self):
@@ -219,18 +206,17 @@ Your selection [default 1]: ''', logging.INFO)
                 data['email'] = raw_input('   EMail: ')
             code, result = self.post_to_server(data)
             if code != 200:
-                logger.info('Server response (%s): %s' % (code, result))
+                logger.info('server response (%s): %s', code, result)
             else:
-                logger.info('You will receive an email shortly.')
-                logger.info(('Follow the instructions in it to '
-                             'complete registration.'))
+                logger.info('you will receive an email shortly; follow the '
+                            'instructions in it to complete registration.')
         elif choice == '3':
             data = {':action': 'password_reset'}
             data['email'] = ''
             while not data['email']:
                 data['email'] = raw_input('Your email address: ')
             code, result = self.post_to_server(data)
-            logger.info('Server response (%s): %s' % (code, result))
+            logger.info('server response (%s): %s', code, result)
 
     def build_post_data(self, action):
         # figure the data to send - the metadata plus some additional
@@ -252,7 +238,7 @@ Your selection [default 1]: ''', logging.INFO)
         sep_boundary = '\n--' + boundary
         end_boundary = sep_boundary + '--'
         body = StringIO.StringIO()
-        for key, value in data.items():
+        for key, value in data.iteritems():
             # handle multiple entries for the same name
             if not isinstance(value, (tuple, list)):
                 value = [value]

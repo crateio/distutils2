@@ -17,12 +17,14 @@ class BuildPyTestCase(support.TempdirManager,
 
     def test_package_data(self):
         sources = self.mkdtemp()
-        f = open(os.path.join(sources, "__init__.py"), "w")
+        pkg_dir = os.path.join(sources, 'pkg')
+        os.mkdir(pkg_dir)
+        f = open(os.path.join(pkg_dir, "__init__.py"), "w")
         try:
             f.write("# Pretend this is a package.")
         finally:
             f.close()
-        f = open(os.path.join(sources, "README.txt"), "w")
+        f = open(os.path.join(pkg_dir, "README.txt"), "w")
         try:
             f.write("Info about this package")
         finally:
@@ -31,8 +33,9 @@ class BuildPyTestCase(support.TempdirManager,
         destination = self.mkdtemp()
 
         dist = Distribution({"packages": ["pkg"],
-                             "package_dir": {"pkg": sources}})
+                             "package_dir": sources})
         # script_name need not exist, it just need to be initialized
+
         dist.script_name = os.path.join(sources, "setup.py")
         dist.command_obj["build"] = support.DummyCommand(
             force=0,
@@ -42,7 +45,7 @@ class BuildPyTestCase(support.TempdirManager,
             use_2to3=False)
         dist.packages = ["pkg"]
         dist.package_data = {"pkg": ["README.txt"]}
-        dist.package_dir = {"pkg": sources}
+        dist.package_dir = sources
 
         cmd = build_py(dist)
         cmd.compile = 1
@@ -68,19 +71,20 @@ class BuildPyTestCase(support.TempdirManager,
 
         # create the distribution files.
         sources = self.mkdtemp()
-        open(os.path.join(sources, "__init__.py"), "w").close()
-
-        testdir = os.path.join(sources, "doc")
+        pkg = os.path.join(sources, 'pkg')
+        os.mkdir(pkg)
+        open(os.path.join(pkg, "__init__.py"), "w").close()
+        testdir = os.path.join(pkg, "doc")
         os.mkdir(testdir)
         open(os.path.join(testdir, "testfile"), "w").close()
 
         os.chdir(sources)
         old_stdout = sys.stdout
-        sys.stdout = StringIO.StringIO()
+        #sys.stdout = StringIO.StringIO()
 
         try:
             dist = Distribution({"packages": ["pkg"],
-                                 "package_dir": {"pkg": ""},
+                                 "package_dir": sources,
                                  "package_data": {"pkg": ["doc/*"]}})
             # script_name need not exist, it just need to be initialized
             dist.script_name = os.path.join(sources, "setup.py")
@@ -89,7 +93,7 @@ class BuildPyTestCase(support.TempdirManager,
 
             try:
                 dist.run_commands()
-            except DistutilsFileError:
+            except DistutilsFileError, e:
                 self.fail("failed package_data test when package_dir is ''")
         finally:
             # Restore state.
@@ -112,7 +116,7 @@ class BuildPyTestCase(support.TempdirManager,
         finally:
             sys.dont_write_bytecode = old_dont_write_bytecode
 
-        self.assertTrue('byte-compiling is disabled' in self.logs[0][1])
+        self.assertIn('byte-compiling is disabled', self.logs[0][2][1])
 
 def test_suite():
     return unittest.makeSuite(BuildPyTestCase)

@@ -25,7 +25,7 @@ class Mixin2to3TestCase(support.TempdirManager, support.WarningsCatcher,
         converted_code_content = "print('test')\n"
         new_code_content = "".join(open(code_name).readlines())
 
-        self.assertEquals(new_code_content, converted_code_content)
+        self.assertEqual(new_code_content, converted_code_content)
 
     @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_doctests_only(self):
@@ -45,7 +45,7 @@ class Mixin2to3TestCase(support.TempdirManager, support.WarningsCatcher,
         converted_doctest_content = '\n'.join(converted_doctest_content)
         new_doctest_content = "".join(open(doctest_name).readlines())
 
-        self.assertEquals(new_doctest_content, converted_doctest_content)
+        self.assertEqual(new_doctest_content, converted_doctest_content)
 
     @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_additional_fixers(self):
@@ -60,11 +60,11 @@ class Mixin2to3TestCase(support.TempdirManager, support.WarningsCatcher,
 
         mixin2to3 = Mixin2to3()
 
-        mixin2to3._run_2to3(files=[code_name],
+        mixin2to3._run_2to3(files=[code_name], doctests=[code_name],
                             fixers=['distutils2.tests.fixer'])
         converted_code_content = "isinstance(x, T)"
         new_code_content = "".join(open(code_name).readlines())
-        self.assertEquals(new_code_content, converted_code_content)
+        self.assertEqual(new_code_content, converted_code_content)
 
 def test_suite():
     return unittest.makeSuite(Mixin2to3TestCase)

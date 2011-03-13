@@ -1,12 +1,16 @@
 import os
 import sys
 from optparse import OptionParser
+import logging
 
-from distutils2.util import grok_environment_error
+from distutils2 import logger
 from distutils2.errors import (DistutilsSetupError, DistutilsArgError,
                                DistutilsError, CCompilerError)
 from distutils2.dist import Distribution
 from distutils2 import __version__
+from distutils2._backport.pkgutil import get_distributions, get_distribution
+from distutils2.depgraph import generate_graph
+from distutils2.install import install, remove
 
 # This is a barebones help message generated displayed when the user
 # runs the setup script with no arguments at all.  More useful help
@@ -78,10 +82,10 @@ def commands_main(**attrs):
         dist = distclass(attrs)
     except DistutilsSetupError, msg:
         if 'name' in attrs:
-            raise SystemExit, "error in %s setup command: %s" % \
-                  (attrs['name'], msg)
+            raise SystemExit("error in %s setup command: %s" % \
+                  (attrs['name'], msg))
         else:
-            raise SystemExit, "error in setup command: %s" % msg
+            raise SystemExit("error in setup command: %s" % msg)
 
     # Find and parse the config file(s): they will override options from
     # the setup script, but be overridden by the command line.
@@ -93,43 +97,139 @@ def commands_main(**attrs):
     try:
         res = dist.parse_command_line()
     except DistutilsArgError, msg:
-        raise SystemExit, gen_usage(dist.script_name) + "\nerror: %s" % msg
+        raise SystemExit(gen_usage(dist.script_name) + "\nerror: %s" % msg)
 
     # And finally, run all the commands found on the command line.
     if res:
         try:
             dist.run_commands()
         except KeyboardInterrupt:
-            raise SystemExit, "interrupted"
-        except (IOError, os.error), exc:
-            error = grok_environment_error(exc)
-            raise SystemExit, error
-
-        except (DistutilsError,
-                CCompilerError), msg:
-            raise SystemExit, "error: " + str(msg)
+            raise SystemExit("interrupted")
+        except (IOError, os.error, DistutilsError, CCompilerError), msg:
+            raise SystemExit("error: " + str(msg))
 
     return dist
 
 
+def _set_logger():
+    logger.setLevel(logging.INFO)
+    sth = logging.StreamHandler(sys.stderr)
+    sth.setLevel(logging.INFO)
+    logger.addHandler(sth)
+    logger.propagate = 0
+
+
 def main():
-    """Main entry point for Distutils2"""
+    """Main entry point for Distutils2
+
+    Execute an action or delegate to the commands system.
+    """
+    _set_logger()
     parser = OptionParser()
     parser.disable_interspersed_args()
+    parser.usage = '%prog [options] cmd1 cmd2 ..'
+
     parser.add_option("-v", "--version",
                   action="store_true", dest="version", default=False,
                   help="Prints out the version of Distutils2 and exits.")
 
+    parser.add_option("-m", "--metadata",
+                  action="append", dest="metadata", default=[],
+                  help="List METADATA metadata or 'all' for all metadatas.")
+
+    parser.add_option("-s", "--search",
+                  action="store", dest="search", default=None,
+                  help="Search for installed distributions.")
+
+    parser.add_option("-g", "--graph",
+                  action="store", dest="graph", default=None,
+                  help="Display the graph for a given installed distribution.")
+
+    parser.add_option("-f", "--full-graph",
+                  action="store_true", dest="fgraph", default=False,
+                  help="Display the full graph for installed distributions.")
+
+    parser.add_option("-i", "--install",
+                  action="store", dest="install",
+                  help="Install a project.")
+
+    parser.add_option("-r", "--remove",
+                  action="store", dest="remove",
+                  help="Remove a project.")
+
     options, args = parser.parse_args()
     if options.version:
         print('Distutils2 %s' % __version__)
-        sys.exit(0)
+        return 0
+
+    if len(options.metadata):
+        from distutils2.dist import Distribution
+        dist = Distribution()
+        dist.parse_config_files()
+        metadata = dist.metadata
+
+        if 'all' in options.metadata:
+            keys = metadata.keys()
+        else:
+            keys = options.metadata
+            if len(keys) == 1:
+                print metadata[keys[0]]
+                return
+
+        for key in keys:
+            if key in metadata:
+                print(metadata._convert_name(key) + ':')
+                value = metadata[key]
+                if isinstance(value, list):
+                    for v in value:
+                        print('    ' + v)
+                else:
+                    print('    ' + value.replace('\n', '\n    '))
+        return 0
+
+    if options.search is not None:
+        search = options.search.lower()
+        for dist in get_distributions(use_egg_info=True):
+            name = dist.name.lower()
+            if search in name:
+                print('%s %s at %s' % (dist.name, dist.metadata['version'],
+                                     dist.path))
+
+        return 0
+
+    if options.graph is not None:
+        name = options.graph
+        dist = get_distribution(name, use_egg_info=True)
+        if dist is None:
+            print('Distribution not found.')
+        else:
+            dists = get_distributions(use_egg_info=True)
+            graph = generate_graph(dists)
+            print(graph.repr_node(dist))
+
+        return 0
+
+    if options.fgraph:
+        dists = get_distributions(use_egg_info=True)
+        graph = generate_graph(dists)
+        print(graph)
+        return 0
+
+    if options.install is not None:
+        install(options.install)
+        return 0
+
+    if options.remove is not None:
+        remove(options.remove)
+        return 0
 
     if len(args) == 0:
         parser.print_help()
+        return 0
 
     commands_main()
-    sys.exit(0)
+    return 0
+
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

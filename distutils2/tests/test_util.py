@@ -18,7 +18,7 @@ from distutils2.util import (convert_path, change_root,
                              _find_exe_version, _MAC_OS_X_LD_VERSION,
                              byte_compile, find_packages, spawn, find_executable,
                              _nt_quote_args, get_pypirc_path, generate_pypirc,
-                             read_pypirc, resolve_name)
+                             read_pypirc, resolve_name, iglob, RICH_GLOB)
 
 from distutils2 import util
 from distutils2.tests import unittest, support
@@ -144,7 +144,7 @@ class UtilTestCase(support.EnvironGuard,
         os.path.join = _join
 
         self.assertEqual(convert_path('/home/to/my/stuff'),
-                          '/home/to/my/stuff')
+                         '/home/to/my/stuff')
 
         # win
         os.sep = '\\'
@@ -156,9 +156,9 @@ class UtilTestCase(support.EnvironGuard,
         self.assertRaises(ValueError, convert_path, 'home/to/my/stuff/')
 
         self.assertEqual(convert_path('home/to/my/stuff'),
-                          'home\\to\\my\\stuff')
+                         'home\\to\\my\\stuff')
         self.assertEqual(convert_path('.'),
-                          os.curdir)
+                         os.curdir)
 
     def test_change_root(self):
         # linux/mac
@@ -171,9 +171,9 @@ class UtilTestCase(support.EnvironGuard,
         os.path.join = _join
 
         self.assertEqual(change_root('/root', '/old/its/here'),
-                          '/root/old/its/here')
+                         '/root/old/its/here')
         self.assertEqual(change_root('/root', 'its/here'),
-                          '/root/its/here')
+                         '/root/its/here')
 
         # windows
         os.name = 'nt'
@@ -190,9 +190,9 @@ class UtilTestCase(support.EnvironGuard,
         os.path.join = _join
 
         self.assertEqual(change_root('c:\\root', 'c:\\old\\its\\here'),
-                          'c:\\root\\old\\its\\here')
+                         'c:\\root\\old\\its\\here')
         self.assertEqual(change_root('c:\\root', 'its\\here'),
-                          'c:\\root\\its\\here')
+                         'c:\\root\\its\\here')
 
         # BugsBunny os (it's a great os)
         os.name = 'BugsBunny'
@@ -203,7 +203,7 @@ class UtilTestCase(support.EnvironGuard,
 
     def test_split_quoted(self):
         self.assertEqual(split_quoted('""one"" "two" \'three\' \\four'),
-                          ['one', 'two', 'three', 'four'])
+                         ['one', 'two', 'three', 'four'])
 
     def test_strtobool(self):
         yes = ('y', 'Y', 'yes', 'True', 't', 'true', 'True', 'On', 'on', '1')
@@ -383,7 +383,7 @@ class UtilTestCase(support.EnvironGuard,
         run_2to3([file_name])
         new_content = "".join(file_handle.read())
         file_handle.close()
-        self.assertEquals(new_content, converted_content)
+        self.assertEqual(new_content, converted_content)
 
     @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_run_2to3_on_doctests(self):
@@ -399,7 +399,7 @@ class UtilTestCase(support.EnvironGuard,
         run_2to3([file_name], doctests_only=True)
         new_content = "".join(file_handle.readlines())
         file_handle.close()
-        self.assertEquals(new_content, converted_content)
+        self.assertEqual(new_content, converted_content)
 
     def test_nt_quote_args(self):
 
@@ -414,6 +414,10 @@ class UtilTestCase(support.EnvironGuard,
     @unittest.skipUnless(os.name in ('nt', 'posix'),
                          'runs only under posix or nt')
     def test_spawn(self):
+        # Do not patch subprocess on unix because
+        # distutils2.util._spawn_posix uses it
+        if os.name in 'posix':
+            subprocess.Popen = self.old_popen
         tmpdir = self.mkdtemp()
 
         # creating something executable
@@ -475,9 +479,186 @@ class UtilTestCase(support.EnvironGuard,
         content = open(rc).read()
         self.assertEqual(content, WANTED)
 
+class GlobTestCaseBase(support.TempdirManager,
+                       support.LoggingCatcher,
+                       unittest.TestCase):
+
+    def build_files_tree(self, files):
+        tempdir = self.mkdtemp()
+        for filepath in files:
+            is_dir = filepath.endswith('/')
+            filepath = os.path.join(tempdir, *filepath.split('/'))
+            if is_dir:
+                dirname = filepath
+            else:
+                dirname = os.path.dirname(filepath)
+            if dirname and not os.path.exists(dirname):
+                os.makedirs(dirname)
+            if not is_dir:
+                self.write_file(filepath, 'babar')
+        return tempdir
+
+    @staticmethod
+    def os_dependant_path(path):
+        path = path.rstrip('/').split('/')
+        return os.path.join(*path)
+
+    def clean_tree(self, spec):
+        files = []
+        for path, includes in list(spec.items()):
+            if includes:
+                files.append(self.os_dependant_path(path))
+        return files
+
+class GlobTestCase(GlobTestCaseBase):
+
+
+    def assertGlobMatch(self, glob, spec):
+        """"""
+        tempdir  = self.build_files_tree(spec)
+        expected = self.clean_tree(spec)
+        self.addCleanup(os.chdir, os.getcwd())
+        os.chdir(tempdir)
+        result = list(iglob(glob))
+        self.assertItemsEqual(expected, result)
+
+    def test_regex_rich_glob(self):
+        matches = RICH_GLOB.findall(r"babar aime les {fraises} est les {huitres}")
+        self.assertEquals(["fraises","huitres"], matches)
+
+    def test_simple_glob(self):
+        glob = '*.tp?'
+        spec  = {'coucou.tpl': True,
+                 'coucou.tpj': True,
+                 'Donotwant': False}
+        self.assertGlobMatch(glob, spec)
+
+    def test_simple_glob_in_dir(self):
+        glob = 'babar/*.tp?'
+        spec  = {'babar/coucou.tpl': True,
+                 'babar/coucou.tpj': True,
+                 'babar/toto.bin': False,
+                 'Donotwant': False}
+        self.assertGlobMatch(glob, spec)
+
+    def test_recursive_glob_head(self):
+        glob = '**/tip/*.t?l'
+        spec  = {'babar/zaza/zuzu/tip/coucou.tpl': True,
+                 'babar/z/tip/coucou.tpl': True,
+                 'babar/tip/coucou.tpl': True,
+                 'babar/zeop/tip/babar/babar.tpl': False,
+                 'babar/z/tip/coucou.bin': False,
+                 'babar/toto.bin': False,
+                 'zozo/zuzu/tip/babar.tpl': True,
+                 'zozo/tip/babar.tpl': True,
+                 'Donotwant': False}
+        self.assertGlobMatch(glob, spec)
+
+    def test_recursive_glob_tail(self):
+        glob = 'babar/**'
+        spec = {'babar/zaza/': True,
+                'babar/zaza/zuzu/': True,
+                'babar/zaza/zuzu/babar.xml': True,
+                'babar/zaza/zuzu/toto.xml': True,
+                'babar/zaza/zuzu/toto.csv': True,
+                'babar/zaza/coucou.tpl': True,
+                'babar/bubu.tpl': True,
+                'zozo/zuzu/tip/babar.tpl': False,
+                'zozo/tip/babar.tpl': False,
+                'Donotwant': False}
+        self.assertGlobMatch(glob, spec)
+
+    def test_recursive_glob_middle(self):
+        glob = 'babar/**/tip/*.t?l'
+        spec  = {'babar/zaza/zuzu/tip/coucou.tpl': True,
+                 'babar/z/tip/coucou.tpl': True,
+                 'babar/tip/coucou.tpl': True,
+                 'babar/zeop/tip/babar/babar.tpl': False,
+                 'babar/z/tip/coucou.bin': False,
+                 'babar/toto.bin': False,
+                 'zozo/zuzu/tip/babar.tpl': False,
+                 'zozo/tip/babar.tpl': False,
+                 'Donotwant': False}
+        self.assertGlobMatch(glob, spec)
+
+    def test_glob_set_tail(self):
+        glob = 'bin/*.{bin,sh,exe}'
+        spec  = {'bin/babar.bin': True,
+                 'bin/zephir.sh': True,
+                 'bin/celestine.exe': True,
+                 'bin/cornelius.bat': False,
+                 'bin/cornelius.xml': False,
+                 'toto/yurg': False,
+                 'Donotwant': False}
+        self.assertGlobMatch(glob, spec)
+
+    def test_glob_set_middle(self):
+        glob = 'xml/{babar,toto}.xml'
+        spec  = {'xml/babar.xml': True,
+                 'xml/toto.xml': True,
+                 'xml/babar.xslt': False,
+                 'xml/cornelius.sgml': False,
+                 'xml/zephir.xml': False,
+                 'toto/yurg.xml': False,
+                 'Donotwant': False}
+        self.assertGlobMatch(glob, spec)
+
+    def test_glob_set_head(self):
+        glob = '{xml,xslt}/babar.*'
+        spec  = {'xml/babar.xml': True,
+                 'xml/toto.xml': False,
+                 'xslt/babar.xslt': True,
+                 'xslt/toto.xslt': False,
+                 'toto/yurg.xml': False,
+                 'Donotwant': False}
+        self.assertGlobMatch(glob, spec)
+
+    def test_glob_all(self):
+        glob = '{xml/*,xslt/**}/babar.xml'
+        spec  = {'xml/a/babar.xml': True,
+                 'xml/b/babar.xml': True,
+                 'xml/a/c/babar.xml': False,
+                 'xslt/a/babar.xml': True,
+                 'xslt/b/babar.xml': True,
+                 'xslt/a/c/babar.xml': True,
+                 'toto/yurg.xml': False,
+                 'Donotwant': False}
+        self.assertGlobMatch(glob, spec)
+
+    def test_invalid_glob_pattern(self):
+        invalids = [
+            'ppooa**',
+            'azzaeaz4**/',
+            '/**ddsfs',
+            '**##1e"&e',
+            'DSFb**c009',
+            '{'
+            '{aaQSDFa'
+            '}'
+            'aQSDFSaa}'
+            '{**a,'
+            ',**a}'
+            '{a**,'
+            ',b**}'
+            '{a**a,babar}'
+            '{bob,b**z}'
+            ]
+        msg = "%r is not supposed to be a valid pattern"
+        for pattern in invalids:
+            try:
+                iglob(pattern)
+            except ValueError:
+                continue
+            else:
+                self.fail("%r is not a valid iglob pattern" % pattern)
+
+
 
 def test_suite():
-    return unittest.makeSuite(UtilTestCase)
+    suite = unittest.makeSuite(UtilTestCase)
+    suite.addTest(unittest.makeSuite(GlobTestCase))
+    return suite
+
 
 if __name__ == "__main__":
     unittest.main(defaultTest="test_suite")

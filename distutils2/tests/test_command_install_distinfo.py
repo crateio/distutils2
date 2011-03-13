@@ -1,12 +1,11 @@
 """Tests for ``distutils2.command.install_distinfo``. """
 
 import os
-import sys
 import csv
 
 from distutils2.command.install_distinfo import install_distinfo
 from distutils2.command.cmd import Command
-from distutils2.metadata import DistributionMetadata
+from distutils2.metadata import Metadata
 from distutils2.tests import unittest, support
 
 try:
@@ -65,7 +64,7 @@ class InstallDistinfoTestCase(support.TempdirManager,
         self.assertEqual(open(os.path.join(dist_info, 'REQUESTED')).read(),
                          '')
         meta_path = os.path.join(dist_info, 'METADATA')
-        self.assertTrue(DistributionMetadata(path=meta_path).check())
+        self.assertTrue(Metadata(path=meta_path).check())
 
     def test_installer(self):
         pkg_dir, dist = self.create_dist(name='foo',

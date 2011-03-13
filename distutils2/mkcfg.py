@@ -20,17 +20,24 @@
 #  Ask for the dependencies.
 #  Ask for the Requires-Dist
 #  Ask for the Provides-Dist
+#  Ask for a description
 #  Detect scripts (not sure how.  #! outside of package?)
 
 import os
 import sys
+import glob
 import re
 import shutil
 from ConfigParser import RawConfigParser
 from textwrap import dedent
+try:
+    from hashlib import md5
+except ImportError:
+    from distutils2._backport.hashlib  import md5
 # importing this with an underscore as it should be replaced by the
 # dict form or another structures for all purposes
 from distutils2._trove import all_classifiers as _CLASSIFIERS_LIST
+from distutils2._backport import sysconfig
 
 _FILENAME = 'setup.cfg'
 
@@ -82,6 +89,10 @@ license, and then you can select a list of license specifiers.
 Optionally, you can set other trove identifiers for things such as the
 human language, programming language, user interface, etc...
 ''',
+    'setup.py found': '''
+The setup.py script will be executed to retrieve the metadata.
+A wizard will be run if you answer "n",
+''',
 }
 
 # XXX everything needs docstrings and tests (both low-level tests of various
@@ -106,7 +117,7 @@ def ask(question, default=None, helptext=None, required=True,
         if default and len(question) + len(default) > 70:
             prompt = '%s\n    [%s]: ' % (question, default)
     if lengthy or multiline:
-        prompt += '\n   >'
+        prompt += '\n   > '
 
     if not helptext:
         helptext = 'No additional help available.'
@@ -148,6 +159,7 @@ def _build_classifiers_dict(classifiers):
 
 CLASSIFIERS = _build_classifiers_dict(_CLASSIFIERS_LIST)
 
+
 def _build_licences(classifiers):
     res = []
     for index, item in enumerate(classifiers):
@@ -162,12 +174,15 @@ LICENCES = _build_licences(_CLASSIFIERS_LIST)
 class MainProgram(object):
     def __init__(self):
         self.configparser = None
-        self.classifiers = {}
+        self.classifiers = set([])
         self.data = {}
         self.data['classifier'] = self.classifiers
         self.data['packages'] = []
         self.data['modules'] = []
+        self.data['platform'] = []
+        self.data['resources'] = []
         self.data['extra_files'] = []
+        self.data['scripts'] = []
         self.load_config_file()
 
     def lookup_option(self, key):
@@ -178,6 +193,7 @@ class MainProgram(object):
     def load_config_file(self):
         self.configparser = RawConfigParser()
         # TODO replace with section in distutils config file
+        #XXX freedesktop
         self.configparser.read(os.path.expanduser('~/.mkcfg'))
         self.data['author'] = self.lookup_option('author')
         self.data['author_email'] = self.lookup_option('author_email')
@@ -194,6 +210,7 @@ class MainProgram(object):
         if not valuesDifferent:
             return
 
+        #XXX freedesktop
         fp = open(os.path.expanduser('~/.mkcfgpy'), 'w')
         try:
             self.configparser.write(fp)
@@ -201,30 +218,139 @@ class MainProgram(object):
             fp.close()
 
     def load_existing_setup_script(self):
-        raise NotImplementedError
-        # Ideas:
-        # - define a mock module to assign to sys.modules['distutils'] before
-        # importing the setup script as a module (or executing it); it would
-        # provide setup (a function that just returns its args as a dict),
-        # Extension (ditto), find_packages (the real function)
-        # - we could even mock Distribution and commands to handle more setup
-        # scripts
-        # - we could use a sandbox (http://bugs.python.org/issue8680)
-        # - the cleanest way is to parse the file, not import it, but there is
-        # no way to do that across versions (the compiler package is
-        # deprecated or removed in recent Pythons, the ast module is not
-        # present before 2.6)
+        """ Generate a setup.cfg from an existing setup.py.
+
+        It only exports the distutils metadata (setuptools specific metadata
+        is not actually supported).
+        """
+        setuppath = 'setup.py'
+        if not os.path.exists(setuppath):
+            return
+        else:
+            ans = ask_yn(('A legacy setup.py has been found.\n'
+                          'Would you like to convert it to a setup.cfg ?'),
+                         'y',
+                         _helptext['setup.py found'])
+            if ans != 'y':
+                return
+
+        data = self.data
+
+        def setup(**attrs):
+            """Mock the setup(**attrs) in order to retrive metadata."""
+            # use the distutils v1 processings to correctly parse metadata.
+            #XXX we could also use the setuptools distibution ???
+            from distutils.dist import Distribution
+            dist = Distribution(attrs)
+            dist.parse_config_files()
+            # 1. retrieves metadata that are quite similar PEP314<->PEP345
+            labels = (('name',) * 2,
+                      ('version',) * 2,
+                      ('author',) * 2,
+                      ('author_email',) * 2,
+                      ('maintainer',) * 2,
+                      ('maintainer_email',) * 2,
+                      ('description', 'summary'),
+                      ('long_description', 'description'),
+                      ('url', 'home_page'),
+                      ('platforms', 'platform'))
+
+            if sys.version[:3] >= '2.5':
+                labels += (('provides', 'provides-dist'),
+                           ('obsoletes', 'obsoletes-dist'),
+                           ('requires', 'requires-dist'),)
+            get = lambda lab: getattr(dist.metadata, lab.replace('-', '_'))
+            data.update((new, get(old)) for (old, new) in labels if get(old))
+            # 2. retrieves data that requires special processings.
+            data['classifier'].update(dist.get_classifiers() or [])
+            data['scripts'].extend(dist.scripts or [])
+            data['packages'].extend(dist.packages or [])
+            data['modules'].extend(dist.py_modules or [])
+            # 2.1 data_files -> resources.
+            if dist.data_files:
+                if len(dist.data_files) < 2 or \
+                   isinstance(dist.data_files[1], str):
+                    dist.data_files = [('', dist.data_files)]
+                # add tokens in the destination paths
+                vars = {'distribution.name': data['name']}
+                path_tokens = sysconfig.get_paths(vars=vars).items()
+                # sort tokens to use the longest one first
+                # TODO chain two sorted with key arguments, remove cmp
+                path_tokens.sort(cmp=lambda x, y: cmp(len(y), len(x)),
+                                 key=lambda x: x[1])
+                for dest, srcs in (dist.data_files or []):
+                    dest = os.path.join(sys.prefix, dest)
+                    for tok, path in path_tokens:
+                        if dest.startswith(path):
+                            dest = ('{%s}' % tok) + dest[len(path):]
+                            files = [('/ '.join(src.rsplit('/', 1)), dest)
+                                     for src in srcs]
+                            data['resources'].extend(files)
+                            continue
+            # 2.2 package_data -> extra_files
+            package_dirs = dist.package_dir or {}
+            for package, extras in dist.package_data.iteritems() or []:
+                package_dir = package_dirs.get(package, package)
+                files = [os.path.join(package_dir, f) for f in extras]
+                data['extra_files'].extend(files)
+
+            # Use README file if its content is the desciption
+            if "description" in data:
+                ref = md5(re.sub('\s', '', self.data['description']).lower())
+                ref = ref.digest()
+                for readme in glob.glob('README*'):
+                    fp = open(readme)
+                    try:
+                        contents = fp.read()
+                    finally:
+                        fp.close()
+                    val = md5(re.sub('\s', '', contents.lower())).digest()
+                    if val == ref:
+                        del data['description']
+                        data['description-file'] = readme
+                        break
+
+        # apply monkey patch to distutils (v1) and setuptools (if needed)
+        # (abord the feature if distutils v1 has been killed)
+        try:
+            import distutils.core as DC
+            DC.setup  # ensure distutils v1
+        except (ImportError, AttributeError):
+            return
+        saved_setups = [(DC, DC.setup)]
+        DC.setup = setup
+        try:
+            import setuptools
+            saved_setups.append((setuptools, setuptools.setup))
+            setuptools.setup = setup
+        except (ImportError, AttributeError):
+            pass
+        # get metadata by executing the setup.py with the patched setup(...)
+        success = False  # for python < 2.4
+        try:
+            pyenv = globals().copy()
+            execfile(setuppath, pyenv)
+            success = True
+        finally:  # revert monkey patches
+            for patched_module, original_setup in saved_setups:
+                patched_module.setup = original_setup
+        if not self.data:
+            raise ValueError('Unable to load metadata from setup.py')
+        return success
 
     def inspect_file(self, path):
         fp = open(path, 'r')
         try:
-            for line in [fp.readline() for _ in range(10)]:
+            for _ in xrange(10):
+                line = fp.readline()
                 m = re.match(r'^#!.*python((?P<major>\d)(\.\d+)?)?$', line)
                 if m:
                     if m.group('major') == '3':
-                        self.classifiers['Programming Language :: Python :: 3'] = 1
+                        self.classifiers.add(
+                            'Programming Language :: Python :: 3')
                     else:
-                        self.classifiers['Programming Language :: Python :: 2'] = 1
+                        self.classifiers.add(
+                        'Programming Language :: Python :: 2')
         finally:
             fp.close()
 
@@ -270,7 +396,6 @@ class MainProgram(object):
                         helptext=_helptext['extra_files']) == 'y':
                 self._set_multi('Extra file/dir name', 'extra_files')
 
-
         if ask_yn('Do you want to set Trove classifiers?',
                   helptext=_helptext['do_classifier']) == 'y':
             self.set_classifier()
@@ -289,7 +414,6 @@ class MainProgram(object):
         scanned = []
         _pref = ['lib', 'include', 'dist', 'build', '.', '~']
         _suf = ['.pyc']
-
 
         def to_skip(path):
             path = relative(path)
@@ -317,7 +441,7 @@ class MainProgram(object):
         for root, dirs, files in os.walk(curdir):
             if to_skip(root):
                 continue
-            for dir_ in dirs:
+            for dir_ in sorted(dirs):
                 if to_skip(dir_):
                     continue
                 fullpath = os.path.join(root, dir_)
@@ -334,7 +458,7 @@ class MainProgram(object):
             if True in [root.startswith(path) for path in scanned]:
                 continue
 
-            for file in files:
+            for file in sorted(files):
                 fullpath = os.path.join(root, file)
                 if to_skip(fullpath):
                     continue
@@ -347,8 +471,6 @@ class MainProgram(object):
     def _set_multi(self, question, name):
         existing_values = self.data[name]
         value = ask(question, helptext=_helptext[name]).strip()
-        if value == '':
-            return
         if value not in existing_values:
             existing_values.append(value)
 
@@ -369,10 +491,10 @@ class MainProgram(object):
         if not trove:
             return
 
-        for key in sorted(trove.keys()):
+        for key in sorted(trove):
             if len(trove[key]) == 0:
                 if ask_yn('Add "%s"' % desc[4:] + ' :: ' + key, 'n') == 'y':
-                    classifiers[desc[4:] + ' :: ' + key] = 1
+                    classifiers.add(desc[4:] + ' :: ' + key)
                 continue
 
             if ask_yn('Do you want to set items under\n   "%s" (%d sub-items)'
@@ -423,7 +545,7 @@ class MainProgram(object):
                 print ("ERROR: Invalid selection, type a number from the list "
                        "above.")
 
-            classifiers[_CLASSIFIERS_LIST[index]] = 1
+            classifiers.add(_CLASSIFIERS_LIST[index])
             return
 
     def set_devel_status(self, classifiers):
@@ -450,14 +572,14 @@ class MainProgram(object):
                            'Development Status :: 5 - Production/Stable',
                            'Development Status :: 6 - Mature',
                            'Development Status :: 7 - Inactive'][choice]
-                    classifiers[key] = 1
+                    classifiers.add(key)
                     return
                 except (IndexError, ValueError):
                     print ("ERROR: Invalid selection, type a single digit "
                            "number.")
 
     def _dotted_packages(self, data):
-        packages = sorted(data.keys())
+        packages = sorted(data)
         modified_pkgs = []
         for pkg in packages:
             pkg = pkg.lstrip('./')
@@ -477,32 +599,45 @@ class MainProgram(object):
         fp = open(_FILENAME, 'w')
         try:
             fp.write('[metadata]\n')
-            fp.write('name = %s\n' % self.data['name'])
-            fp.write('version = %s\n' % self.data['version'])
-            fp.write('author = %s\n' % self.data['author'])
-            fp.write('author_email = %s\n' % self.data['author_email'])
-            fp.write('summary = %s\n' % self.data['summary'])
-            fp.write('home_page = %s\n' % self.data['home_page'])
-            fp.write('\n')
-            if len(self.data['classifier']) > 0:
-                classifiers = '\n'.join(['    %s' % clas for clas in
-                                         self.data['classifier']])
-                fp.write('classifier = %s\n' % classifiers.strip())
-                fp.write('\n')
-
-            fp.write('[files]\n')
-            for element in ('packages', 'modules', 'extra_files'):
-                if len(self.data[element]) == 0:
+            # simple string entries
+            for name in ('name', 'version', 'summary', 'download_url'):
+                fp.write('%s = %s\n' % (name, self.data.get(name, 'UNKNOWN')))
+            # optional string entries
+            if 'keywords' in self.data and self.data['keywords']:
+                fp.write('keywords = %s\n' % ' '.join(self.data['keywords']))
+            for name in ('home_page', 'author', 'author_email',
+                         'maintainer', 'maintainer_email', 'description-file'):
+                if name in self.data and self.data[name]:
+                    fp.write('%s = %s\n' % (name, self.data[name]))
+            if 'description' in self.data:
+                fp.write(
+                    'description = %s\n'
+                    % '\n       |'.join(self.data['description'].split('\n')))
+            # multiple use string entries
+            for name in ('platform', 'supported-platform', 'classifier',
+                         'requires-dist', 'provides-dist', 'obsoletes-dist',
+                         'requires-external'):
+                if not(name in self.data and self.data[name]):
                     continue
-                items = '\n'.join(['    %s' % item for item in
-                                  self.data[element]])
-                fp.write('%s = %s\n' % (element, items.strip()))
-
+                fp.write('%s = ' % name)
+                fp.write(''.join('    %s\n' % val
+                                 for val in self.data[name]).lstrip())
+            fp.write('\n[files]\n')
+            for name in ('packages', 'modules', 'scripts',
+                         'package_data', 'extra_files'):
+                if not(name in self.data and self.data[name]):
+                    continue
+                fp.write('%s = %s\n'
+                         % (name, '\n    '.join(self.data[name]).strip()))
+            fp.write('\nresources =\n')
+            for src, dest in self.data['resources']:
+                fp.write('    %s = %s\n' % (src, dest))
             fp.write('\n')
+
         finally:
             fp.close()
 
-        os.chmod(_FILENAME, 0755)
+        os.chmod(_FILENAME, 0644)
         print 'Wrote "%s".' % _FILENAME
 
 
@@ -510,11 +645,12 @@ def main():
     """Main entry point."""
     program = MainProgram()
     # uncomment when implemented
-    #program.load_existing_setup_script()
-    program.inspect_directory()
-    program.query_user()
-    program.update_config_file()
+    if not program.load_existing_setup_script():
+        program.inspect_directory()
+        program.query_user()
+        program.update_config_file()
     program.write_setup_script()
+    # distutils2.util.cfg_to_args()
 
 
 if __name__ == '__main__':

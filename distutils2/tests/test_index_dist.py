@@ -127,7 +127,7 @@ class TestDistInfo(TempdirManager, unittest.TestCase):
         url = "%s/simple/foobar/foobar-0.1.tar.gz" % server.full_address
         # check md5 if given
         dist = Dist(url=url, hashname="md5",
-                    hashval="d41d8cd98f00b204e9800998ecf8427e")
+                    hashval="fe18804c5b722ff024cabdf514924fc4")
         dist.download(self.mkdtemp())
 
         # a wrong md5 fails
@@ -148,6 +148,35 @@ class TestDistInfo(TempdirManager, unittest.TestCase):
         dist4 = Dist(url=url)
         path2 = dist4.download(path=path2_base)
         self.assertTrue(path2_base in path2)
+
+    def test_hashname(self):
+        # Invalid hashnames raises an exception on assignation
+        Dist(hashname="md5", hashval="value")
+
+        self.assertRaises(UnsupportedHashName, Dist,
+                          hashname="invalid_hashname",
+                          hashval="value")
+
+    @use_pypi_server('downloads_with_md5')
+    def test_unpack(self, server):
+        url = "%s/simple/foobar/foobar-0.1.tar.gz" % server.full_address
+        dist1 = Dist(url=url)
+        # doing an unpack
+        dist1_here = self.mkdtemp()
+        dist1_there = dist1.unpack(path=dist1_here)
+        # assert we unpack to the path provided
+        self.assertEqual(dist1_here, dist1_there)
+        dist1_result = os.listdir(dist1_there)
+        self.assertIn('paf', dist1_result)
+        os.remove(os.path.join(dist1_there, 'paf'))
+
+        # Test unpack works without a path argument
+        dist2 = Dist(url=url)
+        # doing an unpack
+        dist2_there = dist2.unpack()
+        dist2_result = os.listdir(dist2_there)
+        self.assertIn('paf', dist2_result)
+        os.remove(os.path.join(dist2_there, 'paf'))
 
     def test_hashname(self):
         # Invalid hashnames raises an exception on assignation
@@ -236,6 +265,10 @@ class TestReleasesList(unittest.TestCase):
 #        dists.append(fb2_binary)
 #        dists.sort_distributions(prefer_source=True)
 #        self.assertEqual(fb2_binary, dists[0])
+
+    def test_get_last(self):
+        dists = ReleasesList('Foo')
+        self.assertEqual(dists.get_last('Foo 1.0'), None)
 
 
 def test_suite():

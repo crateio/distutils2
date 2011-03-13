@@ -61,9 +61,9 @@ class VersionTestCase(unittest.TestCase):
 
     def test_huge_version(self):
 
-        self.assertEquals(str(V('1980.0')), '1980.0')
+        self.assertEqual(str(V('1980.0')), '1980.0')
         self.assertRaises(HugeMajorVersionNumError, V, '1981.0')
-        self.assertEquals(str(V('1981.0', error_on_huge_major_num=False)), '1981.0')
+        self.assertEqual(str(V('1981.0', error_on_huge_major_num=False)), '1981.0')
 
     def test_comparison(self):
         r"""
@@ -196,8 +196,19 @@ class VersionTestCase(unittest.TestCase):
 
         self.assertRaises(ValueError, VersionPredicate, '')
 
+        self.assertTrue(VersionPredicate('Hey 2.5').match('2.5.1'))
+
         # XXX need to silent the micro version in this case
         #assert not VersionPredicate('Ho (<3.0,!=2.6)').match('2.6.3')
+
+
+        # Make sure a predicate that ends with a number works
+        self.assertTrue(VersionPredicate('virtualenv5 (1.0)').match('1.0'))
+        self.assertTrue(VersionPredicate('virtualenv5').match('1.0'))
+        self.assertTrue(VersionPredicate('vi5two').match('1.0'))
+        self.assertTrue(VersionPredicate('5two').match('1.0'))
+        self.assertTrue(VersionPredicate('vi5two 1.0').match('1.0'))
+        self.assertTrue(VersionPredicate('5two 1.0').match('1.0'))
 
         # test repr
         for predicate in predicates:
@@ -220,12 +231,13 @@ class VersionTestCase(unittest.TestCase):
         for version in other_versions:
             self.assertFalse(V(version).is_final)
 
+
 class VersionWhiteBoxTestCase(unittest.TestCase):
 
     def test_parse_numdots(self):
         # For code coverage completeness, as pad_zeros_length can't be set or
         # influenced from the public interface
-        self.assertEquals(V('1.0')._parse_numdots('1.0', '1.0',
+        self.assertEqual(V('1.0')._parse_numdots('1.0', '1.0',
                                                   pad_zeros_length=3),
                           [1, 0, 0])
 

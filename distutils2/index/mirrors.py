@@ -1,4 +1,4 @@
-"""Utilities related to the mirror infrastructure defined in PEP 381. 
+"""Utilities related to the mirror infrastructure defined in PEP 381.
 See http://www.python.org/dev/peps/pep-0381/
 """
 
@@ -6,6 +6,7 @@ from string import ascii_lowercase
 import socket
 
 DEFAULT_MIRROR_URL = "last.pypi.python.org"
+
 
 def get_mirrors(hostname=None):
     """Return the list of mirrors from the last record found on the DNS
@@ -19,7 +20,7 @@ def get_mirrors(hostname=None):
     """
     if hostname is None:
         hostname = DEFAULT_MIRROR_URL
-    
+
     # return the last mirror registered on PyPI.
     try:
         hostname = socket.gethostbyname_ex(hostname)[0]
@@ -30,23 +31,24 @@ def get_mirrors(hostname=None):
     # determine the list from the last one.
     return ["%s.%s" % (s, end_letter[1]) for s in string_range(end_letter[0])]
 
+
 def string_range(last):
     """Compute the range of string between "a" and last.
-    
+
     This works for simple "a to z" lists, but also for "a to zz" lists.
     """
     for k in range(len(last)):
-        for x in product(ascii_lowercase, repeat=k+1):
+        for x in product(ascii_lowercase, repeat=(k + 1)):
             result = ''.join(x)
             yield result
             if result == last:
                 return
 
+
 def product(*args, **kwds):
     pools = map(tuple, args) * kwds.get('repeat', 1)
     result = [[]]
     for pool in pools:
-        result = [x+[y] for x in result for y in pool]
+        result = [x + [y] for x in result for y in pool]
     for prod in result:
         yield tuple(prod)
-

@@ -1,6 +1,5 @@
 # -*- encoding: utf-8 -*-
 """Tests for distutils.command.register."""
-import sys
 import os
 import getpass
 import urllib2
@@ -87,6 +86,8 @@ class RegisterTestCase(support.TempdirManager,
     def tearDown(self):
         getpass.getpass = self._old_getpass
         urllib2.build_opener = self.old_opener
+        if hasattr(register_module, 'raw_input'):
+            del register_module.raw_input
         super(RegisterTestCase, self).tearDown()
 
     def _get_cmd(self, metadata=None):
@@ -109,7 +110,6 @@ class RegisterTestCase(support.TempdirManager,
 
         # patching raw_input and getpass.getpass
         # so register gets happy
-        #
         # Here's what we are faking :
         # use your existing login (choice 1.)
         # Username : 'tarek'
@@ -117,11 +117,7 @@ class RegisterTestCase(support.TempdirManager,
         # Save your login (y/N)? : 'y'
         inputs = RawInputs('1', 'tarek', 'y')
         register_module.raw_input = inputs.__call__
-        # let's run the command
-        try:
-            cmd.run()
-        finally:
-            del register_module.raw_input
+        cmd.run()
 
         # we should have a brand new .pypirc file
         self.assertTrue(os.path.exists(self.rc))
@@ -135,8 +131,8 @@ class RegisterTestCase(support.TempdirManager,
         # if we run the command again
         def _no_way(prompt=''):
             raise AssertionError(prompt)
-        register_module.raw_input = _no_way
 
+        register_module.raw_input = _no_way
         cmd.show_response = 1
         cmd.run()
 
@@ -165,13 +161,10 @@ class RegisterTestCase(support.TempdirManager,
         cmd = self._get_cmd()
         inputs = RawInputs('2', 'tarek', 'tarek@ziade.org')
         register_module.raw_input = inputs.__call__
-        try:
-            # let's run the command
-            # FIXME does this send a real request? use a mock server
-            # also, silence self.announce (with LoggingCatcher)
-            cmd.run()
-        finally:
-            del register_module.raw_input
+        # let's run the command
+        # FIXME does this send a real request? use a mock server
+        # also, silence self.announce (with LoggingCatcher)
+        cmd.run()
 
         # we should have send a request
         self.assertTrue(self.conn.reqs, 1)
@@ -185,11 +178,7 @@ class RegisterTestCase(support.TempdirManager,
         cmd = self._get_cmd()
         inputs = RawInputs('3', 'tarek@ziade.org')
         register_module.raw_input = inputs.__call__
-        try:
-            # let's run the command
-            cmd.run()
-        finally:
-            del register_module.raw_input
+        cmd.run()
 
         # we should have send a request
         self.assertTrue(self.conn.reqs, 1)
@@ -206,9 +195,11 @@ class RegisterTestCase(support.TempdirManager,
         # long_description is not reSt compliant
 
         # empty metadata
-        cmd = self._get_cmd({})
+        cmd = self._get_cmd({'name': 'xxx', 'version': 'xxx'})
         cmd.ensure_finalized()
         cmd.strict = 1
+        inputs = RawInputs('1', 'tarek', 'y')
+        register_module.raw_input = inputs.__call__
         self.assertRaises(DistutilsSetupError, cmd.run)
 
         # metadata is OK but long_description is broken
@@ -230,22 +221,14 @@ class RegisterTestCase(support.TempdirManager,
         cmd.strict = 1
         inputs = RawInputs('1', 'tarek', 'y')
         register_module.raw_input = inputs.__call__
-        # let's run the command
-        try:
-            cmd.run()
-        finally:
-            del register_module.raw_input
+        cmd.run()
 
         # strict is not by default
         cmd = self._get_cmd()
         cmd.ensure_finalized()
         inputs = RawInputs('1', 'tarek', 'y')
         register_module.raw_input = inputs.__call__
-        # let's run the command
-        try:
-            cmd.run()
-        finally:
-            del register_module.raw_input
+        cmd.run()
 
     def test_register_pep345(self):
         cmd = self._get_cmd({})

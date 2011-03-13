@@ -3,18 +3,16 @@
 Supports all metadata formats (1.0, 1.1, 1.2).
 """
 
-import os
-import sys
-import platform
 import re
 from StringIO import StringIO
 from email import message_from_file
-from tokenize import tokenize, NAME, OP, STRING, ENDMARKER
 
 from distutils2 import logger
+from distutils2.markers import interpret
 from distutils2.version import (is_valid_predicate, is_valid_version,
                                 is_valid_versions)
-from distutils2.errors import (MetadataConflictError,
+from distutils2.errors import (MetadataMissingError,
+                               MetadataConflictError,
                                MetadataUnrecognizedVersionError)
 
 try:
@@ -41,8 +39,8 @@ except ImportError:
     _HAS_DOCUTILS = False
 
 # public API of this module
-__all__ = ('DistributionMetadata', 'PKG_INFO_ENCODING',
-           'PKG_INFO_PREFERRED_VERSION')
+__all__ = ['Metadata', 'get_metadata_version', 'metadata_to_dict',
+           'PKG_INFO_ENCODING', 'PKG_INFO_PREFERRED_VERSION']
 
 # Encoding used for the PKG-INFO files
 PKG_INFO_ENCODING = 'utf-8'
@@ -139,49 +137,104 @@ def _best_version(fields):
     # default marker when 1.0 is disqualified
     return '1.2'
 
-_ATTR2FIELD = {'metadata_version': 'Metadata-Version',
-        'name': 'Name',
-        'version': 'Version',
-        'platform': 'Platform',
-        'supported_platform': 'Supported-Platform',
-        'summary': 'Summary',
-        'description': 'Description',
-        'keywords': 'Keywords',
-        'home_page': 'Home-page',
-        'author': 'Author',
-        'author_email': 'Author-email',
-        'maintainer': 'Maintainer',
-        'maintainer_email': 'Maintainer-email',
-        'license': 'License',
-        'classifier': 'Classifier',
-        'download_url': 'Download-URL',
-        'obsoletes_dist': 'Obsoletes-Dist',
-        'provides_dist': 'Provides-Dist',
-        'requires_dist': 'Requires-Dist',
-        'requires_python': 'Requires-Python',
-        'requires_external': 'Requires-External',
-        'requires': 'Requires',
-        'provides': 'Provides',
-        'obsoletes': 'Obsoletes',
-        'project_url': 'Project-URL',
-        }
+
+def get_metadata_version(metadata):
+    """Return the Metadata-Version attribute
+
+    - *metadata* give a METADATA object
+    """
+    return metadata['Metadata-Version']
+
+
+def metadata_to_dict(metadata):
+    """Convert a metadata object to a dict
+
+    - *metadata* give a METADATA object
+    """
+    data = {
+        'metadata_version': metadata['Metadata-Version'],
+        'name': metadata['Name'],
+        'version': metadata['Version'],
+        'summary': metadata['Summary'],
+        'home_page': metadata['Home-page'],
+        'author': metadata['Author'],
+        'author_email': metadata['Author-email'],
+        'license': metadata['License'],
+        'description': metadata['Description'],
+        'keywords': metadata['Keywords'],
+        'platform': metadata['Platform'],
+        'classifier': metadata['Classifier'],
+        'download_url': metadata['Download-URL'],
+    }
+
+    if metadata['Metadata-Version'] == '1.2':
+        data['requires_dist'] = metadata['Requires-Dist']
+        data['requires_python'] = metadata['Requires-Python']
+        data['requires_external'] = metadata['Requires-External']
+        data['provides_dist'] = metadata['Provides-Dist']
+        data['obsoletes_dist'] = metadata['Obsoletes-Dist']
+        data['project_url'] = [','.join(url) for url in
+                               metadata['Project-URL']]
+
+    elif metadata['Metadata-Version'] == '1.1':
+        data['provides'] = metadata['Provides']
+        data['requires'] = metadata['Requires']
+        data['obsoletes'] = metadata['Obsoletes']
+
+    return data
+
+
+_ATTR2FIELD = {
+    'metadata_version': 'Metadata-Version',
+    'name': 'Name',
+    'version': 'Version',
+    'platform': 'Platform',
+    'supported_platform': 'Supported-Platform',
+    'summary': 'Summary',
+    'description': 'Description',
+    'keywords': 'Keywords',
+    'home_page': 'Home-page',
+    'author': 'Author',
+    'author_email': 'Author-email',
+    'maintainer': 'Maintainer',
+    'maintainer_email': 'Maintainer-email',
+    'license': 'License',
+    'classifier': 'Classifier',
+    'download_url': 'Download-URL',
+    'obsoletes_dist': 'Obsoletes-Dist',
+    'provides_dist': 'Provides-Dist',
+    'requires_dist': 'Requires-Dist',
+    'requires_python': 'Requires-Python',
+    'requires_external': 'Requires-External',
+    'requires': 'Requires',
+    'provides': 'Provides',
+    'obsoletes': 'Obsoletes',
+    'project_url': 'Project-URL',
+}
 
 _PREDICATE_FIELDS = ('Requires-Dist', 'Obsoletes-Dist', 'Provides-Dist')
 _VERSIONS_FIELDS = ('Requires-Python',)
 _VERSION_FIELDS = ('Version',)
 _LISTFIELDS = ('Platform', 'Classifier', 'Obsoletes',
-        'Requires', 'Provides', 'Obsoletes-Dist',
-        'Provides-Dist', 'Requires-Dist', 'Requires-External',
-        'Project-URL')
+               'Requires', 'Provides', 'Obsoletes-Dist',
+               'Provides-Dist', 'Requires-Dist', 'Requires-External',
+               'Project-URL', 'Supported-Platform')
 _LISTTUPLEFIELDS = ('Project-URL',)
 
 _ELEMENTSFIELD = ('Keywords',)
 
 _UNICODEFIELDS = ('Author', 'Maintainer', 'Summary', 'Description')
 
-_MISSING = object()
 
-class DistributionMetadata(object):
+class NoDefault(object):
+    """Marker object used for clean representation"""
+    def __repr__(self):
+        return '<NoDefault>'
+
+_MISSING = NoDefault()
+
+
+class Metadata(object):
     """The metadata of a release.
 
     Supports versions 1.0, 1.1 and 1.2 (auto-detected). You can
@@ -195,9 +248,11 @@ class DistributionMetadata(object):
     # also document the mapping API and UNKNOWN default key
 
     def __init__(self, path=None, platform_dependent=False,
-                 execution_context=None, fileobj=None, mapping=None):
+                 execution_context=None, fileobj=None, mapping=None,
+                 display_warnings=False):
         self._fields = {}
-        self.version = None
+        self.display_warnings = display_warnings
+        self.requires_files = []
         self.docutils_support = _HAS_DOCUTILS
         self.platform_dependent = platform_dependent
         self.execution_context = execution_context
@@ -211,8 +266,7 @@ class DistributionMetadata(object):
             self.update(mapping)
 
     def _set_best_version(self):
-        self.version = _best_version(self._fields)
-        self._fields['Metadata-Version'] = self.version
+        self._fields['Metadata-Version'] = _best_version(self._fields)
 
     def _write_field(self, file, name, value):
         file.write('%s: %s\n' % (name, value))
@@ -281,7 +335,7 @@ class DistributionMetadata(object):
         if not self.platform_dependent or ';' not in value:
             return True, value
         value, marker = value.split(';')
-        return _interpret(marker, self.execution_context), value
+        return interpret(marker, self.execution_context), value
 
     def _remove_line_prefix(self, value):
         return _LINE_PREFIX.sub('\n', value)
@@ -290,21 +344,28 @@ class DistributionMetadata(object):
     # Public API
     #
     def get_fullname(self):
+        """Return the distribution name with version"""
         return '%s-%s' % (self['Name'], self['Version'])
 
     def is_metadata_field(self, name):
+        """return True if name is a valid metadata key"""
         name = self._convert_name(name)
         return name in _ALL_FIELDS
 
+    def is_multi_field(self, name):
+        name = self._convert_name(name)
+        return name in _LISTFIELDS
+
     def read(self, filepath):
+        """Read the metadata values from a file path."""
         self.read_file(open(filepath))
 
     def read_file(self, fileob):
         """Read the metadata values from a file object."""
         msg = message_from_file(fileob)
-        self.version = msg['metadata-version']
+        self._fields['Metadata-Version'] = msg['metadata-version']
 
-        for field in _version2fieldlist(self.version):
+        for field in _version2fieldlist(self['Metadata-Version']):
             if field in _LISTFIELDS:
                 # we can have multiple lines
                 values = msg.get_all(field)
@@ -328,7 +389,7 @@ class DistributionMetadata(object):
     def write_file(self, fileobject):
         """Write the PKG-INFO format data to a file object."""
         self._set_best_version()
-        for field in _version2fieldlist(self.version):
+        for field in _version2fieldlist(self['Metadata-Version']):
             values = self.get(field)
             if field in _ELEMENTSFIELD:
                 self._write_field(fileobject, field, ','.join(values))
@@ -387,21 +448,22 @@ class DistributionMetadata(object):
             else:
                 value = []
 
-        if name in _PREDICATE_FIELDS and value is not None:
-            for v in value:
-                # check that the values are valid predicates
-                if not is_valid_predicate(v.split(';')[0]):
-                    logger.warn('"%s" is not a valid predicate (field "%s")' %
-                         (v, name))
-        # FIXME this rejects UNKNOWN, is that right?
-        elif name in _VERSIONS_FIELDS and value is not None:
-            if not is_valid_versions(value):
-                logger.warn('"%s" is not a valid version (field "%s")' %
-                     (value, name))
-        elif name in _VERSION_FIELDS and value is not None:
-            if not is_valid_version(value):
-                logger.warn('"%s" is not a valid version (field "%s")' %
-                     (value, name))
+        if self.display_warnings:
+            if name in _PREDICATE_FIELDS and value is not None:
+                for v in value:
+                    # check that the values are valid predicates
+                    if not is_valid_predicate(v.split(';')[0]):
+                        logger.warn('"%s" is not a valid predicate (field "%s")' %
+                            (v, name))
+            # FIXME this rejects UNKNOWN, is that right?
+            elif name in _VERSIONS_FIELDS and value is not None:
+                if not is_valid_versions(value):
+                    logger.warn('"%s" is not a valid version (field "%s")' %
+                        (value, name))
+            elif name in _VERSION_FIELDS and value is not None:
+                if not is_valid_version(value):
+                    logger.warn('"%s" is not a valid version (field "%s")' %
+                        (value, name))
 
         if name in _UNICODEFIELDS:
             value = self._encode_field(value)
@@ -448,15 +510,25 @@ class DistributionMetadata(object):
             return None
         return value
 
-    def check(self):
-        """Check if the metadata is compliant."""
+    def check(self, strict=False, restructuredtext=False):
+        """Check if the metadata is compliant. If strict is False then raise if
+        no Name or Version are provided"""
         # XXX should check the versions (if the file was loaded)
         missing, warnings = [], []
-        for attr in ('Name', 'Version', 'Home-page'):
+
+        for attr in ('Name', 'Version'):  # required by PEP 345
             if attr not in self:
                 missing.append(attr)
 
-        if _HAS_DOCUTILS:
+        if strict and missing != []:
+            msg = 'missing required metadata: %s' % ', '.join(missing)
+            raise MetadataMissingError(msg)
+
+        for attr in ('Home-page', 'Author'):
+            if attr not in self:
+                missing.append(attr)
+
+        if _HAS_DOCUTILS and restructuredtext:
             warnings.extend(self._check_rst_data(self['Description']))
 
         # checking metadata 1.2 (XXX needs to check 1.1, 1.0)
@@ -479,199 +551,13 @@ class DistributionMetadata(object):
 
         return missing, warnings
 
+    # Mapping API
+
     def keys(self):
-        return _version2fieldlist(self.version)
+        return _version2fieldlist(self['Metadata-Version'])
 
     def values(self):
         return [self[key] for key in self.keys()]
 
     def items(self):
         return [(key, self[key]) for key in self.keys()]
-
-
-#
-# micro-language for PEP 345 environment markers
-#
-
-# allowed operators
-_OPERATORS = {'==': lambda x, y: x == y,
-              '!=': lambda x, y: x != y,
-              '>': lambda x, y: x > y,
-              '>=': lambda x, y: x >= y,
-              '<': lambda x, y: x < y,
-              '<=': lambda x, y: x <= y,
-              'in': lambda x, y: x in y,
-              'not in': lambda x, y: x not in y}
-
-
-def _operate(operation, x, y):
-    return _OPERATORS[operation](x, y)
-
-# restricted set of variables
-_VARS = {'sys.platform': sys.platform,
-         'python_version': sys.version[:3],
-         'python_full_version': sys.version.split(' ', 1)[0],
-         'os.name': os.name,
-         'platform.version': platform.version(),
-         'platform.machine': platform.machine()}
-
-
-class _Operation(object):
-
-    def __init__(self, execution_context=None):
-        self.left = None
-        self.op = None
-        self.right = None
-        if execution_context is None:
-            execution_context = {}
-        self.execution_context = execution_context
-
-    def _get_var(self, name):
-        if name in self.execution_context:
-            return self.execution_context[name]
-        return _VARS[name]
-
-    def __repr__(self):
-        return '%s %s %s' % (self.left, self.op, self.right)
-
-    def _is_string(self, value):
-        if value is None or len(value) < 2:
-            return False
-        for delimiter in '"\'':
-            if value[0] == value[-1] == delimiter:
-                return True
-        return False
-
-    def _is_name(self, value):
-        return value in _VARS
-
-    def _convert(self, value):
-        if value in _VARS:
-            return self._get_var(value)
-        return value.strip('"\'')
-
-    def _check_name(self, value):
-        if value not in _VARS:
-            raise NameError(value)
-
-    def _nonsense_op(self):
-        msg = 'This operation is not supported : "%s"' % self
-        raise SyntaxError(msg)
-
-    def __call__(self):
-        # make sure we do something useful
-        if self._is_string(self.left):
-            if self._is_string(self.right):
-                self._nonsense_op()
-            self._check_name(self.right)
-        else:
-            if not self._is_string(self.right):
-                self._nonsense_op()
-            self._check_name(self.left)
-
-        if self.op not in _OPERATORS:
-            raise TypeError('Operator not supported "%s"' % self.op)
-
-        left = self._convert(self.left)
-        right = self._convert(self.right)
-        return _operate(self.op, left, right)
-
-
-class _OR(object):
-    def __init__(self, left, right=None):
-        self.left = left
-        self.right = right
-
-    def filled(self):
-        return self.right is not None
-
-    def __repr__(self):
-        return 'OR(%r, %r)' % (self.left, self.right)
-
-    def __call__(self):
-        return self.left() or self.right()
-
-
-class _AND(object):
-    def __init__(self, left, right=None):
-        self.left = left
-        self.right = right
-
-    def filled(self):
-        return self.right is not None
-
-    def __repr__(self):
-        return 'AND(%r, %r)' % (self.left, self.right)
-
-    def __call__(self):
-        return self.left() and self.right()
-
-
-class _CHAIN(object):
-
-    def __init__(self, execution_context=None):
-        self.ops = []
-        self.op_starting = True
-        self.execution_context = execution_context
-
-    def eat(self, toktype, tokval, rowcol, line, logical_line):
-        if toktype not in (NAME, OP, STRING, ENDMARKER):
-            raise SyntaxError('Type not supported "%s"' % tokval)
-
-        if self.op_starting:
-            op = _Operation(self.execution_context)
-            if len(self.ops) > 0:
-                last = self.ops[-1]
-                if isinstance(last, (_OR, _AND)) and not last.filled():
-                    last.right = op
-                else:
-                    self.ops.append(op)
-            else:
-                self.ops.append(op)
-            self.op_starting = False
-        else:
-            op = self.ops[-1]
-
-        if (toktype == ENDMARKER or
-            (toktype == NAME and tokval in ('and', 'or'))):
-            if toktype == NAME and tokval == 'and':
-                self.ops.append(_AND(self.ops.pop()))
-            elif toktype == NAME and tokval == 'or':
-                self.ops.append(_OR(self.ops.pop()))
-            self.op_starting = True
-            return
-
-        if isinstance(op, (_OR, _AND)) and op.right is not None:
-            op = op.right
-
-        if ((toktype in (NAME, STRING) and tokval not in ('in', 'not'))
-            or (toktype == OP and tokval == '.')):
-            if op.op is None:
-                if op.left is None:
-                    op.left = tokval
-                else:
-                    op.left += tokval
-            else:
-                if op.right is None:
-                    op.right = tokval
-                else:
-                    op.right += tokval
-        elif toktype == OP or tokval in ('in', 'not'):
-            if tokval == 'in' and op.op == 'not':
-                op.op = 'not in'
-            else:
-                op.op = tokval
-
-    def result(self):
-        for op in self.ops:
-            if not op():
-                return False
-        return True
-
-
-def _interpret(marker, execution_context=None):
-    """Interpret a marker and return a result depending on environment."""
-    marker = marker.strip()
-    operations = _CHAIN(execution_context)
-    tokenize(StringIO(marker).readline, operations.eat)
-    return operations.result()

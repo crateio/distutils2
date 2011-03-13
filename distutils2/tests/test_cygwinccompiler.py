@@ -8,10 +8,9 @@ from distutils2.tests import run_unittest
 from distutils2.tests import captured_stdout
 
 from distutils2.compiler import cygwinccompiler
-from distutils2.compiler.cygwinccompiler import (CygwinCCompiler, check_config_h,
-                                       CONFIG_H_OK, CONFIG_H_NOTOK,
-                                       CONFIG_H_UNCERTAIN, get_versions,
-                                       get_msvcr, RE_VERSION)
+from distutils2.compiler.cygwinccompiler import (
+    CygwinCCompiler, check_config_h, get_msvcr,
+    CONFIG_H_OK, CONFIG_H_NOTOK, CONFIG_H_UNCERTAIN)
 from distutils2.util import get_compiler_versions
 from distutils2.tests import unittest, support
 

@@ -87,6 +87,8 @@ class install_dist(Command):
         ('record=', None,
          "filename in which to record a list of installed files "
          "(not PEP 376-compliant)"),
+        ('resources=', None,
+         "data files mapping"),
 
         # .dist-info related arguments, read by install_dist_info
         ('no-distinfo', None,
@@ -184,12 +186,14 @@ class install_dist(Command):
         #self.install_info = None
 
         self.record = None
+        self.resources = None
 
         # .dist-info related options
         self.no_distinfo = None
         self.installer = None
         self.requested = None
         self.no_record = None
+        self.no_resources = None
 
     # -- Option finalizing methods -------------------------------------
     # (This is rather more involved than for most commands,
@@ -418,13 +422,13 @@ class install_dist(Command):
             else:
                 opt_name = opt_name.replace('-', '_')
                 val = getattr(self, opt_name)
-            logger.debug("  %s: %s" % (opt_name, val))
+            logger.debug("  %s: %s", opt_name, val)
 
     def select_scheme(self, name):
         """Set the install directories by applying the install schemes."""
         # it's the caller's problem if they supply a bad name!
         scheme = get_paths(name, expand=False)
-        for key, value in scheme.items():
+        for key, value in scheme.iteritems():
             if key == 'platinclude':
                 key = 'headers'
                 value = os.path.join(value, self.distribution.metadata['Name'])

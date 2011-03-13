@@ -2,14 +2,39 @@
 
     Know how to read all config files Distutils2 uses.
 """
+import os.path
 import os
 import sys
+import logging
 from ConfigParser import RawConfigParser
+from shlex import split
 
 from distutils2 import logger
-from distutils2.util import check_environ, resolve_name
+from distutils2.errors import DistutilsOptionError
+from distutils2.compiler.extension import Extension
+from distutils2.util import check_environ, resolve_name, strtobool
 from distutils2.compiler import set_compiler
 from distutils2.command import set_command
+from distutils2.resources import resources_dests
+from distutils2.markers import interpret
+
+
+def _pop_values(values_dct, key):
+    """Remove values from the dictionary and convert them as a list"""
+    vals_str = values_dct.pop(key, '')
+    if not vals_str:
+        return
+    fields = []
+    for field in vals_str.split(os.linesep):
+        tmp_vals = field.split('--')
+        if (len(tmp_vals) == 2) and (not interpret(tmp_vals[1])):
+            continue
+        fields.append(tmp_vals[0])
+    # Get bash options like `gcc -print-file-name=libgcc.a`
+    vals = split(' '.join(fields))
+    if vals:
+        return vals
+
 
 class Config(object):
     """Reads configuration files and work with the Distribution instance
@@ -67,7 +92,8 @@ class Config(object):
         if os.path.isfile(local_file):
             files.append(local_file)
 
-        logger.debug("using config files: %s" % ', '.join(files))
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug("using config files: %s", ', '.join(files))
         return files
 
     def _convert_metadata(self, name, value):
@@ -76,13 +102,13 @@ class Config(object):
         return value
 
     def _multiline(self, value):
-        if '\n' in value:
-            value = [v for v in
-                        [v.strip() for v in value.split('\n')]
-                        if v != '']
+        value = [v for v in
+                [v.strip() for v in value.split('\n')]
+                if v != '']
         return value
 
-    def _read_setup_cfg(self, parser):
+    def _read_setup_cfg(self, parser, cfg_filename):
+        cfg_directory = os.path.dirname(os.path.abspath(cfg_filename))
         content = {}
         for section in parser.sections():
             content[section] = dict(parser.items(section))
@@ -98,9 +124,11 @@ class Config(object):
 
         # setting the metadata values
         if 'metadata' in content:
-            for key, value in content['metadata'].items():
+            for key, value in content['metadata'].iteritems():
                 key = key.replace('_', '-')
-                value = self._multiline(value)
+                if metadata.is_multi_field(key):
+                    value = self._multiline(value)
+
                 if key == 'project-url':
                     value = [(label.strip(), url.strip())
                              for label, url in
@@ -112,30 +140,46 @@ class Config(object):
                                "mutually exclusive")
                         raise DistutilsOptionError(msg)
 
-                    f = open(value)    # will raise if file not found
-                    try:
-                        value = f.read()
-                    finally:
-                        f.close()
+                    if isinstance(value, list):
+                        filenames = value
+                    else:
+                        filenames = value.split()
+
+                    # concatenate each files
+                    value = ''
+                    for filename in filenames:
+                        # will raise if file not found
+                        description_file = open(filename)
+                        try:
+                            value += description_file.read().strip() + '\n'
+                        finally:
+                            description_file.close()
+                        # add filename as a required file
+                        if filename not in metadata.requires_files:
+                            metadata.requires_files.append(filename)
+                    value = value.strip()
                     key = 'description'
 
                 if metadata.is_metadata_field(key):
                     metadata[key] = self._convert_metadata(key, value)
 
+
         if 'files' in content:
-            files = dict([(key, self._multiline(value))
-                          for key, value in content['files'].items()])
+            def _convert(key, value):
+                if key not in ('packages_root',):
+                    value = self._multiline(value)
+                return value
+
+            files = dict([(key, _convert(key, value))
+                          for key, value in content['files'].iteritems()])
             self.dist.packages = []
-            self.dist.package_dir = {}
+            self.dist.package_dir = files.get('packages_root')
 
             packages = files.get('packages', [])
             if isinstance(packages, str):
                 packages = [packages]
 
             for package in packages:
-                if ':' in package:
-                    dir_, package = package.split(':')
-                    self.dist.package_dir[package] = dir_
                 self.dist.packages.append(package)
 
             self.dist.py_modules = files.get('modules', [])
@@ -149,21 +193,54 @@ class Config(object):
             for data in files.get('package_data', []):
                 data = data.split('=')
                 if len(data) != 2:
-                    continue
+                    continue # XXX error should never pass silently
                 key, value = data
                 self.dist.package_data[key.strip()] = value.strip()
 
-            self.dist.data_files = []
-            for data in files.get('data_files', []):
-                data = data.split('=')
-                if len(data) != 2:
-                    continue
-                key, value = data
-                values = [v.strip() for v in value.split(',')]
-                self.dist.data_files.append((key, values))
-
             # manifest template
             self.dist.extra_files = files.get('extra_files', [])
+
+            resources = []
+            for rule in files.get('resources', []):
+                glob , destination  = rule.split('=', 1)
+                rich_glob = glob.strip().split(' ', 1)
+                if len(rich_glob) == 2:
+                    prefix, suffix = rich_glob
+                else:
+                    assert len(rich_glob) == 1
+                    prefix = ''
+                    suffix = glob
+                if destination == '<exclude>':
+                    destination = None
+                resources.append((prefix.strip(), suffix.strip(), destination.strip()))
+                self.dist.data_files = resources_dests(cfg_directory, resources)
+
+        ext_modules = self.dist.ext_modules
+        for section_key in content:
+            labels = section_key.split('=')
+            if (len(labels) == 2) and (labels[0] == 'extension'):
+                # labels[1] not used from now but should be implemented
+                # for extension build dependency
+                values_dct = content[section_key]
+                ext_modules.append(Extension(
+                    values_dct.pop('name'),
+                    _pop_values(values_dct, 'sources'),
+                    _pop_values(values_dct, 'include_dirs'),
+                    _pop_values(values_dct, 'define_macros'),
+                    _pop_values(values_dct, 'undef_macros'),
+                    _pop_values(values_dct, 'library_dirs'),
+                    _pop_values(values_dct, 'libraries'),
+                    _pop_values(values_dct, 'runtime_library_dirs'),
+                    _pop_values(values_dct, 'extra_objects'),
+                    _pop_values(values_dct, 'extra_compile_args'),
+                    _pop_values(values_dct, 'extra_link_args'),
+                    _pop_values(values_dct, 'export_symbols'),
+                    _pop_values(values_dct, 'swig_opts'),
+                    _pop_values(values_dct, 'depends'),
+                    values_dct.pop('language', None),
+                    values_dct.pop('optional', None),
+                    **values_dct
+                ))
 
     def parse_config_files(self, filenames=None):
         if filenames is None:
@@ -174,11 +251,11 @@ class Config(object):
         parser = RawConfigParser()
 
         for filename in filenames:
-            logger.debug("  reading %s" % filename)
+            logger.debug("  reading %s", filename)
             parser.read(filename)
 
             if os.path.split(filename)[-1] == 'setup.cfg':
-                self._read_setup_cfg(parser)
+                self._read_setup_cfg(parser, filename)
 
             for section in parser.sections():
                 if section == 'global':
@@ -223,7 +300,7 @@ class Config(object):
         # If there was a "global" section in the config file, use it
         # to set Distribution options.
         if 'global' in self.dist.command_options:
-            for (opt, (src, val)) in self.dist.command_options['global'].items():
+            for (opt, (src, val)) in self.dist.command_options['global'].iteritems():
                 alias = self.dist.negative_opt.get(opt)
                 try:
                     if alias:

@@ -9,7 +9,6 @@ This module is safe to use in "from ... import *" mode; it only exports
 symbols whose names start with "Distutils" and end with "Error"."""
 
 
-
 class DistutilsError(Exception):
     """The root of all Distutils evil."""
 
@@ -110,6 +109,10 @@ class UnknownFileError(CCompilerError):
     """Attempt to process an unknown file type."""
 
 
+class MetadataMissingError(DistutilsError):
+    """A required metadata is missing"""
+
+
 class MetadataConflictError(DistutilsError):
     """Attempt to read or write metadata fields that are conflictual."""
 
@@ -131,3 +134,11 @@ class HugeMajorVersionNumError(IrrationalVersionError):
     This guard can be disabled by setting that option False.
     """
     pass
+
+
+class InstallationException(Exception):
+    """Base exception for installation scripts"""
+
+
+class InstallationConflict(InstallationException):
+    """Raised when a conflict is detected"""

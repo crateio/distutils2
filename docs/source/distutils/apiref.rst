@@ -104,6 +104,26 @@ setup script). Indirectly provides the :class:`distutils2.dist.Distribution` and
    | *package_dir*      | A mapping of package to        | a dictionary                                                |
    |                    | directory names                |                                                             |
    +--------------------+--------------------------------+-------------------------------------------------------------+
+   | *extra_path*       | Information about an           | a string, 1-tuple or 2-tuple                                |
+   |                    | intervening directory the      |                                                             |
+   |                    | install directory and the      |                                                             |
+   |                    | actual installation directory. |                                                             |
+   |                    |                                |                                                             |
+   |                    | If the value is a string is is |                                                             |
+   |                    | treated as a comma-separated   |                                                             |
+   |                    | tuple.                         |                                                             |
+   |                    |                                |                                                             |
+   |                    | If the value is a 2-tuple,     |                                                             |
+   |                    | the first element is the       |                                                             |
+   |                    | ``.pth`` file and the second   |                                                             |
+   |                    | is the name of the intervening |                                                             |
+   |                    | directory.                     |                                                             |
+   |                    |                                |                                                             |
+   |                    | If the value is a 1-tuple that |                                                             |
+   |                    | element is both the name of    |                                                             |
+   |                    | the ``.pth`` file and the      |                                                             |
+   |                    | intervening directory.         |                                                             |
+   +--------------------+--------------------------------+-------------------------------------------------------------+
 
 
 
@@ -888,7 +908,7 @@ tarballs or zipfiles.
 .. function:: make_zipfile(base_name, base_dir[, verbose=0, dry_run=0])
 
    Create a zip file from all files in and under *base_dir*.  The output zip file
-   will be named *base_dir* + :file:`.zip`.  Uses either the :mod:`zipfile` Python
+   will be named *base_name* + :file:`.zip`.  Uses either the :mod:`zipfile` Python
    module (if available) or the InfoZIP :file:`zip` utility (if installed and
    found on the default search path).  If neither tool is available, raises
    :exc:`DistutilsExecError`.  Returns the name of the output zip file.
@@ -1055,6 +1075,15 @@ This module contains some utility functions for operating on individual files.
    Create a file called *filename* and write *contents* (a sequence of strings
    without line terminators) to it.
 
+:mod:`distutils2.metadata` --- Metadata handling
+================================================================
+
+.. module:: distutils2.metadata
+
+.. FIXME CPython/stdlib docs don't use autoclass, write doc manually here
+
+.. autoclass:: distutils2.metadata.Metadata
+   :members:
 
 :mod:`distutils2.util` --- Miscellaneous other utility functions
 ================================================================
@@ -1155,15 +1184,6 @@ other utility module.
    Note that this is not a fully-fledged string interpolation function. A valid
    ``$variable`` can consist only of upper and lower case letters, numbers and
    an underscore. No { } or ( ) style quoting is available.
-
-
-.. function:: grok_environment_error(exc[, prefix='error: '])
-
-   Generate a useful error message from an :exc:`EnvironmentError`
-   (:exc:`IOError` or :exc:`OSError`) exception object. Does what it can to deal
-   with exception objects that don't have a filename (which happens when the
-   error is due to a two-file operation, such as :func:`rename` or
-   :func:`link`).  Returns the error message as a string prefixed with *prefix*.
 
 
 .. function:: split_quoted(s)

@@ -10,14 +10,7 @@ import logging
 from distutils2.errors import DistutilsOptionError
 from distutils2 import util
 from distutils2 import logger
-
-# XXX see if we want to backport this
-from distutils2._backport.shutil import copytree, copyfile, move
-
-try:
-    from shutil import make_archive
-except ImportError:
-    from distutils2._backport.shutil import make_archive
+from distutils2._backport.shutil import copytree, copyfile, move, make_archive
 
 
 class Command(object):
@@ -165,7 +158,10 @@ class Command(object):
             header = "command options for '%s':" % self.get_command_name()
         self.announce(indent + header, level=logging.INFO)
         indent = indent + "  "
+        negative_opt = getattr(self, 'negative_opt', ())
         for (option, _, _) in self.user_options:
+            if option in negative_opt:
+                continue
             option = option.replace('-', '_')
             if option[-1] == "=":
                 option = option[:-1]
@@ -186,6 +182,7 @@ class Command(object):
         raise RuntimeError(
             "abstract method -- subclass %s must override" % self.__class__)
 
+    # TODO remove this method, just use logging.info
     def announce(self, msg, level=logging.INFO):
         """If the current verbosity level is of greater than or equal to
         'level' print 'msg' to stdout.
@@ -367,8 +364,9 @@ class Command(object):
 
     # -- External world manipulation -----------------------------------
 
+    # TODO remove this method, just use logging.warn
     def warn(self, msg):
-        logger.warning("warning: %s: %s\n" % (self.get_command_name(), msg))
+        logger.warning("warning: %s: %s\n", self.get_command_name(), msg)
 
     def execute(self, func, args, msg=None, level=1):
         util.execute(func, args, msg, dry_run=self.dry_run)

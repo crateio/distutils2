@@ -17,19 +17,19 @@ import tempfile
 import urllib
 import urlparse
 import zipfile
-
 try:
     import hashlib
 except ImportError:
     from distutils2._backport import hashlib
 
+from distutils2._backport.shutil import unpack_archive
 from distutils2.errors import IrrationalVersionError
 from distutils2.index.errors import (HashDoesNotMatch, UnsupportedHashName,
                                      CantParseArchiveName)
 from distutils2.version import (suggest_normalized_version, NormalizedVersion,
                                 get_version_predicate)
-from distutils2.metadata import DistributionMetadata
-from distutils2.util import untar_file, unzip_file, splitext
+from distutils2.metadata import Metadata
+from distutils2.util import splitext
 
 __all__ = ['ReleaseInfo', 'DistInfo', 'ReleasesList', 'get_infos_from_url']
 
@@ -66,7 +66,7 @@ class ReleaseInfo(IndexReference):
         self._version = None
         self.version = version
         if metadata:
-            self.metadata = DistributionMetadata(mapping=metadata)
+            self.metadata = Metadata(mapping=metadata)
         else:
             self.metadata = None
         self.dists = {}
@@ -101,7 +101,7 @@ class ReleaseInfo(IndexReference):
     def is_final(self):
         """proxy to version.is_final"""
         return self.version.is_final
-    
+
     def fetch_distributions(self):
         if self.dists is None:
             self._index.get_distributions(self.name, '%s' % self.version)
@@ -109,7 +109,8 @@ class ReleaseInfo(IndexReference):
                 self.dists = {}
         return self.dists
 
-    def add_distribution(self, dist_type='sdist', python_version=None, **params):
+    def add_distribution(self, dist_type='sdist', python_version=None,
+                         **params):
         """Add distribution informations to this release.
         If distribution information is already set for this distribution type,
         add the given url paths to the distribution. This can be useful while
@@ -127,7 +128,7 @@ class ReleaseInfo(IndexReference):
             self.dists[dist_type] = DistInfo(self, dist_type,
                                              index=self._index, **params)
         if python_version:
-            self.dists[dist_type].python_version = python_version 
+            self.dists[dist_type].python_version = python_version
 
     def get_distribution(self, dist_type=None, prefer_source=True):
         """Return a distribution.
@@ -149,6 +150,16 @@ class ReleaseInfo(IndexReference):
                 dist = self.dists.values()[0]
             return dist
 
+    def unpack(self, path=None, prefer_source=True):
+        """Unpack the distribution to the given path.
+
+        If not destination is given, creates a temporary location.
+
+        Returns the location of the extracted files (root).
+        """
+        return self.get_distribution(prefer_source=prefer_source)\
+                   .unpack(path=path)
+
     def download(self, temp_path=None, prefer_source=True):
         """Download the distribution, using the requirements.
 
@@ -164,7 +175,7 @@ class ReleaseInfo(IndexReference):
 
     def set_metadata(self, metadata):
         if not self.metadata:
-            self.metadata = DistributionMetadata()
+            self.metadata = Metadata()
         self.metadata.update(metadata)
 
     def __getitem__(self, item):
@@ -302,7 +313,7 @@ class DistInfo(IndexReference):
 
     def unpack(self, path=None):
         """Unpack the distribution to the given path.
-        
+
         If not destination is given, creates a temporary location.
 
         Returns the location of the extracted files (root).
@@ -310,20 +321,11 @@ class DistInfo(IndexReference):
         if not self._unpacked_dir:
             if path is None:
                 path = tempfile.mkdtemp()
-            
-            filename = self.download()
+
+            filename = self.download(path)
             content_type = mimetypes.guess_type(filename)[0]
-     
-            if (content_type == 'application/zip'
-                or filename.endswith('.zip')
-                or filename.endswith('.pybundle')
-                or zipfile.is_zipfile(filename)):
-                unzip_file(filename, path, flatten=not filename.endswith('.pybundle'))
-            elif (content_type == 'application/x-gzip'
-                  or tarfile.is_tarfile(filename)
-                  or splitext(filename)[1].lower() in ('.tar', '.tar.gz', '.tar.bz2', '.tgz', '.tbz')):
-                untar_file(filename, path)
-            self._unpacked_dir = path
+            self._unpacked_dir = unpack_archive(filename, path)
+
         return self._unpacked_dir
 
     def _check_md5(self, filename):
@@ -340,6 +342,9 @@ class DistInfo(IndexReference):
                     % (hashval.hexdigest(), expected_hashval))
 
     def __repr__(self):
+        if self.release is None:
+            return "<? ? %s>" % self.dist_type
+
         return "<%s %s %s>" % (
             self.release.name, self.release.version, self.dist_type or "")
 
@@ -351,7 +356,7 @@ class ReleasesList(IndexReference):
     """
     def __init__(self, name, releases=None, contains_hidden=False, index=None):
         self.set_index(index)
-        self.releases = [] 
+        self.releases = []
         self.name = name
         self.contains_hidden = contains_hidden
         if releases:
@@ -376,6 +381,8 @@ class ReleasesList(IndexReference):
         """
         predicate = get_version_predicate(requirements)
         releases = self.filter(predicate)
+        if len(releases) == 0:
+            return None
         releases.sort_releases(prefer_final, reverse=True)
         return releases[0]
 
@@ -404,11 +411,11 @@ class ReleasesList(IndexReference):
                 raise ValueError("%s is not the same project than %s" %
                                  (release.name, self.name))
             version = '%s' % release.version
-                
+
             if not version in self.get_versions():
                 # append only if not already exists
                 self.releases.append(release)
-            for dist in release.dists.values():
+            for dist in release.dists.itervalues():
                 for url in dist.urls:
                     self.add_release(version, dist.dist_type, **url)
         else:
@@ -445,8 +452,7 @@ class ReleasesList(IndexReference):
             reverse=reverse, *args, **kwargs)
 
     def get_release(self, version):
-        """Return a release from it's version.
-        """
+        """Return a release from its version."""
         matches = [r for r in self.releases if "%s" % r.version == version]
         if len(matches) != 1:
             raise KeyError(version)

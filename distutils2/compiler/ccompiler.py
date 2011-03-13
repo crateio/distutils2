@@ -116,8 +116,8 @@ class CCompiler(object):
         # named library files) to include on any link
         self.objects = []
 
-        for key in self.executables.keys():
-            self.set_executable(key, self.executables[key])
+        for key, value in self.executables.iteritems():
+            self.set_executable(key, value)
 
     def set_executables(self, **args):
         """Define the executables (and options for them) that will be run
@@ -145,12 +145,12 @@ class CCompiler(object):
         # discovered at run-time, since there are many different ways to do
         # basically the same things with Unix C compilers.
 
-        for key in args.keys():
+        for key, value in args.iteritems():
             if key not in self.executables:
                 raise ValueError, \
                       "unknown executable '%s' for class %s" % \
                       (key, self.__class__.__name__)
-            self.set_executable(key, args[key])
+            self.set_executable(key, value)
 
     def set_executable(self, key, value):
         if isinstance(value, str):
@@ -850,6 +850,7 @@ main (int argc, char **argv) {
 
     # -- Utility methods -----------------------------------------------
 
+    # TODO use logging.info
     def announce(self, msg, level=None):
         logger.debug(msg)
 
@@ -858,6 +859,7 @@ main (int argc, char **argv) {
         if DEBUG:
             print msg
 
+    # TODO use logging.warn
     def warn(self, msg):
         sys.stderr.write("warning: %s\n" % msg)
 

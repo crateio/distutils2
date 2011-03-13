@@ -103,7 +103,6 @@ class Client(BaseClient):
         project.sort_releases(prefer_final)
         return project
 
-
     def get_distributions(self, project_name, version):
         """Grab informations about distributions from XML-RPC.
 
@@ -127,10 +126,17 @@ class Client(BaseClient):
         return release
 
     def get_metadata(self, project_name, version):
-        """Retreive project metadatas.
+        """Retrieve project metadata.
 
         Return a ReleaseInfo object, with metadata informations filled in.
         """
+        # to be case-insensitive, get the informations from the XMLRPC API
+        projects = [d['name'] for d in
+                    self.proxy.search({'name': project_name})
+                    if d['name'].lower() == project_name]
+        if len(projects) > 0:
+            project_name = projects[0]
+
         metadata = self.proxy.release_data(project_name, version)
         project = self._get_project(project_name)
         if version not in project.get_versions():
@@ -158,9 +164,16 @@ class Client(BaseClient):
                     p['version'], metadata={'summary': p['summary']},
                     index=self._index))
             except IrrationalVersionError, e:
-                logging.warn("Irrational version error found: %s" % e)
-
+                logging.warn("Irrational version error found: %s", e)
         return [self._projects[p['name'].lower()] for p in projects]
+
+    def get_all_projects(self):
+        """Return the list of all projects registered in the package index"""
+        projects = self.proxy.list_packages()
+        for name in projects:
+            self.get_releases(name, show_hidden=True)
+
+        return [self._projects[name.lower()] for name in set(projects)]
 
     @property
     def proxy(self):

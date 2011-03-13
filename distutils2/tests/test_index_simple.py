@@ -6,12 +6,15 @@ import os
 import urllib2
 
 from distutils2.index.simple import Crawler
-from distutils2.tests import unittest, support
+from distutils2.tests import unittest
+from distutils2.tests.support import TempdirManager, LoggingCatcher
 from distutils2.tests.pypi_server import (use_pypi_server, PyPIServer,
                                           PYPI_DEFAULT_STATIC_PATH)
 
 
-class SimpleCrawlerTestCase(support.TempdirManager, unittest.TestCase):
+class SimpleCrawlerTestCase(TempdirManager,
+                            LoggingCatcher,
+                            unittest.TestCase):
 
     def _get_simple_crawler(self, server, base_url="/simple/", hosts=None,
                           *args, **kwargs):
@@ -293,8 +296,8 @@ class SimpleCrawlerTestCase(support.TempdirManager, unittest.TestCase):
 <a href="../download" rel="download">link2</a>
 <a href="../simpleurl">link2</a>
         """
-        found_links = dict(crawler._default_link_matcher(content,
-                                                         base_url)).keys()
+        found_links = set(dict(crawler._default_link_matcher(content,
+                                                             base_url)))
         self.assertIn('http://example.org/some/homepage', found_links)
         self.assertIn('http://example.org/some/simpleurl', found_links)
         self.assertIn('http://example.org/some/download', found_links)

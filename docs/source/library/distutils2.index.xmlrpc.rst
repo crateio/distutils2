@@ -90,7 +90,7 @@ It's really simple to do so::
     <ReleaseInfo FooBar 1.1>
 
 Assuming we already have a :class:`distutils2.index.ReleaseInfo` object defined,
-it's possible to pass it ot the xmlrpc client to retrieve and complete it's
+it's possible to pass it ot the xmlrpc client to retrieve and complete its
 metadata::
 
     >>> foobar11 = ReleaseInfo("FooBar", "1.1")

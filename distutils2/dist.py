@@ -5,7 +5,6 @@ being built/installed/distributed.
 """
 
 
-import sys
 import os
 import re
 import warnings
@@ -16,9 +15,9 @@ from distutils2.errors import (DistutilsOptionError, DistutilsArgError,
 from distutils2.fancy_getopt import FancyGetopt
 from distutils2.util import strtobool, resolve_name
 from distutils2 import logger
-from distutils2.metadata import DistributionMetadata
+from distutils2.metadata import Metadata
 from distutils2.config import Config
-from distutils2.command import get_command_class
+from distutils2.command import get_command_class, STANDARD_COMMANDS
 
 # Regex to define acceptable Distutils command names.  This is not *quite*
 # the same as a Python NAME -- I don't allow leading underscores.  The fact
@@ -146,7 +145,7 @@ Common commands: (see '--help-commands' for more)
         # forth) in a separate object -- we're getting to have enough
         # information here (and enough command-line options) that it's
         # worth it.
-        self.metadata = DistributionMetadata()
+        self.metadata = Metadata()
 
         # 'cmdclass' maps command names to class objects, so we
         # can 1) quickly figure out which class to instantiate when
@@ -192,7 +191,7 @@ Common commands: (see '--help-commands' for more)
         self.include_dirs = []
         self.extra_path = None
         self.scripts = []
-        self.data_files = []
+        self.data_files = {}
         self.password = ''
         self.use_2to3 = False
         self.convert_2to3_doctests = []
@@ -228,14 +227,14 @@ Common commands: (see '--help-commands' for more)
             options = attrs.get('options')
             if options is not None:
                 del attrs['options']
-                for (command, cmd_options) in options.items():
+                for (command, cmd_options) in options.iteritems():
                     opt_dict = self.get_option_dict(command)
-                    for (opt, val) in cmd_options.items():
+                    for (opt, val) in cmd_options.iteritems():
                         opt_dict[opt] = ("setup script", val)
 
             # Now work on the rest of the attributes.  Any attribute that's
             # not already defined is invalid!
-            for key, val in attrs.items():
+            for key, val in attrs.iteritems():
                 if self.metadata.is_metadata_field(key):
                     self.metadata[key] = val
                 elif hasattr(self, key):
@@ -280,8 +279,7 @@ Common commands: (see '--help-commands' for more)
         from pprint import pformat
 
         if commands is None:             # dump all command option dicts
-            commands = self.command_options.keys()
-            commands.sort()
+            commands = sorted(self.command_options)
 
         if header is not None:
             self.announce(indent + header)
@@ -295,10 +293,10 @@ Common commands: (see '--help-commands' for more)
             opt_dict = self.command_options.get(cmd_name)
             if opt_dict is None:
                 self.announce(indent +
-                              "no option dict for '%s' command" % cmd_name)
+                              "no option dict for %r command" % cmd_name)
             else:
                 self.announce(indent +
-                              "option dict for '%s' command:" % cmd_name)
+                              "option dict for %r command:" % cmd_name)
                 out = pformat(opt_dict)
                 for line in out.split('\n'):
                     self.announce(indent + "  " + line)
@@ -403,7 +401,7 @@ Common commands: (see '--help-commands' for more)
         # Pull the current command from the head of the command line
         command = args[0]
         if not command_re.match(command):
-            raise SystemExit("invalid command name '%s'" % command)
+            raise SystemExit("invalid command name %r" % command)
         self.commands.append(command)
 
         # Dig up the command class that implements this command, so we
@@ -422,15 +420,15 @@ Common commands: (see '--help-commands' for more)
             if hasattr(cmd_class, meth):
                 continue
             raise DistutilsClassError(
-                  'command "%s" must implement "%s"' % (cmd_class, meth))
+                'command %r must implement %r' % (cmd_class, meth))
 
         # Also make sure that the command object provides a list of its
         # known options.
         if not (hasattr(cmd_class, 'user_options') and
                 isinstance(cmd_class.user_options, list)):
             raise DistutilsClassError(
-                  ("command class %s must provide "
-                   "'user_options' attribute (a list of tuples)") % cmd_class)
+                "command class %s must provide "
+                "'user_options' attribute (a list of tuples)" % cmd_class)
 
         # If the command class has a list of negative alias options,
         # merge it in with the global negative aliases.
@@ -468,7 +466,7 @@ Common commands: (see '--help-commands' for more)
                         func()
                     else:
                         raise DistutilsClassError(
-                            "invalid help function %r for help option '%s': "
+                            "invalid help function %r for help option %r: "
                             "must be a callable object (function, etc.)"
                             % (func, help_option))
 
@@ -478,7 +476,7 @@ Common commands: (see '--help-commands' for more)
         # Put the options from the command line into their official
         # holding pen, the 'command_options' dictionary.
         opt_dict = self.get_option_dict(command)
-        for (name, value) in vars(opts).items():
+        for (name, value) in vars(opts).iteritems():
             opt_dict[name] = ("command line", value)
 
         return args
@@ -539,7 +537,7 @@ Common commands: (see '--help-commands' for more)
                                         fix_help_options(cls.help_options))
             else:
                 parser.set_option_table(cls.user_options)
-            parser.print_help("Options for '%s' command:" % cls.__name__)
+            parser.print_help("Options for %r command:" % cls.__name__)
             print('')
 
         print(gen_usage(self.script_name))
@@ -591,31 +589,26 @@ Common commands: (see '--help-commands' for more)
         print(header + ":")
 
         for cmd in commands:
-            cls = self.cmdclass.get(cmd)
-            if not cls:
-                cls = get_command_class(cmd)
-            try:
-                description = cls.description
-            except AttributeError:
-                description = "(no description available)"
+            cls = self.cmdclass.get(cmd) or get_command_class(cmd)
+            description = getattr(cls, 'description',
+                                  '(no description available)')
 
             print("  %-*s  %s" % (max_length, cmd, description))
 
     def _get_command_groups(self):
         """Helper function to retrieve all the command class names divided
-        into standard commands (listed in distutils2.command.__all__)
-        and extra commands (given in self.cmdclass and not standard
-        commands).
+        into standard commands (listed in
+        distutils2.command.STANDARD_COMMANDS) and extra commands (given in
+        self.cmdclass and not standard commands).
         """
-        from distutils2.command import __all__ as std_commands
         extra_commands = [cmd for cmd in self.cmdclass
-                          if cmd not in std_commands]
-        return std_commands, extra_commands
+                          if cmd not in STANDARD_COMMANDS]
+        return STANDARD_COMMANDS, extra_commands
 
     def print_commands(self):
         """Print out a help message listing all available commands with a
         description of each.  The list is divided into standard commands
-        (listed in distutils2.command.__all__) and extra commands
+        (listed in distutils2.command.STANDARD_COMMANDS) and extra commands
         (given in self.cmdclass and not standard commands).  The
         descriptions come from the command class attribute
         'description'.
@@ -635,9 +628,7 @@ Common commands: (see '--help-commands' for more)
                                     "Extra commands",
                                     max_length)
 
-
     # -- Command class/object methods ----------------------------------
-
 
     def get_command_obj(self, command, create=1):
         """Return the command object for 'command'.  Normally this object
@@ -648,7 +639,7 @@ Common commands: (see '--help-commands' for more)
         cmd_obj = self.command_obj.get(command)
         if not cmd_obj and create:
             logger.debug("Distribution.get_command_obj(): " \
-                         "creating '%s' command object" % command)
+                         "creating %r command object", command)
 
             cls = get_command_class(command)
             cmd_obj = self.command_obj[command] = cls(self)
@@ -678,10 +669,10 @@ Common commands: (see '--help-commands' for more)
         if option_dict is None:
             option_dict = self.get_option_dict(command_name)
 
-        logger.debug("  setting options for '%s' command:" % command_name)
+        logger.debug("  setting options for %r command:", command_name)
 
-        for (option, (source, value)) in option_dict.items():
-            logger.debug("    %s = %s (from %s)" % (option, value, source))
+        for (option, (source, value)) in option_dict.iteritems():
+            logger.debug("    %s = %s (from %s)", option, value, source)
             try:
                 bool_opts = [x.replace('-', '_')
                              for x in command_obj.boolean_options]
@@ -702,7 +693,7 @@ Common commands: (see '--help-commands' for more)
                     setattr(command_obj, option, value)
                 else:
                     raise DistutilsOptionError(
-                        "error in %s: command '%s' has no such option '%s'" %
+                        "error in %s: command %r has no such option %r" %
                         (source, command_name, option))
             except ValueError, msg:
                 raise DistutilsOptionError(msg)

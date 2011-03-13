@@ -17,10 +17,11 @@ tearDown):
             super(SomeTestCase, self).setUp()
             ... # other setup code
 
-Read each class' docstring to see its purpose and usage.
-
 Also provided is a DummyCommand class, useful to mock commands in the
-tests of another command that needs them (see docstring).
+tests of another command that needs them, a create_distribution function
+and a skip_unless_symlink decorator.
+
+Each class or function has a docstring to explain its purpose and usage.
 """
 
 import os
@@ -35,7 +36,8 @@ from distutils2.dist import Distribution
 from distutils2.tests import unittest
 
 __all__ = ['LoggingCatcher', 'WarningsCatcher', 'TempdirManager',
-           'EnvironGuard', 'DummyCommand', 'unittest']
+           'EnvironGuard', 'DummyCommand', 'unittest', 'create_distribution',
+           'skip_unless_symlink']
 
 
 class LoggingCatcher(object):
@@ -49,6 +51,9 @@ class LoggingCatcher(object):
 
     def setUp(self):
         super(LoggingCatcher, self).setUp()
+        # TODO read the new logging docs and/or the python-dev posts about
+        # logging and tests to properly use a handler instead of
+        # monkey-patching
         self.old_log = logger._log
         logger._log = self._log
         logger.setLevel(logging.INFO)
@@ -135,7 +140,7 @@ class TempdirManager(object):
         finally:
             f.close()
 
-    def create_dist(self, pkg_name='foo', **kw):
+    def create_dist(self, **kw):
         """Create a stub distribution object and files.
 
         This function creates a Distribution instance (use keyword arguments
@@ -143,18 +148,35 @@ class TempdirManager(object):
         (currently an empty directory).
 
         It returns the path to the directory and the Distribution instance.
-        You can use TempdirManager.write_file to write any file in that
+        You can use self.write_file to write any file in that
         directory, e.g. setup scripts or Python modules.
         """
         # Late import so that third parties can import support without
         # loading a ton of distutils2 modules in memory.
         from distutils2.dist import Distribution
+        if 'name' not in kw:
+            kw['name'] = 'foo'
         tmp_dir = self.mkdtemp()
-        pkg_dir = os.path.join(tmp_dir, pkg_name)
-        os.mkdir(pkg_dir)
+        project_dir = os.path.join(tmp_dir, kw['name'])
+        os.mkdir(project_dir)
         dist = Distribution(attrs=kw)
-        return pkg_dir, dist
+        return project_dir, dist
 
+    def assertIsFile(self, *args):
+        path = os.path.join(*args)
+        dirname = os.path.dirname(path)
+        file = os.path.basename(path)
+        if os.path.isdir(dirname):
+            files = os.listdir(dirname)
+            msg = "%s not found in %s: %s" % (file, dirname, files)
+            assert os.path.isfile(path), msg
+        else:
+            raise AssertionError(
+                    '%s not found. %s does not exist' % (file, dirname))
+
+    def assertIsNotFile(self, *args):
+        path = os.path.join(*args)
+        assert not os.path.isfile(path), "%s exist" % path
 
 class EnvironGuard(object):
     """TestCase-compatible mixin to save and restore the environment."""
@@ -211,3 +233,9 @@ def create_distribution(configfiles=()):
     d.parse_command_line()
     return d
 
+
+try:
+    from test.test_support import skip_unless_symlink
+except ImportError:
+    skip_unless_symlink = unittest.skip(
+        'requires test.test_support.skip_unless_symlink')

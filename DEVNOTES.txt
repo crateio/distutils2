@@ -6,4 +6,5 @@ Notes for developers
   one of these Python versions.
 
 - Always run tests.sh before you push a change. This implies
-  that you have all Python versions installed from 2.4 to 2.7.
+  that you have all Python versions installed from 2.4 to 2.7. Be sure to have 
+  docutils installed on all python versions no avoid skipping tests as well.

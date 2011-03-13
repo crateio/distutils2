@@ -153,7 +153,7 @@ you can try compiling with MingW32, by passing "-c mingw32" to setup.py.""")
                 self.macros["$(FrameworkVersion)"] = d["version"]
 
     def sub(self, s):
-        for k, v in self.macros.items():
+        for k, v in self.macros.iteritems():
             s = s.replace(k, v)
         return s
 
@@ -226,17 +226,17 @@ def find_vcvarsall(version):
             productdir = os.path.join(toolsdir, os.pardir, os.pardir, "VC")
             productdir = os.path.abspath(productdir)
             if not os.path.isdir(productdir):
-                logger.debug("%s is not a valid directory" % productdir)
+                logger.debug("%s is not a valid directory", productdir)
                 return None
         else:
-            logger.debug("Env var %s is not set or invalid" % toolskey)
+            logger.debug("env var %s is not set or invalid", toolskey)
     if not productdir:
-        logger.debug("No productdir found")
+        logger.debug("no productdir found")
         return None
     vcvarsall = os.path.join(productdir, "vcvarsall.bat")
     if os.path.isfile(vcvarsall):
         return vcvarsall
-    logger.debug("Unable to find vcvarsall.bat")
+    logger.debug("unable to find vcvarsall.bat")
     return None
 
 def query_vcvarsall(version, arch="x86"):
@@ -248,7 +248,7 @@ def query_vcvarsall(version, arch="x86"):
 
     if vcvarsall is None:
         raise DistutilsPlatformError("Unable to find vcvarsall.bat")
-    logger.debug("Calling 'vcvarsall.bat %s' (version=%s)", arch, version)
+    logger.debug("calling 'vcvarsall.bat %s' (version=%s)", arch, version)
     popen = subprocess.Popen('"%s" %s & set' % (vcvarsall, arch),
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE)
@@ -271,7 +271,7 @@ def query_vcvarsall(version, arch="x86"):
             result[key] = removeDuplicates(value)
 
     if len(result) != len(interesting):
-        raise ValueError(str(list(result.keys())))
+        raise ValueError(str(list(result)))
 
     return result
 

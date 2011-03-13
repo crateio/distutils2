@@ -2,10 +2,7 @@
 
 Implements the Distutils 'sdist' command (create a source distribution)."""
 import os
-import string
 import sys
-from glob import glob
-from warnings import warn
 from shutil import rmtree
 import re
 from StringIO import StringIO
@@ -18,10 +15,10 @@ except ImportError:
 from distutils2.command import get_command_names
 from distutils2.command.cmd import Command
 from distutils2.errors import (DistutilsPlatformError, DistutilsOptionError,
-                               DistutilsTemplateError, DistutilsModuleError)
+                               DistutilsModuleError, DistutilsFileError)
 from distutils2.manifest import Manifest
 from distutils2 import logger
-from distutils2.util import convert_path, resolve_name
+from distutils2.util import resolve_name
 
 def show_formats():
     """Print all possible values for the 'formats' option (used by
@@ -214,8 +211,6 @@ class sdist(Command):
 
     def add_defaults(self):
         """Add all the default files to self.filelist:
-          - README or README.txt
-          - test/test*.py
           - all pure Python modules mentioned in setup script
           - all files pointed by package_data (build_py)
           - all files defined in data_files.
@@ -225,32 +220,6 @@ class sdist(Command):
         Warns if (README or README.txt) or setup.py are missing; everything
         else is optional.
         """
-        standards = [('README', 'README.txt')]
-        for fn in standards:
-            if isinstance(fn, tuple):
-                alts = fn
-                got_it = 0
-                for fn in alts:
-                    if os.path.exists(fn):
-                        got_it = 1
-                        self.filelist.append(fn)
-                        break
-
-                if not got_it:
-                    self.warn("standard file not found: should have one of " +
-                              string.join(alts, ', '))
-            else:
-                if os.path.exists(fn):
-                    self.filelist.append(fn)
-                else:
-                    self.warn("standard file '%s' not found" % fn)
-
-        optional = ['test/test*.py', 'setup.cfg']
-        for pattern in optional:
-            files = filter(os.path.isfile, glob(pattern))
-            if files:
-                self.filelist.extend(files)
-
         for cmd_name in get_command_names():
             try:
                 cmd_obj = self.get_finalized_command(cmd_name)
@@ -319,9 +288,15 @@ class sdist(Command):
             logger.warn("no files to distribute -- empty manifest?")
         else:
             logger.info(msg)
+
+        for file in self.distribution.metadata.requires_files:
+            if file not in files:
+                msg = "'%s' must be included explicitly in 'extra_files'" % file
+                raise DistutilsFileError(msg)
+
         for file in files:
             if not os.path.isfile(file):
-                logger.warn("'%s' not a regular file -- skipping" % file)
+                logger.warn("'%s' not a regular file -- skipping", file)
             else:
                 dest = os.path.join(base_dir, file)
                 self.copy_file(file, dest, link=link)
@@ -357,7 +332,7 @@ class sdist(Command):
 
         if not self.keep_temp:
             if self.dry_run:
-                logger.info('Removing %s' % base_dir)
+                logger.info('removing %s', base_dir)
             else:
                 rmtree(base_dir)
 
@@ -371,10 +346,8 @@ class sdist(Command):
         need_dir = {}
         for file in files:
             need_dir[os.path.join(base_dir, os.path.dirname(file))] = 1
-        need_dirs = need_dir.keys()
-        need_dirs.sort()
+        need_dirs = sorted(need_dir)
 
         # Now create them
         for dir in need_dirs:
             self.mkpath(dir, mode, verbose=verbose, dry_run=dry_run)
-

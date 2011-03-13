@@ -6,6 +6,6 @@ __all__ = ['simple',
            'xmlrpc',
            'dist',
            'errors',
-           'mirrors',]
+           'mirrors']
 
 from dist import ReleaseInfo, ReleasesList, DistInfo

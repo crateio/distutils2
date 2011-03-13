@@ -184,6 +184,67 @@ class DepGraphTestCase(support.LoggingCatcher,
 
         self.checkLists(matches, expected)
 
+    def test_graph_disconnected_to_dot(self):
+        dependencies_expected = (
+            ('towel-stuff', 'bacon', 'bacon (<=0.2)'),
+            ('grammar', 'bacon', 'truffles (>=1.2)'),
+            ('choxie', 'towel-stuff', 'towel-stuff (0.1)'),
+            ('banana', 'strawberry', 'strawberry (>=0.5)')
+        )
+        disconnected_expected = ('cheese', 'bacon', 'strawberry')
+
+        dists = []
+        for name in self.DISTROS_DIST + self.DISTROS_EGG:
+            dist = pkgutil.get_distribution(name, use_egg_info=True)
+            self.assertNotEqual(dist, None)
+            dists.append(dist)
+
+        graph = depgraph.generate_graph(dists)
+        buf = StringIO.StringIO()
+        depgraph.graph_to_dot(graph, buf, skip_disconnected=False)
+        buf.seek(0)
+        lines = buf.readlines()
+
+        dependencies_lines = []
+        disconnected_lines = []
+
+        # First sort output lines into dependencies and disconnected lines.
+        # We also skip the attribute lines, and don't include the "{" and "}"
+        # lines.
+        disconnected_active = False
+        for line in lines[1:-1]: # Skip first and last line
+            if line.startswith('subgraph disconnected'):
+                disconnected_active = True
+                continue
+            if line.startswith('}') and disconnected_active:
+                disconnected_active = False
+                continue
+
+            if disconnected_active:
+                # Skip the 'label = "Disconnected"', etc. attribute lines.
+                if ' = ' not in line:
+                    disconnected_lines.append(line)
+            else:
+                dependencies_lines.append(line)
+
+        dependencies_matches = []
+        for line in dependencies_lines:
+            if line[-1] == '\n':
+                line = line[:-1]
+            match = self.EDGE.match(line.strip())
+            self.assertTrue(match is not None)
+            dependencies_matches.append(match.groups())
+
+        disconnected_matches = []
+        for line in disconnected_lines:
+            if line[-1] == '\n':
+                line = line[:-1]
+            line = line.strip('"')
+            disconnected_matches.append(line)
+
+        self.checkLists(dependencies_matches, dependencies_expected)
+        self.checkLists(disconnected_matches, disconnected_expected)
+
     def test_graph_bad_version_to_dot(self):
         expected = (
             ('towel-stuff', 'bacon', 'bacon (<=0.2)'),
@@ -212,6 +273,16 @@ class DepGraphTestCase(support.LoggingCatcher,
             matches.append(match.groups())
 
         self.checkLists(matches, expected)
+
+    def test_repr(self):
+        dists = []
+        for name in self.DISTROS_DIST + self.DISTROS_EGG + self.BAD_EGGS:
+            dist = pkgutil.get_distribution(name, use_egg_info=True)
+            self.assertNotEqual(dist, None)
+            dists.append(dist)
+
+        graph = depgraph.generate_graph(dists)
+        assert repr(graph)
 
     def test_main(self):
         tempout = StringIO.StringIO()

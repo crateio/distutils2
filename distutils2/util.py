@@ -9,12 +9,15 @@ import posixpath
 import re
 import string
 import sys
-import shutil
-import tarfile
-import zipfile
+from subprocess import call as sub_call
 from copy import copy
 from fnmatch import fnmatchcase
+try:
+    from glob import iglob as std_iglob
+except ImportError:
+    from glob import glob as std_iglob  # for python < 2.5
 from ConfigParser import RawConfigParser
+from inspect import getsource
 
 from distutils2.errors import (DistutilsPlatformError, DistutilsFileError,
                                DistutilsByteCompileError, DistutilsExecError)
@@ -175,29 +178,6 @@ def subst_vars(s, local_vars):
         raise ValueError("invalid variable '$%s'" % var)
 
 
-def grok_environment_error(exc, prefix="error: "):
-    """Generate a useful error message from an EnvironmentError.
-
-    This will generate an IOError or an OSError exception object.
-    Handles Python 1.5.1 and 1.5.2 styles, and
-    does what it can to deal with exception objects that don't have a
-    filename (which happens when the error is due to a two-file operation,
-    such as 'rename()' or 'link()'.  Returns the error message as a string
-    prefixed with 'prefix'.
-    """
-    # check for Python 1.5.2-style {IO,OS}Error exception objects
-    if hasattr(exc, 'filename') and hasattr(exc, 'strerror'):
-        if exc.filename:
-            error = prefix + "%s: %s" % (exc.filename, exc.strerror)
-        else:
-            # two-argument functions in posix module don't
-            # include the filename in the exception object!
-            error = prefix + "%s" % exc.strerror
-    else:
-        error = prefix + str(exc[-1])
-
-    return error
-
 # Needed by 'split_quoted()'
 _wordchars_re = _squote_re = _dquote_re = None
 
@@ -238,20 +218,20 @@ def split_quoted(s):
             words.append(s[:end])
             break
 
-        if s[end] in string.whitespace: # unescaped, unquoted whitespace: now
-            words.append(s[:end])       # we definitely have a word delimiter
+        if s[end] in string.whitespace:  # unescaped, unquoted whitespace: now
+            words.append(s[:end])        # we definitely have a word delimiter
             s = s[end:].lstrip()
             pos = 0
 
-        elif s[end] == '\\':            # preserve whatever is being escaped;
-                                        # will become part of the current word
+        elif s[end] == '\\':             # preserve whatever is being escaped;
+                                         # will become part of the current word
             s = s[:end] + s[end + 1:]
             pos = end + 1
 
         else:
-            if s[end] == "'":           # slurp singly-quoted string
+            if s[end] == "'":            # slurp singly-quoted string
                 m = _squote_re.match(s, end)
-            elif s[end] == '"':         # slurp doubly-quoted string
+            elif s[end] == '"':          # slurp doubly-quoted string
                 m = _dquote_re.match(s, end)
             else:
                 raise RuntimeError("this can't happen "
@@ -542,9 +522,9 @@ def newer_group(sources, target, missing='error'):
             if missing == 'error':      # blow up when we stat() the file
                 pass
             elif missing == 'ignore':   # missing source dropped from
-                continue                #  target's dependency list
+                continue                # target's dependency list
             elif missing == 'newer':    # missing source means target is
-                return True             #  out-of-date
+                return True             # out-of-date
 
         if os.stat(source).st_mtime > target_mtime:
             return True
@@ -664,6 +644,7 @@ def resolve_name(name):
 
     return ret
 
+
 def splitext(path):
     """Like os.path.splitext, but take off .tar too"""
     base, ext = posixpath.splitext(path)
@@ -671,83 +652,6 @@ def splitext(path):
         ext = base[-4:] + ext
         base = base[:-4]
     return base, ext
-
-
-def unzip_file(filename, location, flatten=True):
-    """Unzip the file (zip file located at filename) to the destination
-    location"""
-    if not os.path.exists(location):
-        os.makedirs(location)
-    zipfp = open(filename, 'rb')
-    try:
-        zip = zipfile.ZipFile(zipfp)
-        leading = has_leading_dir(zip.namelist()) and flatten
-        for name in zip.namelist():
-            data = zip.read(name)
-            fn = name
-            if leading:
-                fn = split_leading_dir(name)[1]
-            fn = os.path.join(location, fn)
-            dir = os.path.dirname(fn)
-            if not os.path.exists(dir):
-                os.makedirs(dir)
-            if fn.endswith('/') or fn.endswith('\\'):
-                # A directory
-                if not os.path.exists(fn):
-                    os.makedirs(fn)
-            else:
-                fp = open(fn, 'wb')
-                try:
-                    fp.write(data)
-                finally:
-                    fp.close()
-    finally:
-        zipfp.close()
-
-
-def untar_file(filename, location):
-    """Untar the file (tar file located at filename) to the destination
-    location
-    """
-    if not os.path.exists(location):
-        os.makedirs(location)
-    if filename.lower().endswith('.gz') or filename.lower().endswith('.tgz'):
-        mode = 'r:gz'
-    elif (filename.lower().endswith('.bz2')
-          or filename.lower().endswith('.tbz')):
-        mode = 'r:bz2'
-    elif filename.lower().endswith('.tar'):
-        mode = 'r'
-    else:
-        mode = 'r:*'
-    tar = tarfile.open(filename, mode)
-    try:
-        leading = has_leading_dir([member.name for member in tar.getmembers()])
-        for member in tar.getmembers():
-            fn = member.name
-            if leading:
-                fn = split_leading_dir(fn)[1]
-            path = os.path.join(location, fn)
-            if member.isdir():
-                if not os.path.exists(path):
-                    os.makedirs(path)
-            else:
-                try:
-                    fp = tar.extractfile(member)
-                except (KeyError, AttributeError):
-                    # Some corrupt tar files seem to produce this
-                    # (specifically bad symlinks)
-                    continue
-                if not os.path.exists(os.path.dirname(path)):
-                    os.makedirs(os.path.dirname(path))
-                destfp = open(path, 'wb')
-                try:
-                    shutil.copyfileobj(fp, destfp)
-                finally:
-                    destfp.close()
-                fp.close()
-    finally:
-        tar.close()
 
 
 def has_leading_dir(paths):
@@ -869,69 +773,22 @@ def _spawn_os2(cmd, search_path=1, verbose=0, dry_run=0, env=None):
                   "command '%s' failed: %s" % (cmd[0], exc[-1]))
         if rc != 0:
             # and this reflects the command running but failing
-            logger.debug("command '%s' failed with exit status %d" % (cmd[0], rc))
+            logger.debug("command '%s' failed with exit status %d",
+                         (cmd[0], rc))
             raise DistutilsExecError(
                   "command '%s' failed with exit status %d" % (cmd[0], rc))
 
 
-def _spawn_posix(cmd, search_path=1, verbose=0, dry_run=0, env=None):
-    logger.info(' '.join(cmd))
+def _spawn_posix(cmd, search_path=1, verbose=1, dry_run=0, env=None):
+    cmd = ' '.join(cmd)
+    if verbose:
+        logger.info(cmd)
     if dry_run:
         return
-
-    if env is None:
-        exec_fn = search_path and os.execvp or os.execv
-    else:
-        exec_fn = search_path and os.execvpe or os.execve
-
-    pid = os.fork()
-
-    if pid == 0:  # in the child
-        try:
-            if env is None:
-                exec_fn(cmd[0], cmd)
-            else:
-                exec_fn(cmd[0], cmd, env)
-        except OSError, e:
-            sys.stderr.write("unable to execute %s: %s\n" %
-                             (cmd[0], e.strerror))
-            os._exit(1)
-
-        sys.stderr.write("unable to execute %s for unknown reasons" % cmd[0])
-        os._exit(1)
-    else:   # in the parent
-        # Loop until the child either exits or is terminated by a signal
-        # (ie. keep waiting if it's merely stopped)
-        while 1:
-            try:
-                pid, status = os.waitpid(pid, 0)
-            except OSError, exc:
-                import errno
-                if exc.errno == errno.EINTR:
-                    continue
-                raise DistutilsExecError(
-                      "command '%s' failed: %s" % (cmd[0], exc[-1]))
-            if os.WIFSIGNALED(status):
-                raise DistutilsExecError(
-                      "command '%s' terminated by signal %d" % \
-                      (cmd[0], os.WTERMSIG(status)))
-
-            elif os.WIFEXITED(status):
-                exit_status = os.WEXITSTATUS(status)
-                if exit_status == 0:
-                    return   # hey, it succeeded!
-                else:
-                    raise DistutilsExecError(
-                          "command '%s' failed with exit status %d" % \
-                          (cmd[0], exit_status))
-
-            elif os.WIFSTOPPED(status):
-                continue
-
-            else:
-                raise DistutilsExecError(
-                      "unknown error executing '%s': termination status %d" % \
-                      (cmd[0], status))
+    exit_status = sub_call(cmd, shell=True, env=env)
+    if exit_status != 0:
+        msg = "command '%s' failed with exit status %d"
+        raise DistutilsExecError(msg % (cmd, exit_status))
 
 
 def find_executable(executable, path=None):
@@ -970,6 +827,7 @@ index-servers =
 username:%s
 password:%s
 """
+
 
 def get_pypirc_path():
     """Returns rc file path."""
@@ -1045,44 +903,10 @@ def read_pypirc(repository=DEFAULT_REPOSITORY, realm=DEFAULT_REALM):
     return {}
 
 
-def metadata_to_dict(meta):
-    """XXX might want to move it to the Metadata class."""
-    data = {
-        'metadata_version' : meta.version,
-        'name': meta['Name'],
-        'version': meta['Version'],
-        'summary': meta['Summary'],
-        'home_page': meta['Home-page'],
-        'author': meta['Author'],
-        'author_email': meta['Author-email'],
-        'license': meta['License'],
-        'description': meta['Description'],
-        'keywords': meta['Keywords'],
-        'platform': meta['Platform'],
-        'classifier': meta['Classifier'],
-        'download_url': meta['Download-URL'],
-    }
-
-    if meta.version == '1.2':
-        data['requires_dist'] = meta['Requires-Dist']
-        data['requires_python'] = meta['Requires-Python']
-        data['requires_external'] = meta['Requires-External']
-        data['provides_dist'] = meta['Provides-Dist']
-        data['obsoletes_dist'] = meta['Obsoletes-Dist']
-        data['project_url'] = [','.join(url) for url in
-                                meta['Project-URL']]
-
-    elif meta.version == '1.1':
-        data['provides'] = meta['Provides']
-        data['requires'] = meta['Requires']
-        data['obsoletes'] = meta['Obsoletes']
-
-    return data
-
 # utility functions for 2to3 support
 
-def run_2to3(files, doctests_only=False, fixer_names=None, options=None,
-                                                                explicit=None):
+def run_2to3(files, doctests_only=False, fixer_names=None,
+             options=None, explicit=None):
     """ Wrapper function around the refactor() class which
     performs the conversions on a list of python files.
     Invoke 2to3 on a list of Python files. The files should all come
@@ -1096,15 +920,13 @@ def run_2to3(files, doctests_only=False, fixer_names=None, options=None,
     fixers = []
     fixers = get_fixers_from_package('lib2to3.fixes')
 
-
     if fixer_names:
         for fixername in fixer_names:
-            fixers.extend([fixer for fixer in get_fixers_from_package(fixername)])
+            fixers.extend([fixer for fixer in
+                           get_fixers_from_package(fixername)])
     r = RefactoringTool(fixers, options=options)
-    if doctests_only:
-        r.refactor(files, doctests_only=True, write=True)
-    else:
-        r.refactor(files, write=True)
+    r.refactor(files, write=True, doctests_only=doctests_only)
+
 
 class Mixin2to3:
     """ Wrapper class for commands that run 2to3.
@@ -1126,3 +948,164 @@ class Mixin2to3:
         """ Issues a call to util.run_2to3. """
         return run_2to3(files, doctests_only, self.fixer_names,
                         self.options, self.explicit)
+
+RICH_GLOB = re.compile(r'\{([^}]*)\}')
+_CHECK_RECURSIVE_GLOB = re.compile(r'[^/,{]\*\*|\*\*[^/,}]')
+_CHECK_MISMATCH_SET = re.compile(r'^[^{]*\}|\{[^}]*$')
+
+
+def iglob(path_glob):
+    """Richer glob than the std glob module support ** and {opt1,opt2,opt3}"""
+    if _CHECK_RECURSIVE_GLOB.search(path_glob):
+        msg = """Invalid glob %r: Recursive glob "**" must be used alone"""
+        raise ValueError(msg % path_glob)
+    if _CHECK_MISMATCH_SET.search(path_glob):
+        msg = """Invalid glob %r: Mismatching set marker '{' or '}'"""
+        raise ValueError(msg % path_glob)
+    return _iglob(path_glob)
+
+
+def _iglob(path_glob):
+    """Actual logic of the iglob function"""
+    rich_path_glob = RICH_GLOB.split(path_glob, 1)
+    if len(rich_path_glob) > 1:
+        assert len(rich_path_glob) == 3, rich_path_glob
+        prefix, set, suffix = rich_path_glob
+        for item in set.split(','):
+            for path in _iglob(''.join((prefix, item, suffix))):
+                yield path
+    else:
+        if '**' not in path_glob:
+            for item in std_iglob(path_glob):
+                yield item
+        else:
+            prefix, radical = path_glob.split('**', 1)
+            if prefix == '':
+                prefix = '.'
+            if radical == '':
+                radical = '*'
+            else:
+                radical = radical.lstrip('/')
+            for (path, dir, files) in os.walk(prefix):
+                path = os.path.normpath(path)
+                for file in _iglob(os.path.join(path, radical)):
+                    yield file
+
+
+def cfg_to_args(path='setup.cfg'):
+    """ Distutils2 to distutils1 compatibility util.
+
+        This method uses an existing setup.cfg to generate a dictionnary of
+        keywords that can be used by distutils.core.setup(kwargs**).
+
+        :param file:
+            The setup.cfg path.
+        :raises DistutilsFileError:
+            When the setup.cfg file is not found.
+
+    """
+    # We need to declare the following constants here so that it's easier to
+    # generate the setup.py afterwards, using inspect.getsource.
+
+    # XXX ** == needs testing
+    D1_D2_SETUP_ARGS = {"name": ("metadata",),
+                        "version": ("metadata",),
+                        "author": ("metadata",),
+                        "author_email": ("metadata",),
+                        "maintainer": ("metadata",),
+                        "maintainer_email": ("metadata",),
+                        "url": ("metadata", "home_page"),
+                        "description": ("metadata", "summary"),
+                        "long_description": ("metadata", "description"),
+                        "download-url": ("metadata",),
+                        "classifiers": ("metadata", "classifier"),
+                        "platforms": ("metadata", "platform"),  # **
+                        "license": ("metadata",),
+                        "requires": ("metadata", "requires_dist"),
+                        "provides": ("metadata", "provides_dist"),  # **
+                        "obsoletes": ("metadata", "obsoletes_dist"),  # **
+                        "packages": ("files",),
+                        "scripts": ("files",),
+                        "py_modules": ("files", "modules"),  # **
+                        }
+
+    MULTI_FIELDS = ("classifiers",
+                    "requires",
+                    "platforms",
+                    "packages",
+                    "scripts")
+
+    def has_get_option(config, section, option):
+        if config.has_option(section, option):
+            return config.get(section, option)
+        elif config.has_option(section, option.replace('_', '-')):
+            return config.get(section, option.replace('_', '-'))
+        else:
+            return False
+
+    # The method source code really starts here.
+    config = RawConfigParser()
+    if not os.path.exists(file):
+        raise DistutilsFileError("file '%s' does not exist" %
+                                 os.path.abspath(file))
+    config.read(path)
+
+    kwargs = {}
+    for arg in D1_D2_SETUP_ARGS:
+        if len(D1_D2_SETUP_ARGS[arg]) == 2:
+            # The distutils field name is different than distutils2's.
+            section, option = D1_D2_SETUP_ARGS[arg]
+
+        elif len(D1_D2_SETUP_ARGS[arg]) == 1:
+            # The distutils field name is the same thant distutils2's.
+            section = D1_D2_SETUP_ARGS[arg][0]
+            option = arg
+
+        in_cfg_value = has_get_option(config, section, option)
+        if not in_cfg_value:
+            # There is no such option in the setup.cfg
+            if arg == "long_description":
+                filename = has_get_option(config, section, "description_file")
+                if filename:
+                    in_cfg_value = open(filename).read()
+            else:
+                continue
+
+        if arg in MULTI_FIELDS:
+            # Special behaviour when we have a multi line option
+            if "\n" in in_cfg_value:
+                in_cfg_value = in_cfg_value.strip().split('\n')
+            else:
+                in_cfg_value = list((in_cfg_value,))
+
+        kwargs[arg] = in_cfg_value
+
+    return kwargs
+
+
+_SETUP_TMPL = """\
+# This script was automatically generated by Distutils2
+import os
+from distutils.core import setup
+from ConfigParser import RawConfigParser
+
+%(func)s
+
+setup(**cfg_to_args())
+"""
+
+
+def generate_setup_py():
+    """Generates a distutils compatible setup.py using an existing setup.cfg.
+
+        :raises DistutilsFileError:
+            When a setup.py already exists.
+    """
+    if os.path.exists("setup.py"):
+        raise DistutilsFileError("A pre existing setup.py file exists")
+
+    handle = open("setup.py", "w")
+    try:
+        handle.write(_SETUP_TMPL % {'func': getsource(cfg_to_args)})
+    finally:
+        handle.close()

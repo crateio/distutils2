@@ -7,10 +7,13 @@ support distutils2 across versions(2.x and 3.x)
 import logging
 
 
+# XXX Having two classes with the same name is not a good thing.
+# XXX 2to3-related code should move from util to this module
+
+# TODO Move common code here: PY3 (bool indicating if we're on 3.x), any, etc.
+
 try:
     from distutils2.util import Mixin2to3 as _Mixin2to3
-    from distutils2 import run_2to3_on_doctests
-    from lib2to3.refactor import get_fixers_from_package
     _CONVERT = True
     _KLASS = _Mixin2to3
 except ImportError:
@@ -19,6 +22,7 @@ except ImportError:
 
 # marking public APIs
 __all__ = ['Mixin2to3']
+
 
 class Mixin2to3(_KLASS):
     """ The base class which can be used for refactoring. When run under
@@ -46,19 +50,10 @@ class Mixin2to3(_KLASS):
             logging.info("Converting doctests with '.py' files")
             _KLASS.run_2to3(self, files, doctests_only=True)
 
-            # If the following conditions are met, then convert:-
-            # 1. User has specified the 'convert_2to3_doctests' option. So, we
-            #    can expect that the list 'doctests' is not empty.
-            # 2. The default is allow distutils2 to allow conversion of text files
-            #    containing doctests. It is set as
-            #    distutils2.run_2to3_on_doctests
-
-            if doctests != [] and run_2to3_on_doctests:
+            if doctests != []:
                 logging.info("Converting text files which contain doctests")
                 _KLASS.run_2to3(self, doctests, doctests_only=True)
     else:
         # If run on Python 2.x, there is nothing to do.
         def _run_2to3(self, files, doctests=[], fixers=[]):
             pass
-
-

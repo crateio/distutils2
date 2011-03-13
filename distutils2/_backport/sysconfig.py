@@ -1,8 +1,6 @@
-"""Provide access to Python's configuration information.
-
-"""
-import sys
+"""Provide access to Python's configuration information."""
 import os
+import sys
 import re
 from os.path import pardir, realpath
 from ConfigParser import RawConfigParser
@@ -17,6 +15,7 @@ _CONFIG_FILE = os.path.join(_CONFIG_DIR, 'sysconfig.cfg')
 _SCHEMES = RawConfigParser()
 _SCHEMES.read(_CONFIG_FILE)
 _VAR_REPL = re.compile(r'\{([^{]*?)\}')
+
 
 def _expand_globals(config):
     if config.has_section('globals'):
@@ -38,11 +37,13 @@ def _expand_globals(config):
     #
     for section in config.sections():
         variables = dict(config.items(section))
+
         def _replacer(matchobj):
             name = matchobj.group(1)
             if name in variables:
                 return variables[name]
             return matchobj.group(0)
+
         for option, value in config.items(section):
             config.set(section, option, _VAR_REPL.sub(_replacer, value))
 
@@ -69,6 +70,7 @@ if os.name == "nt" and "\\pc\\v" in _PROJECT_BASE[-10:].lower():
 if os.name == "nt" and "\\pcbuild\\amd64" in _PROJECT_BASE[-14:].lower():
     _PROJECT_BASE = realpath(os.path.join(_PROJECT_BASE, pardir, pardir))
 
+
 def is_python_build():
     for fn in ("Setup.dist", "Setup.local"):
         if os.path.isfile(os.path.join(_PROJECT_BASE, "Modules", fn)):
@@ -84,10 +86,10 @@ if _PYTHON_BUILD:
 
 
 def _subst_vars(path, local_vars):
-    """In the string `path`, replace tokens like {some.thing} with the corresponding value from the map `local_vars`.
+    """In the string `path`, replace tokens like {some.thing} with the
+    corresponding value from the map `local_vars`.
 
     If there is no corresponding value, leave the token unchanged.
-
     """
     def _replacer(matchobj):
         name = matchobj.group(1)
@@ -98,12 +100,13 @@ def _subst_vars(path, local_vars):
         return matchobj.group(0)
     return _VAR_REPL.sub(_replacer, path)
 
+
 def _extend_dict(target_dict, other_dict):
-    target_keys = target_dict.keys()
-    for key, value in other_dict.items():
-        if key in target_keys:
+    for key, value in other_dict.iteritems():
+        if key in target_dict:
             continue
         target_dict[key] = value
+
 
 def _expand_vars(scheme, vars):
     res = {}
@@ -117,14 +120,25 @@ def _expand_vars(scheme, vars):
         res[key] = os.path.normpath(_subst_vars(value, vars))
     return res
 
+def format_value(value, vars):
+    def _replacer(matchobj):
+         name = matchobj.group(1)
+         if name in vars:
+             return vars[name]
+         return matchobj.group(0)
+    return _VAR_REPL.sub(_replacer, value)
+ 
+
 def _get_default_scheme():
     if os.name == 'posix':
         # the default scheme for posix is posix_prefix
         return 'posix_prefix'
     return os.name
 
+
 def _getuserbase():
     env_base = os.environ.get("PYTHONUSERBASE", None)
+
     def joinuser(*args):
         return os.path.expanduser(os.path.join(*args))
 
@@ -158,7 +172,6 @@ def _parse_makefile(filename, vars=None):
     optional dictionary is passed in as the second argument, it is
     used instead of a new dictionary.
     """
-    import re
     # Regexes needed for parsing Makefile (and similar syntaxes,
     # like old-style Setup files).
     _variable_rx = re.compile("([a-zA-Z][a-zA-Z0-9_]+)\s*=\s*(.*)")
@@ -256,7 +269,6 @@ def _parse_makefile(filename, vars=None):
                             if name not in done:
                                 done[name] = value
 
-
             else:
                 # bogus variable reference; just drop it since we can't deal
                 variables.remove(name)
@@ -267,6 +279,7 @@ def _parse_makefile(filename, vars=None):
 
 
 def get_makefile_filename():
+    """Return the path of the Makefile."""
     if _PYTHON_BUILD:
         return os.path.join(_PROJECT_BASE, "Makefile")
     return os.path.join(get_path('stdlib'), "config", "Makefile")
@@ -315,6 +328,7 @@ def _init_posix(vars):
     if _PYTHON_BUILD:
         vars['LDSHARED'] = vars['BLDSHARED']
 
+
 def _init_non_posix(vars):
     """Initialize the module as appropriate for NT"""
     # set basic install directories
@@ -338,7 +352,6 @@ def parse_config_h(fp, vars=None):
     optional dictionary is passed in as the second argument, it is
     used instead of a new dictionary.
     """
-    import re
     if vars is None:
         vars = {}
     define_rx = re.compile("#define ([A-Z][A-Za-z0-9_]+) (.*)\n")
@@ -351,8 +364,10 @@ def parse_config_h(fp, vars=None):
         m = define_rx.match(line)
         if m:
             n, v = m.group(1, 2)
-            try: v = int(v)
-            except ValueError: pass
+            try:
+                v = int(v)
+            except ValueError:
+                pass
             vars[n] = v
         else:
             m = undef_rx.match(line)
@@ -360,8 +375,9 @@ def parse_config_h(fp, vars=None):
                 vars[m.group(1)] = 0
     return vars
 
+
 def get_config_h_filename():
-    """Returns the path of pyconfig.h."""
+    """Return the path of pyconfig.h."""
     if _PYTHON_BUILD:
         if os.name == "nt":
             inc_dir = os.path.join(_PROJECT_BASE, "PC")
@@ -371,17 +387,20 @@ def get_config_h_filename():
         inc_dir = get_path('platinclude')
     return os.path.join(inc_dir, 'pyconfig.h')
 
+
 def get_scheme_names():
-    """Returns a tuple containing the schemes names."""
+    """Return a tuple containing the schemes names."""
     return tuple(sorted(_SCHEMES.sections()))
 
+
 def get_path_names():
-    """Returns a tuple containing the paths names."""
+    """Return a tuple containing the paths names."""
     # xxx see if we want a static list
     return _SCHEMES.options('posix_prefix')
 
+
 def get_paths(scheme=_get_default_scheme(), vars=None, expand=True):
-    """Returns a mapping containing an install scheme.
+    """Return a mapping containing an install scheme.
 
     ``scheme`` is the install scheme name. If not provided, it will
     return the default scheme for the current platform.
@@ -391,12 +410,14 @@ def get_paths(scheme=_get_default_scheme(), vars=None, expand=True):
     else:
         return dict(_SCHEMES.items(scheme))
 
+
 def get_path(name, scheme=_get_default_scheme(), vars=None, expand=True):
-    """Returns a path corresponding to the scheme.
+    """Return a path corresponding to the scheme.
 
     ``scheme`` is the install scheme name.
     """
     return get_paths(scheme, vars, expand)[name]
+
 
 def get_config_vars(*args):
     """With no arguments, return a dictionary of all configuration
@@ -408,7 +429,6 @@ def get_config_vars(*args):
     With arguments, return a list of values that result from looking up
     each argument in the configuration variable dictionary.
     """
-    import re
     global _CONFIG_VARS
     if _CONFIG_VARS is None:
         _CONFIG_VARS = {}
@@ -440,7 +460,6 @@ def get_config_vars(*args):
         else:
             _CONFIG_VARS['srcdir'] = realpath(_CONFIG_VARS['srcdir'])
 
-
         # Convert srcdir into an absolute path if it appears necessary.
         # Normally it is relative to the build directory.  However, during
         # testing, for example, we might be running a non-installed python
@@ -456,7 +475,7 @@ def get_config_vars(*args):
                 _CONFIG_VARS['srcdir'] = os.path.normpath(srcdir)
 
         if sys.platform == 'darwin':
-            kernel_version = os.uname()[2] # Kernel version (8.4.3)
+            kernel_version = os.uname()[2]  # Kernel version (8.4.3)
             major_version = int(kernel_version.split('.')[0])
 
             if major_version < 8:
@@ -522,6 +541,7 @@ def get_config_vars(*args):
     else:
         return _CONFIG_VARS
 
+
 def get_config_var(name):
     """Return the value of a single variable using the dictionary returned by
     'get_config_vars()'.
@@ -529,6 +549,7 @@ def get_config_var(name):
     Equivalent to get_config_vars().get(name)
     """
     return get_config_vars().get(name)
+
 
 def get_platform():
     """Return a string that identifies the current platform.
@@ -555,7 +576,6 @@ def get_platform():
 
     For other non-POSIX platforms, currently just returns 'sys.platform'.
     """
-    import re
     if os.name == 'nt':
         # sniff sys.version for architecture.
         prefix = " bit ("
@@ -563,7 +583,7 @@ def get_platform():
         if i == -1:
             return sys.platform
         j = sys.version.find(")", i)
-        look = sys.version[i+len(prefix):j].lower()
+        look = sys.version[i + len(prefix):j].lower()
         if look == 'amd64':
             return 'win-amd64'
         if look == 'itanium':
@@ -600,7 +620,7 @@ def get_platform():
         return "%s-%s.%s" % (osname, version, release)
     elif osname[:6] == "cygwin":
         osname = "cygwin"
-        rel_re = re.compile (r'[\d.]+')
+        rel_re = re.compile(r'[\d.]+')
         m = rel_re.match(release)
         if m:
             release = m.group()
@@ -675,19 +695,19 @@ def get_platform():
                     machine = 'universal'
                 else:
                     raise ValueError(
-                       "Don't know machine value for archs=%r"%(archs,))
+                       "Don't know machine value for archs=%r" % (archs,))
 
             elif machine == 'i386':
                 # On OSX the machine type returned by uname is always the
                 # 32-bit variant, even if the executable architecture is
                 # the 64-bit variant
-                if sys.maxint >= 2**32:
+                if sys.maxint >= (2 ** 32):
                     machine = 'x86_64'
 
             elif machine in ('PowerPC', 'Power_Macintosh'):
                 # Pick a sane name for the PPC architecture.
                 # See 'i386' case
-                if sys.maxint >= 2**32:
+                if sys.maxint >= (2 ** 32):
                     machine = 'ppc64'
                 else:
                     machine = 'ppc'
@@ -698,11 +718,13 @@ def get_platform():
 def get_python_version():
     return _PY_VERSION_SHORT
 
+
 def _print_dict(title, data):
-    for index, (key, value) in enumerate(sorted(data.items())):
+    for index, (key, value) in enumerate(sorted(data.iteritems())):
         if index == 0:
             print '%s: ' % (title)
         print '\t%s = "%s"' % (key, value)
+
 
 def _main():
     """Display all information sysconfig detains."""
@@ -713,6 +735,7 @@ def _main():
     _print_dict('Paths', get_paths())
     print
     _print_dict('Variables', get_config_vars())
+
 
 if __name__ == '__main__':
     _main()

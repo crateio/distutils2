@@ -375,6 +375,7 @@ class XMLRPCMockIndex(object):
 
     def __init__(self, dists=[]):
         self._dists = dists
+        self._search_result = []
 
     def add_distributions(self, dists):
         for dist in dists:
@@ -400,7 +401,7 @@ class XMLRPCMockIndex(object):
                 self._dists.append(dist)
         return [r.search_result() for r in results]
 
-    def list_package(self):
+    def list_packages(self):
         return [d.name for d in self._dists]
 
     def package_releases(self, package_name, show_hidden=False):

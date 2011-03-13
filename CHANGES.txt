@@ -6,17 +6,20 @@ CHANGES
 ---------
 
 - The setup runner supports more options:
-- XXX fill changes done in commands + compilers
-- Issue 10409: Fixed the Licence selector in mkcfg
+- XXX fill changes done in commands + compilers [tarek]
+- Issue #10409: Fixed the Licence selector in mkcfg [tarek]
+- Issue #9558: Fix build_ext with VS 8.0 [éric]
+- Issue #6007: Add disclaimer about MinGW compatibility in docs [éric]
+- Renamed DistributionMetadata to Metadata [ccomb]
 
 1.0a3 - 2010-10-08
 ------------------
 
-- Provided a Tox configuration for cross-python testing [holger]
+- Provided a Tox configuration for cross-Python testing [holger]
 - Fixed the installation when using easy_install and Pip by switching
   setup.py to distutils1 [holger/tarek]
 - Added missing c/h files in the MANIFEST so they are always present
-  no matter which python version was used to build it. [holger/tarek]
+  no matter which Python version was used to build it. [holger/tarek]
 - Added the new setup runner that uses only setup.cfg
 - Renamed mkpkg to mkcfg [tarek]
 - Renamed install_tools to install [alexis]

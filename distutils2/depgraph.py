@@ -66,18 +66,28 @@ class DependencyGraph(object):
         """
         self.missing[distribution].append(requirement)
 
+    def _repr_dist(self, dist):
+        return '%s %s' % (dist.name, dist.metadata['Version'])
+
+    def repr_node(self, dist, level=1):
+        """Prints only a subgraph"""
+        output = []
+        output.append(self._repr_dist(dist))
+        for other, label in self.adjacency_list[dist]:
+            dist = self._repr_dist(other)
+            if label is not None:
+                dist = '%s [%s]' % (dist, label)
+            output.append('    ' * level + '%s' % dist)
+            suboutput = self.repr_node(other, level + 1)
+            subs = suboutput.split('\n')
+            output.extend(subs[1:])
+        return '\n'.join(output)
+
     def __repr__(self):
         """Representation of the graph"""
-        def _repr_dist(dist):
-            return '%s %s' % (dist.name, dist.metadata['Version'])
         output = []
         for dist, adjs in self.adjacency_list.iteritems():
-            output.append(_repr_dist(dist))
-            for other, label in adjs:
-                dist = _repr_dist(other)
-                if label is not None:
-                    dist = '%s [%s]' % (dist, label)
-                output.append('    %s' % dist)
+            output.append(self.repr_node(dist))
         return '\n'.join(output)
 
 
@@ -123,13 +133,15 @@ def generate_graph(dists):
     :rtype: an :class:`DependencyGraph` instance
     """
     graph = DependencyGraph()
-    provided = {} # maps names to lists of (version, dist) tuples
-    dists = list(dists) # maybe use generator_tools in future
+    provided = {}  # maps names to lists of (version, dist) tuples
+    dists = list(dists)  # maybe use generator_tools in future
 
     # first, build the graph and find out the provides
     for dist in dists:
         graph.add_distribution(dist)
-        provides = dist.metadata['Provides-Dist'] + dist.metadata['Provides']
+        provides = (dist.metadata['Provides-Dist'] +
+                    dist.metadata['Provides'] +
+                    ['%s (%s)' % (dist.name, dist.metadata['Version'])])
 
         for p in provides:
             comps = p.strip().rsplit(" ", 1)
@@ -140,7 +152,7 @@ def generate_graph(dists):
                 if len(version) < 3 or version[0] != '(' or version[-1] != ')':
                     raise DistutilsError('Distribution %s has ill formed' \
                                          'provides field: %s' % (dist.name, p))
-                version = version[1:-1] # trim off parenthesis
+                version = version[1:-1]  # trim off parenthesis
             if not name in provided:
                 provided[name] = []
             provided[name].append((version, dist))
@@ -149,7 +161,13 @@ def generate_graph(dists):
     for dist in dists:
         requires = dist.metadata['Requires-Dist'] + dist.metadata['Requires']
         for req in requires:
-            predicate = VersionPredicate(req)
+            try:
+                predicate = VersionPredicate(req)
+            except IrrationalVersionError:
+                # XXX compat-mode if cannot read the version
+                name = req.split()[0]
+                predicate = VersionPredicate(name)
+
             name = predicate.name
 
             if not name in provided:
@@ -161,7 +179,7 @@ def generate_graph(dists):
                         match = predicate.match(version)
                     except IrrationalVersionError:
                         # XXX small compat-mode
-                        if version.split(' ' ) == 1:
+                        if version.split(' ') == 1:
                             match = True
                         else:
                             match = False
@@ -172,7 +190,6 @@ def generate_graph(dists):
                         break
                 if not matched:
                     graph.add_missing(dist, req)
-
     return graph
 
 
@@ -187,8 +204,8 @@ def dependent_dists(dists, dist):
         raise ValueError('The given distribution is not a member of the list')
     graph = generate_graph(dists)
 
-    dep = [dist] # dependent distributions
-    fringe = graph.reverse_list[dist] # list of nodes we should inspect
+    dep = [dist]  # dependent distributions
+    fringe = graph.reverse_list[dist]  # list of nodes we should inspect
 
     while not len(fringe) == 0:
         node = fringe.pop()
@@ -197,8 +214,9 @@ def dependent_dists(dists, dist):
             if not prev in dep:
                 fringe.append(prev)
 
-    dep.pop(0) # remove dist from dep, was there to prevent infinite loops
+    dep.pop(0)  # remove dist from dep, was there to prevent infinite loops
     return dep
+
 
 def main():
     from distutils2._backport.pkgutil import get_distributions
