@@ -229,7 +229,10 @@ class build_py(Command, Mixin2to3):
         self.check_package(package, package_dir)
         module_files = glob(os.path.join(package_dir, "*.py"))
         modules = []
-        setup_script = os.path.abspath(self.distribution.script_name)
+        if self.distribution.script_name is not None:
+            setup_script = os.path.abspath(self.distribution.script_name)
+        else:
+            setup_script = None
 
         for f in module_files:
             abs_f = os.path.abspath(f)

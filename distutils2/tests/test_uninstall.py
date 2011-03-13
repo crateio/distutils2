@@ -33,7 +33,7 @@ class UninstallTestCase(support.TempdirManager,
 
     def run_setup(self, *args):
         # run setup with args
-        args = ['', 'run'] + list(args)
+        args = ['run'] + list(args)
         from distutils2.run import main
         dist = main(args)
         return dist

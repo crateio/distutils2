@@ -3,6 +3,8 @@
 import os
 import sys
 from StringIO import StringIO
+import tempfile
+import shutil
 
 from distutils2.tests import unittest, support, run_unittest
 from distutils2.command.sdist import sdist
@@ -162,7 +164,7 @@ class ConfigTestCase(support.TempdirManager,
         super(ConfigTestCase, self).setUp()
         self.addCleanup(setattr, sys, 'stdout', sys.stdout)
         self.addCleanup(setattr, sys, 'stderr', sys.stderr)
-        sys.stdout = sys.stderr = StringIO()
+        #sys.stdout = sys.stderr = StringIO()
 
         self.addCleanup(os.chdir, os.getcwd())
         tempdir = self.mkdtemp()
@@ -180,10 +182,16 @@ class ConfigTestCase(support.TempdirManager,
 
     def run_setup(self, *args):
         # run setup with args
-        args = ['', 'run'] + list(args)
+        args = ['run'] + list(args)
         from distutils2.run import main
         dist = main(args)
         return dist
+
+    def _get_metadata(self, name='version'):
+        from distutils2.dist import Distribution
+        dist = Distribution()
+        dist.parse_config_files()
+        return dist, dist.metadata[name]
 
     def test_config(self):
         self.write_setup()
@@ -196,10 +204,10 @@ class ConfigTestCase(support.TempdirManager,
         self.write_file('init_script', '')
 
         # try to load the metadata now
-        dist = self.run_setup('--version')
+        dist, version = self._get_metadata()
 
         # sanity check
-        self.assertEqual(sys.stdout.getvalue(), '0.6.4.dev1' + os.linesep)
+        self.assertEqual(version, '0.6.4.dev1')
 
         # check what was done
         self.assertEqual(dist.metadata['Author'], 'Carl Meyer')
@@ -271,21 +279,20 @@ class ConfigTestCase(support.TempdirManager,
         self.write_setup({'description-file': 'README  CHANGES'})
         self.write_file('README', 'yeah')
         self.write_file('CHANGES', 'changelog2')
-        dist = self.run_setup('--version')
+        dist, version = self._get_metadata()
         self.assertEqual(dist.metadata.requires_files, ['README', 'CHANGES'])
 
     def test_multiline_description_file(self):
         self.write_setup({'description-file': 'README\n  CHANGES'})
         self.write_file('README', 'yeah')
         self.write_file('CHANGES', 'changelog')
-        dist = self.run_setup('--version')
-        self.assertEqual(dist.metadata['description'], 'yeah\nchangelog')
+        dist, desc = self._get_metadata('description')
+        self.assertEqual(desc, 'yeah\nchangelog')
         self.assertEqual(dist.metadata.requires_files, ['README', 'CHANGES'])
 
     def test_parse_extensions_in_config(self):
         self.write_file('setup.cfg', EXT_SETUP_CFG)
-        dist = self.run_setup('--version')
-
+        dist, version = self._get_metadata()
         ext_modules = dict((mod.name, mod) for mod in dist.ext_modules)
         self.assertEqual(len(ext_modules), 2)
         ext = ext_modules.get('one.speed_coconuts')
@@ -329,7 +336,7 @@ class ConfigTestCase(support.TempdirManager,
             os.mkdir(pkg)
             self.write_file(os.path.join(pkg, '__init__.py'), '#')
 
-        dist = self.run_setup('--version')
+        dist, version = self._get_metadata()
         cmd = sdist(dist)
         cmd.finalize_options()
         cmd.get_file_list()
@@ -353,8 +360,8 @@ class ConfigTestCase(support.TempdirManager,
             os.mkdir(pkg)
             self.write_file(os.path.join(pkg, '__init__.py'), '#')
 
-        dist = self.run_setup('--description')
-        self.assertIn('yeah\nyeah\n', sys.stdout.getvalue())
+        dist, desc = self._get_metadata('description')
+        self.assertIn('yeah\nyeah', desc)
 
         cmd = sdist(dist)
         cmd.finalize_options()
@@ -363,7 +370,8 @@ class ConfigTestCase(support.TempdirManager,
 
         self.write_setup({'description-file': 'README\n  README2',
                           'extra-files': '\n  README2\n    README'})
-        dist = self.run_setup('--description')
+        dist, desc = self._get_metadata('description')
+
         cmd = sdist(dist)
         cmd.finalize_options()
         cmd.get_file_list()
@@ -387,7 +395,11 @@ class ConfigTestCase(support.TempdirManager,
             self.write_file(os.path.join(pkg, '__init__.py'), '#')
 
         # try to run the install command to see if foo is called
-        dist = self.run_setup('install_dist')
+        tmpdir = tempfile.mkdtemp()
+        try:
+            dist = self.run_setup('install_dist', '--root=%s' % tmpdir)
+        finally:
+            shutil.rmtree(tmpdir)
 
         self.assertEqual(dist.foo_was_here, 1)
 
