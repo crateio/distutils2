@@ -3,8 +3,6 @@
 import os
 import sys
 from StringIO import StringIO
-import tempfile
-import shutil
 
 from distutils2.tests import unittest, support, run_unittest
 from distutils2.command.sdist import sdist
@@ -395,12 +393,10 @@ class ConfigTestCase(support.TempdirManager,
             self.write_file(os.path.join(pkg, '__init__.py'), '#')
 
         # try to run the install command to see if foo is called
-        tmpdir = tempfile.mkdtemp()
-        try:
-            dist = self.run_setup('install_dist', '--root=%s' % tmpdir)
-        finally:
-            shutil.rmtree(tmpdir)
-
+        from distutils2.dist import Distribution
+        dist = Distribution()
+        dist.parse_config_files()
+        dist.run_command('install_dist')
         self.assertEqual(dist.foo_was_here, 1)
 
 
