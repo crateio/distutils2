@@ -1,54 +1,34 @@
 """Tests for distutils.command.bdist_dumb."""
 
-import sys
 import os
-
-# zlib is not used here, but if it's not available
-# test_simple_built will fail
-try:
-    import zlib
-except ImportError:
-    zlib = None
-
-from distutils2.tests import run_unittest, unittest
+import distutils2.util
 
 from distutils2.dist import Distribution
 from distutils2.command.bdist_dumb import bdist_dumb
-from distutils2.tests import support
+from distutils2.tests import unittest, support
+from distutils2.tests.support import requires_zlib
 
-SETUP_PY = """\
-from distutils.run import setup
-import foo
-
-setup(name='foo', version='0.1', py_modules=['foo'],
-      url='xxx', author='xxx', author_email='xxx')
-
-"""
 
 class BuildDumbTestCase(support.TempdirManager,
                         support.LoggingCatcher,
-                        support.EnvironGuard,
                         unittest.TestCase):
 
     def setUp(self):
         super(BuildDumbTestCase, self).setUp()
         self.old_location = os.getcwd()
-        self.old_sys_argv = sys.argv, sys.argv[:]
 
     def tearDown(self):
         os.chdir(self.old_location)
-        sys.argv = self.old_sys_argv[0]
-        sys.argv[:] = self.old_sys_argv[1]
+        distutils2.util._path_created.clear()
         super(BuildDumbTestCase, self).tearDown()
 
-    @unittest.skipUnless(zlib, "requires zlib")
+    @requires_zlib
     def test_simple_built(self):
 
         # let's create a simple package
         tmp_dir = self.mkdtemp()
         pkg_dir = os.path.join(tmp_dir, 'foo')
         os.mkdir(pkg_dir)
-        self.write_file((pkg_dir, 'setup.py'), SETUP_PY)
         self.write_file((pkg_dir, 'foo.py'), '#')
         self.write_file((pkg_dir, 'MANIFEST.in'), 'include foo.py')
         self.write_file((pkg_dir, 'README'), '')
@@ -57,10 +37,7 @@ class BuildDumbTestCase(support.TempdirManager,
                              'py_modules': ['foo'],
                              'url': 'xxx', 'author': 'xxx',
                              'author_email': 'xxx'})
-        dist.script_name = 'setup.py'
         os.chdir(pkg_dir)
-
-        sys.argv = ['setup.py']
         cmd = bdist_dumb(dist)
 
         # so the output is the same no matter
@@ -97,8 +74,9 @@ class BuildDumbTestCase(support.TempdirManager,
         default = cmd.default_format[os.name]
         self.assertEqual(cmd.format, default)
 
+
 def test_suite():
     return unittest.makeSuite(BuildDumbTestCase)
 
 if __name__ == '__main__':
-    run_unittest(test_suite())
+    unittest.main(defaultTest='test_suite')

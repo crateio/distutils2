@@ -1,11 +1,10 @@
 """Tests for distutils.command.build_scripts."""
 
 import os
-
-from distutils2.command.build_scripts import build_scripts
+import sys
+import sysconfig
 from distutils2.dist import Distribution
-from distutils2._backport import sysconfig
-
+from distutils2.command.build_scripts import build_scripts
 from distutils2.tests import unittest, support
 
 
@@ -15,8 +14,8 @@ class BuildScriptsTestCase(support.TempdirManager,
 
     def test_default_settings(self):
         cmd = self.get_build_scripts_cmd("/foo/bar", [])
-        self.assertTrue(not cmd.force)
-        self.assertTrue(cmd.build_dir is None)
+        self.assertFalse(cmd.force)
+        self.assertIs(cmd.build_dir, None)
 
         cmd.finalize_options()
 
@@ -36,15 +35,14 @@ class BuildScriptsTestCase(support.TempdirManager,
 
         built = os.listdir(target)
         for name in expected:
-            self.assertTrue(name in built)
+            self.assertIn(name, built)
 
     def get_build_scripts_cmd(self, target, scripts):
-        import sys
         dist = Distribution()
         dist.scripts = scripts
         dist.command_obj["build"] = support.DummyCommand(
             build_scripts=target,
-            force=1,
+            force=True,
             executable=sys.executable,
             use_2to3=False,
             use_2to3_fixers=None,
@@ -72,11 +70,8 @@ class BuildScriptsTestCase(support.TempdirManager,
         return expected
 
     def write_script(self, dir, name, text):
-        f = open(os.path.join(dir, name), "w")
-        try:
+        with open(os.path.join(dir, name), "w") as f:
             f.write(text)
-        finally:
-            f.close()
 
     def test_version_int(self):
         source = self.mkdtemp()
@@ -104,7 +99,7 @@ class BuildScriptsTestCase(support.TempdirManager,
 
         built = os.listdir(target)
         for name in expected:
-            self.assertTrue(name in built)
+            self.assertIn(name, built)
 
 def test_suite():
     return unittest.makeSuite(BuildScriptsTestCase)

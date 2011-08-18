@@ -1,14 +1,18 @@
-# -*- encoding: utf-8 -*-
-"""Tests for distutils.command.upload."""
+"""Tests for distutils2.command.upload."""
 import os
 import sys
 
 from distutils2.command.upload import upload
 from distutils2.dist import Distribution
-from distutils2.errors import DistutilsOptionError
+from distutils2.errors import PackagingOptionError
 
 from distutils2.tests import unittest, support
-from distutils2.tests.pypi_server import PyPIServer, PyPIServerTestCase
+try:
+    import threading
+    from distutils2.tests.pypi_server import PyPIServerTestCase
+except ImportError:
+    threading = None
+    PyPIServerTestCase = unittest.TestCase
 
 
 PYPIRC_NOPASSWORD = """\
@@ -40,8 +44,11 @@ repository:http://another.pypi/
 """
 
 
-class UploadTestCase(support.TempdirManager, support.EnvironGuard,
+@unittest.skipIf(threading is None, 'needs threading')
+class UploadTestCase(support.TempdirManager, support.EnvironRestorer,
                      support.LoggingCatcher, PyPIServerTestCase):
+
+    restore_environ = ['HOME']
 
     def setUp(self):
         super(UploadTestCase, self).setUp()
@@ -60,13 +67,13 @@ class UploadTestCase(support.TempdirManager, support.EnvironGuard,
                                ('repository', 'http://pypi.python.org/pypi')):
             self.assertEqual(getattr(cmd, attr), expected)
 
-    def test_finalize_options_unsigned_identity_yields_exception(self):
+    def test_finalize_options_unsigned_identity_raises_exception(self):
         self.write_file(self.rc, PYPIRC)
         dist = Distribution()
         cmd = upload(dist)
         cmd.identity = True
         cmd.sign = False
-        self.assertRaises(DistutilsOptionError, cmd.finalize_options) 
+        self.assertRaises(PackagingOptionError, cmd.finalize_options)
 
     def test_saved_password(self):
         # file with no password
@@ -85,19 +92,19 @@ class UploadTestCase(support.TempdirManager, support.EnvironGuard,
         cmd.finalize_options()
         self.assertEqual(cmd.password, 'xxx')
 
-    def test_upload_without_files_yields_exception(self):
+    def test_upload_without_files_raises_exception(self):
         dist = Distribution()
         cmd = upload(dist)
-        self.assertRaises(DistutilsOptionError, cmd.run)
+        self.assertRaises(PackagingOptionError, cmd.run)
 
     def test_upload(self):
         path = os.path.join(self.tmp_dir, 'xxx')
         self.write_file(path)
-        command, pyversion, filename = 'xxx', '2.6', path
+        command, pyversion, filename = 'xxx', '3.3', path
         dist_files = [(command, pyversion, filename)]
 
         # lets run it
-        pkg_dir, dist = self.create_dist(dist_files=dist_files, author=u'dédé')
+        pkg_dir, dist = self.create_dist(dist_files=dist_files, author='d\xc3d\xc3')
         cmd = upload(dist)
         cmd.ensure_finalized()
         cmd.repository = self.pypi.full_address
@@ -105,11 +112,12 @@ class UploadTestCase(support.TempdirManager, support.EnvironGuard,
 
         # what did we send ?
         handler, request_data = self.pypi.requests[-1]
-        headers = handler.headers.dict
-        self.assertIn('dédé', request_data)
-        self.assertIn('xxx', request_data)
+        headers = handler.headers
+        #self.assertIn('d\xc3d\xc3', str(request_data))
+        self.assertIn(b'xxx', request_data)
+
         self.assertEqual(int(headers['content-length']), len(request_data))
-        self.assertTrue(int(headers['content-length']) < 2000)
+        self.assertLess(int(headers['content-length']), 2500)
         self.assertTrue(headers['content-type'].startswith('multipart/form-data'))
         self.assertEqual(handler.command, 'POST')
         self.assertNotIn('\n', headers['authorization'])
@@ -117,7 +125,7 @@ class UploadTestCase(support.TempdirManager, support.EnvironGuard,
     def test_upload_docs(self):
         path = os.path.join(self.tmp_dir, 'xxx')
         self.write_file(path)
-        command, pyversion, filename = 'xxx', '2.6', path
+        command, pyversion, filename = 'xxx', '3.3', path
         dist_files = [(command, pyversion, filename)]
         docs_path = os.path.join(self.tmp_dir, "build", "docs")
         os.makedirs(docs_path)
@@ -125,26 +133,28 @@ class UploadTestCase(support.TempdirManager, support.EnvironGuard,
         self.write_file(self.rc, PYPIRC)
 
         # lets run it
-        pkg_dir, dist = self.create_dist(dist_files=dist_files, author=u'dédé')
+        pkg_dir, dist = self.create_dist(dist_files=dist_files, author='d\xc3d\xc3')
 
         cmd = upload(dist)
         cmd.get_finalized_command("build").run()
         cmd.upload_docs = True
         cmd.ensure_finalized()
         cmd.repository = self.pypi.full_address
+        prev_dir = os.getcwd()
         try:
-            prev_dir = os.getcwd()
             os.chdir(self.tmp_dir)
             cmd.run()
         finally:
             os.chdir(prev_dir)
 
         handler, request_data = self.pypi.requests[-1]
-        action, name, content =\
-            request_data.split("----------------GHSKFJDLGDS7543FJKLFHRE75642756743254")[1:4]
+        action, name, content = request_data.split(
+            "----------------GHSKFJDLGDS7543FJKLFHRE75642756743254"
+            .encode())[1:4]
 
-        self.assertIn('name=":action"', action)
-        self.assertIn("doc_upload", action)
+        self.assertIn(b'name=":action"', action)
+        self.assertIn(b'doc_upload', action)
+
 
 def test_suite():
     return unittest.makeSuite(UploadTestCase)

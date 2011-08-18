@@ -2,10 +2,16 @@
 import os
 import sys
 from StringIO import StringIO
-from distutils2._backport.pkgutil import disable_cache, enable_cache
-from distutils2.tests import unittest, support, run_unittest
-from distutils2.errors import DistutilsError
+import stat
+import distutils2.util
+
+from distutils2.database import disable_cache, enable_cache
+from distutils2.run import main
+from distutils2.errors import PackagingError
 from distutils2.install import remove
+from distutils2.command.install_dist import install_dist
+
+from distutils2.tests import unittest, support
 
 SETUP_CFG = """
 [metadata]
@@ -14,13 +20,17 @@ version = %(version)s
 
 [files]
 packages =
-    %(name)s
-    %(name)s.sub
+    %(pkg)s
+    %(pkg)s.sub
 """
 
+
 class UninstallTestCase(support.TempdirManager,
-                     support.LoggingCatcher,
-                     unittest.TestCase):
+                        support.LoggingCatcher,
+                        support.EnvironRestorer,
+                        unittest.TestCase):
+
+    restore_environ = ['PLAT']
 
     def setUp(self):
         super(UninstallTestCase, self).setUp()
@@ -29,60 +39,91 @@ class UninstallTestCase(support.TempdirManager,
         self.addCleanup(os.chdir, os.getcwd())
         self.addCleanup(enable_cache)
         self.root_dir = self.mkdtemp()
+        self.cwd = os.getcwd()
         disable_cache()
+
+    def tearDown(self):
+        os.chdir(self.cwd)
+        distutils2.util._path_created.clear()
+        super(UninstallTestCase, self).tearDown()
 
     def run_setup(self, *args):
         # run setup with args
         args = ['run'] + list(args)
-        from distutils2.run import main
         dist = main(args)
         return dist
 
     def get_path(self, dist, name):
-        from distutils2.command.install_dist import install_dist
         cmd = install_dist(dist)
         cmd.prefix = self.root_dir
         cmd.finalize_options()
-        return getattr(cmd, 'install_'+name)
+        return getattr(cmd, 'install_' + name)
 
-    def make_dist(self, pkg_name='foo', **kw):
-        dirname = self.mkdtemp()
-        kw['name'] = pkg_name
+    def make_dist(self, name='Foo', **kw):
+        kw['name'] = name
+        pkg = name.lower()
         if 'version' not in kw:
             kw['version'] = '0.1'
-        self.write_file((dirname, 'setup.cfg'), SETUP_CFG % kw)
-        os.mkdir(os.path.join(dirname, pkg_name))
-        self.write_file((dirname, '__init__.py'), '#')
-        self.write_file((dirname, pkg_name+'_utils.py'), '#')
-        os.mkdir(os.path.join(dirname, pkg_name, 'sub'))
-        self.write_file((dirname, pkg_name, 'sub', '__init__.py'), '#')
-        self.write_file((dirname, pkg_name, 'sub', pkg_name+'_utils.py'), '#')
-        return dirname
+        project_dir, dist = self.create_dist(**kw)
+        kw['pkg'] = pkg
 
-    def install_dist(self, pkg_name='foo', dirname=None, **kw):
+        pkg_dir = os.path.join(project_dir, pkg)
+        os.mkdir(pkg_dir)
+        os.mkdir(os.path.join(pkg_dir, 'sub'))
+
+        self.write_file((project_dir, 'setup.cfg'), SETUP_CFG % kw)
+        self.write_file((pkg_dir, '__init__.py'), '#')
+        self.write_file((pkg_dir, pkg + '_utils.py'), '#')
+        self.write_file((pkg_dir, 'sub', '__init__.py'), '#')
+        self.write_file((pkg_dir, 'sub', pkg + '_utils.py'), '#')
+
+        return project_dir
+
+    def install_dist(self, name='Foo', dirname=None, **kw):
         if not dirname:
-            dirname = self.make_dist(pkg_name, **kw)
+            dirname = self.make_dist(name, **kw)
         os.chdir(dirname)
-        dist = self.run_setup('install_dist', '--prefix='+self.root_dir)
+        old_out = sys.stderr
+        sys.stderr = StringIO()
+        dist = self.run_setup('install_dist', '--prefix=' + self.root_dir)
         install_lib = self.get_path(dist, 'purelib')
         return dist, install_lib
 
     def test_uninstall_unknow_distribution(self):
-        self.assertRaises(DistutilsError, remove, 'foo', paths=[self.root_dir])
+        self.assertRaises(PackagingError, remove, 'Foo',
+                          paths=[self.root_dir])
 
     def test_uninstall(self):
         dist, install_lib = self.install_dist()
+        self.assertIsFile(install_lib, 'foo', '__init__.py')
         self.assertIsFile(install_lib, 'foo', 'sub', '__init__.py')
-        self.assertIsFile(install_lib, 'foo-0.1.dist-info', 'RECORD')
-        remove('foo', paths=[install_lib])
+        self.assertIsFile(install_lib, 'Foo-0.1.dist-info', 'RECORD')
+        self.assertTrue(remove('Foo', paths=[install_lib]))
         self.assertIsNotFile(install_lib, 'foo', 'sub', '__init__.py')
-        self.assertIsNotFile(install_lib, 'foo-0.1.dist-info', 'RECORD')
+        self.assertIsNotFile(install_lib, 'Foo-0.1.dist-info', 'RECORD')
 
+    def test_remove_issue(self):
+        # makes sure if there are OSErrors (like permission denied)
+        # remove() stops and display a clean error
+        dist, install_lib = self.install_dist('Meh')
 
+        # breaking os.rename
+        old = os.rename
+
+        def _rename(source, target):
+            raise OSError
+
+        os.rename = _rename
+        try:
+            self.assertFalse(remove('Meh', paths=[install_lib]))
+        finally:
+            os.rename = old
+
+        self.assertTrue(remove('Meh', paths=[install_lib]))
 
 
 def test_suite():
     return unittest.makeSuite(UninstallTestCase)
 
 if __name__ == '__main__':
-    run_unittest(test_suite())
+    unittest.main(defaultTest='test_suite')

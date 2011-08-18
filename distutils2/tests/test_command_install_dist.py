@@ -1,12 +1,10 @@
-"""Tests for distutils.command.install."""
+"""Tests for distutils2.command.install."""
 
 import os
 import sys
 
-from distutils2._backport.sysconfig import (get_scheme_names,
-                                            get_config_vars,
-                                            _SCHEMES,
-                                            get_config_var, get_path)
+from sysconfig import (get_scheme_names, get_config_vars,
+                       _SCHEMES, get_config_var, get_path)
 
 _CONFIG_VARS = get_config_vars()
 
@@ -15,13 +13,12 @@ from distutils2.tests import captured_stdout
 from distutils2.command.install_dist import install_dist
 from distutils2.command import install_dist as install_module
 from distutils2.dist import Distribution
-from distutils2.errors import DistutilsOptionError
+from distutils2.errors import PackagingOptionError
 
 from distutils2.tests import unittest, support
 
 
 class InstallTestCase(support.TempdirManager,
-                      support.EnvironGuard,
                       support.LoggingCatcher,
                       unittest.TestCase):
 
@@ -33,12 +30,10 @@ class InstallTestCase(support.TempdirManager,
         destination = os.path.join(builddir, "installation")
 
         dist = Distribution({"name": "foopkg"})
-        # script_name need not exist, it just need to be initialized
-        dist.script_name = os.path.join(builddir, "setup.py")
         dist.command_obj["build"] = support.DummyCommand(
             build_base=builddir,
             build_lib=os.path.join(builddir, "lib"),
-            )
+        )
 
         old_posix_prefix = _SCHEMES.get('posix_prefix', 'platinclude')
         old_posix_home = _SCHEMES.get('posix_home', 'platinclude')
@@ -104,21 +99,21 @@ class InstallTestCase(support.TempdirManager,
     def _test_user_site(self):
         schemes = get_scheme_names()
         for key in ('nt_user', 'posix_user', 'os2_home'):
-            self.assertTrue(key in schemes)
+            self.assertIn(key, schemes)
 
         dist = Distribution({'name': 'xx'})
         cmd = install_dist(dist)
         # making sure the user option is there
         options = [name for name, short, lable in
                    cmd.user_options]
-        self.assertTrue('user' in options)
+        self.assertIn('user', options)
 
         # setting a value
-        cmd.user = 1
+        cmd.user = True
 
         # user base and site shouldn't be created yet
-        self.assertTrue(not os.path.exists(self.user_base))
-        self.assertTrue(not os.path.exists(self.user_site))
+        self.assertFalse(os.path.exists(self.user_base))
+        self.assertFalse(os.path.exists(self.user_site))
 
         # let's run finalize
         cmd.ensure_finalized()
@@ -127,8 +122,8 @@ class InstallTestCase(support.TempdirManager,
         self.assertTrue(os.path.exists(self.user_base))
         self.assertTrue(os.path.exists(self.user_site))
 
-        self.assertTrue('userbase' in cmd.config_vars)
-        self.assertTrue('usersite' in cmd.config_vars)
+        self.assertIn('userbase', cmd.config_vars)
+        self.assertIn('usersite', cmd.config_vars)
 
     def test_handle_extra_path(self):
         dist = Distribution({'name': 'xx', 'extra_path': 'path,dirs'})
@@ -156,7 +151,7 @@ class InstallTestCase(support.TempdirManager,
 
         # three elements (no way !)
         cmd.extra_path = 'path,dirs,again'
-        self.assertRaises(DistutilsOptionError, cmd.handle_extra_path)
+        self.assertRaises(PackagingOptionError, cmd.handle_extra_path)
 
     def test_finalize_options(self):
         dist = Distribution({'name': 'xx'})
@@ -166,19 +161,19 @@ class InstallTestCase(support.TempdirManager,
         # install-base/install-platbase -- not both
         cmd.prefix = 'prefix'
         cmd.install_base = 'base'
-        self.assertRaises(DistutilsOptionError, cmd.finalize_options)
+        self.assertRaises(PackagingOptionError, cmd.finalize_options)
 
         # must supply either home or prefix/exec-prefix -- not both
         cmd.install_base = None
         cmd.home = 'home'
-        self.assertRaises(DistutilsOptionError, cmd.finalize_options)
+        self.assertRaises(PackagingOptionError, cmd.finalize_options)
 
         if sys.version >= '2.6':
             # can't combine user with with prefix/exec_prefix/home or
             # install_(plat)base
             cmd.prefix = None
             cmd.user = 'user'
-            self.assertRaises(DistutilsOptionError, cmd.finalize_options)
+            self.assertRaises(PackagingOptionError, cmd.finalize_options)
 
     def test_old_record(self):
         # test pre-PEP 376 --record option (outside dist-info dir)
@@ -196,24 +191,11 @@ class InstallTestCase(support.TempdirManager,
         # let's check the record file was created with four
         # lines, one for each .dist-info entry: METADATA,
         # INSTALLER, REQUSTED, RECORD
-        f = open(cmd.record)
-        try:
+        with open(cmd.record) as f:
             self.assertEqual(len(f.readlines()), 4)
-        finally:
-            f.close()
 
         # XXX test that fancy_getopt is okay with options named
         # record and no-record but unrelated
-
-    def _test_debug_mode(self):
-        # this covers the code called when DEBUG is set
-        old_logs_len = len(self.logs)
-        install_module.DEBUG = True
-        try:
-            __, stdout = captured_stdout(self.test_record)
-        finally:
-            install_module.DEBUG = False
-        self.assertTrue(len(self.logs) > old_logs_len)
 
 
 def test_suite():

@@ -1,27 +1,25 @@
-"""Tests for distutils.util."""
+"""Tests for distutils2.util."""
 import os
 import sys
-from copy import copy
-from StringIO import StringIO
-import subprocess
 import time
+import logging
+import tempfile
+import subprocess
+from StringIO import StringIO
 
-from distutils2.tests import captured_stdout
-from distutils2.tests import unittest
-from distutils2.errors import (DistutilsPlatformError,
-                               DistutilsByteCompileError,
-                               DistutilsFileError,
-                               DistutilsExecError)
-from distutils2.util import (convert_path, change_root,
-                             check_environ, split_quoted, strtobool,
-                             rfc822_escape, get_compiler_versions,
-                             _find_exe_version, _MAC_OS_X_LD_VERSION,
-                             byte_compile, find_packages, spawn, find_executable,
-                             _nt_quote_args, get_pypirc_path, generate_pypirc,
-                             read_pypirc, resolve_name, iglob, RICH_GLOB)
-
+from distutils2.tests import support, unittest
+from distutils2.tests.test_config import SETUP_CFG
+from distutils2.errors import (
+    PackagingPlatformError, PackagingByteCompileError, PackagingFileError,
+    PackagingExecError, InstallationException)
 from distutils2 import util
-from distutils2.tests import unittest, support
+from distutils2.dist import Distribution
+from distutils2.util import (
+    convert_path, change_root, split_quoted, strtobool, rfc822_escape,
+    get_compiler_versions, _MAC_OS_X_LD_VERSION, byte_compile, find_packages,
+    spawn, get_pypirc_path, generate_pypirc, read_pypirc, resolve_name, iglob,
+    RICH_GLOB, egginfo_to_distinfo, is_setuptools, is_distutils, is_distutils2,
+    get_install_method, cfg_to_args, encode_multipart)
 
 
 PYPIRC = """\
@@ -56,11 +54,37 @@ username:tarek
 password:xxx
 """
 
+EXPECTED_MULTIPART_OUTPUT = [
+    b'---x',
+    b'Content-Disposition: form-data; name="username"',
+    b'',
+    b'wok',
+    b'---x',
+    b'Content-Disposition: form-data; name="password"',
+    b'',
+    b'secret',
+    b'---x',
+    b'Content-Disposition: form-data; name="picture"; filename="wok.png"',
+    b'',
+    b'PNG89',
+    b'---x--',
+    b'',
+]
+
 
 class FakePopen(object):
     test_class = None
-    def __init__(self, cmd, shell, stdout, stderr):
-        self.cmd = cmd.split()[0]
+
+    def __init__(self, args, bufsize=0, executable=None,
+                 stdin=None, stdout=None, stderr=None,
+                 preexec_fn=None, close_fds=False,
+                 shell=False, cwd=None, env=None, universal_newlines=False,
+                 startupinfo=None, creationflags=0,
+                 restore_signals=True, start_new_session=False,
+                 pass_fds=()):
+        if isinstance(args, basestring):
+            args = args.split()
+        self.cmd = args[0]
         exes = self.test_class._exes
         if self.cmd not in exes:
             # we don't want to call the system, returning an empty
@@ -71,16 +95,27 @@ class FakePopen(object):
             self.stdout = StringIO(exes[self.cmd])
             self.stderr = StringIO()
 
-class UtilTestCase(support.EnvironGuard,
+    def communicate(self, input=None, timeout=None):
+        return self.stdout.read(), self.stderr.read()
+
+    def wait(self, timeout=None):
+        return 0
+
+
+class UtilTestCase(support.EnvironRestorer,
                    support.TempdirManager,
                    support.LoggingCatcher,
                    unittest.TestCase):
 
+    restore_environ = ['HOME', 'PLAT']
+
     def setUp(self):
         super(UtilTestCase, self).setUp()
-        self.tmp_dir = self.mkdtemp()
-        self.rc = os.path.join(self.tmp_dir, '.pypirc')
-        os.environ['HOME'] = self.tmp_dir
+        self.addCleanup(os.chdir, os.getcwd())
+        tempdir = self.mkdtemp()
+        self.rc = os.path.join(tempdir, '.pypirc')
+        os.environ['HOME'] = tempdir
+        os.chdir(tempdir)
         # saving the environment
         self.name = os.name
         self.platform = sys.platform
@@ -89,7 +124,6 @@ class UtilTestCase(support.EnvironGuard,
         self.join = os.path.join
         self.isabs = os.path.isabs
         self.splitdrive = os.path.splitdrive
-        #self._config_vars = copy(sysconfig._config_vars)
 
         # patching os.uname
         if hasattr(os, 'uname'):
@@ -105,7 +139,7 @@ class UtilTestCase(support.EnvironGuard,
         util.find_executable = self._find_executable
         self._exes = {}
         self.old_popen = subprocess.Popen
-        self.old_stdout  = sys.stdout
+        self.old_stdout = sys.stdout
         self.old_stderr = sys.stderr
         FakePopen.test_class = self
         subprocess.Popen = FakePopen
@@ -123,10 +157,9 @@ class UtilTestCase(support.EnvironGuard,
             os.uname = self.uname
         else:
             del os.uname
-        #sysconfig._config_vars = copy(self._config_vars)
         util.find_executable = self.old_find_executable
         subprocess.Popen = self.old_popen
-        sys.old_stdout  = self.old_stdout
+        sys.old_stdout = self.old_stdout
         sys.old_stderr = self.old_stderr
         super(UtilTestCase, self).tearDown()
 
@@ -139,6 +172,7 @@ class UtilTestCase(support.EnvironGuard,
     def test_convert_path(self):
         # linux/mac
         os.sep = '/'
+
         def _join(path):
             return '/'.join(path)
         os.path.join = _join
@@ -148,6 +182,7 @@ class UtilTestCase(support.EnvironGuard,
 
         # win
         os.sep = '\\'
+
         def _join(*path):
             return '\\'.join(path)
         os.path.join = _join
@@ -163,9 +198,11 @@ class UtilTestCase(support.EnvironGuard,
     def test_change_root(self):
         # linux/mac
         os.name = 'posix'
+
         def _isabs(path):
             return path[0] == '/'
         os.path.isabs = _isabs
+
         def _join(*path):
             return '/'.join(path)
         os.path.join = _join
@@ -177,14 +214,17 @@ class UtilTestCase(support.EnvironGuard,
 
         # windows
         os.name = 'nt'
+
         def _isabs(path):
             return path.startswith('c:\\')
         os.path.isabs = _isabs
+
         def _splitdrive(path):
             if path.startswith('c:'):
-                return ('', path.replace('c:', ''))
-            return ('', path)
+                return '', path.replace('c:', '')
+            return '', path
         os.path.splitdrive = _splitdrive
+
         def _join(*path):
             return '\\'.join(path)
         os.path.join = _join
@@ -196,7 +236,7 @@ class UtilTestCase(support.EnvironGuard,
 
         # BugsBunny os (it's a great os)
         os.name = 'BugsBunny'
-        self.assertRaises(DistutilsPlatformError,
+        self.assertRaises(PackagingPlatformError,
                           change_root, 'c:\\root', 'its\\here')
 
         # XXX platforms to be covered: os2, mac
@@ -213,13 +253,13 @@ class UtilTestCase(support.EnvironGuard,
             self.assertTrue(strtobool(y))
 
         for n in no:
-            self.assertTrue(not strtobool(n))
+            self.assertFalse(strtobool(n))
 
     def test_rfc822_escape(self):
         header = 'I am a\npoor\nlonesome\nheader\n'
         res = rfc822_escape(header)
         wanted = ('I am a%(8s)spoor%(8s)slonesome%(8s)s'
-                  'header%(8s)s') % {'8s': '\n'+8*' '}
+                  'header%(8s)s') % {'8s': '\n' + 8 * ' '}
         self.assertEqual(res, wanted)
 
     def test_find_exe_version(self):
@@ -289,17 +329,17 @@ class UtilTestCase(support.EnvironGuard,
     @unittest.skipUnless(hasattr(sys, 'dont_write_bytecode'),
                          'sys.dont_write_bytecode not supported')
     def test_dont_write_bytecode(self):
-        # makes sure byte_compile raise a DistutilsError
+        # makes sure byte_compile raise a PackagingError
         # if sys.dont_write_bytecode is True
         old_dont_write_bytecode = sys.dont_write_bytecode
         sys.dont_write_bytecode = True
         try:
-            self.assertRaises(DistutilsByteCompileError, byte_compile, [])
+            self.assertRaises(PackagingByteCompileError, byte_compile, [])
         finally:
             sys.dont_write_bytecode = old_dont_write_bytecode
 
     def test_newer(self):
-        self.assertRaises(DistutilsFileError, util.newer, 'xxx', 'xxx')
+        self.assertRaises(PackagingFileError, util.newer, 'xxx', 'xxx')
         self.newer_f1 = self.mktempfile()
         time.sleep(1)
         self.newer_f2 = self.mktempfile()
@@ -340,28 +380,32 @@ class UtilTestCase(support.EnvironGuard,
         self.write_file(os.path.join(pkg5, '__init__.py'))
 
         res = find_packages([root], ['pkg1.pkg2'])
-        self.assertEqual(set(res), set(['pkg1', 'pkg5', 'pkg1.pkg3', 'pkg1.pkg3.pkg6']))
+        self.assertEqual(set(res), set(['pkg1', 'pkg5', 'pkg1.pkg3',
+                                         'pkg1.pkg3.pkg6']))
 
     def test_resolve_name(self):
-        self.assertEqual(str(42), resolve_name('__builtin__.str')(42))
+        self.assertIs(str, resolve_name('__builtins__.str'))
         self.assertEqual(
             UtilTestCase.__name__,
             resolve_name("distutils2.tests.test_util.UtilTestCase").__name__)
         self.assertEqual(
             UtilTestCase.test_resolve_name.__name__,
-            resolve_name("distutils2.tests.test_util.UtilTestCase.test_resolve_name").__name__)
+            resolve_name("distutils2.tests.test_util.UtilTestCase."
+                         "test_resolve_name").__name__)
 
         self.assertRaises(ImportError, resolve_name,
                           "distutils2.tests.test_util.UtilTestCaseNot")
         self.assertRaises(ImportError, resolve_name,
-                          "distutils2.tests.test_util.UtilTestCase.nonexistent_attribute")
+                          "distutils2.tests.test_util.UtilTestCase."
+                          "nonexistent_attribute")
 
     def test_import_nested_first_time(self):
         tmp_dir = self.mkdtemp()
         os.makedirs(os.path.join(tmp_dir, 'a', 'b'))
         self.write_file(os.path.join(tmp_dir, 'a', '__init__.py'), '')
         self.write_file(os.path.join(tmp_dir, 'a', 'b', '__init__.py'), '')
-        self.write_file(os.path.join(tmp_dir, 'a', 'b', 'c.py'), 'class Foo: pass')
+        self.write_file(os.path.join(tmp_dir, 'a', 'b', 'c.py'),
+                                    'class Foo: pass')
 
         try:
             sys.path.append(tmp_dir)
@@ -401,23 +445,11 @@ class UtilTestCase(support.EnvironGuard,
         file_handle.close()
         self.assertEqual(new_content, converted_content)
 
-    def test_nt_quote_args(self):
-
-        for (args, wanted) in ((['with space', 'nospace'],
-                                ['"with space"', 'nospace']),
-                               (['nochange', 'nospace'],
-                                ['nochange', 'nospace'])):
-            res = _nt_quote_args(args)
-            self.assertEqual(res, wanted)
-
-
     @unittest.skipUnless(os.name in ('nt', 'posix'),
                          'runs only under posix or nt')
     def test_spawn(self):
-        # Do not patch subprocess on unix because
-        # distutils2.util._spawn_posix uses it
-        if os.name in 'posix':
-            subprocess.Popen = self.old_popen
+        # no patching of Popen here
+        subprocess.Popen = self.old_popen
         tmpdir = self.mkdtemp()
 
         # creating something executable
@@ -425,24 +457,24 @@ class UtilTestCase(support.EnvironGuard,
         if os.name == 'posix':
             exe = os.path.join(tmpdir, 'foo.sh')
             self.write_file(exe, '#!/bin/sh\nexit 1')
-            os.chmod(exe, 0777)
+            os.chmod(exe, 0o777)
         else:
             exe = os.path.join(tmpdir, 'foo.bat')
             self.write_file(exe, 'exit 1')
 
-        os.chmod(exe, 0777)
-        self.assertRaises(DistutilsExecError, spawn, [exe])
+        os.chmod(exe, 0o777)
+        self.assertRaises(PackagingExecError, spawn, [exe])
 
         # now something that works
         if os.name == 'posix':
             exe = os.path.join(tmpdir, 'foo.sh')
             self.write_file(exe, '#!/bin/sh\nexit 0')
-            os.chmod(exe, 0777)
+            os.chmod(exe, 0o777)
         else:
             exe = os.path.join(tmpdir, 'foo.bat')
             self.write_file(exe, 'exit 0')
 
-        os.chmod(exe, 0777)
+        os.chmod(exe, 0o777)
         spawn([exe])  # should work without any error
 
     def test_server_registration(self):
@@ -454,8 +486,7 @@ class UtilTestCase(support.EnvironGuard,
         self.write_file(self.rc, PYPIRC)
         config = read_pypirc()
 
-        config = config.items()
-        config.sort()
+        config = sorted(config.items())
         expected = [('password', 'xxxx'), ('realm', 'pypi'),
                     ('repository', 'http://pypi.python.org/pypi'),
                     ('server', 'pypi'), ('username', 'me')]
@@ -464,8 +495,7 @@ class UtilTestCase(support.EnvironGuard,
         # old format
         self.write_file(self.rc, PYPIRC_OLD)
         config = read_pypirc()
-        config = config.items()
-        config.sort()
+        config = sorted(config.items())
         expected = [('password', 'secret'), ('realm', 'pypi'),
                     ('repository', 'http://pypi.python.org/pypi'),
                     ('server', 'server-login'), ('username', 'tarek')]
@@ -473,11 +503,52 @@ class UtilTestCase(support.EnvironGuard,
 
     def test_server_empty_registration(self):
         rc = get_pypirc_path()
-        self.assertTrue(not os.path.exists(rc))
+        self.assertFalse(os.path.exists(rc))
         generate_pypirc('tarek', 'xxx')
         self.assertTrue(os.path.exists(rc))
-        content = open(rc).read()
+        with open(rc) as f:
+            content = f.read()
         self.assertEqual(content, WANTED)
+
+    def test_cfg_to_args(self):
+        opts = {'description-file': 'README', 'extra-files': '',
+                'setup-hooks': 'distutils2.tests.test_config.version_hook'}
+        self.write_file('setup.cfg', SETUP_CFG % opts, encoding='utf-8')
+        self.write_file('README', 'loooong description')
+
+        args = cfg_to_args()
+        # use Distribution to get the contents of the setup.cfg file
+        dist = Distribution()
+        dist.parse_config_files()
+        metadata = dist.metadata
+
+        self.assertEqual(args['name'], metadata['Name'])
+        # + .dev1 because the test SETUP_CFG also tests a hook function in
+        # test_config.py for appending to the version string
+        self.assertEqual(args['version'] + '.dev1', metadata['Version'])
+        self.assertEqual(args['author'], metadata['Author'])
+        self.assertEqual(args['author_email'], metadata['Author-Email'])
+        self.assertEqual(args['maintainer'], metadata['Maintainer'])
+        self.assertEqual(args['maintainer_email'],
+                         metadata['Maintainer-Email'])
+        self.assertEqual(args['description'], metadata['Summary'])
+        self.assertEqual(args['long_description'], metadata['Description'])
+        self.assertEqual(args['classifiers'], metadata['Classifier'])
+        self.assertEqual(args['requires'], metadata['Requires-Dist'])
+        self.assertEqual(args['provides'], metadata['Provides-Dist'])
+
+        self.assertEqual(args['package_dir'].get(''), dist.package_dir)
+        self.assertEqual(args['packages'], dist.packages)
+        self.assertEqual(args['scripts'], dist.scripts)
+        self.assertEqual(args['py_modules'], dist.py_modules)
+
+    def test_encode_multipart(self):
+        fields = [('username', 'wok'), ('password', 'secret')]
+        files = [('picture', 'wok.png', b'PNG89')]
+        content_type, body = encode_multipart(fields, files, b'-x')
+        self.assertEqual(b'multipart/form-data; boundary=-x', content_type)
+        self.assertEqual(EXPECTED_MULTIPART_OUTPUT, body.split(b'\r\n'))
+
 
 class GlobTestCaseBase(support.TempdirManager,
                        support.LoggingCatcher,
@@ -499,51 +570,59 @@ class GlobTestCaseBase(support.TempdirManager,
         return tempdir
 
     @staticmethod
-    def os_dependant_path(path):
+    def os_dependent_path(path):
         path = path.rstrip('/').split('/')
         return os.path.join(*path)
 
     def clean_tree(self, spec):
         files = []
-        for path, includes in list(spec.items()):
+        for path, includes in spec.items():
             if includes:
-                files.append(self.os_dependant_path(path))
+                files.append(self.os_dependent_path(path))
         return files
+
 
 class GlobTestCase(GlobTestCaseBase):
 
+    def setUp(self):
+        super(GlobTestCase, self).setUp()
+        self.cwd = os.getcwd()
+
+    def tearDown(self):
+        os.chdir(self.cwd)
+        super(GlobTestCase, self).tearDown()
 
     def assertGlobMatch(self, glob, spec):
         """"""
-        tempdir  = self.build_files_tree(spec)
+        tempdir = self.build_files_tree(spec)
         expected = self.clean_tree(spec)
-        self.addCleanup(os.chdir, os.getcwd())
         os.chdir(tempdir)
         result = list(iglob(glob))
         self.assertItemsEqual(expected, result)
 
     def test_regex_rich_glob(self):
-        matches = RICH_GLOB.findall(r"babar aime les {fraises} est les {huitres}")
-        self.assertEquals(["fraises","huitres"], matches)
+        matches = RICH_GLOB.findall(
+                                r"babar aime les {fraises} est les {huitres}")
+        self.assertEqual(["fraises", "huitres"], matches)
 
     def test_simple_glob(self):
         glob = '*.tp?'
-        spec  = {'coucou.tpl': True,
+        spec = {'coucou.tpl': True,
                  'coucou.tpj': True,
                  'Donotwant': False}
         self.assertGlobMatch(glob, spec)
 
     def test_simple_glob_in_dir(self):
-        glob = 'babar/*.tp?'
-        spec  = {'babar/coucou.tpl': True,
+        glob = os.path.join('babar', '*.tp?')
+        spec = {'babar/coucou.tpl': True,
                  'babar/coucou.tpj': True,
                  'babar/toto.bin': False,
                  'Donotwant': False}
         self.assertGlobMatch(glob, spec)
 
     def test_recursive_glob_head(self):
-        glob = '**/tip/*.t?l'
-        spec  = {'babar/zaza/zuzu/tip/coucou.tpl': True,
+        glob = os.path.join('**', 'tip', '*.t?l')
+        spec = {'babar/zaza/zuzu/tip/coucou.tpl': True,
                  'babar/z/tip/coucou.tpl': True,
                  'babar/tip/coucou.tpl': True,
                  'babar/zeop/tip/babar/babar.tpl': False,
@@ -555,7 +634,7 @@ class GlobTestCase(GlobTestCaseBase):
         self.assertGlobMatch(glob, spec)
 
     def test_recursive_glob_tail(self):
-        glob = 'babar/**'
+        glob = os.path.join('babar', '**')
         spec = {'babar/zaza/': True,
                 'babar/zaza/zuzu/': True,
                 'babar/zaza/zuzu/babar.xml': True,
@@ -569,8 +648,8 @@ class GlobTestCase(GlobTestCaseBase):
         self.assertGlobMatch(glob, spec)
 
     def test_recursive_glob_middle(self):
-        glob = 'babar/**/tip/*.t?l'
-        spec  = {'babar/zaza/zuzu/tip/coucou.tpl': True,
+        glob = os.path.join('babar', '**', 'tip', '*.t?l')
+        spec = {'babar/zaza/zuzu/tip/coucou.tpl': True,
                  'babar/z/tip/coucou.tpl': True,
                  'babar/tip/coucou.tpl': True,
                  'babar/zeop/tip/babar/babar.tpl': False,
@@ -582,8 +661,8 @@ class GlobTestCase(GlobTestCaseBase):
         self.assertGlobMatch(glob, spec)
 
     def test_glob_set_tail(self):
-        glob = 'bin/*.{bin,sh,exe}'
-        spec  = {'bin/babar.bin': True,
+        glob = os.path.join('bin', '*.{bin,sh,exe}')
+        spec = {'bin/babar.bin': True,
                  'bin/zephir.sh': True,
                  'bin/celestine.exe': True,
                  'bin/cornelius.bat': False,
@@ -593,8 +672,8 @@ class GlobTestCase(GlobTestCaseBase):
         self.assertGlobMatch(glob, spec)
 
     def test_glob_set_middle(self):
-        glob = 'xml/{babar,toto}.xml'
-        spec  = {'xml/babar.xml': True,
+        glob = os.path.join('xml', '{babar,toto}.xml')
+        spec = {'xml/babar.xml': True,
                  'xml/toto.xml': True,
                  'xml/babar.xslt': False,
                  'xml/cornelius.sgml': False,
@@ -604,8 +683,8 @@ class GlobTestCase(GlobTestCaseBase):
         self.assertGlobMatch(glob, spec)
 
     def test_glob_set_head(self):
-        glob = '{xml,xslt}/babar.*'
-        spec  = {'xml/babar.xml': True,
+        glob = os.path.join('{xml,xslt}', 'babar.*')
+        spec = {'xml/babar.xml': True,
                  'xml/toto.xml': False,
                  'xslt/babar.xslt': True,
                  'xslt/toto.xslt': False,
@@ -614,8 +693,10 @@ class GlobTestCase(GlobTestCaseBase):
         self.assertGlobMatch(glob, spec)
 
     def test_glob_all(self):
-        glob = '{xml/*,xslt/**}/babar.xml'
-        spec  = {'xml/a/babar.xml': True,
+        dirs = '{%s,%s}' % (os.path.join('xml', '*'),
+                            os.path.join('xslt', '**'))
+        glob = os.path.join(dirs, 'babar.xml')
+        spec = {'xml/a/babar.xml': True,
                  'xml/b/babar.xml': True,
                  'xml/a/c/babar.xml': False,
                  'xslt/a/babar.xml': True,
@@ -632,31 +713,285 @@ class GlobTestCase(GlobTestCaseBase):
             '/**ddsfs',
             '**##1e"&e',
             'DSFb**c009',
-            '{'
-            '{aaQSDFa'
-            '}'
-            'aQSDFSaa}'
-            '{**a,'
-            ',**a}'
-            '{a**,'
-            ',b**}'
-            '{a**a,babar}'
-            '{bob,b**z}'
-            ]
-        msg = "%r is not supposed to be a valid pattern"
+            '{',
+            '{aaQSDFa',
+            '}',
+            'aQSDFSaa}',
+            '{**a,',
+            ',**a}',
+            '{a**,',
+            ',b**}',
+            '{a**a,babar}',
+            '{bob,b**z}',
+        ]
         for pattern in invalids:
-            try:
-                iglob(pattern)
-            except ValueError:
-                continue
-            else:
-                self.fail("%r is not a valid iglob pattern" % pattern)
+            self.assertRaises(ValueError, iglob, pattern)
 
+
+class EggInfoToDistInfoTestCase(support.TempdirManager,
+                                support.LoggingCatcher,
+                                unittest.TestCase):
+
+    def get_metadata_file_paths(self, distinfo_path):
+        req_metadata_files = ['METADATA', 'RECORD', 'INSTALLER']
+        metadata_file_paths = []
+        for metadata_file in req_metadata_files:
+            path = os.path.join(distinfo_path, metadata_file)
+            metadata_file_paths.append(path)
+        return metadata_file_paths
+
+    def test_egginfo_to_distinfo_setuptools(self):
+        distinfo = 'hello-0.1.1-py3.3.dist-info'
+        egginfo = 'hello-0.1.1-py3.3.egg-info'
+        dirs = [egginfo]
+        files = ['hello.py', 'hello.pyc']
+        extra_metadata = ['dependency_links.txt', 'entry_points.txt',
+                          'not-zip-safe', 'PKG-INFO', 'top_level.txt',
+                          'SOURCES.txt']
+        for f in extra_metadata:
+            files.append(os.path.join(egginfo, f))
+
+        tempdir, record_file = self.build_dist_tree(files, dirs)
+        distinfo_path = os.path.join(tempdir, distinfo)
+        egginfo_path = os.path.join(tempdir, egginfo)
+        metadata_file_paths = self.get_metadata_file_paths(distinfo_path)
+
+        egginfo_to_distinfo(record_file)
+        # test that directories and files get created
+        self.assertTrue(os.path.isdir(distinfo_path))
+        self.assertTrue(os.path.isdir(egginfo_path))
+
+        for mfile in metadata_file_paths:
+            self.assertTrue(os.path.isfile(mfile))
+
+    def test_egginfo_to_distinfo_distutils(self):
+        distinfo = 'hello-0.1.1-py3.3.dist-info'
+        egginfo = 'hello-0.1.1-py3.3.egg-info'
+        # egginfo is a file in distutils which contains the metadata
+        files = ['hello.py', 'hello.pyc', egginfo]
+
+        tempdir, record_file = self.build_dist_tree(files, dirs=[])
+        distinfo_path = os.path.join(tempdir, distinfo)
+        egginfo_path = os.path.join(tempdir, egginfo)
+        metadata_file_paths = self.get_metadata_file_paths(distinfo_path)
+
+        egginfo_to_distinfo(record_file)
+        # test that directories and files get created
+        self.assertTrue(os.path.isdir(distinfo_path))
+        self.assertTrue(os.path.isfile(egginfo_path))
+
+        for mfile in metadata_file_paths:
+            self.assertTrue(os.path.isfile(mfile))
+
+    def build_dist_tree(self, files, dirs):
+        tempdir = self.mkdtemp()
+        record_file_path = os.path.join(tempdir, 'RECORD')
+        file_paths, dir_paths = ([], [])
+        for d in dirs:
+            path = os.path.join(tempdir, d)
+            os.makedirs(path)
+            dir_paths.append(path)
+        for f in files:
+            path = os.path.join(tempdir, f)
+            with open(path, 'w') as _f:
+                _f.write(f)
+            file_paths.append(path)
+
+        with open(record_file_path, 'w') as record_file:
+            for fpath in file_paths:
+                record_file.write(fpath + '\n')
+            for dpath in dir_paths:
+                record_file.write(dpath + '\n')
+
+        return (tempdir, record_file_path)
+
+
+class PackagingLibChecks(support.TempdirManager,
+                         support.LoggingCatcher,
+                         unittest.TestCase):
+
+    def setUp(self):
+        super(PackagingLibChecks, self).setUp()
+        self._empty_dir = self.mkdtemp()
+
+    def test_empty_package_is_not_based_on_anything(self):
+        self.assertFalse(is_setuptools(self._empty_dir))
+        self.assertFalse(is_distutils(self._empty_dir))
+        self.assertFalse(is_distutils2(self._empty_dir))
+
+    def test_setup_py_importing_setuptools_is_setuptools_based(self):
+        self.assertTrue(is_setuptools(self._setuptools_setup_py_pkg()))
+
+    def test_egg_info_dir_and_setup_py_is_setuptools_based(self):
+        self.assertTrue(is_setuptools(self._setuptools_egg_info_pkg()))
+
+    def test_egg_info_and_non_setuptools_setup_py_is_setuptools_based(self):
+        self.assertTrue(is_setuptools(self._egg_info_with_no_setuptools()))
+
+    def test_setup_py_not_importing_setuptools_is_not_setuptools_based(self):
+        self.assertFalse(is_setuptools(self._random_setup_py_pkg()))
+
+    def test_setup_py_importing_distutils_is_distutils_based(self):
+        self.assertTrue(is_distutils(self._distutils_setup_py_pkg()))
+
+    def test_pkg_info_file_and_setup_py_is_distutils_based(self):
+        self.assertTrue(is_distutils(self._distutils_pkg_info()))
+
+    def test_pkg_info_and_non_distutils_setup_py_is_distutils_based(self):
+        self.assertTrue(is_distutils(self._pkg_info_with_no_distutils()))
+
+    def test_setup_py_not_importing_distutils_is_not_distutils_based(self):
+        self.assertFalse(is_distutils(self._random_setup_py_pkg()))
+
+    def test_setup_cfg_with_no_metadata_section_is_not_distutils2_based(self):
+        self.assertFalse(is_distutils2(self._setup_cfg_with_no_metadata_pkg()))
+
+    def test_setup_cfg_with_valid_metadata_section_is_distutils2_based(self):
+        self.assertTrue(is_distutils2(self._valid_setup_cfg_pkg()))
+
+    def test_setup_cfg_and_invalid_setup_cfg_is_not_distutils2_based(self):
+        self.assertFalse(is_distutils2(self._invalid_setup_cfg_pkg()))
+
+    def test_get_install_method_with_setuptools_pkg(self):
+        path = self._setuptools_setup_py_pkg()
+        self.assertEqual("setuptools", get_install_method(path))
+
+    def test_get_install_method_with_distutils_pkg(self):
+        path = self._distutils_pkg_info()
+        self.assertEqual("distutils", get_install_method(path))
+
+    def test_get_install_method_with_distutils2_pkg(self):
+        path = self._valid_setup_cfg_pkg()
+        self.assertEqual("distutils2", get_install_method(path))
+
+    def test_get_install_method_with_unknown_pkg(self):
+        path = self._invalid_setup_cfg_pkg()
+        self.assertRaises(InstallationException, get_install_method, path)
+
+    def test_is_setuptools_logs_setup_py_text_found(self):
+        is_setuptools(self._setuptools_setup_py_pkg())
+        expected = ['setup.py file found.',
+                    'No egg-info directory found.',
+                    'Found setuptools text in setup.py.']
+        self.assertEqual(expected, self.get_logs(logging.DEBUG))
+
+    def test_is_setuptools_logs_setup_py_text_not_found(self):
+        directory = self._random_setup_py_pkg()
+        is_setuptools(directory)
+        expected = ['setup.py file found.', 'No egg-info directory found.',
+                    'No setuptools text found in setup.py.']
+        self.assertEqual(expected, self.get_logs(logging.DEBUG))
+
+    def test_is_setuptools_logs_egg_info_dir_found(self):
+        is_setuptools(self._setuptools_egg_info_pkg())
+        expected = ['setup.py file found.', 'Found egg-info directory.']
+        self.assertEqual(expected, self.get_logs(logging.DEBUG))
+
+    def test_is_distutils_logs_setup_py_text_found(self):
+        is_distutils(self._distutils_setup_py_pkg())
+        expected = ['setup.py file found.',
+                    'No PKG-INFO file found.',
+                    'Found distutils text in setup.py.']
+        self.assertEqual(expected, self.get_logs(logging.DEBUG))
+
+    def test_is_distutils_logs_setup_py_text_not_found(self):
+        directory = self._random_setup_py_pkg()
+        is_distutils(directory)
+        expected = ['setup.py file found.', 'No PKG-INFO file found.',
+                    'No distutils text found in setup.py.']
+        self.assertEqual(expected, self.get_logs(logging.DEBUG))
+
+    def test_is_distutils_logs_pkg_info_file_found(self):
+        is_distutils(self._distutils_pkg_info())
+        expected = ['setup.py file found.', 'PKG-INFO file found.']
+        self.assertEqual(expected, self.get_logs(logging.DEBUG))
+
+    def test_is_distutils2_logs_setup_cfg_found(self):
+        is_distutils2(self._valid_setup_cfg_pkg())
+        expected = ['setup.cfg file found.']
+        self.assertEqual(expected, self.get_logs(logging.DEBUG))
+
+    def test_is_distutils2_logs_setup_cfg_not_found(self):
+        is_distutils2(self._empty_dir)
+        expected = ['No setup.cfg file found.']
+        self.assertEqual(expected, self.get_logs(logging.DEBUG))
+
+    def _write_setuptools_setup_py(self, directory):
+        self.write_file((directory, 'setup.py'),
+                "from setuptools import setup")
+
+    def _write_distutils_setup_py(self, directory):
+        self.write_file([directory, 'setup.py'],
+                "from distutils.core import setup")
+
+    def _write_distutils2_setup_cfg(self, directory):
+        self.write_file([directory, 'setup.cfg'],
+                        ("[metadata]\n"
+                         "name = mypackage\n"
+                         "version = 0.1.0\n"))
+
+    def _setuptools_setup_py_pkg(self):
+        tmp = self.mkdtemp()
+        self._write_setuptools_setup_py(tmp)
+        return tmp
+
+    def _distutils_setup_py_pkg(self):
+        tmp = self.mkdtemp()
+        self._write_distutils_setup_py(tmp)
+        return tmp
+
+    def _valid_setup_cfg_pkg(self):
+        tmp = self.mkdtemp()
+        self._write_distutils2_setup_cfg(tmp)
+        return tmp
+
+    def _setuptools_egg_info_pkg(self):
+        tmp = self.mkdtemp()
+        self._write_setuptools_setup_py(tmp)
+        tempfile.mkdtemp(suffix='.egg-info', dir=tmp)
+        return tmp
+
+    def _distutils_pkg_info(self):
+        tmp = self._distutils_setup_py_pkg()
+        self.write_file([tmp, 'PKG-INFO'], '')
+        return tmp
+
+    def _setup_cfg_with_no_metadata_pkg(self):
+        tmp = self.mkdtemp()
+        self.write_file([tmp, 'setup.cfg'],
+                        ("[othersection]\n"
+                         "foo = bar\n"))
+        return tmp
+
+    def _invalid_setup_cfg_pkg(self):
+        tmp = self.mkdtemp()
+        self.write_file([tmp, 'setup.cfg'],
+                        ("[metadata]\n"
+                         "name = john\n"
+                         "last_name = doe\n"))
+        return tmp
+
+    def _egg_info_with_no_setuptools(self):
+        tmp = self._random_setup_py_pkg()
+        tempfile.mkdtemp(suffix='.egg-info', dir=tmp)
+        return tmp
+
+    def _pkg_info_with_no_distutils(self):
+        tmp = self._random_setup_py_pkg()
+        self.write_file([tmp, 'PKG-INFO'], '')
+        return tmp
+
+    def _random_setup_py_pkg(self):
+        tmp = self.mkdtemp()
+        self.write_file((tmp, 'setup.py'), "from mypackage import setup")
+        return tmp
 
 
 def test_suite():
     suite = unittest.makeSuite(UtilTestCase)
     suite.addTest(unittest.makeSuite(GlobTestCase))
+    suite.addTest(unittest.makeSuite(EggInfoToDistInfoTestCase))
+    suite.addTest(unittest.makeSuite(PackagingLibChecks))
     return suite
 
 

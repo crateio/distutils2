@@ -1,13 +1,13 @@
 """Tests for distutils.command.bdist."""
 
 from distutils2 import util
-from distutils2.tests import run_unittest
-
 from distutils2.command.bdist import bdist, show_formats
+
 from distutils2.tests import unittest, support, captured_stdout
 
 
 class BuildTestCase(support.TempdirManager,
+                    support.LoggingCatcher,
                     unittest.TestCase):
 
     def _mock_get_platform(self):
@@ -74,4 +74,4 @@ def test_suite():
     return unittest.makeSuite(BuildTestCase)
 
 if __name__ == '__main__':
-    run_unittest(test_suite())
+    unittest.main(defaultTest='test_suite')

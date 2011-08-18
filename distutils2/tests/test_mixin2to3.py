@@ -1,70 +1,84 @@
-"""Tests for distutils.command.build_py."""
 import sys
-import logging
+import textwrap
 
-import distutils2
 from distutils2.tests import unittest, support
 from distutils2.compat import Mixin2to3
 
 
-class Mixin2to3TestCase(support.TempdirManager, support.WarningsCatcher,
+class Mixin2to3TestCase(support.TempdirManager,
+                        support.LoggingCatcher,
                         unittest.TestCase):
 
-    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
+    #@unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
+    @unittest.skipIf(True, 'Not needed for backport')
     def test_convert_code_only(self):
         # used to check if code gets converted properly.
-        code_content = "print 'test'\n"
-        code_handle = self.mktempfile()
-        code_name = code_handle.name
+        code = "print 'test'"
 
-        code_handle.write(code_content)
-        code_handle.flush()
+        with self.mktempfile() as fp:
+            fp.write(code)
 
         mixin2to3 = Mixin2to3()
-        mixin2to3._run_2to3([code_name])
-        converted_code_content = "print('test')\n"
-        new_code_content = "".join(open(code_name).readlines())
+        mixin2to3._run_2to3([fp.name])
+        expected = "print('test')"
 
-        self.assertEqual(new_code_content, converted_code_content)
+        with open(fp.name) as fp:
+            converted = fp.read()
 
-    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
+        self.assertEqual(expected, converted)
+
+    #@unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
+    @unittest.skipIf(True, 'Not needed for backport')
     def test_doctests_only(self):
         # used to check if doctests gets converted properly.
-        doctest_content = '"""\n>>> print test\ntest\n"""\nprint test\n\n'
-        doctest_handle = self.mktempfile()
-        doctest_name = doctest_handle.name
+        doctest = textwrap.dedent('''\
+            """Example docstring.
 
-        doctest_handle.write(doctest_content)
-        doctest_handle.flush()
+            >>> print test
+            test
+
+            It works.
+            """''')
+
+        with self.mktempfile() as fp:
+            fp.write(doctest)
 
         mixin2to3 = Mixin2to3()
-        mixin2to3._run_2to3([doctest_name])
+        mixin2to3._run_2to3([fp.name])
+        expected = textwrap.dedent('''\
+            """Example docstring.
 
-        converted_doctest_content = ['"""', '>>> print(test)', 'test', '"""',
-                                     'print(test)', '', '', '']
-        converted_doctest_content = '\n'.join(converted_doctest_content)
-        new_doctest_content = "".join(open(doctest_name).readlines())
+            >>> print(test)
+            test
 
-        self.assertEqual(new_doctest_content, converted_doctest_content)
+            It works.
+            """\n''')
 
-    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
+        with open(fp.name) as fp:
+            converted = fp.read()
+
+        self.assertEqual(expected, converted)
+
+    #@unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
+    @unittest.skipIf(True, 'Not needed for backport')
     def test_additional_fixers(self):
         # used to check if use_2to3_fixers works
-        from distutils2.tests import fixer
-        code_content = "type(x) is T"
-        code_handle = self.mktempfile()
-        code_name = code_handle.name
+        code = 'type(x) is not T'
 
-        code_handle.write(code_content)
-        code_handle.flush()
+        with self.mktempfile() as fp:
+            fp.write(code)
 
         mixin2to3 = Mixin2to3()
-
-        mixin2to3._run_2to3(files=[code_name], doctests=[code_name],
+        mixin2to3._run_2to3(files=[fp.name], doctests=[fp.name],
                             fixers=['distutils2.tests.fixer'])
-        converted_code_content = "isinstance(x, T)"
-        new_code_content = "".join(open(code_name).readlines())
-        self.assertEqual(new_code_content, converted_code_content)
+
+        expected = 'not isinstance(x, T)'
+
+        with open(fp.name) as fp:
+            converted = fp.read()
+
+        self.assertEqual(expected, converted)
+
 
 def test_suite():
     return unittest.makeSuite(Mixin2to3TestCase)

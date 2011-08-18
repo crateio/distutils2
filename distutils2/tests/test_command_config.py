@@ -1,32 +1,30 @@
 """Tests for distutils.command.config."""
 import os
 import sys
+import logging
 
 from distutils2.command.config import dump_file, config
 from distutils2.tests import unittest, support
+
 
 class ConfigTestCase(support.LoggingCatcher,
                      support.TempdirManager,
                      unittest.TestCase):
 
     def test_dump_file(self):
-        this_file = os.path.splitext(__file__)[0] + '.py'
-        f = open(this_file)
-        try:
+        this_file = __file__.rstrip('co')
+        with open(this_file) as f:
             numlines = len(f.readlines())
-        finally:
-            f.close()
 
         dump_file(this_file, 'I am the header')
-        logs = []
-        for log in self.logs:
-            log = log[1]
-            logs.extend([log for log in log.split('\n')])
-        self.assertEqual(len(logs), numlines+2)
 
+        logs = []
+        for log in self.get_logs(logging.INFO):
+            logs.extend(line for line in log.split('\n'))
+        self.assertEqual(len(logs), numlines + 2)
+
+    @unittest.skipIf(sys.platform == 'win32', 'disabled on win32')
     def test_search_cpp(self):
-        if sys.platform == 'win32':
-            return
         pkg_dir, dist = self.create_dist()
         cmd = config(dist)
 
@@ -68,7 +66,8 @@ class ConfigTestCase(support.LoggingCatcher,
         cmd._clean(f1, f2)
 
         for f in (f1, f2):
-            self.assertTrue(not os.path.exists(f))
+            self.assertFalse(os.path.exists(f))
+
 
 def test_suite():
     return unittest.makeSuite(ConfigTestCase)

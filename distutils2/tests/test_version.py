@@ -1,4 +1,4 @@
-"""Tests for distutils.version."""
+"""Tests for distutils2.version."""
 import doctest
 import os
 
@@ -7,6 +7,7 @@ from distutils2.version import HugeMajorVersionNumError, IrrationalVersionError
 from distutils2.version import suggest_normalized_version as suggest
 from distutils2.version import VersionPredicate
 from distutils2.tests import unittest
+
 
 class VersionTestCase(unittest.TestCase):
 
@@ -36,7 +37,7 @@ class VersionTestCase(unittest.TestCase):
         for v, s in self.versions:
             self.assertEqual(hash(v), hash(V(s)))
 
-        versions = set([v for v,s in self.versions])
+        versions = set([v for v, s in self.versions])
         for v, s in self.versions:
             self.assertIn(v, versions)
 
@@ -63,10 +64,11 @@ class VersionTestCase(unittest.TestCase):
 
         self.assertEqual(str(V('1980.0')), '1980.0')
         self.assertRaises(HugeMajorVersionNumError, V, '1981.0')
-        self.assertEqual(str(V('1981.0', error_on_huge_major_num=False)), '1981.0')
+        self.assertEqual(str(V('1981.0', error_on_huge_major_num=False)),
+                         '1981.0')
 
     def test_comparison(self):
-        r"""
+        comparison_doctest_string = r"""
         >>> V('1.2.0') == '1.2'
         Traceback (most recent call last):
         ...
@@ -132,9 +134,7 @@ class VersionTestCase(unittest.TestCase):
         ...  < V('1.0.post456'))
         True
         """
-        # must be a simpler way to call the docstrings
-        doctest.run_docstring_examples(self.test_comparison, globals(),
-                                       name='test_comparison')
+        doctest.script_from_examples(comparison_doctest_string)
 
     def test_suggest_normalized_version(self):
 
@@ -150,7 +150,7 @@ class VersionTestCase(unittest.TestCase):
         self.assertEqual(suggest('0.7a1dev-r66608'), '0.7a1.dev66608')
         self.assertEqual(suggest('0.6a9.dev-r41475'), '0.6a9.dev41475')
         self.assertEqual(suggest('2.4preview1'), '2.4c1')
-        self.assertEqual(suggest('2.4pre1') , '2.4c1')
+        self.assertEqual(suggest('2.4pre1'), '2.4c1')
         self.assertEqual(suggest('2.1-rc2'), '2.1c2')
 
         # from pypi
@@ -199,8 +199,7 @@ class VersionTestCase(unittest.TestCase):
         self.assertTrue(VersionPredicate('Hey 2.5').match('2.5.1'))
 
         # XXX need to silent the micro version in this case
-        #assert not VersionPredicate('Ho (<3.0,!=2.6)').match('2.6.3')
-
+        self.assertFalse(VersionPredicate('Ho (<3.0,!=2.6)').match('2.6.3'))
 
         # Make sure a predicate that ends with a number works
         self.assertTrue(VersionPredicate('virtualenv5 (1.0)').match('1.0'))

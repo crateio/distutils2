@@ -1,10 +1,10 @@
 """Tests for distutils.command.check."""
 
+import logging
 from distutils2.command.check import check
 from distutils2.metadata import _HAS_DOCUTILS
+from distutils2.errors import PackagingSetupError, MetadataMissingError
 from distutils2.tests import unittest, support
-from distutils2.errors import DistutilsSetupError
-from distutils2.errors import MetadataMissingError
 
 
 class CheckTestCase(support.LoggingCatcher,
@@ -13,7 +13,7 @@ class CheckTestCase(support.LoggingCatcher,
 
     def _run(self, metadata=None, **options):
         if metadata is None:
-            metadata = {'name': 'xxx', 'version': 'xxx'}
+            metadata = {'name': 'xxx', 'version': '1.2'}
         pkg_info, dist = self.create_dist(**metadata)
         cmd = check(dist)
         cmd.initialize_options()
@@ -28,66 +28,70 @@ class CheckTestCase(support.LoggingCatcher,
         # by default, check is checking the metadata
         # should have some warnings
         cmd = self._run()
-        self.assertTrue(len(cmd._warnings) > 0)
+        # trick: using assertNotEqual with an empty list will give us a more
+        # useful error message than assertGreater(.., 0) when the code change
+        # and the test fails
+        self.assertNotEqual([], self.get_logs(logging.WARNING))
 
         # now let's add the required fields
         # and run it again, to make sure we don't get
         # any warning anymore
         metadata = {'home_page': 'xxx', 'author': 'xxx',
                     'author_email': 'xxx',
-                    'name': 'xxx', 'version': 'xxx',
+                    'name': 'xxx', 'version': '4.2',
                     }
         cmd = self._run(metadata)
-        self.assertEqual(len(cmd._warnings), 0)
+        self.assertEqual([], self.get_logs(logging.WARNING))
 
         # now with the strict mode, we should
         # get an error if there are missing metadata
         self.assertRaises(MetadataMissingError, self._run, {}, **{'strict': 1})
-        self.assertRaises(DistutilsSetupError, self._run,
+        self.assertRaises(PackagingSetupError, self._run,
             {'name': 'xxx', 'version': 'xxx'}, **{'strict': 1})
 
+        # clear warnings from the previous calls
+        self.loghandler.flush()
+
         # and of course, no error when all metadata fields are present
-        cmd = self._run(metadata, strict=1)
-        self.assertEqual(len(cmd._warnings), 0)
+        cmd = self._run(metadata, strict=True)
+        self.assertEqual([], self.get_logs(logging.WARNING))
 
     def test_check_metadata_1_2(self):
         # let's run the command with no metadata at all
         # by default, check is checking the metadata
         # should have some warnings
         cmd = self._run()
-        self.assertTrue(len(cmd._warnings) > 0)
+        self.assertNotEqual([], self.get_logs(logging.WARNING))
 
-        # now let's add the required fields
-        # and run it again, to make sure we don't get
-        # any warning anymore
-        # let's use requires_python as a marker to enforce
-        # Metadata-Version 1.2
+        # now let's add the required fields and run it again, to make sure we
+        # don't get any warning anymore let's use requires_python as a marker
+        # to enforce Metadata-Version 1.2
         metadata = {'home_page': 'xxx', 'author': 'xxx',
                     'author_email': 'xxx',
-                    'name': 'xxx', 'version': 'xxx',
+                    'name': 'xxx', 'version': '4.2',
                     'requires_python': '2.4',
                     }
         cmd = self._run(metadata)
-        self.assertEqual(len(cmd._warnings), 1)
+        self.assertEqual([], self.get_logs(logging.WARNING))
 
         # now with the strict mode, we should
         # get an error if there are missing metadata
         self.assertRaises(MetadataMissingError, self._run, {}, **{'strict': 1})
-        self.assertRaises(DistutilsSetupError, self._run,
+        self.assertRaises(PackagingSetupError, self._run,
             {'name': 'xxx', 'version': 'xxx'}, **{'strict': 1})
 
         # complain about version format
-        self.assertRaises(DistutilsSetupError, self._run, metadata,
+        metadata['version'] = 'xxx'
+        self.assertRaises(PackagingSetupError, self._run, metadata,
             **{'strict': 1})
 
-        # now with correct version format
-        metadata = {'home_page': 'xxx', 'author': 'xxx',
-                    'author_email': 'xxx',
-                    'name': 'xxx', 'version': '1.2',
-                    'requires_python': '2.4',
-                    }
-        cmd = self._run(metadata, strict=1)
-        self.assertEqual(len(cmd._warnings), 0)
+        # clear warnings from the previous calls
+        self.loghandler.flush()
+
+        # now with correct version format again
+        metadata['version'] = '4.2'
+        cmd = self._run(metadata, strict=True)
+        self.assertEqual([], self.get_logs(logging.WARNING))
 
     @unittest.skipUnless(_HAS_DOCUTILS, "requires docutils")
     def test_check_restructuredtext(self):
@@ -96,16 +100,15 @@ class CheckTestCase(support.LoggingCatcher,
         pkg_info, dist = self.create_dist(description=broken_rest)
         cmd = check(dist)
         cmd.check_restructuredtext()
-        self.assertEqual(len(cmd._warnings), 1)
+        self.assertEqual(len(self.get_logs(logging.WARNING)), 1)
 
         pkg_info, dist = self.create_dist(description='title\n=====\n\ntest')
         cmd = check(dist)
         cmd.check_restructuredtext()
-        self.assertEqual(len(cmd._warnings), 0)
+        self.assertEqual([], self.get_logs(logging.WARNING))
 
     def test_check_all(self):
-
-        self.assertRaises(DistutilsSetupError, self._run,
+        self.assertRaises(PackagingSetupError, self._run,
                           {'name': 'xxx', 'version': 'xxx'}, **{'strict': 1,
                                  'all': 1})
         self.assertRaises(MetadataMissingError, self._run,
@@ -119,7 +122,18 @@ class CheckTestCase(support.LoggingCatcher,
         }
         cmd = check(dist)
         cmd.check_hooks_resolvable()
-        self.assertEqual(len(cmd._warnings), 1)
+        self.assertEqual(len(self.get_logs(logging.WARNING)), 1)
+
+    def test_warn(self):
+        _, dist = self.create_dist()
+        cmd = check(dist)
+        self.assertEqual([], self.get_logs())
+        cmd.warn('hello')
+        self.assertEqual(['check: hello'], self.get_logs())
+        cmd.warn('hello %s', 'world')
+        self.assertEqual(['check: hello world'], self.get_logs())
+        cmd.warn('hello %s %s', 'beautiful', 'world')
+        self.assertEqual(['check: hello beautiful world'], self.get_logs())
 
 
 def test_suite():

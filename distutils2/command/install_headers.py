@@ -1,8 +1,4 @@
-"""distutils.command.install_headers
-
-Implements the Distutils 'install_headers' command, to install C/C++ header
-files to the Python include directory."""
-
+"""Install C/C++ header files to the Python include directory."""
 
 from distutils2.command.cmd import Command
 
@@ -22,7 +18,7 @@ class install_headers(Command):
 
     def initialize_options(self):
         self.install_dir = None
-        self.force = 0
+        self.force = False
         self.outfiles = []
 
     def finalize_options(self):
@@ -37,7 +33,7 @@ class install_headers(Command):
 
         self.mkpath(self.install_dir)
         for header in headers:
-            (out, _) = self.copy_file(header, self.install_dir)
+            out = self.copy_file(header, self.install_dir)[0]
             self.outfiles.append(out)
 
     def get_inputs(self):
@@ -45,5 +41,3 @@ class install_headers(Command):
 
     def get_outputs(self):
         return self.outfiles
-
-# class install_headers

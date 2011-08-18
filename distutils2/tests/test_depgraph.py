@@ -1,33 +1,25 @@
-"""Tests for distutils.depgraph """
+"""Tests for distutils2.depgraph """
+import os
+import re
+import sys
+from StringIO import StringIO
+
+import distutils2.database
+from distutils2 import depgraph
 
 from distutils2.tests import unittest, support
-from distutils2 import depgraph
-from distutils2._backport import pkgutil
+from distutils2.tests.support import requires_zlib
 
-import os
-import sys
-import re
-try:
-    import cStringIO as StringIO
-except ImportError:
-    import StringIO
 
 class DepGraphTestCase(support.LoggingCatcher,
-                       support.WarningsCatcher,
                        unittest.TestCase):
 
     DISTROS_DIST = ('choxie', 'grammar', 'towel-stuff')
-    DISTROS_EGG  = ('bacon', 'banana', 'strawberry', 'cheese')
+    DISTROS_EGG = ('bacon', 'banana', 'strawberry', 'cheese')
     BAD_EGGS = ('nut',)
 
     EDGE = re.compile(
-           r'"(?P<from>.*)" -> "(?P<to>.*)" \[label="(?P<label>.*)"\]'
-           )
-
-    def tearDown(self):
-        super(DepGraphTestCase, self).tearDown()
-        pkgutil.enable_cache()
-        sys.path = self.sys_path
+           r'"(?P<from>.*)" -> "(?P<to>.*)" \[label="(?P<label>.*)"\]')
 
     def checkLists(self, l1, l2):
         """ Compare two lists without taking the order into consideration """
@@ -35,17 +27,17 @@ class DepGraphTestCase(support.LoggingCatcher,
 
     def setUp(self):
         super(DepGraphTestCase, self).setUp()
-        path = os.path.join(os.path.dirname(__file__), '..', '_backport',
-                            'tests', 'fake_dists')
+        path = os.path.join(os.path.dirname(__file__), 'fake_dists')
         path = os.path.abspath(path)
-        self.sys_path = sys.path[:]
-        sys.path[0:0] = [path]
-        pkgutil.disable_cache()
+        sys.path.insert(0, path)
+        self.addCleanup(sys.path.remove, path)
+        self.addCleanup(distutils2.database.enable_cache)
+        distutils2.database.disable_cache()
 
     def test_generate_graph(self):
         dists = []
         for name in self.DISTROS_DIST:
-            dist = pkgutil.get_distribution(name)
+            dist = distutils2.database.get_distribution(name)
             self.assertNotEqual(dist, None)
             dists.append(dist)
 
@@ -53,23 +45,24 @@ class DepGraphTestCase(support.LoggingCatcher,
 
         graph = depgraph.generate_graph(dists)
 
-        deps = [(x.name, y) for (x,y) in graph.adjacency_list[choxie]]
+        deps = [(x.name, y) for x, y in graph.adjacency_list[choxie]]
         self.checkLists([('towel-stuff', 'towel-stuff (0.1)')], deps)
-        self.assertTrue(choxie in graph.reverse_list[towel])
+        self.assertIn(choxie, graph.reverse_list[towel])
         self.checkLists(graph.missing[choxie], ['nut'])
 
-        deps = [(x.name, y) for (x,y) in graph.adjacency_list[grammar]]
+        deps = [(x.name, y) for x, y in graph.adjacency_list[grammar]]
         self.checkLists([], deps)
         self.checkLists(graph.missing[grammar], ['truffles (>=1.2)'])
 
-        deps = [(x.name, y) for (x,y) in graph.adjacency_list[towel]]
+        deps = [(x.name, y) for x, y in graph.adjacency_list[towel]]
         self.checkLists([], deps)
         self.checkLists(graph.missing[towel], ['bacon (<=0.2)'])
 
+    @requires_zlib
     def test_generate_graph_egg(self):
         dists = []
         for name in self.DISTROS_DIST + self.DISTROS_EGG:
-            dist = pkgutil.get_distribution(name, use_egg_info=True)
+            dist = distutils2.database.get_distribution(name, use_egg_info=True)
             self.assertNotEqual(dist, None)
             dists.append(dist)
 
@@ -77,42 +70,42 @@ class DepGraphTestCase(support.LoggingCatcher,
 
         graph = depgraph.generate_graph(dists)
 
-        deps = [(x.name, y) for (x,y) in graph.adjacency_list[choxie]]
+        deps = [(x.name, y) for x, y in graph.adjacency_list[choxie]]
         self.checkLists([('towel-stuff', 'towel-stuff (0.1)')], deps)
-        self.assertTrue(choxie in graph.reverse_list[towel])
+        self.assertIn(choxie, graph.reverse_list[towel])
         self.checkLists(graph.missing[choxie], ['nut'])
 
-        deps = [(x.name, y) for (x,y) in graph.adjacency_list[grammar]]
+        deps = [(x.name, y) for x, y in graph.adjacency_list[grammar]]
         self.checkLists([('bacon', 'truffles (>=1.2)')], deps)
         self.checkLists(graph.missing[grammar], [])
-        self.assertTrue(grammar in graph.reverse_list[bacon])
+        self.assertIn(grammar, graph.reverse_list[bacon])
 
-        deps = [(x.name, y) for (x,y) in graph.adjacency_list[towel]]
+        deps = [(x.name, y) for x, y in graph.adjacency_list[towel]]
         self.checkLists([('bacon', 'bacon (<=0.2)')], deps)
         self.checkLists(graph.missing[towel], [])
-        self.assertTrue(towel in graph.reverse_list[bacon])
+        self.assertIn(towel, graph.reverse_list[bacon])
 
-        deps = [(x.name, y) for (x,y) in graph.adjacency_list[bacon]]
+        deps = [(x.name, y) for x, y in graph.adjacency_list[bacon]]
         self.checkLists([], deps)
         self.checkLists(graph.missing[bacon], [])
 
-        deps = [(x.name, y) for (x,y) in graph.adjacency_list[banana]]
+        deps = [(x.name, y) for x, y in graph.adjacency_list[banana]]
         self.checkLists([('strawberry', 'strawberry (>=0.5)')], deps)
         self.checkLists(graph.missing[banana], [])
-        self.assertTrue(banana in graph.reverse_list[strawberry])
+        self.assertIn(banana, graph.reverse_list[strawberry])
 
-        deps = [(x.name, y) for (x,y) in graph.adjacency_list[strawberry]]
+        deps = [(x.name, y) for x, y in graph.adjacency_list[strawberry]]
         self.checkLists([], deps)
         self.checkLists(graph.missing[strawberry], [])
 
-        deps = [(x.name, y) for (x,y) in graph.adjacency_list[cheese]]
+        deps = [(x.name, y) for x, y in graph.adjacency_list[cheese]]
         self.checkLists([], deps)
         self.checkLists(graph.missing[cheese], [])
 
     def test_dependent_dists(self):
         dists = []
         for name in self.DISTROS_DIST:
-            dist = pkgutil.get_distribution(name)
+            dist = distutils2.database.get_distribution(name)
             self.assertNotEqual(dist, None)
             dists.append(dist)
 
@@ -127,11 +120,11 @@ class DepGraphTestCase(support.LoggingCatcher,
         deps = [d.name for d in depgraph.dependent_dists(dists, towel)]
         self.checkLists(['choxie'], deps)
 
-
+    @requires_zlib
     def test_dependent_dists_egg(self):
         dists = []
         for name in self.DISTROS_DIST + self.DISTROS_EGG:
-            dist = pkgutil.get_distribution(name, use_egg_info=True)
+            dist = distutils2.database.get_distribution(name, use_egg_info=True)
             self.assertNotEqual(dist, None)
             dists.append(dist)
 
@@ -155,52 +148,54 @@ class DepGraphTestCase(support.LoggingCatcher,
         deps = [d.name for d in depgraph.dependent_dists(dists, cheese)]
         self.checkLists([], deps)
 
+    @requires_zlib
     def test_graph_to_dot(self):
         expected = (
             ('towel-stuff', 'bacon', 'bacon (<=0.2)'),
             ('grammar', 'bacon', 'truffles (>=1.2)'),
             ('choxie', 'towel-stuff', 'towel-stuff (0.1)'),
-            ('banana', 'strawberry', 'strawberry (>=0.5)')
+            ('banana', 'strawberry', 'strawberry (>=0.5)'),
         )
 
         dists = []
         for name in self.DISTROS_DIST + self.DISTROS_EGG:
-            dist = pkgutil.get_distribution(name, use_egg_info=True)
+            dist = distutils2.database.get_distribution(name, use_egg_info=True)
             self.assertNotEqual(dist, None)
             dists.append(dist)
 
         graph = depgraph.generate_graph(dists)
-        buf = StringIO.StringIO()
+        buf = StringIO()
         depgraph.graph_to_dot(graph, buf)
         buf.seek(0)
         matches = []
         lines = buf.readlines()
-        for line in lines[1:-1]: # skip the first and the last lines
+        for line in lines[1:-1]:  # skip the first and the last lines
             if line[-1] == '\n':
                 line = line[:-1]
             match = self.EDGE.match(line.strip())
-            self.assertTrue(match is not None)
+            self.assertIsNot(match, None)
             matches.append(match.groups())
 
         self.checkLists(matches, expected)
 
+    @requires_zlib
     def test_graph_disconnected_to_dot(self):
         dependencies_expected = (
             ('towel-stuff', 'bacon', 'bacon (<=0.2)'),
             ('grammar', 'bacon', 'truffles (>=1.2)'),
             ('choxie', 'towel-stuff', 'towel-stuff (0.1)'),
-            ('banana', 'strawberry', 'strawberry (>=0.5)')
+            ('banana', 'strawberry', 'strawberry (>=0.5)'),
         )
         disconnected_expected = ('cheese', 'bacon', 'strawberry')
 
         dists = []
         for name in self.DISTROS_DIST + self.DISTROS_EGG:
-            dist = pkgutil.get_distribution(name, use_egg_info=True)
+            dist = distutils2.database.get_distribution(name, use_egg_info=True)
             self.assertNotEqual(dist, None)
             dists.append(dist)
 
         graph = depgraph.generate_graph(dists)
-        buf = StringIO.StringIO()
+        buf = StringIO()
         depgraph.graph_to_dot(graph, buf, skip_disconnected=False)
         buf.seek(0)
         lines = buf.readlines()
@@ -212,7 +207,7 @@ class DepGraphTestCase(support.LoggingCatcher,
         # We also skip the attribute lines, and don't include the "{" and "}"
         # lines.
         disconnected_active = False
-        for line in lines[1:-1]: # Skip first and last line
+        for line in lines[1:-1]:  # Skip first and last line
             if line.startswith('subgraph disconnected'):
                 disconnected_active = True
                 continue
@@ -232,7 +227,7 @@ class DepGraphTestCase(support.LoggingCatcher,
             if line[-1] == '\n':
                 line = line[:-1]
             match = self.EDGE.match(line.strip())
-            self.assertTrue(match is not None)
+            self.assertIsNot(match, None)
             dependencies_matches.append(match.groups())
 
         disconnected_matches = []
@@ -245,47 +240,50 @@ class DepGraphTestCase(support.LoggingCatcher,
         self.checkLists(dependencies_matches, dependencies_expected)
         self.checkLists(disconnected_matches, disconnected_expected)
 
+    @requires_zlib
     def test_graph_bad_version_to_dot(self):
         expected = (
             ('towel-stuff', 'bacon', 'bacon (<=0.2)'),
             ('grammar', 'bacon', 'truffles (>=1.2)'),
             ('choxie', 'towel-stuff', 'towel-stuff (0.1)'),
-            ('banana', 'strawberry', 'strawberry (>=0.5)')
+            ('banana', 'strawberry', 'strawberry (>=0.5)'),
         )
 
         dists = []
         for name in self.DISTROS_DIST + self.DISTROS_EGG + self.BAD_EGGS:
-            dist = pkgutil.get_distribution(name, use_egg_info=True)
+            dist = distutils2.database.get_distribution(name, use_egg_info=True)
             self.assertNotEqual(dist, None)
             dists.append(dist)
 
         graph = depgraph.generate_graph(dists)
-        buf = StringIO.StringIO()
+        buf = StringIO()
         depgraph.graph_to_dot(graph, buf)
         buf.seek(0)
         matches = []
         lines = buf.readlines()
-        for line in lines[1:-1]: # skip the first and the last lines
+        for line in lines[1:-1]:  # skip the first and the last lines
             if line[-1] == '\n':
                 line = line[:-1]
             match = self.EDGE.match(line.strip())
-            self.assertTrue(match is not None)
+            self.assertIsNot(match, None)
             matches.append(match.groups())
 
         self.checkLists(matches, expected)
 
+    @requires_zlib
     def test_repr(self):
         dists = []
         for name in self.DISTROS_DIST + self.DISTROS_EGG + self.BAD_EGGS:
-            dist = pkgutil.get_distribution(name, use_egg_info=True)
+            dist = distutils2.database.get_distribution(name, use_egg_info=True)
             self.assertNotEqual(dist, None)
             dists.append(dist)
 
         graph = depgraph.generate_graph(dists)
-        assert repr(graph)
+        self.assertTrue(repr(graph))
 
+    @requires_zlib
     def test_main(self):
-        tempout = StringIO.StringIO()
+        tempout = StringIO()
         old = sys.stdout
         sys.stdout = tempout
         oldargv = sys.argv[:]
@@ -302,7 +300,7 @@ class DepGraphTestCase(support.LoggingCatcher,
         # checks what main did XXX could do more here
         tempout.seek(0)
         res = tempout.read()
-        self.assertTrue('towel' in res)
+        self.assertIn('towel', res)
 
 
 def test_suite():

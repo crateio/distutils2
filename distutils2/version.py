@@ -1,3 +1,5 @@
+"""Implementation of the versioning scheme defined in PEP 386."""
+
 import re
 
 from distutils2.errors import IrrationalVersionError, HugeMajorVersionNumError
@@ -113,11 +115,11 @@ class NormalizedVersion(object):
             dev = groups.get('dev')
             postdev = []
             if post is not None:
-                postdev.extend([_FINAL_MARKER[0], 'post', int(post)])
+                postdev.extend((_FINAL_MARKER[0], 'post', int(post)))
                 if dev is None:
                     postdev.append(_FINAL_MARKER[0])
             if dev is not None:
-                postdev.extend(['dev', int(dev)])
+                postdev.extend(('dev', int(dev)))
                 self.is_final = False
             parts.append(tuple(postdev))
         else:
@@ -125,7 +127,7 @@ class NormalizedVersion(object):
         self.parts = tuple(parts)
         if error_on_huge_major_num and self.parts[0][0] > 1980:
             raise HugeMajorVersionNumError("huge major version number, %r, "
-                "which might cause future problems: %r" % (self.parts[0][0], s))
+               "which might cause future problems: %r" % (self.parts[0][0], s))
 
     def _parse_numdots(self, s, full_ver_str, drop_trailing_zeros=True,
                        pad_zeros_length=0):
@@ -180,6 +182,7 @@ class NormalizedVersion(object):
         return "%s('%s')" % (self.__class__.__name__, self)
 
     def _cannot_compare(self, other):
+        import pdb; pdb.set_trace()
         raise TypeError("cannot compare %s and %s"
                 % (type(self).__name__, type(other).__name__))
 
@@ -324,7 +327,8 @@ def suggest_normalized_version(s):
 
 # A predicate is: "ProjectName (VERSION1, VERSION2, ..)
 _PREDICATE = re.compile(r"(?i)^\s*(\w[\s\w-]*(?:\.\w*)*)(.*)")
-_VERSIONS = re.compile(r"^\s*\((?P<versions>.*)\)\s*$|^\s*(?P<versions2>.*)\s*$")
+_VERSIONS = re.compile(r"^\s*\((?P<versions>.*)\)\s*$|^\s*"
+                        "(?P<versions2>.*)\s*$")
 _PLAIN_VERSIONS = re.compile(r"^\s*(.*)\s*$")
 _SPLIT_CMP = re.compile(r"^\s*(<=|>=|<|>|!=|==)\s*([^\s,]+)\s*$")
 
@@ -381,7 +385,7 @@ class VersionPredicate(object):
 
     def match(self, version):
         """Check if the provided version matches the predicates."""
-        if isinstance(version, str):
+        if isinstance(version, basestring):
             version = NormalizedVersion(version)
         for operator, predicate in self.predicates:
             if not self._operators[operator](version, predicate):
@@ -441,6 +445,6 @@ def get_version_predicate(requirements):
     """Return a VersionPredicate object, from a string or an already
     existing object.
     """
-    if isinstance(requirements, str):
+    if isinstance(requirements, basestring):
         requirements = VersionPredicate(requirements)
     return requirements

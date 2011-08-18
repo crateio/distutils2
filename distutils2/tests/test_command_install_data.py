@@ -1,30 +1,33 @@
-"""Tests for distutils.command.install_data."""
-import cmd
+"""Tests for distutils2.command.install_data."""
 import os
-
-from distutils2.command.install_data import install_data
+import sysconfig
+from sysconfig import _get_default_scheme
 from distutils2.tests import unittest, support
+from distutils2.command.install_data import install_data
+
 
 class InstallDataTestCase(support.TempdirManager,
                           support.LoggingCatcher,
-                          support.EnvironGuard,
                           unittest.TestCase):
 
     def test_simple_run(self):
-        from distutils2._backport.sysconfig import _SCHEMES as sysconfig_SCHEMES
-        from distutils2._backport.sysconfig import _get_default_scheme
-            #dirty but hit marmoute
-
-        old_scheme = sysconfig_SCHEMES
+        scheme = _get_default_scheme()
+        old_items = sysconfig._SCHEMES.items(scheme)
+        def restore():
+            sysconfig._SCHEMES.remove_section(scheme)
+            sysconfig._SCHEMES.add_section(scheme)
+            for option, value in old_items:
+                sysconfig._SCHEMES.set(scheme, option, value)
+        self.addCleanup(restore)
 
         pkg_dir, dist = self.create_dist()
         cmd = install_data(dist)
         cmd.install_dir = inst = os.path.join(pkg_dir, 'inst')
 
-        sysconfig_SCHEMES.set(_get_default_scheme(), 'inst',
-            os.path.join(pkg_dir, 'inst'))
-        sysconfig_SCHEMES.set(_get_default_scheme(), 'inst2',
-            os.path.join(pkg_dir, 'inst2'))
+        sysconfig._SCHEMES.set(scheme, 'inst',
+                               os.path.join(pkg_dir, 'inst'))
+        sysconfig._SCHEMES.set(scheme, 'inst2',
+                               os.path.join(pkg_dir, 'inst2'))
 
         one = os.path.join(pkg_dir, 'one')
         self.write_file(one, 'xxx')
@@ -32,7 +35,7 @@ class InstallDataTestCase(support.TempdirManager,
         two = os.path.join(pkg_dir, 'two')
         self.write_file(two, 'xxx')
 
-        cmd.data_files = {one : '{inst}/one', two : '{inst2}/two'}
+        cmd.data_files = {one: '{inst}/one', two: '{inst2}/two'}
         self.assertItemsEqual(cmd.get_inputs(), [one, two])
 
         # let's run the command
@@ -48,7 +51,7 @@ class InstallDataTestCase(support.TempdirManager,
         cmd.outfiles = []
 
         # let's try with warn_dir one
-        cmd.warn_dir = 1
+        cmd.warn_dir = True
         cmd.ensure_finalized()
         cmd.run()
 
@@ -60,15 +63,14 @@ class InstallDataTestCase(support.TempdirManager,
 
         # now using root and empty dir
         cmd.root = os.path.join(pkg_dir, 'root')
-        inst4 = os.path.join(pkg_dir, 'inst4')
         three = os.path.join(cmd.install_dir, 'three')
         self.write_file(three, 'xx')
 
-        sysconfig_SCHEMES.set(_get_default_scheme(), 'inst3', cmd.install_dir)
+        sysconfig._SCHEMES.set(scheme, 'inst3',
+                               cmd.install_dir)
 
-        cmd.data_files = {one : '{inst}/one',
-                          two : '{inst2}/two',
-                          three : '{inst3}/three'}
+        cmd.data_files = {one: '{inst}/one', two: '{inst2}/two',
+                          three: '{inst3}/three'}
         cmd.ensure_finalized()
         cmd.run()
 
@@ -77,7 +79,6 @@ class InstallDataTestCase(support.TempdirManager,
         self.assertTrue(os.path.exists(os.path.join(inst2, rtwo)))
         self.assertTrue(os.path.exists(os.path.join(inst, rone)))
 
-        sysconfig_SCHEMES = old_scheme
 
 def test_suite():
     return unittest.makeSuite(InstallDataTestCase)

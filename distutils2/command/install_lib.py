@@ -1,14 +1,12 @@
-"""distutils.command.install_lib
-
-Implements the Distutils 'install_lib' command
-(install all Python modules)."""
-
+"""Install all modules (extensions and pure Python)."""
 
 import os
 import sys
+import logging
 
+from distutils2 import logger
 from distutils2.command.cmd import Command
-from distutils2.errors import DistutilsOptionError
+from distutils2.errors import PackagingOptionError
 
 
 # Extension for Python source files.
@@ -19,7 +17,7 @@ else:
 
 class install_lib(Command):
 
-    description = "install all Python modules (extensions and pure Python)"
+    description = "install all modules (extensions and pure Python)"
 
     # The byte-compilation options are a tad confusing.  Here are the
     # possible scenarios:
@@ -55,7 +53,7 @@ class install_lib(Command):
         # let the 'install_dist' command dictate our installation directory
         self.install_dir = None
         self.build_dir = None
-        self.force = 0
+        self.force = False
         self.compile = None
         self.optimize = None
         self.skip_build = None
@@ -70,7 +68,7 @@ class install_lib(Command):
                                    'force', 'compile', 'optimize', 'skip_build')
 
         if self.compile is None:
-            self.compile = 1
+            self.compile = True
         if self.optimize is None:
             self.optimize = 0
 
@@ -80,7 +78,7 @@ class install_lib(Command):
                 if self.optimize not in (0, 1, 2):
                     raise AssertionError
             except (ValueError, AssertionError):
-                raise DistutilsOptionError, "optimize must be 0, 1, or 2"
+                raise PackagingOptionError("optimize must be 0, 1, or 2")
 
     def run(self):
         # Make sure we have built everything we need first
@@ -109,14 +107,19 @@ class install_lib(Command):
         if os.path.isdir(self.build_dir):
             outfiles = self.copy_tree(self.build_dir, self.install_dir)
         else:
-            self.warn("'%s' does not exist -- no Python modules to install" %
-                      self.build_dir)
+            logger.warning(
+                '%s: %r does not exist -- no Python modules to install',
+                self.get_command_name(), self.build_dir)
             return
         return outfiles
 
     def byte_compile(self, files):
-        if hasattr(sys, 'dont_write_bytecode') and sys.dont_write_bytecode:
-            self.warn('byte-compiling is disabled, skipping.')
+        if getattr(sys, 'dont_write_bytecode'):
+            # XXX do we want this?  because a Python runs without bytecode
+            # doesn't mean that the *dists should not contain bytecode
+            #--or does it?
+            logger.warning('%s: byte-compiling is disabled, skipping.',
+                           self.get_command_name())
             return
 
         from distutils2.util import byte_compile
@@ -127,6 +130,10 @@ class install_lib(Command):
         # should at least generate usable bytecode in RPM distributions.
         install_root = self.get_finalized_command('install_dist').root
 
+        # Temporary kludge until we remove the verbose arguments and use
+        # logging everywhere
+        verbose = logger.getEffectiveLevel() >= logging.DEBUG
+
         if self.compile:
             byte_compile(files, optimize=0,
                          force=self.force, prefix=install_root,
@@ -134,7 +141,8 @@ class install_lib(Command):
         if self.optimize > 0:
             byte_compile(files, optimize=self.optimize,
                          force=self.force, prefix=install_root,
-                         verbose=self.verbose, dry_run=self.dry_run)
+                         verbose=verbose,
+                         dry_run=self.dry_run)
 
 
     # -- Utility methods -----------------------------------------------

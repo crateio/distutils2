@@ -1,21 +1,16 @@
-"""distutils.cmd
+"""Base class for commands."""
 
-Provides the Command class, the base class for the command classes
-in the distutils.command package.
-"""
 import os
 import re
-import logging
-
-from distutils2.errors import DistutilsOptionError
+from shutil import copyfile, move
 from distutils2 import util
 from distutils2 import logger
-from distutils2._backport.shutil import copytree, copyfile, move, make_archive
+from distutils2.errors import PackagingOptionError
 
 
 class Command(object):
     """Abstract base class for defining command classes, the "worker bees"
-    of the Distutils.  A useful analogy for command classes is to think of
+    of the Packaging.  A useful analogy for command classes is to think of
     them as subroutines with local variables called "options".  The options
     are "declared" in 'initialize_options()' and "defined" (given their
     final values, aka "finalized") in 'finalize_options()', both of which
@@ -62,7 +57,8 @@ class Command(object):
         from distutils2.dist import Distribution
 
         if not isinstance(dist, Distribution):
-            raise TypeError("dist must be a Distribution instance")
+            raise TypeError("dist must be an instance of Distribution, not %r"
+                            % type(dist))
         if self.__class__ is Command:
             raise RuntimeError("Command is an abstract class")
 
@@ -70,7 +66,7 @@ class Command(object):
         self.initialize_options()
 
         # Per-command versions of the global flags, so that the user can
-        # customize Distutils' behaviour command-by-command and let some
+        # customize Packaging' behaviour command-by-command and let some
         # commands fall back on the Distribution's behaviour.  None means
         # "not defined, check self.distribution's copy", while 0 or 1 mean
         # false and true (duh).  Note that this means figuring out the real
@@ -80,10 +76,6 @@ class Command(object):
         #     "fix" it?]
         self._dry_run = None
 
-        # verbose is largely ignored, but needs to be set for
-        # backwards compatibility (I think)?
-        self.verbose = dist.verbose
-
         # Some commands define a 'self.force' option to ignore file
         # timestamps, but methods defined *here* assume that
         # 'self.force' exists for all commands.  So define it here
@@ -92,13 +84,13 @@ class Command(object):
 
         # The 'help' flag is just used for command line parsing, so
         # none of that complicated bureaucracy is needed.
-        self.help = 0
+        self.help = False
 
         # 'finalized' records whether or not 'finalize_options()' has been
         # called.  'finalize_options()' itself should not pay attention to
         # this flag: it is the business of 'ensure_finalized()', which
         # always calls 'finalize_options()', to respect/update it.
-        self.finalized = 0
+        self.finalized = False
 
     # XXX A more explicit way to customize dry_run would be better.
     @property
@@ -111,7 +103,7 @@ class Command(object):
     def ensure_finalized(self):
         if not self.finalized:
             self.finalize_options()
-        self.finalized = 1
+        self.finalized = True
 
     # Subclasses must define:
     #   initialize_options()
@@ -156,18 +148,17 @@ class Command(object):
     def dump_options(self, header=None, indent=""):
         if header is None:
             header = "command options for '%s':" % self.get_command_name()
-        self.announce(indent + header, level=logging.INFO)
+        logger.info(indent + header)
         indent = indent + "  "
         negative_opt = getattr(self, 'negative_opt', ())
-        for (option, _, _) in self.user_options:
+        for option, _, _ in self.user_options:
             if option in negative_opt:
                 continue
             option = option.replace('-', '_')
             if option[-1] == "=":
                 option = option[:-1]
             value = getattr(self, option)
-            self.announce(indent + "%s = %s" % (option, value),
-                          level=logging.INFO)
+            logger.info(indent + "%s = %s", option, value)
 
     def run(self):
         """A command's raison d'etre: carry out the action it exists to
@@ -181,13 +172,6 @@ class Command(object):
         """
         raise RuntimeError(
             "abstract method -- subclass %s must override" % self.__class__)
-
-    # TODO remove this method, just use logging.info
-    def announce(self, msg, level=logging.INFO):
-        """If the current verbosity level is of greater than or equal to
-        'level' print 'msg' to stdout.
-        """
-        logger.log(level, msg)
 
     # -- External interface --------------------------------------------
     # (called by outsiders)
@@ -221,7 +205,7 @@ class Command(object):
     # value meets certain type and value constraints.  If not, we try to
     # force it into conformance (eg. if we expect a list but have a string,
     # split the string on comma and/or whitespace).  If we can't force the
-    # option into conformance, raise DistutilsOptionError.  Thus, command
+    # option into conformance, raise PackagingOptionError.  Thus, command
     # classes need do nothing more than (eg.)
     #   self.ensure_string_list('foo')
     # and they can be guaranteed that thereafter, self.foo will be
@@ -232,8 +216,8 @@ class Command(object):
         if val is None:
             setattr(self, option, default)
             return default
-        elif not isinstance(val, str):
-            raise DistutilsOptionError("'%s' must be a %s (got `%s`)" %
+        elif not isinstance(val, basestring):
+            raise PackagingOptionError("'%s' must be a %s (got `%s`)" %
                                        (option, what, val))
         return val
 
@@ -252,28 +236,28 @@ class Command(object):
         val = getattr(self, option)
         if val is None:
             return
-        elif isinstance(val, str):
+        elif isinstance(val, basestring):
             setattr(self, option, re.split(r',\s*|\s+', val))
         else:
             if isinstance(val, list):
                 # checks if all elements are str
-                ok = 1
+                ok = True
                 for element in val:
-                    if not isinstance(element, str):
-                        ok = 0
+                    if not isinstance(element, basestring):
+                        ok = False
                         break
             else:
-                ok = 0
+                ok = False
 
             if not ok:
-                raise DistutilsOptionError(
+                raise PackagingOptionError(
                     "'%s' must be a list of strings (got %r)" % (option, val))
 
     def _ensure_tested_string(self, option, tester,
                               what, error_fmt, default=None):
         val = self._ensure_stringlike(option, what, default)
         if val is not None and not tester(val):
-            raise DistutilsOptionError(
+            raise PackagingOptionError(
                 ("error in '%s' option: " + error_fmt) % (option, val))
 
     def ensure_filename(self, option):
@@ -324,7 +308,7 @@ class Command(object):
                 setattr(self, dst_option,
                         getattr(src_cmd_obj, src_option))
 
-    def get_finalized_command(self, command, create=1):
+    def get_finalized_command(self, command, create=True):
         """Wrapper around Distribution's 'get_command_obj()' method: find
         (create if necessary and 'create' is true) the command object for
         'command', call its 'ensure_finalized()' method, and return the
@@ -334,7 +318,7 @@ class Command(object):
         cmd_obj.ensure_finalized()
         return cmd_obj
 
-    def get_reinitialized_command(self, command, reinit_subcommands=0):
+    def get_reinitialized_command(self, command, reinit_subcommands=False):
         return self.distribution.get_reinitialized_command(
             command, reinit_subcommands)
 
@@ -364,14 +348,10 @@ class Command(object):
 
     # -- External world manipulation -----------------------------------
 
-    # TODO remove this method, just use logging.warn
-    def warn(self, msg):
-        logger.warning("warning: %s: %s\n", self.get_command_name(), msg)
-
     def execute(self, func, args, msg=None, level=1):
         util.execute(func, args, msg, dry_run=self.dry_run)
 
-    def mkpath(self, name, mode=0777, dry_run=None, verbose=0):
+    def mkpath(self, name, mode=0o777, dry_run=None, verbose=0):
         if dry_run is None:
             dry_run = self.dry_run
         name = os.path.normpath(name)
@@ -386,7 +366,7 @@ class Command(object):
         os.makedirs(name, mode)
 
     def copy_file(self, infile, outfile,
-                   preserve_mode=1, preserve_times=1, link=None, level=1):
+                  preserve_mode=True, preserve_times=True, link=None, level=1):
         """Copy a file respecting verbose, dry-run and force flags.  (The
         former two default to whatever is in the Distribution object, and
         the latter defaults to false for commands that don't define it.)"""
@@ -398,32 +378,34 @@ class Command(object):
         copyfile(infile, outfile)
         return outfile, None  # XXX
 
-    def copy_tree(self, infile, outfile,
-                   preserve_mode=1, preserve_times=1, preserve_symlinks=0,
-                   level=1):
+    def copy_tree(self, infile, outfile, preserve_mode=True,
+                  preserve_times=True, preserve_symlinks=False, level=1):
         """Copy an entire directory tree respecting verbose, dry-run,
         and force flags.
         """
         if self.dry_run:
             return  # see if we want to display something
-        return copytree(infile, outfile, preserve_symlinks)
+
+
+        return util.copy_tree(infile, outfile, preserve_mode, preserve_times,
+            preserve_symlinks, not self.force, dry_run=self.dry_run)
 
     def move_file(self, src, dst, level=1):
-        """Move a file respectin dry-run flag."""
+        """Move a file respecting the dry-run flag."""
         if self.dry_run:
             return  # XXX log ?
         return move(src, dst)
 
-    def spawn(self, cmd, search_path=1, level=1):
+    def spawn(self, cmd, search_path=True, level=1):
         """Spawn an external command respecting dry-run flag."""
         from distutils2.util import spawn
         spawn(cmd, search_path, dry_run=self.dry_run)
 
     def make_archive(self, base_name, format, root_dir=None, base_dir=None,
                      owner=None, group=None):
-        return make_archive(base_name, format, root_dir,
-                            base_dir, dry_run=self.dry_run,
-                            owner=owner, group=group)
+        return util.make_archive(base_name, format, root_dir,
+                                 base_dir, dry_run=self.dry_run,
+                                 owner=owner, group=group)
 
     def make_file(self, infiles, outfile, func, args,
                   exec_msg=None, skip_msg=None, level=1):
@@ -439,7 +421,7 @@ class Command(object):
             skip_msg = "skipping %s (inputs unchanged)" % outfile
 
         # Allow 'infiles' to be a single string
-        if isinstance(infiles, str):
+        if isinstance(infiles, basestring):
             infiles = (infiles,)
         elif not isinstance(infiles, (list, tuple)):
             raise TypeError(

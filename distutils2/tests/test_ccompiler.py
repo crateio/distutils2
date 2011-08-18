@@ -1,10 +1,10 @@
-"""Tests for distutils.ccompiler."""
-from distutils2.compiler.ccompiler import CCompiler
+"""Tests for distutils.compiler.ccompiler."""
+
+from distutils2.compiler import ccompiler
 from distutils2.tests import unittest, support
 
 
-class CCompilerTestCase(support.EnvironGuard, unittest.TestCase):
-
+class CCompilerTestCase(unittest.TestCase):
     pass  # XXX need some tests on CCompiler
 
 

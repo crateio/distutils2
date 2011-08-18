@@ -1,27 +1,16 @@
-"""
-distutils.command.install_distinfo
-==================================
+"""Create the PEP 376-compliant .dist-info directory."""
 
-:Author: Josip Djolonga
+# Forked from the former install_egg_info command by Josip Djolonga
 
-This module implements the ``install_distinfo`` command that creates the
-``.dist-info`` directory for the distribution, as specified in :pep:`376`.
-Usually, you do not have to call this command directly, it gets called
-automatically by the ``install_dist`` command.
-"""
-
-# This file was created from the code for the former command install_egg_info
-
+import codecs
 import csv
-from distutils2 import logger
-from distutils2._backport.shutil import rmtree
-from distutils2.command.cmd import Command
 import os
 import re
-try:
-    import hashlib
-except ImportError:
-    from distutils2._backport import hashlib
+import hashlib
+
+from distutils2.command.cmd import Command
+from distutils2 import logger
+from shutil import rmtree
 
 
 class install_distinfo(Command):
@@ -72,13 +61,11 @@ class install_distinfo(Command):
         if self.no_resources is None:
             self.no_resources = False
 
-
         metadata = self.distribution.metadata
 
         basename = "%s-%s.dist-info" % (
-                                        to_filename(safe_name(metadata['Name'])),
-                                        to_filename(safe_version(metadata['Version'])),
-                                        )
+            to_filename(safe_name(metadata['Name'])),
+            to_filename(safe_version(metadata['Version'])))
 
         self.distinfo_dir = os.path.join(self.distinfo_dir, basename)
         self.outputs = []
@@ -105,18 +92,14 @@ class install_distinfo(Command):
 
             installer_path = os.path.join(self.distinfo_dir, 'INSTALLER')
             logger.info('creating %s', installer_path)
-            f = open(installer_path, 'w')
-            try:
+            with open(installer_path, 'w') as f:
                 f.write(self.installer)
-            finally:
-                f.close()
             self.outputs.append(installer_path)
 
             if self.requested:
                 requested_path = os.path.join(self.distinfo_dir, 'REQUESTED')
                 logger.info('creating %s', requested_path)
-                f = open(requested_path, 'w')
-                f.close()
+                open(requested_path, 'wb').close()
                 self.outputs.append(requested_path)
 
 
@@ -126,25 +109,21 @@ class install_distinfo(Command):
                     resources_path = os.path.join(self.distinfo_dir,
                                                   'RESOURCES')
                     logger.info('creating %s', resources_path)
-                    f = open(resources_path, 'wb')
-                    try:
+                    with open(resources_path, 'wb') as f:
                         writer = csv.writer(f, delimiter=',',
-                                            lineterminator=os.linesep,
+                                            lineterminator='\n',
                                             quotechar='"')
                         for tuple in install_data.get_resources_out():
                             writer.writerow(tuple)
 
                         self.outputs.append(resources_path)
-                    finally:
-                        f.close()
 
             if not self.no_record:
                 record_path = os.path.join(self.distinfo_dir, 'RECORD')
                 logger.info('creating %s', record_path)
-                f = open(record_path, 'wb')
-                try:
+                with codecs.open(record_path, 'w', encoding='utf-8') as f:
                     writer = csv.writer(f, delimiter=',',
-                                        lineterminator=os.linesep,
+                                        lineterminator='\n',
                                         quotechar='"')
 
                     install = self.get_finalized_command('install_dist')
@@ -155,18 +134,15 @@ class install_distinfo(Command):
                             writer.writerow((fpath, '', ''))
                         else:
                             size = os.path.getsize(fpath)
-                            fd = open(fpath, 'r')
-                            hash = hashlib.md5()
-                            hash.update(fd.read())
+                            with open(fpath, 'rb') as fp:
+                                hash = hashlib.md5()
+                                hash.update(fp.read())
                             md5sum = hash.hexdigest()
                             writer.writerow((fpath, md5sum, size))
 
                     # add the RECORD file itself
                     writer.writerow((record_path, '', ''))
                     self.outputs.append(record_path)
-                finally:
-                    f.close()
-
 
     def get_outputs(self):
         return self.outputs

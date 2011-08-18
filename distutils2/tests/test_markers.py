@@ -1,15 +1,14 @@
-"""Tests for distutils.metadata."""
+"""Tests for distutils2.markers."""
 import os
 import sys
 import platform
-from StringIO import StringIO
-
 from distutils2.markers import interpret
-from distutils2.tests import run_unittest, unittest
-from distutils2.tests.support import LoggingCatcher, WarningsCatcher
+
+from distutils2.tests import unittest
+from distutils2.tests.support import LoggingCatcher
 
 
-class MarkersTestCase(LoggingCatcher, WarningsCatcher,
+class MarkersTestCase(LoggingCatcher,
                       unittest.TestCase):
 
     def test_interpret(self):
@@ -18,6 +17,7 @@ class MarkersTestCase(LoggingCatcher, WarningsCatcher,
         os_name = os.name
         platform_version = platform.version()
         platform_machine = platform.machine()
+        platform_python_implementation = platform.python_implementation()
 
         self.assertTrue(interpret("sys.platform == '%s'" % sys_platform))
         self.assertTrue(interpret(
@@ -30,6 +30,8 @@ class MarkersTestCase(LoggingCatcher, WarningsCatcher,
         self.assertTrue(interpret(
             'platform.version == "%s" and platform.machine == "%s"' %
             (platform_version, platform_machine)))
+        self.assertTrue(interpret('platform.python_implementation == "%s"' %
+            platform_python_implementation))
 
         # stuff that need to raise a syntax error
         ops = ('os.name == os.name', 'os.name == 2', "'2' == '2'",
@@ -66,4 +68,4 @@ def test_suite():
     return unittest.makeSuite(MarkersTestCase)
 
 if __name__ == '__main__':
-    run_unittest(test_suite())
+    unittest.main(defaultTest='test_suite')

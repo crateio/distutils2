@@ -1,26 +1,20 @@
-"""distutils.command.register
+"""Register a release with a project index."""
 
-Implements the Distutils 'register' command (register with the repository).
-"""
+# Contributed by Richard Jones
 
-# created 2002/10/21, Richard Jones
-
-
-import urllib2
+import sys
 import getpass
 import urlparse
-import StringIO
-import logging
+import urllib2
 
-from distutils2.command.cmd import Command
 from distutils2 import logger
-from distutils2.metadata import metadata_to_dict
 from distutils2.util import (read_pypirc, generate_pypirc, DEFAULT_REPOSITORY,
-                             DEFAULT_REALM, get_pypirc_path)
+                            DEFAULT_REALM, get_pypirc_path, encode_multipart)
+from distutils2.command.cmd import Command
 
 class register(Command):
 
-    description = "register the distribution with the Python package index"
+    description = "register a release with PyPI"
     user_options = [
         ('repository=', 'r',
          "repository URL [default: %s]" % DEFAULT_REPOSITORY),
@@ -37,9 +31,9 @@ class register(Command):
     def initialize_options(self):
         self.repository = None
         self.realm = None
-        self.show_response = 0
-        self.list_classifiers = 0
-        self.strict = 0
+        self.show_response = False
+        self.list_classifiers = False
+        self.strict = False
 
     def finalize_options(self):
         if self.repository is None:
@@ -48,14 +42,17 @@ class register(Command):
             self.realm = DEFAULT_REALM
 
     def run(self):
-        self.finalize_options()
         self._set_config()
 
         # Check the package metadata
         check = self.distribution.get_command_obj('check')
-        check.strict = self.strict
-        check.all = 1
-        self.run_command('check')
+        if check.strict != self.strict and not check.all:
+            # If check was already run but with different options,
+            # re-run it
+            check.strict = self.strict
+            check.all = True
+            self.distribution.have_run.pop('check', None)
+            self.run_command('check')
 
         if self.dry_run:
             self.verify_metadata()
@@ -123,6 +120,9 @@ class register(Command):
              3. set the password to a random string and email the user.
 
         '''
+        # TODO factor registration out into another method
+        # TODO use print to print, not logging
+
         # see if we can short-cut and get the username/password from the
         # config
         if self.has_config:
@@ -136,24 +136,24 @@ class register(Command):
         # get the user's login info
         choices = '1 2 3 4'.split()
         while choice not in choices:
-            self.announce('''\
+            logger.info('''\
 We need to know who you are, so please choose either:
  1. use your existing login,
  2. register as a new user,
  3. have the server generate a new password for you (and email it to you), or
  4. quit
-Your selection [default 1]: ''', logging.INFO)
+Your selection [default 1]: ''')
 
-            choice = raw_input()
+            choice = input()
             if not choice:
                 choice = '1'
             elif choice not in choices:
-                print 'Please choose one of the four options!'
+                print('Please choose one of the four options!')
 
         if choice == '1':
             # get the username and password
             while not username:
-                username = raw_input('Username: ')
+                username = input('Username: ')
             while not password:
                 password = getpass.getpass('Password: ')
 
@@ -164,8 +164,7 @@ Your selection [default 1]: ''', logging.INFO)
             # send the info to the server and report the result
             code, result = self.post_to_server(self.build_post_data('submit'),
                 auth)
-            self.announce('Server response (%s): %s' % (code, result),
-                          logging.INFO)
+            logger.info('Server response (%s): %s', code, result)
 
             # possibly save the login
             if code == 200:
@@ -174,14 +173,13 @@ Your selection [default 1]: ''', logging.INFO)
                     # so the upload command can reuse it
                     self.distribution.password = password
                 else:
-                    self.announce(('I can store your PyPI login so future '
-                                   'submissions will be faster.'),
-                                   logging.INFO)
-                    self.announce('(the login will be stored in %s)' % \
-                                  get_pypirc_path(), logging.INFO)
+                    logger.info(
+                        'I can store your PyPI login so future submissions '
+                        'will be faster.\n(the login will be stored in %s)',
+                        get_pypirc_path())
                     choice = 'X'
                     while choice.lower() not in 'yn':
-                        choice = raw_input('Save your login (y/N)?')
+                        choice = input('Save your login (y/N)?')
                         if not choice:
                             choice = 'n'
                     if choice.lower() == 'y':
@@ -192,7 +190,7 @@ Your selection [default 1]: ''', logging.INFO)
             data['name'] = data['password'] = data['email'] = ''
             data['confirm'] = None
             while not data['name']:
-                data['name'] = raw_input('Username: ')
+                data['name'] = input('Username: ')
             while data['password'] != data['confirm']:
                 while not data['password']:
                     data['password'] = getpass.getpass('Password: ')
@@ -201,9 +199,9 @@ Your selection [default 1]: ''', logging.INFO)
                 if data['password'] != data['confirm']:
                     data['password'] = ''
                     data['confirm'] = None
-                    print "Password and confirm don't match!"
+                    print("Password and confirm don't match!")
             while not data['email']:
-                data['email'] = raw_input('   EMail: ')
+                data['email'] = input('   EMail: ')
             code, result = self.post_to_server(data)
             if code != 200:
                 logger.info('server response (%s): %s', code, result)
@@ -214,14 +212,14 @@ Your selection [default 1]: ''', logging.INFO)
             data = {':action': 'password_reset'}
             data['email'] = ''
             while not data['email']:
-                data['email'] = raw_input('Your email address: ')
+                data['email'] = input('Your email address: ')
             code, result = self.post_to_server(data)
             logger.info('server response (%s): %s', code, result)
 
     def build_post_data(self, action):
         # figure the data to send - the metadata plus some additional
         # information used by the package server
-        data = metadata_to_dict(self.distribution.metadata)
+        data = self.distribution.metadata.todict()
         data[':action'] = action
         return data
 
@@ -230,33 +228,13 @@ Your selection [default 1]: ''', logging.INFO)
         ''' Post a query to the server, and return a string response.
         '''
         if 'name' in data:
-            self.announce('Registering %s to %s' % (data['name'],
-                                                   self.repository),
-                                                   logging.INFO)
+            logger.info('Registering %s to %s', data['name'], self.repository)
         # Build up the MIME payload for the urllib2 POST data
-        boundary = '--------------GHSKFJDLGDS7543FJKLFHRE75642756743254'
-        sep_boundary = '\n--' + boundary
-        end_boundary = sep_boundary + '--'
-        body = StringIO.StringIO()
-        for key, value in data.iteritems():
-            # handle multiple entries for the same name
-            if not isinstance(value, (tuple, list)):
-                value = [value]
-
-            for value in value:
-                body.write(sep_boundary)
-                body.write('\nContent-Disposition: form-data; name="%s"'%key)
-                body.write("\n\n")
-                body.write(value)
-                if value and value[-1] == '\r':
-                    body.write('\n')  # write an extra newline (lurve Macs)
-        body.write(end_boundary)
-        body.write("\n")
-        body = body.getvalue()
+        content_type, body = encode_multipart(data.items(), [])
 
         # build the Request
         headers = {
-            'Content-type': 'multipart/form-data; boundary=%s; charset=utf-8'%boundary,
+            'Content-type': content_type,
             'Content-length': str(len(body))
         }
         req = urllib2.Request(self.repository, body, headers)
@@ -268,18 +246,19 @@ Your selection [default 1]: ''', logging.INFO)
         data = ''
         try:
             result = opener.open(req)
-        except urllib2.HTTPError, e:
+        except urllib2.HTTPError:
+            e = sys.exc_info()[1]
             if self.show_response:
                 data = e.fp.read()
             result = e.code, e.msg
-        except urllib2.URLError, e:
-            result = 500, str(e)
+        except urllib2.URLError:
+            result = 500, str(sys.exc_info()[1])
         else:
             if self.show_response:
                 data = result.read()
             result = 200, 'OK'
         if self.show_response:
             dashes = '-' * 75
-            self.announce('%s%s%s' % (dashes, data, dashes))
+            logger.info('%s%s%s', dashes, data, dashes)
 
         return result

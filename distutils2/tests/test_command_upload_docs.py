@@ -1,45 +1,26 @@
-# -*- encoding: utf-8 -*-
-"""Tests for distutils.command.upload_docs."""
+"""Tests for distutils2.command.upload_docs."""
 import os
 import sys
-import httplib
 import shutil
 import zipfile
 try:
-    from cStringIO import StringIO
+    import _ssl
 except ImportError:
-    from StringIO import StringIO
+    _ssl = None
 
 from distutils2.command import upload_docs as upload_docs_mod
-from distutils2.command.upload_docs import (upload_docs, zip_dir,
-                                            encode_multipart)
+from distutils2.command.upload_docs import upload_docs, zip_dir
 from distutils2.dist import Distribution
-from distutils2.errors import DistutilsFileError, DistutilsOptionError
+from distutils2.errors import PackagingFileError, PackagingOptionError
 
 from distutils2.tests import unittest, support
-from distutils2.tests.pypi_server import PyPIServer, PyPIServerTestCase
+try:
+    import threading
+    from distutils2.tests.pypi_server import PyPIServerTestCase
+except ImportError:
+    threading = None
+    PyPIServerTestCase = object
 
-
-EXPECTED_MULTIPART_OUTPUT = "\r\n".join([
-'---x',
-'Content-Disposition: form-data; name="a"',
-'',
-'b',
-'---x',
-'Content-Disposition: form-data; name="c"',
-'',
-'d',
-'---x',
-'Content-Disposition: form-data; name="e"; filename="f"',
-'',
-'g',
-'---x',
-'Content-Disposition: form-data; name="h"; filename="i"',
-'',
-'j',
-'---x--',
-'',
-])
 
 PYPIRC = """\
 [distutils]
@@ -51,8 +32,14 @@ username = real_slim_shady
 password = long_island
 """
 
-class UploadDocsTestCase(support.TempdirManager, support.EnvironGuard,
-                         support.LoggingCatcher, PyPIServerTestCase):
+
+@unittest.skipIf(threading is None, "Needs threading")
+class UploadDocsTestCase(support.TempdirManager,
+                         support.EnvironRestorer,
+                         support.LoggingCatcher,
+                         PyPIServerTestCase):
+
+    restore_environ = ['HOME']
 
     def setUp(self):
         super(UploadDocsTestCase, self).setUp()
@@ -103,13 +90,6 @@ class UploadDocsTestCase(support.TempdirManager, support.EnvironGuard,
         zip_f = zipfile.ZipFile(compressed)
         self.assertEqual(zip_f.namelist(), ['index.html', 'docs/index.html'])
 
-    def test_encode_multipart(self):
-        fields = [("a", "b"), ("c", "d")]
-        files = [("e", "f", "g"), ("h", "i", "j")]
-        content_type, body = encode_multipart(fields, files, "-x")
-        self.assertEqual(content_type, "multipart/form-data; boundary=-x")
-        self.assertEqual(body, EXPECTED_MULTIPART_OUTPUT)
-
     def prepare_command(self):
         self.cmd.upload_dir = self.prepare_sample_dir()
         self.cmd.ensure_finalized()
@@ -123,61 +103,60 @@ class UploadDocsTestCase(support.TempdirManager, support.EnvironGuard,
 
         self.assertEqual(len(self.pypi.requests), 1)
         handler, request_data = self.pypi.requests[-1]
-        self.assertIn("content", request_data)
-        self.assertIn("Basic", handler.headers.dict['authorization'])
-        self.assertTrue(handler.headers.dict['content-type']
+        self.assertIn(b"content", request_data)
+        self.assertIn("Basic", handler.headers['authorization'])
+        self.assertTrue(handler.headers['content-type']
             .startswith('multipart/form-data;'))
 
         action, name, version, content =\
-            request_data.split("----------------GHSKFJDLGDS7543FJKLFHRE75642756743254")[1:5]
+            request_data.split("----------------GHSKFJDLGDS7543FJKLFHRE75642756743254".encode())[1:5]
+
 
         # check that we picked the right chunks
-        self.assertIn('name=":action"', action)
-        self.assertIn('name="name"', name)
-        self.assertIn('name="version"', version)
-        self.assertIn('name="content"', content)
+        self.assertIn(b'name=":action"', action)
+        self.assertIn(b'name="name"', name)
+        self.assertIn(b'name="version"', version)
+        self.assertIn(b'name="content"', content)
 
         # check their contents
-        self.assertIn("doc_upload", action)
-        self.assertIn("distr-name", name)
-        self.assertIn("docs/index.html", content)
-        self.assertIn("Ce mortel ennui", content)
+        self.assertIn(b'doc_upload', action)
+        self.assertIn(b'distr-name', name)
+        self.assertIn(b'docs/index.html', content)
+        self.assertIn(b'Ce mortel ennui', content)
 
+    @unittest.skipIf(_ssl is None, 'Needs SSL support')
     def test_https_connection(self):
-        https_called = False
+        self.https_called = False
+
         orig_https = upload_docs_mod.httplib.HTTPSConnection
+
         def https_conn_wrapper(*args):
-            https_called = True
-            return upload_docs_mod.httplib.HTTPConnection(*args) # the testing server is http
+            self.https_called = True
+            # the testing server is http
+            return upload_docs_mod.httplib.HTTPConnection(*args)
+
         upload_docs_mod.httplib.HTTPSConnection = https_conn_wrapper
         try:
             self.prepare_command()
             self.cmd.run()
-            self.assertFalse(https_called)
+            self.assertFalse(self.https_called)
 
             self.cmd.repository = self.cmd.repository.replace("http", "https")
             self.cmd.run()
-            self.assertFalse(https_called)
+            self.assertTrue(self.https_called)
         finally:
             upload_docs_mod.httplib.HTTPSConnection = orig_https
 
     def test_handling_response(self):
-        calls = []
-        def aggr(*args):
-            calls.append(args)
         self.pypi.default_response_status = '403 Forbidden'
         self.prepare_command()
-        self.cmd.announce = aggr
         self.cmd.run()
-        message, _ = calls[-1]
-        self.assertIn('Upload failed (403): Forbidden', message)
+        self.assertIn('Upload failed (403): Forbidden', self.get_logs()[-1])
 
-        calls = []
         self.pypi.default_response_status = '301 Moved Permanently'
         self.pypi.default_response_headers.append(("Location", "brand_new_location"))
         self.cmd.run()
-        message = calls[-1][0]
-        self.assertIn('brand_new_location', message)
+        self.assertIn('brand_new_location', self.get_logs()[-1])
 
     def test_reads_pypirc_data(self):
         self.write_file(self.rc, PYPIRC % self.pypi.full_address)
@@ -190,19 +169,18 @@ class UploadDocsTestCase(support.TempdirManager, support.EnvironGuard,
     def test_checks_index_html_presence(self):
         self.cmd.upload_dir = self.prepare_sample_dir()
         os.remove(os.path.join(self.cmd.upload_dir, "index.html"))
-        self.assertRaises(DistutilsFileError, self.cmd.ensure_finalized)
+        self.assertRaises(PackagingFileError, self.cmd.ensure_finalized)
 
     def test_checks_upload_dir(self):
         self.cmd.upload_dir = self.prepare_sample_dir()
         shutil.rmtree(os.path.join(self.cmd.upload_dir))
-        self.assertRaises(DistutilsOptionError, self.cmd.ensure_finalized)
+        self.assertRaises(PackagingOptionError, self.cmd.ensure_finalized)
 
     def test_show_response(self):
         self.prepare_command()
         self.cmd.show_response = True
         self.cmd.run()
-        record = self.logs[-1][1]
-
+        record = self.get_logs()[-1]
         self.assertTrue(record, "should report the response")
         self.assertIn(self.pypi.default_response_data, record)
 

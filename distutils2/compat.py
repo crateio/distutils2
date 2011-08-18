@@ -1,10 +1,10 @@
-""" distutils2.compat
+"""Compatibility helpers.
 
-Used to provide classes, variables and imports which can be used to
-support distutils2 across versions(2.x and 3.x)
+This module provides classes, variables and imports which are used to
+support distutils2 across Python 2.x and 3.x.
 """
 
-import logging
+from distutils2 import logger
 
 
 # XXX Having two classes with the same name is not a good thing.
@@ -20,7 +20,6 @@ except ImportError:
     _CONVERT = False
     _KLASS = object
 
-# marking public APIs
 __all__ = ['Mixin2to3']
 
 
@@ -31,6 +30,7 @@ class Mixin2to3(_KLASS):
     yet does nothing in particular with it.
     """
     if _CONVERT:
+
         def _run_2to3(self, files, doctests=[], fixers=[]):
             """ Takes a list of files and doctests, and performs conversion
             on those.
@@ -38,22 +38,20 @@ class Mixin2to3(_KLASS):
               - Second, the doctests in `files` are converted.
               - Thirdly, the doctests in `doctests` are converted.
             """
-            # if additional fixers are present, use them
             if fixers:
                 self.fixer_names = fixers
 
-            # Convert the ".py" files.
-            logging.info("Converting Python code")
+            logger.info('converting Python code')
             _KLASS.run_2to3(self, files)
 
-            # Convert the doctests in the ".py" files.
-            logging.info("Converting doctests with '.py' files")
+            logger.info('converting doctests in Python files')
             _KLASS.run_2to3(self, files, doctests_only=True)
 
             if doctests != []:
-                logging.info("Converting text files which contain doctests")
+                logger.info('converting doctest in text files')
                 _KLASS.run_2to3(self, doctests, doctests_only=True)
     else:
         # If run on Python 2.x, there is nothing to do.
+
         def _run_2to3(self, files, doctests=[], fixers=[]):
             pass

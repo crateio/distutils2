@@ -1,4 +1,4 @@
-"""Tests for distutils.extension."""
+"""Tests for distutils2.extension."""
 import os
 
 from distutils2.compiler.extension import Extension

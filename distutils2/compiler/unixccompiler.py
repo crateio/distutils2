@@ -1,7 +1,7 @@
-"""distutils.unixccompiler
+"""CCompiler implementation for Unix compilers.
 
-Contains the UnixCCompiler class, a subclass of CCompiler that handles
-the "typical" Unix-style command-line C compiler:
+This module contains the UnixCCompiler class, a subclass of CCompiler
+that handles the "typical" Unix-style command-line C compiler:
   * macros defined with -Dname[=value]
   * macros undefined with -Uname
   * include search directories specified with -Idir
@@ -13,16 +13,15 @@ the "typical" Unix-style command-line C compiler:
   * link shared library handled by 'cc -shared'
 """
 
-
 import os, sys
 
 from distutils2.util import newer
 from distutils2.compiler.ccompiler import CCompiler
 from distutils2.compiler import gen_preprocess_options, gen_lib_options
-from distutils2.errors import (DistutilsExecError, CompileError,
+from distutils2.errors import (PackagingExecError, CompileError,
                                LibError, LinkError)
 from distutils2 import logger
-from distutils2._backport import sysconfig
+import sysconfig
 
 
 # XXX Things not currently handled:
@@ -34,7 +33,7 @@ from distutils2._backport import sysconfig
 #     we need some way for outsiders to feed preprocessor/compiler/linker
 #     flags in to us -- eg. a sysadmin might want to mandate certain flags
 #     via a site config file, or a user might want to set something for
-#     compiling this module distribution only via the setup.py command
+#     compiling this module distribution only via the pysetup command
 #     line, whatever.  As long as these options come from something on the
 #     current system, they can be as system-dependent as they like, and we
 #     should just happily stuff them into the preprocessor/compiler/linker
@@ -49,7 +48,7 @@ def _darwin_compiler_fixup(compiler_so, cc_args):
     build, without a way to remove an architecture. Furthermore GCC will
     barf if multiple '-isysroot' arguments are present.
     """
-    stripArch = stripSysroot = 0
+    stripArch = stripSysroot = False
 
     compiler_so = list(compiler_so)
     kernel_version = os.uname()[2] # 8.4.3
@@ -64,7 +63,7 @@ def _darwin_compiler_fixup(compiler_so, cc_args):
         stripSysroot = '-isysroot' in cc_args
 
     if stripArch or 'ARCHFLAGS' in os.environ:
-        while 1:
+        while True:
             try:
                 index = compiler_so.index('-arch')
                 # Strip this argument and the next one:
@@ -150,7 +149,7 @@ class UnixCCompiler(CCompiler):
         pp_opts = gen_preprocess_options(macros, include_dirs)
         pp_args = self.preprocessor + pp_opts
         if output_file:
-            pp_args.extend(['-o', output_file])
+            pp_args.extend(('-o', output_file))
         if extra_preargs:
             pp_args[:0] = extra_preargs
         if extra_postargs:
@@ -166,8 +165,8 @@ class UnixCCompiler(CCompiler):
                 self.mkpath(os.path.dirname(output_file))
             try:
                 self.spawn(pp_args)
-            except DistutilsExecError, msg:
-                raise CompileError, msg
+            except PackagingExecError:
+                raise CompileError(sys.exc_info()[1])
 
     def _compile(self, obj, src, ext, cc_args, extra_postargs, pp_opts):
         compiler_so = self.compiler_so
@@ -176,11 +175,11 @@ class UnixCCompiler(CCompiler):
         try:
             self.spawn(compiler_so + cc_args + [src, '-o', obj] +
                        extra_postargs)
-        except DistutilsExecError, msg:
-            raise CompileError, msg
+        except PackagingExecError:
+            raise CompileError(sys.exc_info()[1])
 
     def create_static_lib(self, objects, output_libname,
-                          output_dir=None, debug=0, target_lang=None):
+                          output_dir=None, debug=False, target_lang=None):
         objects, output_dir = self._fix_object_args(objects, output_dir)
 
         output_filename = \
@@ -200,15 +199,15 @@ class UnixCCompiler(CCompiler):
             if self.ranlib:
                 try:
                     self.spawn(self.ranlib + [output_filename])
-                except DistutilsExecError, msg:
-                    raise LibError, msg
+                except PackagingExecError:
+                    raise LibError(sys.exc_info()[1])
         else:
             logger.debug("skipping %s (up-to-date)", output_filename)
 
     def link(self, target_desc, objects,
              output_filename, output_dir=None, libraries=None,
              library_dirs=None, runtime_library_dirs=None,
-             export_symbols=None, debug=0, extra_preargs=None,
+             export_symbols=None, debug=False, extra_preargs=None,
              extra_postargs=None, build_temp=None, target_lang=None):
         objects, output_dir = self._fix_object_args(objects, output_dir)
         libraries, library_dirs, runtime_library_dirs = \
@@ -216,8 +215,8 @@ class UnixCCompiler(CCompiler):
 
         lib_opts = gen_lib_options(self, library_dirs, runtime_library_dirs,
                                    libraries)
-        if not isinstance(output_dir, (str, type(None))):
-            raise TypeError, "'output_dir' must be a string or None"
+        if type(output_dir) not in (str, type(None)):
+            raise TypeError("'output_dir' must be a string or None")
         if output_dir is not None:
             output_filename = os.path.join(output_dir, output_filename)
 
@@ -254,8 +253,8 @@ class UnixCCompiler(CCompiler):
                     linker = _darwin_compiler_fixup(linker, ld_args)
 
                 self.spawn(linker + ld_args)
-            except DistutilsExecError, msg:
-                raise LinkError, msg
+            except PackagingExecError:
+                raise LinkError(sys.exc_info()[1])
         else:
             logger.debug("skipping %s (up-to-date)", output_filename)
 
@@ -316,7 +315,7 @@ class UnixCCompiler(CCompiler):
     def library_option(self, lib):
         return "-l" + lib
 
-    def find_library_file(self, dirs, lib, debug=0):
+    def find_library_file(self, dirs, lib, debug=False):
         shared_f = self.library_filename(lib, lib_type='shared')
         dylib_f = self.library_filename(lib, lib_type='dylib')
         static_f = self.library_filename(lib, lib_type='static')

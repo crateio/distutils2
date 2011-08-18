@@ -1,18 +1,13 @@
-"""Tests for distutils.cygwinccompiler."""
-import sys
+"""Tests for distutils2.cygwinccompiler."""
 import os
-
-from distutils2._backport import sysconfig
-
-from distutils2.tests import run_unittest
-from distutils2.tests import captured_stdout
-
-from distutils2.compiler import cygwinccompiler
+import sys
+import sysconfig
 from distutils2.compiler.cygwinccompiler import (
-    CygwinCCompiler, check_config_h, get_msvcr,
+    check_config_h, get_msvcr,
     CONFIG_H_OK, CONFIG_H_NOTOK, CONFIG_H_UNCERTAIN)
-from distutils2.util import get_compiler_versions
+
 from distutils2.tests import unittest, support
+
 
 class CygwinCCompilerTestCase(support.TempdirManager,
                               unittest.TestCase):
@@ -33,7 +28,6 @@ class CygwinCCompilerTestCase(support.TempdirManager,
         return self.python_h
 
     def test_check_config_h(self):
-
         # check_config_h looks for "GCC" in sys.version first
         # returns CONFIG_H_OK if found
         sys.version = ('2.6.1 (r261:67515, Dec  6 2008, 16:42:21) \n[GCC '
@@ -56,10 +50,9 @@ class CygwinCCompilerTestCase(support.TempdirManager,
         self.assertEqual(check_config_h()[0], CONFIG_H_OK)
 
     def test_get_msvcr(self):
-
         # none
-        sys.version  = ('2.6.1 (r261:67515, Dec  6 2008, 16:42:21) '
-                        '\n[GCC 4.0.1 (Apple Computer, Inc. build 5370)]')
+        sys.version = ('2.6.1 (r261:67515, Dec  6 2008, 16:42:21) '
+                       '\n[GCC 4.0.1 (Apple Computer, Inc. build 5370)]')
         self.assertEqual(get_msvcr(), None)
 
         # MSVC 7.0
@@ -92,4 +85,4 @@ def test_suite():
     return unittest.makeSuite(CygwinCCompilerTestCase)
 
 if __name__ == '__main__':
-    run_unittest(test_suite())
+    unittest.main(defaultTest='test_suite')

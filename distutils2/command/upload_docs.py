@@ -1,64 +1,37 @@
-import os
+"""Upload HTML documentation to a project index."""
+
+import os, sys
 import base64
-import httplib
 import socket
-import urlparse
 import zipfile
 import logging
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+import httplib
+import urlparse
+from io import BytesIO
 
 from distutils2 import logger
-from distutils2.command.upload import upload
+from distutils2.util import (read_pypirc, DEFAULT_REPOSITORY, DEFAULT_REALM,
+                            encode_multipart)
+from distutils2.errors import PackagingFileError
 from distutils2.command.cmd import Command
-from distutils2.errors import DistutilsFileError
-from distutils2.util import read_pypirc, DEFAULT_REPOSITORY, DEFAULT_REALM
+
 
 def zip_dir(directory):
-    """Compresses recursively contents of directory into a StringIO object"""
-    destination = StringIO()
-    zip_file = zipfile.ZipFile(destination, "w")
-    for root, dirs, files in os.walk(directory):
-        for name in files:
-            full = os.path.join(root, name)
-            relative = root[len(directory):].lstrip(os.path.sep)
-            dest = os.path.join(relative, name)
-            zip_file.write(full, dest)
-    zip_file.close()
+    """Compresses recursively contents of directory into a BytesIO object"""
+    destination = BytesIO()
+    with zipfile.ZipFile(destination, "w") as zip_file:
+        for root, dirs, files in os.walk(directory):
+            for name in files:
+                full = os.path.join(root, name)
+                relative = root[len(directory):].lstrip(os.path.sep)
+                dest = os.path.join(relative, name)
+                zip_file.write(full, dest)
     return destination
 
-# grabbed from
-#    http://code.activestate.com/recipes/146306-http-client-to-post-using-multipartform-data/
-def encode_multipart(fields, files, boundary=None):
-    """
-    fields is a sequence of (name, value) elements for regular form fields.
-    files is a sequence of (name, filename, value) elements for data to be uploaded as files
-    Return (content_type, body) ready for httplib.HTTP instance
-    """
-    if boundary is None:
-        boundary = '--------------GHSKFJDLGDS7543FJKLFHRE75642756743254'
-    l = []
-    for (key, value) in fields:
-        l.extend([
-            '--' + boundary,
-            'Content-Disposition: form-data; name="%s"' % key,
-            '',
-            value])
-    for (key, filename, value) in files:
-        l.extend([
-            '--' + boundary,
-            'Content-Disposition: form-data; name="%s"; filename="%s"' % (key, filename),
-            '',
-            value])
-    l.append('--' + boundary + '--')
-    l.append('')
-    body =  '\r\n'.join(l)
-    content_type = 'multipart/form-data; boundary=%s' % boundary
-    return content_type, body
 
 class upload_docs(Command):
+
+    description = "upload HTML documentation to PyPI"
 
     user_options = [
         ('repository=', 'r',
@@ -72,7 +45,7 @@ class upload_docs(Command):
     def initialize_options(self):
         self.repository = None
         self.realm = None
-        self.show_response = 0
+        self.show_response = False
         self.upload_dir = None
         self.username = ''
         self.password = ''
@@ -87,7 +60,7 @@ class upload_docs(Command):
             self.upload_dir = os.path.join(build.build_base, "docs")
             if not os.path.isdir(self.upload_dir):
                 self.upload_dir = os.path.join(build.build_base, "doc")
-        self.announce('Using upload directory %s' % self.upload_dir)
+        logger.info('Using upload directory %s', self.upload_dir)
         self.verify_upload_dir(self.upload_dir)
         config = read_pypirc(self.repository, self.realm)
         if config != {}:
@@ -101,30 +74,31 @@ class upload_docs(Command):
         index_location = os.path.join(upload_dir, "index.html")
         if not os.path.exists(index_location):
             mesg = "No 'index.html found in docs directory (%s)"
-            raise DistutilsFileError(mesg % upload_dir)
+            raise PackagingFileError(mesg % upload_dir)
 
     def run(self):
         name = self.distribution.metadata['Name']
         version = self.distribution.metadata['Version']
         zip_file = zip_dir(self.upload_dir)
 
-        fields = [(':action', 'doc_upload'), ('name', name), ('version', version)]
+        fields = [(':action', 'doc_upload'),
+                  ('name', name), ('version', version)]
         files = [('content', name, zip_file.getvalue())]
         content_type, body = encode_multipart(fields, files)
 
         credentials = self.username + ':' + self.password
-        auth = "Basic " + base64.encodestring(credentials).strip()
+        auth = b"Basic " + base64.encodebytes(credentials.encode()).strip()
 
-        self.announce("Submitting documentation to %s" % (self.repository))
+        logger.info("Submitting documentation to %s", self.repository)
 
-        schema, netloc, url, params, query, fragments = \
-            urlparse.urlparse(self.repository)
-        if schema == "http":
+        scheme, netloc, url, params, query, fragments = urlparse.urlparse(
+            self.repository)
+        if scheme == "http":
             conn = httplib.HTTPConnection(netloc)
-        elif schema == "https":
+        elif scheme == "https":
             conn = httplib.HTTPSConnection(netloc)
         else:
-            raise AssertionError("unsupported schema "+schema)
+            raise AssertionError("unsupported scheme %r" % scheme)
 
         try:
             conn.connect()
@@ -134,23 +108,23 @@ class upload_docs(Command):
             conn.putheader('Authorization', auth)
             conn.endheaders()
             conn.send(body)
-        except socket.error, e:
-            self.announce(str(e), logging.ERROR)
+
+        except socket.error:
+            logger.error(sys.exc_info()[1])
             return
 
         r = conn.getresponse()
 
         if r.status == 200:
-            self.announce('Server response (%s): %s' % (r.status, r.reason))
+            logger.info('Server response (%s): %s', r.status, r.reason)
         elif r.status == 301:
             location = r.getheader('Location')
             if location is None:
                 location = 'http://packages.python.org/%s/' % name
-            self.announce('Upload successful. Visit %s' % location)
+            logger.info('Upload successful. Visit %s', location)
         else:
-            self.announce('Upload failed (%s): %s' % (r.status, r.reason),
-                          logging.ERROR)
+            logger.error('Upload failed (%s): %s', r.status, r.reason)
 
-        if self.show_response:
-            msg = '\n'.join(('-' * 75, r.read(), '-' * 75))
-            self.announce(msg)
+        if self.show_response and logger.isEnabledFor(logging.INFO):
+            sep = '-' * 75
+            logger.info('%s\n%s\n%s', sep, r.read().decode('utf-8'), sep)

@@ -1,17 +1,11 @@
-"""distutils.dist
-
-Provides the Distribution class, which represents the module distribution
-being built/installed/distributed.
-"""
-
+"""Class representing the distribution being built/installed/etc."""
 
 import os
 import re
-import warnings
-import logging
+import sys
 
-from distutils2.errors import (DistutilsOptionError, DistutilsArgError,
-                               DistutilsModuleError, DistutilsClassError)
+from distutils2.errors import (PackagingOptionError, PackagingArgError,
+                              PackagingModuleError, PackagingClassError)
 from distutils2.fancy_getopt import FancyGetopt
 from distutils2.util import strtobool, resolve_name
 from distutils2 import logger
@@ -19,7 +13,7 @@ from distutils2.metadata import Metadata
 from distutils2.config import Config
 from distutils2.command import get_command_class, STANDARD_COMMANDS
 
-# Regex to define acceptable Distutils command names.  This is not *quite*
+# Regex to define acceptable Packaging command names.  This is not *quite*
 # the same as a Python NAME -- I don't allow leading underscores.  The fact
 # that they're very similar is no coincidence; the default naming scheme is
 # to look for a Python module named after the command.
@@ -32,14 +26,16 @@ usage: %(script)s [global_opts] cmd1 [cmd1_opts] [cmd2 [cmd2_opts] ...]
    or: %(script)s cmd --help
 """
 
+
 def gen_usage(script_name):
     script = os.path.basename(script_name)
     return USAGE % {'script': script}
 
+
 class Distribution(object):
-    """The core of the Distutils.  Most of the work hiding behind 'setup'
+    """The core of the Packaging.  Most of the work hiding behind 'setup'
     is really done within a Distribution instance, which farms the work out
-    to the Distutils commands specified on the command line.
+    to the Packaging commands specified on the command line.
 
     Setup scripts will almost never instantiate Distribution directly,
     unless the 'setup()' function is totally inadequate to their needs.
@@ -52,33 +48,31 @@ class Distribution(object):
 
     # 'global_options' describes the command-line options that may be
     # supplied to the setup script prior to any actual commands.
-    # Eg. "./setup.py -n" or "./setup.py --quiet" both take advantage of
+    # Eg. "pysetup -n" or "pysetup --dry-run" both take advantage of
     # these global options.  This list should be kept to a bare minimum,
     # since every global option is also valid as a command option -- and we
     # don't want to pollute the commands with too many options that they
     # have minimal control over.
-    # The fourth entry for verbose means that it can be repeated.
-    global_options = [('verbose', 'v', "run verbosely (default)", 1),
-                      ('quiet', 'q', "run quietly (turns verbosity off)"),
-                      ('dry-run', 'n', "don't actually do anything"),
-                      ('help', 'h', "show detailed help message"),
-                      ('no-user-cfg', None,
-                       'ignore pydistutils.cfg in your home directory'),
+    global_options = [
+        ('dry-run', 'n', "don't actually do anything"),
+        ('help', 'h', "show detailed help message"),
+        ('no-user-cfg', None, 'ignore pydistutils.cfg in your home directory'),
     ]
 
     # 'common_usage' is a short (2-3 line) string describing the common
     # usage of the setup script.
-    common_usage = """\
+    common_usage = u"""\
 Common commands: (see '--help-commands' for more)
 
-  setup.py build      will build the package underneath 'build/'
-  setup.py install    will install the package
+  pysetup run build      will build the package underneath 'build/'
+  pysetup run install    will install the package
 """
 
     # options that are not propagated to the commands
     display_options = [
         ('help-commands', None,
          "list all available commands"),
+        # XXX this is obsoleted by the pysetup metadata action
         ('name', None,
          "print package name"),
         ('version', 'V',
@@ -127,7 +121,7 @@ Common commands: (see '--help-commands' for more)
     display_option_names = [x[0].replace('-', '_') for x in display_options]
 
     # negative options are options that exclude other options
-    negative_opt = {'quiet': 'verbose'}
+    negative_opt = {}
 
     # -- Creation/initialization methods -------------------------------
     def __init__(self, attrs=None):
@@ -142,11 +136,10 @@ Common commands: (see '--help-commands' for more)
         """
 
         # Default values for our command-line options
-        self.verbose = 1
-        self.dry_run = 0
-        self.help = 0
+        self.dry_run = False
+        self.help = False
         for attr in self.display_option_names:
-            setattr(self, attr, 0)
+            setattr(self, attr, False)
 
         # Store the configuration
         self.config = Config(self)
@@ -237,21 +230,21 @@ Common commands: (see '--help-commands' for more)
             options = attrs.get('options')
             if options is not None:
                 del attrs['options']
-                for (command, cmd_options) in options.iteritems():
+                for command, cmd_options in options.items():
                     opt_dict = self.get_option_dict(command)
-                    for (opt, val) in cmd_options.iteritems():
+                    for opt, val in cmd_options.items():
                         opt_dict[opt] = ("setup script", val)
 
             # Now work on the rest of the attributes.  Any attribute that's
             # not already defined is invalid!
-            for key, val in attrs.iteritems():
+            for key, val in attrs.items():
                 if self.metadata.is_metadata_field(key):
                     self.metadata[key] = val
                 elif hasattr(self, key):
                     setattr(self, key, val)
                 else:
-                    msg = "Unknown distribution option: %r" % key
-                    warnings.warn(msg)
+                    logger.warning(
+                        'unknown argument given to Distribution: %r', key)
 
         # no-user-cfg is handled before other command line args
         # because other args override the config files, and this
@@ -292,24 +285,23 @@ Common commands: (see '--help-commands' for more)
             commands = sorted(self.command_options)
 
         if header is not None:
-            self.announce(indent + header)
+            logger.info(indent + header)
             indent = indent + "  "
 
         if not commands:
-            self.announce(indent + "no commands known yet")
+            logger.info(indent + "no commands known yet")
             return
 
         for cmd_name in commands:
             opt_dict = self.command_options.get(cmd_name)
             if opt_dict is None:
-                self.announce(indent +
-                              "no option dict for %r command" % cmd_name)
+                logger.info(indent + "no option dict for %r command",
+                            cmd_name)
             else:
-                self.announce(indent +
-                              "option dict for %r command:" % cmd_name)
+                logger.info(indent + "option dict for %r command:", cmd_name)
                 out = pformat(opt_dict)
                 for line in out.split('\n'):
-                    self.announce(indent + "  " + line)
+                    logger.info(indent + "  " + line)
 
     # -- Config file finding/parsing methods ---------------------------
     # XXX to be removed
@@ -326,15 +318,15 @@ Common commands: (see '--help-commands' for more)
         'script_args' instance attribute (which defaults to 'sys.argv[1:]'
         -- see 'setup()' in run.py).  This list is first processed for
         "global options" -- options that set attributes of the Distribution
-        instance.  Then, it is alternately scanned for Distutils commands
+        instance.  Then, it is alternately scanned for Packaging commands
         and options for that command.  Each new command terminates the
         options for the previous command.  The allowed options for a
         command are determined by the 'user_options' attribute of the
         command class -- thus, we have to be able to load command classes
         in order to parse the command line.  Any error in that 'options'
-        attribute raises DistutilsGetoptError; any error on the
-        command line raises DistutilsArgError.  If no Distutils commands
-        were found on the command line, raises DistutilsArgError.  Return
+        attribute raises PackagingGetoptError; any error on the
+        command line raises PackagingArgError.  If no Packaging commands
+        were found on the command line, raises PackagingArgError.  Return
         true if command line was successfully parsed and we should carry
         on with executing commands; false if no errors but we shouldn't
         execute commands (currently, this only happens if user asks for
@@ -360,14 +352,6 @@ Common commands: (see '--help-commands' for more)
         args = parser.getopt(args=self.script_args, object=self)
         option_order = parser.get_option_order()
 
-        handler = logging.StreamHandler()
-        logger.addHandler(handler)
-
-        if self.verbose:
-            handler.setLevel(logging.DEBUG)
-        else:
-            handler.setLevel(logging.INFO)
-
         # for display options we return immediately
         if self.handle_display_options(option_order):
             return
@@ -378,8 +362,8 @@ Common commands: (see '--help-commands' for more)
                 return
 
         # Handle the cases of --help as a "global" option, ie.
-        # "setup.py --help" and "setup.py --help command ...".  For the
-        # former, we show global options (--verbose, --dry-run, etc.)
+        # "pysetup run --help" and "pysetup run --help command ...".  For the
+        # former, we show global options (--dry-run, etc.)
         # and display-only options (--name, --version, etc.); for the
         # latter, we omit the display-only options and show help for
         # each command listed on the command line.
@@ -419,24 +403,24 @@ Common commands: (see '--help-commands' for more)
         # it takes.
         try:
             cmd_class = get_command_class(command)
-        except DistutilsModuleError, msg:
-            raise DistutilsArgError(msg)
+        except PackagingModuleError:
+            raise PackagingArgError(sys.exc_info()[1])
 
-        # XXX We want to push this in distutils.command
+        # XXX We want to push this in distutils2.command
         #
         # Require that the command class be derived from Command -- want
         # to be sure that the basic "command" interface is implemented.
         for meth in ('initialize_options', 'finalize_options', 'run'):
             if hasattr(cmd_class, meth):
                 continue
-            raise DistutilsClassError(
+            raise PackagingClassError(
                 'command %r must implement %r' % (cmd_class, meth))
 
         # Also make sure that the command object provides a list of its
         # known options.
         if not (hasattr(cmd_class, 'user_options') and
                 isinstance(cmd_class.user_options, list)):
-            raise DistutilsClassError(
+            raise PackagingClassError(
                 "command class %s must provide "
                 "'user_options' attribute (a list of tuples)" % cmd_class)
 
@@ -451,7 +435,7 @@ Common commands: (see '--help-commands' for more)
         # format (tuple of four) so we need to preprocess them here.
         if (hasattr(cmd_class, 'help_options') and
             isinstance(cmd_class.help_options, list)):
-            help_options = fix_help_options(cmd_class.help_options)
+            help_options = cmd_class.help_options[:]
         else:
             help_options = []
 
@@ -461,21 +445,22 @@ Common commands: (see '--help-commands' for more)
                                 cmd_class.user_options +
                                 help_options)
         parser.set_negative_aliases(negative_opt)
-        (args, opts) = parser.getopt(args[1:])
+        args, opts = parser.getopt(args[1:])
         if hasattr(opts, 'help') and opts.help:
-            self._show_help(parser, display_options=0, commands=[cmd_class])
+            self._show_help(parser, display_options=False,
+                            commands=[cmd_class])
             return
 
         if (hasattr(cmd_class, 'help_options') and
             isinstance(cmd_class.help_options, list)):
-            help_option_found = 0
-            for (help_option, short, desc, func) in cmd_class.help_options:
+            help_option_found = False
+            for help_option, short, desc, func in cmd_class.help_options:
                 if hasattr(opts, help_option.replace('-', '_')):
-                    help_option_found = 1
+                    help_option_found = True
                     if hasattr(func, '__call__'):
                         func()
                     else:
-                        raise DistutilsClassError(
+                        raise PackagingClassError(
                             "invalid help function %r for help option %r: "
                             "must be a callable object (function, etc.)"
                             % (func, help_option))
@@ -486,7 +471,7 @@ Common commands: (see '--help-commands' for more)
         # Put the options from the command line into their official
         # holding pen, the 'command_options' dictionary.
         opt_dict = self.get_option_dict(command)
-        for (name, value) in vars(opts).iteritems():
+        for name, value in vars(opts).items():
             opt_dict[name] = ("command line", value)
 
         return args
@@ -502,7 +487,7 @@ Common commands: (see '--help-commands' for more)
         else:
             self.convert_2to3_doctests = []
 
-    def _show_help(self, parser, global_options=1, display_options=1,
+    def _show_help(self, parser, global_options=True, display_options=True,
                    commands=[]):
         """Show help for the setup script command line in the form of
         several lists of command-line options.  'parser' should be a
@@ -511,7 +496,7 @@ Common commands: (see '--help-commands' for more)
         generate the correct help text.
 
         If 'global_options' is true, lists the global options:
-        --verbose, --dry-run, etc.  If 'display_options' is true, lists
+        --dry-run, etc.  If 'display_options' is true, lists
         the "display-only" options: --name, --version, etc.  Finally,
         lists per-command help for every command name or command class
         in 'commands'.
@@ -526,14 +511,14 @@ Common commands: (see '--help-commands' for more)
                 options = self.global_options
             parser.set_option_table(options)
             parser.print_help(self.common_usage + "\nGlobal options:")
-            print('')
+            print(u'')
 
         if display_options:
             parser.set_option_table(self.display_options)
             parser.print_help(
                 "Information display options (just display " +
                 "information, ignore any commands)")
-            print('')
+            print(u'')
 
         for command in self.commands:
             if isinstance(command, type) and issubclass(command, Command):
@@ -542,12 +527,11 @@ Common commands: (see '--help-commands' for more)
                 cls = get_command_class(command)
             if (hasattr(cls, 'help_options') and
                 isinstance(cls.help_options, list)):
-                parser.set_option_table(cls.user_options +
-                                        fix_help_options(cls.help_options))
+                parser.set_option_table(cls.user_options + cls.help_options)
             else:
                 parser.set_option_table(cls.user_options)
             parser.print_help("Options for %r command:" % cls.__name__)
-            print('')
+            print(u'')
 
         print(gen_usage(self.script_name))
 
@@ -562,30 +546,30 @@ Common commands: (see '--help-commands' for more)
         # we ignore "foo bar").
         if self.help_commands:
             self.print_commands()
-            print('')
+            print()
             print(gen_usage(self.script_name))
             return 1
 
         # If user supplied any of the "display metadata" options, then
         # display that metadata in the order in which the user supplied the
         # metadata options.
-        any_display_options = 0
-        is_display_option = {}
+        any_display_options = False
+        is_display_option = set()
         for option in self.display_options:
-            is_display_option[option[0]] = 1
+            is_display_option.add(option[0])
 
         for opt, val in option_order:
-            if val and is_display_option.get(opt):
+            if val and opt in is_display_option:
                 opt = opt.replace('-', '_')
                 value = self.metadata[opt]
-                if opt in ['keywords', 'platform']:
+                if opt in ('keywords', 'platform'):
                     print(','.join(value))
                 elif opt in ('classifier', 'provides', 'requires',
                              'obsoletes'):
                     print('\n'.join(value))
                 else:
                     print(value)
-                any_display_options = 1
+                any_display_options = True
 
         return any_display_options
 
@@ -630,14 +614,14 @@ Common commands: (see '--help-commands' for more)
                                 "Standard commands",
                                 max_length)
         if extra_commands:
-            print
+            print()
             self.print_command_list(extra_commands,
                                     "Extra commands",
                                     max_length)
 
     # -- Command class/object methods ----------------------------------
 
-    def get_command_obj(self, command, create=1):
+    def get_command_obj(self, command, create=True):
         """Return the command object for 'command'.  Normally this object
         is cached on a previous call to 'get_command_obj()'; if no command
         object for 'command' is in the cache, then we either create and
@@ -660,7 +644,6 @@ Common commands: (see '--help-commands' for more)
             options = self.command_options.get(command)
             if options:
                 self._set_command_options(cmd_obj, options)
-
         return cmd_obj
 
     def _set_command_options(self, command_obj, option_dict=None):
@@ -678,7 +661,7 @@ Common commands: (see '--help-commands' for more)
 
         logger.debug("  setting options for %r command:", command_name)
 
-        for (option, (source, value)) in option_dict.iteritems():
+        for option, (source, value) in option_dict.items():
             logger.debug("    %s = %s (from %s)", option, value, source)
             try:
                 bool_opts = [x.replace('-', '_')
@@ -691,7 +674,7 @@ Common commands: (see '--help-commands' for more)
                 neg_opt = {}
 
             try:
-                is_string = isinstance(value, str)
+                is_string = isinstance(value, basestring)
                 if option in neg_opt and is_string:
                     setattr(command_obj, neg_opt[option], not strtobool(value))
                 elif option in bool_opts and is_string:
@@ -699,13 +682,13 @@ Common commands: (see '--help-commands' for more)
                 elif hasattr(command_obj, option):
                     setattr(command_obj, option, value)
                 else:
-                    raise DistutilsOptionError(
+                    raise PackagingOptionError(
                         "error in %s: command %r has no such option %r" %
                         (source, command_name, option))
-            except ValueError, msg:
-                raise DistutilsOptionError(msg)
+            except ValueError:
+                raise PackagingOptionError(sys.exc_info()[1])
 
-    def get_reinitialized_command(self, command, reinit_subcommands=0):
+    def get_reinitialized_command(self, command, reinit_subcommands=False):
         """Reinitializes a command to the state it was in when first
         returned by 'get_command_obj()': ie., initialized but not yet
         finalized.  This provides the opportunity to sneak option
@@ -734,8 +717,8 @@ Common commands: (see '--help-commands' for more)
         if not command.finalized:
             return command
         command.initialize_options()
-        command.finalized = 0
         self.have_run[command_name] = 0
+        command.finalized = False
         self._set_command_options(command)
 
         if reinit_subcommands:
@@ -745,9 +728,6 @@ Common commands: (see '--help-commands' for more)
         return command
 
     # -- Methods that operate on the Distribution ----------------------
-
-    def announce(self, msg, level=logging.INFO):
-        logger.log(level, msg)
 
     def run_commands(self):
         """Run each command that was seen on the setup script command line.
@@ -796,17 +776,17 @@ Common commands: (see '--help-commands' for more)
         if hooks is None:
             return
 
-        for hook in hooks.itervalues():
+        for hook in hooks.values():
             if isinstance(hook, basestring):
                 try:
                     hook_obj = resolve_name(hook)
-                except ImportError, e:
-                    raise DistutilsModuleError(e)
+                except ImportError:
+                    raise PackagingModuleError(sys.exc_info()[1])
             else:
                 hook_obj = hook
 
             if not hasattr(hook_obj, '__call__'):
-                raise DistutilsOptionError('hook %r is not callable' % hook)
+                raise PackagingOptionError('hook %r is not callable' % hook)
 
             logger.info('running %s %s for command %s',
                         hook_kind, hook, cmd_obj.get_command_name())
@@ -838,15 +818,3 @@ Common commands: (see '--help-commands' for more)
         return (self.has_pure_modules() and
                 not self.has_ext_modules() and
                 not self.has_c_libraries())
-
-
-# XXX keep for compat or remove?
-
-def fix_help_options(options):
-    """Convert a 4-tuple 'help_options' list as found in various command
-    classes to the 3-tuple form required by FancyGetopt.
-    """
-    new_options = []
-    for help_tuple in options:
-        new_options.append(help_tuple[0:3])
-    return new_options

@@ -1,17 +1,12 @@
-"""distutils.command.install_scripts
+"""Install scripts."""
 
-Implements the Distutils 'install_scripts' command, for installing
-Python scripts."""
-
-# contributed by Bastian Kleineidam
-
+# Contributed by Bastian Kleineidam
 
 import os
 from distutils2.command.cmd import Command
 from distutils2 import logger
-from stat import ST_MODE
 
-class install_scripts (Command):
+class install_scripts(Command):
 
     description = "install scripts (Python or otherwise)"
 
@@ -25,19 +20,19 @@ class install_scripts (Command):
     boolean_options = ['force', 'skip-build']
 
 
-    def initialize_options (self):
+    def initialize_options(self):
         self.install_dir = None
-        self.force = 0
+        self.force = False
         self.build_dir = None
         self.skip_build = None
 
-    def finalize_options (self):
+    def finalize_options(self):
         self.set_undefined_options('build', ('build_scripts', 'build_dir'))
         self.set_undefined_options('install_dist',
                                    ('install_scripts', 'install_dir'),
                                    'force', 'skip_build')
 
-    def run (self):
+    def run(self):
         if not self.skip_build:
             self.run_command('build_scripts')
 
@@ -53,11 +48,11 @@ class install_scripts (Command):
                 if self.dry_run:
                     logger.info("changing mode of %s", file)
                 else:
-                    mode = ((os.stat(file)[ST_MODE]) | 0555) & 07777
+                    mode = (os.stat(file).st_mode | 0o555) & 0o7777
                     logger.info("changing mode of %s to %o", file, mode)
                     os.chmod(file, mode)
 
-    def get_inputs (self):
+    def get_inputs(self):
         return self.distribution.scripts or []
 
     def get_outputs(self):

@@ -1,10 +1,8 @@
-"""distutils.command.build_clib
+"""Build C/C++ libraries.
 
-Implements the Distutils 'build_clib' command, to build a C/C++ library
-that is included in the module distribution and needed by an extension
-module."""
-
-
+This command is useful to build libraries that are included in the
+distribution and needed by extension modules.
+"""
 
 # XXX this module has *lots* of code ripped-off quite transparently from
 # build_ext.py -- not surprisingly really, as the work required to build
@@ -17,7 +15,7 @@ module."""
 
 import os
 from distutils2.command.cmd import Command
-from distutils2.errors import DistutilsSetupError
+from distutils2.errors import PackagingSetupError
 from distutils2.compiler import customize_compiler
 from distutils2 import logger
 
@@ -29,7 +27,7 @@ def show_compilers():
 
 class build_clib(Command):
 
-    description = "build C/C++ libraries used by Python extensions"
+    description = "build C/C++ libraries used by extension modules"
 
     user_options = [
         ('build-clib=', 'b',
@@ -63,7 +61,7 @@ class build_clib(Command):
         self.define = None
         self.undef = None
         self.debug = None
-        self.force = 0
+        self.force = False
         self.compiler = None
 
 
@@ -84,7 +82,7 @@ class build_clib(Command):
 
         if self.include_dirs is None:
             self.include_dirs = self.distribution.include_dirs or []
-        if isinstance(self.include_dirs, str):
+        if isinstance(self.include_dirs, basestring):
             self.include_dirs = self.include_dirs.split(os.pathsep)
 
         # XXX same as for build_ext -- what about 'self.define' and
@@ -105,7 +103,7 @@ class build_clib(Command):
             self.compiler.set_include_dirs(self.include_dirs)
         if self.define is not None:
             # 'define' option is a list of (name,value) tuples
-            for (name,value) in self.define:
+            for name, value in self.define:
                 self.compiler.define_macro(name, value)
         if self.undef is not None:
             for macro in self.undef:
@@ -121,34 +119,29 @@ class build_clib(Command):
         This method checks that it is a list of 2-tuples, where the tuples
         are (library_name, build_info_dict).
 
-        Raise DistutilsSetupError if the structure is invalid anywhere;
+        Raise PackagingSetupError if the structure is invalid anywhere;
         just returns otherwise.
         """
         if not isinstance(libraries, list):
-            raise DistutilsSetupError, \
-                  "'libraries' option must be a list of tuples"
+            raise PackagingSetupError("'libraries' option must be a list of tuples")
 
         for lib in libraries:
             if not isinstance(lib, tuple) and len(lib) != 2:
-                raise DistutilsSetupError, \
-                      "each element of 'libraries' must a 2-tuple"
+                raise PackagingSetupError("each element of 'libraries' must a 2-tuple")
 
             name, build_info = lib
 
-            if not isinstance(name, str):
-                raise DistutilsSetupError, \
-                      "first element of each tuple in 'libraries' " + \
-                      "must be a string (the library name)"
+            if not isinstance(name, basestring):
+                raise PackagingSetupError("first element of each tuple in 'libraries' " + \
+                      "must be a string (the library name)")
             if '/' in name or (os.sep != '/' and os.sep in name):
-                raise DistutilsSetupError, \
-                      ("bad library name '%s': " +
+                raise PackagingSetupError(("bad library name '%s': " +
                        "may not contain directory separators") % \
-                      lib[0]
+                      lib[0])
 
             if not isinstance(build_info, dict):
-                raise DistutilsSetupError, \
-                      "second element of each tuple in 'libraries' " + \
-                      "must be a dictionary (build info)"
+                raise PackagingSetupError("second element of each tuple in 'libraries' " + \
+                      "must be a dictionary (build info)")
 
     def get_library_names(self):
         # Assume the library list is valid -- 'check_library_list()' is
@@ -157,7 +150,7 @@ class build_clib(Command):
             return None
 
         lib_names = []
-        for (lib_name, build_info) in self.libraries:
+        for lib_name, build_info in self.libraries:
             lib_names.append(lib_name)
         return lib_names
 
@@ -165,25 +158,23 @@ class build_clib(Command):
     def get_source_files(self):
         self.check_library_list(self.libraries)
         filenames = []
-        for (lib_name, build_info) in self.libraries:
+        for lib_name, build_info in self.libraries:
             sources = build_info.get('sources')
             if sources is None or not isinstance(sources, (list, tuple)):
-                raise DistutilsSetupError, \
-                      ("in 'libraries' option (library '%s'), "
+                raise PackagingSetupError(("in 'libraries' option (library '%s'), "
                        "'sources' must be present and must be "
-                       "a list of source filenames") % lib_name
+                       "a list of source filenames") % lib_name)
 
             filenames.extend(sources)
         return filenames
 
     def build_libraries(self, libraries):
-        for (lib_name, build_info) in libraries:
+        for lib_name, build_info in libraries:
             sources = build_info.get('sources')
             if sources is None or not isinstance(sources, (list, tuple)):
-                raise DistutilsSetupError, \
-                      ("in 'libraries' option (library '%s'), " +
+                raise PackagingSetupError(("in 'libraries' option (library '%s'), " +
                        "'sources' must be present and must be " +
-                       "a list of source filenames") % lib_name
+                       "a list of source filenames") % lib_name)
             sources = list(sources)
 
             logger.info("building '%s' library", lib_name)

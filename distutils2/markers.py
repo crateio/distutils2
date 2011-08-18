@@ -1,10 +1,11 @@
-""" Micro-language for PEP 345 environment markers
-"""
+"""Parser for the environment markers micro-language defined in PEP 345."""
+
 import sys
 import platform
 import os
-from tokenize import tokenize, NAME, OP, STRING, ENDMARKER
-from StringIO import StringIO
+
+from tokenize import generate_tokens, NAME, OP, STRING, ENDMARKER
+from StringIO import StringIO as BytesIO
 
 __all__ = ['interpret']
 
@@ -30,7 +31,8 @@ _VARS = {'sys.platform': sys.platform,
          'python_full_version': sys.version.split(' ', 1)[0],
          'os.name': os.name,
          'platform.version': platform.version(),
-         'platform.machine': platform.machine()}
+         'platform.machine': platform.machine(),
+         'platform.python_implementation': platform.python_implementation()}
 
 
 class _Operation(object):
@@ -124,39 +126,39 @@ class _AND(object):
         return self.left() and self.right()
 
 
-class _CHAIN(object):
-
-    def __init__(self, execution_context=None):
-        self.ops = []
-        self.op_starting = True
-        self.execution_context = execution_context
-
-    def eat(self, toktype, tokval, rowcol, line, logical_line):
+def interpret(marker, execution_context=None):
+    """Interpret a marker and return a result depending on environment."""
+    marker = marker.strip().encode()
+    ops = []
+    op_starting = True
+    for token in generate_tokens(BytesIO(marker).readline):
+        # Unpack token
+        toktype, tokval, rowcol, line, logical_line = token
         if toktype not in (NAME, OP, STRING, ENDMARKER):
             raise SyntaxError('Type not supported "%s"' % tokval)
 
-        if self.op_starting:
-            op = _Operation(self.execution_context)
-            if len(self.ops) > 0:
-                last = self.ops[-1]
+        if op_starting:
+            op = _Operation(execution_context)
+            if len(ops) > 0:
+                last = ops[-1]
                 if isinstance(last, (_OR, _AND)) and not last.filled():
                     last.right = op
                 else:
-                    self.ops.append(op)
+                    ops.append(op)
             else:
-                self.ops.append(op)
-            self.op_starting = False
+                ops.append(op)
+            op_starting = False
         else:
-            op = self.ops[-1]
+            op = ops[-1]
 
         if (toktype == ENDMARKER or
             (toktype == NAME and tokval in ('and', 'or'))):
             if toktype == NAME and tokval == 'and':
-                self.ops.append(_AND(self.ops.pop()))
+                ops.append(_AND(ops.pop()))
             elif toktype == NAME and tokval == 'or':
-                self.ops.append(_OR(self.ops.pop()))
-            self.op_starting = True
-            return
+                ops.append(_OR(ops.pop()))
+            op_starting = True
+            continue
 
         if isinstance(op, (_OR, _AND)) and op.right is not None:
             op = op.right
@@ -179,16 +181,7 @@ class _CHAIN(object):
             else:
                 op.op = tokval
 
-    def result(self):
-        for op in self.ops:
-            if not op():
-                return False
-        return True
-
-
-def interpret(marker, execution_context=None):
-    """Interpret a marker and return a result depending on environment."""
-    marker = marker.strip()
-    operations = _CHAIN(execution_context)
-    tokenize(StringIO(marker).readline, operations.eat)
-    return operations.result()
+    for op in ops:
+        if not op():
+            return False
+    return True

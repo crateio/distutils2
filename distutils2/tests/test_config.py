@@ -1,25 +1,30 @@
-# -*- encoding: utf-8 -*-
-"""Tests for distutils.config."""
+"""Tests for distutils2.config."""
 import os
 import sys
+import logging
 from StringIO import StringIO
 
-from distutils2.tests import unittest, support, run_unittest
+from distutils2 import command
+from distutils2.dist import Distribution
+from distutils2.errors import PackagingFileError
+from distutils2.compiler import new_compiler, _COMPILERS
 from distutils2.command.sdist import sdist
-from distutils2.errors import DistutilsFileError
+
+from distutils2.tests import unittest, support
+from distutils2.tests.support import requires_zlib
 
 
-SETUP_CFG = """
+SETUP_CFG = u"""
 [metadata]
 name = RestingParrot
 version = 0.6.4
 author = Carl Meyer
 author_email = carl@oddbird.net
-maintainer = Éric Araujo
+maintainer = \xc3ric Araujo
 maintainer_email = merwok@netwok.org
-summary = A sample project demonstrating distutils2 packaging
+summary = A sample project demonstrating distutils2
 description-file = %(description-file)s
-keywords = distutils2, packaging, sample project
+keywords = distutils2, sample project
 
 classifier =
   Development Status :: 4 - Beta
@@ -85,7 +90,7 @@ commands =
 compilers =
     distutils2.tests.test_config.DCompiler
 
-setup_hook = distutils2.tests.test_config.hook
+setup_hooks = %(setup-hooks)s
 
 
 
@@ -109,7 +114,7 @@ libraries = gecodeint gecodekernel -- sys.platform != 'win32'
     GecodeInt GecodeKernel -- sys.platform == 'win32'
 
 [extension=fast_taunt]
-name = three.fast_taunt
+name = two.fast_taunt
 sources = cxx_src/utils_taunt.cxx
           cxx_src/python_module.cxx
 include_dirs = /usr/include/gecode
@@ -121,6 +126,15 @@ language = cxx
 
 """
 
+HOOKS_MODULE = """
+import logging
+
+logger = logging.getLogger('distutils2')
+
+def logging_hook(config):
+    logger.warning('logging_hook called')
+"""
+
 
 class DCompiler(object):
     name = 'd'
@@ -129,8 +143,17 @@ class DCompiler(object):
     def __init__(self, *args):
         pass
 
-def hook(content):
-    content['metadata']['version'] += '.dev1'
+
+def version_hook(config):
+    config['metadata']['version'] += '.dev1'
+
+
+def first_hook(config):
+    config['files']['modules'] += '\n first'
+
+
+def third_hook(config):
+    config['files']['modules'] += '\n third'
 
 
 class FooBarBazTest(object):
@@ -139,11 +162,11 @@ class FooBarBazTest(object):
         self.distribution = dist
 
     @classmethod
-    def get_command_name(self):
+    def get_command_name(cls):
         return 'foo'
 
     def run(self):
-        self.distribution.foo_was_here = 1
+        self.distribution.foo_was_here = True
 
     def nothing(self):
         pass
@@ -155,57 +178,53 @@ class FooBarBazTest(object):
 
 
 class ConfigTestCase(support.TempdirManager,
+                     support.EnvironRestorer,
                      support.LoggingCatcher,
                      unittest.TestCase):
+
+    restore_environ = ['PLAT']
 
     def setUp(self):
         super(ConfigTestCase, self).setUp()
         self.addCleanup(setattr, sys, 'stdout', sys.stdout)
         self.addCleanup(setattr, sys, 'stderr', sys.stderr)
-        #sys.stdout = sys.stderr = StringIO()
+        sys.stdout = StringIO()
+        sys.stderr = StringIO()
 
         self.addCleanup(os.chdir, os.getcwd())
         tempdir = self.mkdtemp()
+        self.working_dir = os.getcwd()
         os.chdir(tempdir)
         self.tempdir = tempdir
 
-        self.addCleanup(setattr, sys, 'argv', sys.argv)
+    def tearDown(self):
+        os.chdir(self.working_dir)
+        super(ConfigTestCase, self).tearDown()
 
     def write_setup(self, kwargs=None):
-        opts = {'description-file': 'README', 'extra-files':''}
+        opts = {'description-file': 'README', 'extra-files': '',
+                'setup-hooks': 'distutils2.tests.test_config.version_hook'}
         if kwargs:
             opts.update(kwargs)
-        self.write_file('setup.cfg', SETUP_CFG % opts)
+        self.write_file('setup.cfg', SETUP_CFG % opts, encoding='utf-8')
 
-
-    def run_setup(self, *args):
-        # run setup with args
-        args = ['run'] + list(args)
-        from distutils2.run import main
-        dist = main(args)
-        return dist
-
-    def _get_metadata(self, name='version'):
-        from distutils2.dist import Distribution
+    def get_dist(self):
         dist = Distribution()
         dist.parse_config_files()
-        return dist, dist.metadata[name]
+        return dist
 
     def test_config(self):
         self.write_setup()
         self.write_file('README', 'yeah')
         os.mkdir('bm')
-        self.write_file(os.path.join('bm', 'b1.gif'), '')
-        self.write_file(os.path.join('bm', 'b2.gif'), '')
+        self.write_file(('bm', 'b1.gif'), '')
+        self.write_file(('bm', 'b2.gif'), '')
         os.mkdir('Cfg')
-        self.write_file(os.path.join('Cfg', 'data.CFG'), '')
+        self.write_file(('Cfg', 'data.CFG'), '')
         self.write_file('init_script', '')
 
         # try to load the metadata now
-        dist, version = self._get_metadata()
-
-        # sanity check
-        self.assertEqual(version, '0.6.4.dev1')
+        dist = self.get_dist()
 
         # check what was done
         self.assertEqual(dist.metadata['Author'], 'Carl Meyer')
@@ -214,16 +233,17 @@ class ConfigTestCase(support.TempdirManager,
         # the hook adds .dev1
         self.assertEqual(dist.metadata['Version'], '0.6.4.dev1')
 
-        wanted = ['Development Status :: 4 - Beta',
-                'Environment :: Console (Text Based)',
-                "Environment :: X11 Applications :: GTK; python_version < '3'",
-                'License :: OSI Approved :: MIT License',
-                'Programming Language :: Python',
-                'Programming Language :: Python :: 2',
-                'Programming Language :: Python :: 3']
+        wanted = [
+            'Development Status :: 4 - Beta',
+            'Environment :: Console (Text Based)',
+            "Environment :: X11 Applications :: GTK; python_version < '3'",
+            'License :: OSI Approved :: MIT License',
+            'Programming Language :: Python',
+            'Programming Language :: Python :: 2',
+            'Programming Language :: Python :: 3']
         self.assertEqual(dist.metadata['Classifier'], wanted)
 
-        wanted = ['distutils2', 'packaging', 'sample project']
+        wanted = ['distutils2', 'sample project']
         self.assertEqual(dist.metadata['Keywords'], wanted)
 
         self.assertEqual(dist.metadata['Requires-Python'], '>=2.4, <3.2')
@@ -245,10 +265,10 @@ class ConfigTestCase(support.TempdirManager,
         self.assertEqual(dist.py_modules, ['haven'])
         self.assertEqual(dist.package_data, {'cheese': 'data/templates/*'})
         self.assertEqual(
-            {'bm/b1.gif' : '{icon}/b1.gif',
-             'bm/b2.gif' : '{icon}/b2.gif',
-             'Cfg/data.CFG' : '{config}/baBar/data.CFG',
-             'init_script' : '{script}/JunGle/init_script'},
+            {'bm/b1.gif': '{icon}/b1.gif',
+             'bm/b2.gif': '{icon}/b2.gif',
+             'Cfg/data.CFG': '{config}/baBar/data.CFG',
+             'init_script': '{script}/JunGle/init_script'},
              dist.data_files)
 
         self.assertEqual(dist.package_dir, 'src')
@@ -260,37 +280,36 @@ class ConfigTestCase(support.TempdirManager,
         # this file would be __main__.Foo when run as "python test_config.py".
         # The name FooBarBazTest should be unique enough to prevent
         # collisions.
-        self.assertEqual(dist.get_command_obj('foo').__class__.__name__,
-                         'FooBarBazTest')
+        self.assertEqual('FooBarBazTest',
+                         dist.get_command_obj('foo').__class__.__name__)
 
         # did the README got loaded ?
         self.assertEqual(dist.metadata['description'], 'yeah')
 
         # do we have the D Compiler enabled ?
-        from distutils2.compiler import new_compiler, _COMPILERS
         self.assertIn('d', _COMPILERS)
         d = new_compiler(compiler='d')
         self.assertEqual(d.description, 'D Compiler')
-
 
     def test_multiple_description_file(self):
         self.write_setup({'description-file': 'README  CHANGES'})
         self.write_file('README', 'yeah')
         self.write_file('CHANGES', 'changelog2')
-        dist, version = self._get_metadata()
+        dist = self.get_dist()
         self.assertEqual(dist.metadata.requires_files, ['README', 'CHANGES'])
 
     def test_multiline_description_file(self):
         self.write_setup({'description-file': 'README\n  CHANGES'})
         self.write_file('README', 'yeah')
         self.write_file('CHANGES', 'changelog')
-        dist, desc = self._get_metadata('description')
-        self.assertEqual(desc, 'yeah\nchangelog')
+        dist = self.get_dist()
+        self.assertEqual(dist.metadata['description'], 'yeah\nchangelog')
         self.assertEqual(dist.metadata.requires_files, ['README', 'CHANGES'])
 
     def test_parse_extensions_in_config(self):
         self.write_file('setup.cfg', EXT_SETUP_CFG)
-        dist, version = self._get_metadata()
+        dist = self.get_dist()
+
         ext_modules = dict((mod.name, mod) for mod in dist.ext_modules)
         self.assertEqual(len(ext_modules), 2)
         ext = ext_modules.get('one.speed_coconuts')
@@ -303,105 +322,152 @@ class ConfigTestCase(support.TempdirManager,
         self.assertEqual(ext.extra_link_args,
             ['`gcc -print-file-name=libgcc.a`', '-shared'])
 
-        ext = ext_modules.get('three.fast_taunt')
+        ext = ext_modules.get('two.fast_taunt')
         self.assertEqual(ext.sources,
             ['cxx_src/utils_taunt.cxx', 'cxx_src/python_module.cxx'])
         self.assertEqual(ext.include_dirs,
             ['/usr/include/gecode', '/usr/include/blitz'])
         cargs = ['-fPIC', '-O2']
         if sys.platform == 'win32':
-            cargs.append("/DGECODE_VERSION='win32'")
+            cargs.append("/DGECODE_VERSION=win32")
         else:
             cargs.append('-DGECODE_VERSION=$(./gecode_version)')
         self.assertEqual(ext.extra_compile_args, cargs)
         self.assertEqual(ext.language, 'cxx')
 
+    def test_project_setup_hook_works(self):
+        # Bug #11637: ensure the project directory is on sys.path to allow
+        # project-specific hooks
+        self.write_setup({'setup-hooks': 'hooks.logging_hook'})
+        self.write_file('README', 'yeah')
+        self.write_file('hooks.py', HOOKS_MODULE)
+        self.get_dist()
+        logs = self.get_logs(logging.WARNING)
+        self.assertEqual(['logging_hook called'], logs)
+        self.assertIn('hooks', sys.modules)
+
+    def test_missing_setup_hook_warns(self):
+        self.write_setup({'setup-hooks': 'this.does._not.exist'})
+        self.write_file('README', 'yeah')
+        self.get_dist()
+        logs = self.get_logs(logging.WARNING)
+        self.assertEqual(1, len(logs))
+        self.assertIn('cannot find setup hook', logs[0])
+
+    def test_multiple_setup_hooks(self):
+        self.write_setup({
+            'setup-hooks': '\n  distutils2.tests.test_config.first_hook'
+                           '\n  distutils2.tests.test_config.missing_hook'
+                           '\n  distutils2.tests.test_config.third_hook'
+        })
+        self.write_file('README', 'yeah')
+        dist = self.get_dist()
+
+        self.assertEqual(['haven', 'first', 'third'], dist.py_modules)
+        logs = self.get_logs(logging.WARNING)
+        self.assertEqual(1, len(logs))
+        self.assertIn('cannot find setup hook', logs[0])
 
     def test_metadata_requires_description_files_missing(self):
-        self.write_setup({'description-file': 'README\n  README2'})
+        self.write_setup({'description-file': 'README README2'})
         self.write_file('README', 'yeah')
         self.write_file('README2', 'yeah')
-        self.write_file('haven.py', '#')
+        os.mkdir('src')
+        self.write_file(('src', 'haven.py'), '#')
         self.write_file('script1.py', '#')
         os.mkdir('scripts')
-        self.write_file(os.path.join('scripts', 'find-coconuts'), '#')
+        self.write_file(('scripts', 'find-coconuts'), '#')
         os.mkdir('bin')
-        self.write_file(os.path.join('bin', 'taunt'), '#')
+        self.write_file(('bin', 'taunt'), '#')
 
-        os.mkdir('src')
         for pkg in ('one', 'two', 'three'):
             pkg = os.path.join('src', pkg)
             os.mkdir(pkg)
-            self.write_file(os.path.join(pkg, '__init__.py'), '#')
+            self.write_file((pkg, '__init__.py'), '#')
 
-        dist, version = self._get_metadata()
+        dist = self.get_dist()
         cmd = sdist(dist)
         cmd.finalize_options()
         cmd.get_file_list()
-        self.assertRaises(DistutilsFileError, cmd.make_distribution)
+        self.assertRaises(PackagingFileError, cmd.make_distribution)
 
+    @requires_zlib
     def test_metadata_requires_description_files(self):
+        # Create the following file structure:
+        #   README
+        #   README2
+        #   script1.py
+        #   scripts/
+        #       find-coconuts
+        #   bin/
+        #       taunt
+        #   src/
+        #       haven.py
+        #       one/__init__.py
+        #       two/__init__.py
+        #       three/__init__.py
+
         self.write_setup({'description-file': 'README\n  README2',
-                          'extra-files':'\n  README2'})
-        self.write_file('README', 'yeah')
-        self.write_file('README2', 'yeah')
-        self.write_file('haven.py', '#')
+                          'extra-files': '\n  README3'})
+        self.write_file('README', 'yeah 1')
+        self.write_file('README2', 'yeah 2')
+        self.write_file('README3', 'yeah 3')
+        os.mkdir('src')
+        self.write_file(('src', 'haven.py'), '#')
         self.write_file('script1.py', '#')
         os.mkdir('scripts')
-        self.write_file(os.path.join('scripts', 'find-coconuts'), '#')
+        self.write_file(('scripts', 'find-coconuts'), '#')
         os.mkdir('bin')
-        self.write_file(os.path.join('bin', 'taunt'), '#')
+        self.write_file(('bin', 'taunt'), '#')
 
-        os.mkdir('src')
         for pkg in ('one', 'two', 'three'):
             pkg = os.path.join('src', pkg)
             os.mkdir(pkg)
-            self.write_file(os.path.join(pkg, '__init__.py'), '#')
+            self.write_file((pkg, '__init__.py'), '#')
 
-        dist, desc = self._get_metadata('description')
-        self.assertIn('yeah\nyeah', desc)
+        dist = self.get_dist()
+        self.assertIn('yeah 1\nyeah 2', dist.metadata['description'])
 
         cmd = sdist(dist)
         cmd.finalize_options()
         cmd.get_file_list()
-        self.assertRaises(DistutilsFileError, cmd.make_distribution)
+        self.assertRaises(PackagingFileError, cmd.make_distribution)
 
         self.write_setup({'description-file': 'README\n  README2',
                           'extra-files': '\n  README2\n    README'})
-        dist, desc = self._get_metadata('description')
-
+        dist = self.get_dist()
         cmd = sdist(dist)
         cmd.finalize_options()
         cmd.get_file_list()
         cmd.make_distribution()
-        self.assertIn('README\nREADME2\n', open('MANIFEST').read())
+        with open('MANIFEST') as fp:
+            self.assertIn('README\nREADME2\n', fp.read())
 
     def test_sub_commands(self):
         self.write_setup()
         self.write_file('README', 'yeah')
-        self.write_file('haven.py', '#')
+        os.mkdir('src')
+        self.write_file(('src', 'haven.py'), '#')
         self.write_file('script1.py', '#')
         os.mkdir('scripts')
-        self.write_file(os.path.join('scripts', 'find-coconuts'), '#')
+        self.write_file(('scripts', 'find-coconuts'), '#')
         os.mkdir('bin')
-        self.write_file(os.path.join('bin', 'taunt'), '#')
-        os.mkdir('src')
+        self.write_file(('bin', 'taunt'), '#')
 
         for pkg in ('one', 'two', 'three'):
             pkg = os.path.join('src', pkg)
             os.mkdir(pkg)
-            self.write_file(os.path.join(pkg, '__init__.py'), '#')
+            self.write_file((pkg, '__init__.py'), '#')
 
         # try to run the install command to see if foo is called
-        from distutils2.dist import Distribution
-        dist = Distribution()
-        dist.parse_config_files()
-        dist.run_command('install_dist')
-        self.assertEqual(dist.foo_was_here, 1)
+        dist = self.get_dist()
+        self.assertIn('foo', command.get_command_names())
+        self.assertEqual('FooBarBazTest',
+                         dist.get_command_obj('foo').__class__.__name__)
 
 
 def test_suite():
     return unittest.makeSuite(ConfigTestCase)
 
 if __name__ == '__main__':
-    run_unittest(test_suite())
+    unittest.main(defaultTest='test_suite')

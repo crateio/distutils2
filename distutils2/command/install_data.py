@@ -1,20 +1,18 @@
-"""distutils.command.install_data
+"""Install platform-independent data files."""
 
-Implements the Distutils 'install_data' command, for installing
-platform-independent data files."""
+# Contributed by Bastian Kleineidam
 
-# contributed by Bastian Kleineidam
-
-
-import os
+import os, sys
+from shutil import Error
+from sysconfig import get_paths, format_value
+from distutils2 import logger
+from distutils2.util import convert_path
 from distutils2.command.cmd import Command
-from distutils2.util import change_root, convert_path
-from distutils2._backport.sysconfig import get_paths, format_value
-from distutils2._backport.shutil import Error
+
 
 class install_data(Command):
 
-    description = "install data files"
+    description = "install platform-independent data files"
 
     user_options = [
         ('install-dir=', 'd',
@@ -32,9 +30,9 @@ class install_data(Command):
         self.outfiles = []
         self.data_files_out = []
         self.root = None
-        self.force = 0
+        self.force = False
         self.data_files = self.distribution.data_files
-        self.warn_dir = 1
+        self.warn_dir = True
 
     def finalize_options(self):
         self.set_undefined_options('install_dist',
@@ -43,19 +41,20 @@ class install_data(Command):
 
     def run(self):
         self.mkpath(self.install_dir)
-        for file in self.data_files.items():
-            destination = convert_path(self.expand_categories(file[1]))
+        for _file in self.data_files.items():
+            destination = convert_path(self.expand_categories(_file[1]))
             dir_dest = os.path.abspath(os.path.dirname(destination))
-            
+
             self.mkpath(dir_dest)
             try:
-                (out, _) = self.copy_file(file[0], dir_dest)
-            except Error, e:
-                self.warn(e)
+                out = self.copy_file(_file[0], dir_dest)[0]
+            except Error:
+                e = sys.exc_info()[1]
+                logger.warning('%s: %s', self.get_command_name(), e)
                 out = destination
 
             self.outfiles.append(out)
-            self.data_files_out.append((file[0], destination))
+            self.data_files_out.append((_file[0], destination))
 
     def expand_categories(self, path_with_categories):
         local_vars = get_paths()
@@ -63,15 +62,16 @@ class install_data(Command):
         expanded_path = format_value(path_with_categories, local_vars)
         expanded_path = format_value(expanded_path, local_vars)
         if '{' in expanded_path and '}' in expanded_path:
-            self.warn("Unable to expand %s, some categories may missing." %
-                path_with_categories)
+            logger.warning(
+                '%s: unable to expand %s, some categories may be missing',
+                self.get_command_name(), path_with_categories)
         return expanded_path
 
     def get_source_files(self):
-        return self.data_files.keys()
+        return list(self.data_files)
 
     def get_inputs(self):
-        return self.data_files.keys()
+        return list(self.data_files)
 
     def get_outputs(self):
         return self.outfiles
