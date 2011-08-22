@@ -1508,7 +1508,7 @@ def encode_multipart(fields, files, boundary=None):
     # http://code.activestate.com/recipes/146306-http-client-to-post-using-multipartform-data/
 
     if boundary is None:
-        boundary = b'--------------GHSKFJDLGDS7543FJKLFHRE75642756743254'
+        boundary = '--------------GHSKFJDLGDS7543FJKLFHRE75642756743254'
     elif not isinstance(boundary, bytes):
         raise TypeError('boundary must be bytes, not %r' % type(boundary))
 
@@ -1520,25 +1520,22 @@ def encode_multipart(fields, files, boundary=None):
 
         for value in values:
             l.extend((
-                b'--' + boundary,
-                ('Content-Disposition: form-data; name="%s"' %
-                 key).encode('utf-8'),
-                b'',
-                value.encode('utf-8')))
+                '--' + boundary,
+                ('Content-Disposition: form-data; name="%s"' % key), '', value))
 
     for key, filename, value in files:
         l.extend((
-            b'--' + boundary,
+            '--' + boundary,
             ('Content-Disposition: form-data; name="%s"; filename="%s"' %
-             (key, filename)).encode('utf-8'),
-            b'',
+             (key, filename)),
+            '',
             value))
 
-    l.append(b'--' + boundary + b'--')
-    l.append(b'')
+    l.append('--' + boundary + '--')
+    l.append('')
 
-    body = b'\r\n'.join(l)
-    content_type = b'multipart/form-data; boundary=' + boundary
+    body = '\r\n'.join(l)
+    content_type = 'multipart/form-data; boundary=' + boundary
     return content_type, body
     
 # shutil stuff
@@ -2014,7 +2011,7 @@ def detect_encoding(readline):
         try:
             return readline()
         except StopIteration:
-            return b''
+            return ''
 
     def find_cookie(line):
         try:
