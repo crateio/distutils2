@@ -656,9 +656,8 @@ class build_ext(Command):
 
         else:
             if sysconfig.get_config_var('Py_ENABLE_SHARED'):
-                pythonlib = 'python{}.{}{}'.format(
-                    sys.hexversion >> 24, (sys.hexversion >> 16) & 0xff,
-                    sys.abiflags)
+                pythonlib = 'python{}.{}'.format(
+                    sys.hexversion >> 24, (sys.hexversion >> 16) & 0xff)
                 return ext.libraries + [pythonlib]
             else:
                 return ext.libraries
