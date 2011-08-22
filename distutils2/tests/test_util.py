@@ -384,7 +384,7 @@ class UtilTestCase(support.EnvironRestorer,
                                          'pkg1.pkg3.pkg6']))
 
     def test_resolve_name(self):
-        self.assertIs(str, resolve_name('__builtins__.str'))
+        self.assertIs(str, resolve_name('__builtin__.str'))
         self.assertEqual(
             UtilTestCase.__name__,
             resolve_name("distutils2.tests.test_util.UtilTestCase").__name__)
