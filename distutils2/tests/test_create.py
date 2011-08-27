@@ -1,72 +1,80 @@
-# -*- coding: utf-8 -*-
-"""Tests for distutils.mkcfg."""
+"""Tests for distutils2.create."""
+from StringIO import StringIO
 import os
 import sys
-import StringIO
+import sysconfig
 from textwrap import dedent
+from distutils2.create import MainProgram, ask_yn, ask, main
 
-from distutils2.tests import run_unittest, support, unittest
-from distutils2.mkcfg import MainProgram
-from distutils2.mkcfg import ask_yn, ask, main
-from distutils2._backport import sysconfig
+from distutils2.tests import support, unittest
 
 
-class MkcfgTestCase(support.TempdirManager,
-                    unittest.TestCase):
+class CreateTestCase(support.TempdirManager,
+                     support.EnvironRestorer,
+                     unittest.TestCase):
+
+    maxDiff = None
+    restore_environ = ['PLAT']
 
     def setUp(self):
-        super(MkcfgTestCase, self).setUp()
-        self._stdin = sys.stdin
+        super(CreateTestCase, self).setUp()
+        self._stdin = sys.stdin  # TODO use Inputs
         self._stdout = sys.stdout
-        sys.stdin = StringIO.StringIO()
-        sys.stdout = StringIO.StringIO()
+        sys.stdin = StringIO()
+        sys.stdout = StringIO()
         self._cwd = os.getcwd()
         self.wdir = self.mkdtemp()
         os.chdir(self.wdir)
         # patch sysconfig
         self._old_get_paths = sysconfig.get_paths
         sysconfig.get_paths = lambda *args, **kwargs: {
-                'man': sys.prefix + '/share/man', 
-                'doc': sys.prefix + '/share/doc/pyxfoil',}
+            'man': sys.prefix + '/share/man',
+            'doc': sys.prefix + '/share/doc/pyxfoil', }
 
     def tearDown(self):
-        super(MkcfgTestCase, self).tearDown()
         sys.stdin = self._stdin
         sys.stdout = self._stdout
         os.chdir(self._cwd)
         sysconfig.get_paths = self._old_get_paths
+        super(CreateTestCase, self).tearDown()
 
     def test_ask_yn(self):
-        sys.stdin.write('y\n')
+        sys.stdin.write(u'y\n')
         sys.stdin.seek(0)
         self.assertEqual('y', ask_yn('is this a test'))
 
     def test_ask(self):
-        sys.stdin.write('a\n')
-        sys.stdin.write('b\n')
+        sys.stdin.write(u'a\n')
+        sys.stdin.write(u'b\n')
         sys.stdin.seek(0)
         self.assertEqual('a', ask('is this a test'))
-        self.assertEqual('b', ask(str(range(0,70)), default='c', lengthy=True))
+        self.assertEqual('b', ask(str(list(range(0, 70))), default='c',
+                                  lengthy=True))
 
     def test_set_multi(self):
-        main = MainProgram()
-        sys.stdin.write('aaaaa\n')
+        mainprogram = MainProgram()
+        sys.stdin.write(u'aaaaa\n')
         sys.stdin.seek(0)
-        main.data['author'] = []
-        main._set_multi('_set_multi test', 'author')
-        self.assertEqual(['aaaaa'], main.data['author'])
+        mainprogram.data['author'] = []
+        mainprogram._set_multi('_set_multi test', 'author')
+        self.assertEqual(['aaaaa'], mainprogram.data['author'])
 
     def test_find_files(self):
         # making sure we scan a project dir correctly
-        main = MainProgram()
+        mainprogram = MainProgram()
 
         # building the structure
         tempdir = self.wdir
         dirs = ['pkg1', 'data', 'pkg2', 'pkg2/sub']
-        files = ['README', 'setup.cfg', 'foo.py',
-                 'pkg1/__init__.py', 'pkg1/bar.py',
-                 'data/data1', 'pkg2/__init__.py',
-                 'pkg2/sub/__init__.py']
+        files = [
+            'README',
+            'data/data1',
+            'foo.py',
+            'pkg1/__init__.py',
+            'pkg1/bar.py',
+            'pkg2/__init__.py',
+            'pkg2/sub/__init__.py',
+        ]
 
         for dir_ in dirs:
             os.mkdir(os.path.join(tempdir, dir_))
@@ -75,147 +83,161 @@ class MkcfgTestCase(support.TempdirManager,
             path = os.path.join(tempdir, file_)
             self.write_file(path, 'xxx')
 
-        main._find_files()
+        mainprogram._find_files()
+        mainprogram.data['packages'].sort()
 
-        # do we have what we want ?
-        self.assertEqual(main.data['packages'], ['pkg1', 'pkg2', 'pkg2.sub'])
-        self.assertEqual(main.data['modules'], ['foo'])
-        self.assertEqual(set(main.data['extra_files']),
-                         set(['setup.cfg', 'README', 'data/data1']))
+        # do we have what we want?
+        self.assertEqual(mainprogram.data['packages'],
+                         ['pkg1', 'pkg2', 'pkg2.sub'])
+        self.assertEqual(mainprogram.data['modules'], ['foo'])
+        data_fn = os.path.join('data', 'data1')
+        self.assertEqual(mainprogram.data['extra_files'],
+                         ['README', data_fn])
 
     def test_convert_setup_py_to_cfg(self):
         self.write_file((self.wdir, 'setup.py'),
-                        dedent("""
-        # -*- coding: utf-8 -*-
+                        dedent(u"""
+        # coding: utf-8
         from distutils.core import setup
-        lg_dsc = '''My super Death-scription
+
+        long_description = '''My super Death-scription
         barbar is now on the public domain,
         ho, baby !'''
+
         setup(name='pyxfoil',
               version='0.2',
               description='Python bindings for the Xfoil engine',
-              long_description = lg_dsc,
-              maintainer='André Espaze',
+              long_description=long_description,
+              maintainer='Andr\xc3 Espaze',
               maintainer_email='andre.espaze@logilab.fr',
               url='http://www.python-science.org/project/pyxfoil',
               license='GPLv2',
               packages=['pyxfoil', 'babar', 'me'],
-              data_files=[('share/doc/pyxfoil', ['README.rst']),
-                          ('share/man', ['pyxfoil.1']),
+              data_files=[
+                  ('share/doc/pyxfoil', ['README.rst']),
+                  ('share/man', ['pyxfoil.1']),
                          ],
-              py_modules = ['my_lib', 'mymodule'],
-              package_dir = {'babar' : '',
-                             'me' : 'Martinique/Lamentin',
-                            },
-              package_data = {'babar': ['Pom', 'Flora', 'Alexander'],
-                              'me': ['dady', 'mumy', 'sys', 'bro'],
-                              '':  ['setup.py', 'README'],
-                              'pyxfoil' : ['fengine.so'],
-                             },
-              scripts = ['my_script', 'bin/run'],
+              py_modules=['my_lib', 'mymodule'],
+              package_dir={
+                  'babar': '',
+                  'me': 'Martinique/Lamentin',
+                          },
+              package_data={
+                  'babar': ['Pom', 'Flora', 'Alexander'],
+                  'me': ['dady', 'mumy', 'sys', 'bro'],
+                  '':  ['setup.py', 'README'],
+                  'pyxfoil': ['fengine.so'],
+                           },
+              scripts=['my_script', 'bin/run'],
               )
-        """))
-        sys.stdin.write('y\n')
+        """), encoding='utf-8')
+        sys.stdin.write(u'y\n')
         sys.stdin.seek(0)
         main()
-        fp = open(os.path.join(self.wdir, 'setup.cfg'))
-        try:
-            lines = set([line.rstrip() for line in fp])
-        finally:
-            fp.close()
-        self.assertEqual(lines, set(['',
-            '[metadata]',
-            'version = 0.2',
-            'name = pyxfoil',
-            'maintainer = André Espaze',
-            'description = My super Death-scription',
-            '       |barbar is now on the public domain,',
-            '       |ho, baby !',
-            'maintainer_email = andre.espaze@logilab.fr',
-            'home_page = http://www.python-science.org/project/pyxfoil',
-            'download_url = UNKNOWN',
-            'summary = Python bindings for the Xfoil engine',
-            '[files]',
-            'modules = my_lib',
-            '    mymodule',
-            'packages = pyxfoil',
-            '    babar',
-            '    me',
-            'extra_files = Martinique/Lamentin/dady',
-            '    Martinique/Lamentin/mumy',
-            '    Martinique/Lamentin/sys',
-            '    Martinique/Lamentin/bro',
-            '    Pom',
-            '    Flora',
-            '    Alexander',
-            '    setup.py',
-            '    README',
-            '    pyxfoil/fengine.so',
-            'scripts = my_script',
-            '    bin/run',
-            'resources =',
-            '    README.rst = {doc}',
-            '    pyxfoil.1 = {man}',
-        ]))
+
+        with open(os.path.join(self.wdir, 'setup.cfg'), encoding='utf-8') as fp:
+            contents = fp.read()
+
+        self.assertEqual(contents, dedent(u"""\
+            [metadata]
+            name = pyxfoil
+            version = 0.2
+            summary = Python bindings for the Xfoil engine
+            download_url = UNKNOWN
+            home_page = http://www.python-science.org/project/pyxfoil
+            maintainer = Andr\xc3 Espaze
+            maintainer_email = andre.espaze@logilab.fr
+            description = My super Death-scription
+                   |barbar is now on the public domain,
+                   |ho, baby !
+
+            [files]
+            packages = pyxfoil
+                babar
+                me
+            modules = my_lib
+                mymodule
+            scripts = my_script
+                bin/run
+            extra_files = Martinique/Lamentin/dady
+                Martinique/Lamentin/mumy
+                Martinique/Lamentin/sys
+                Martinique/Lamentin/bro
+                setup.py
+                README
+                Pom
+                Flora
+                Alexander
+                pyxfoil/fengine.so
+
+            resources =
+                README.rst = {doc}
+                pyxfoil.1 = {man}
+
+            """))
 
     def test_convert_setup_py_to_cfg_with_description_in_readme(self):
         self.write_file((self.wdir, 'setup.py'),
-                        dedent("""
-        # -*- coding: utf-8 -*-
+                        dedent(u"""
+        # coding: utf-8
         from distutils.core import setup
-        lg_dsc = open('README.txt').read()
+        with open('README.txt') as fp:
+            long_description = fp.read()
+
         setup(name='pyxfoil',
               version='0.2',
               description='Python bindings for the Xfoil engine',
-              long_description=lg_dsc,
-              maintainer='André Espaze',
+              long_description=long_description,
+              maintainer='Andr\xc3 Espaze',
               maintainer_email='andre.espaze@logilab.fr',
               url='http://www.python-science.org/project/pyxfoil',
               license='GPLv2',
               packages=['pyxfoil'],
-              package_data={'pyxfoil' : ['fengine.so', 'babar.so']},
+              package_data={'pyxfoil': ['fengine.so', 'babar.so']},
               data_files=[
                 ('share/doc/pyxfoil', ['README.rst']),
                 ('share/man', ['pyxfoil.1']),
               ],
         )
-        """))
+        """), encoding='utf-8')
         self.write_file((self.wdir, 'README.txt'),
                         dedent('''
 My super Death-scription
-barbar is now on the public domain,
-ho, baby !
+barbar is now in the public domain,
+ho, baby!
                         '''))
-        sys.stdin.write('y\n')
+        sys.stdin.write(u'y\n')
         sys.stdin.seek(0)
+        # FIXME Out of memory error.
         main()
-        fp = open(os.path.join(self.wdir, 'setup.cfg'))
-        try:
-            lines = set([line.rstrip() for line in fp])
-        finally:
-            fp.close()
-        self.assertEqual(lines, set(['',
-            '[metadata]',
-            'version = 0.2',
-            'name = pyxfoil',
-            'maintainer = André Espaze',
-            'maintainer_email = andre.espaze@logilab.fr',
-            'home_page = http://www.python-science.org/project/pyxfoil',
-            'download_url = UNKNOWN',
-            'summary = Python bindings for the Xfoil engine',
-            'description-file = README.txt',
-            '[files]',
-            'packages = pyxfoil',
-            'extra_files = pyxfoil/fengine.so',
-            '    pyxfoil/babar.so',
-            'resources =',
-            '    README.rst = {doc}',
-            '    pyxfoil.1 = {man}',
-        ]))
+        with open(os.path.join(self.wdir, 'setup.cfg'), encoding='utf-8') as fp:
+            contents = fp.read()
+
+        self.assertEqual(contents, dedent(u"""\
+            [metadata]
+            name = pyxfoil
+            version = 0.2
+            summary = Python bindings for the Xfoil engine
+            download_url = UNKNOWN
+            home_page = http://www.python-science.org/project/pyxfoil
+            maintainer = Andr\xc3 Espaze
+            maintainer_email = andre.espaze@logilab.fr
+            description-file = README.txt
+
+            [files]
+            packages = pyxfoil
+            extra_files = pyxfoil/fengine.so
+                pyxfoil/babar.so
+
+            resources =
+                README.rst = {doc}
+                pyxfoil.1 = {man}
+
+            """))
 
 
 def test_suite():
-    return unittest.makeSuite(MkcfgTestCase)
+    return unittest.makeSuite(CreateTestCase)
 
 if __name__ == '__main__':
-    run_unittest(test_suite())
+    unittest.main(defaultTest='test_suite')

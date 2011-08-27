@@ -1,29 +1,34 @@
-"""Analyse the relationships between the distributions in the system
-and generate a dependency graph.
+"""Class and functions dealing with dependencies between distributions.
+
+This module provides a DependencyGraph class to represent the
+dependencies between distributions.  Auxiliary functions can generate a
+graph, find reverse dependencies, and print a graph in DOT format.
 """
+
 import sys
+
 from StringIO import StringIO
-from distutils2.errors import DistutilsError
+from distutils2.errors import PackagingError
 from distutils2.version import VersionPredicate, IrrationalVersionError
 
 __all__ = ['DependencyGraph', 'generate_graph', 'dependent_dists',
            'graph_to_dot']
 
 
-class DependencyGraph(object):
+class DependencyGraph:
     """
     Represents a dependency graph between distributions.
 
     The dependency relationships are stored in an ``adjacency_list`` that maps
     distributions to a list of ``(other, label)`` tuples where  ``other``
-    is a distribution and the edge is labelled with ``label`` (i.e. the version
+    is a distribution and the edge is labeled with ``label`` (i.e. the version
     specifier, if such was provided). Also, for more efficient traversal, for
     every distribution ``x``, a list of predecessors is kept in
     ``reverse_list[x]``. An edge from distribution ``a`` to
     distribution ``b`` means that ``a`` depends on ``b``. If any missing
-    depencies are found, they are stored in ``missing``, which is a dictionary
-    that maps distributions to a list of requirements that were not provided by
-    any other distributions.
+    dependencies are found, they are stored in ``missing``, which is a
+    dictionary that maps distributions to a list of requirements that were not
+    provided by any other distributions.
     """
 
     def __init__(self):
@@ -34,40 +39,40 @@ class DependencyGraph(object):
     def add_distribution(self, distribution):
         """Add the *distribution* to the graph.
 
-        :type distribution: :class:`pkgutil.Distribution` or
-                            :class:`pkgutil.EggInfoDistribution`
+        :type distribution: :class:`distutils2.database.Distribution` or
+                            :class:`distutils2.database.EggInfoDistribution`
         """
-        self.adjacency_list[distribution] = list()
-        self.reverse_list[distribution] = list()
-        self.missing[distribution] = list()
+        self.adjacency_list[distribution] = []
+        self.reverse_list[distribution] = []
+        self.missing[distribution] = []
 
     def add_edge(self, x, y, label=None):
         """Add an edge from distribution *x* to distribution *y* with the given
         *label*.
 
-        :type x: :class:`pkgutil.Distribution` or
-                 :class:`pkgutil.EggInfoDistribution`
-        :type y: :class:`pkgutil.Distribution` or
-                 :class:`pkgutil.EggInfoDistribution`
+        :type x: :class:`distutils2.database.Distribution` or
+                 :class:`distutils2.database.EggInfoDistribution`
+        :type y: :class:`distutils2.database.Distribution` or
+                 :class:`distutils2.database.EggInfoDistribution`
         :type label: ``str`` or ``None``
         """
         self.adjacency_list[x].append((y, label))
         # multiple edges are allowed, so be careful
-        if not x in self.reverse_list[y]:
+        if x not in self.reverse_list[y]:
             self.reverse_list[y].append(x)
 
     def add_missing(self, distribution, requirement):
         """
         Add a missing *requirement* for the given *distribution*.
 
-        :type distribution: :class:`pkgutil.Distribution` or
-                            :class:`pkgutil.EggInfoDistribution`
+        :type distribution: :class:`distutils2.database.Distribution` or
+                            :class:`distutils2.database.EggInfoDistribution`
         :type requirement: ``str``
         """
         self.missing[distribution].append(requirement)
 
     def _repr_dist(self, dist):
-        return '%s %s' % (dist.name, dist.metadata['Version'])
+        return '%r %s' % (dist.name, dist.version)
 
     def repr_node(self, dist, level=1):
         """Prints only a subgraph"""
@@ -77,7 +82,7 @@ class DependencyGraph(object):
             dist = self._repr_dist(other)
             if label is not None:
                 dist = '%s [%s]' % (dist, label)
-            output.append('    ' * level + '%s' % dist)
+            output.append('    ' * level + str(dist))
             suboutput = self.repr_node(other, level + 1)
             subs = suboutput.split('\n')
             output.extend(subs[1:])
@@ -86,7 +91,7 @@ class DependencyGraph(object):
     def __repr__(self):
         """Representation of the graph"""
         output = []
-        for dist, adjs in self.adjacency_list.iteritems():
+        for dist, adjs in self.adjacency_list.items():
             output.append(self.repr_node(dist))
         return '\n'.join(output)
 
@@ -102,46 +107,45 @@ def graph_to_dot(graph, f, skip_disconnected=True):
     """
     disconnected = []
 
-    f.write("digraph dependencies {\n")
-    for dist, adjs in graph.adjacency_list.iteritems():
+    f.write(u"digraph dependencies {\n")
+    for dist, adjs in graph.adjacency_list.items():
         if len(adjs) == 0 and not skip_disconnected:
             disconnected.append(dist)
-        for (other, label) in adjs:
+        for other, label in adjs:
             if not label is None:
-                f.write('"%s" -> "%s" [label="%s"]\n' %
+                f.write(u'"%s" -> "%s" [label="%s"]\n' %
                                             (dist.name, other.name, label))
             else:
-                f.write('"%s" -> "%s"\n' % (dist.name, other.name))
+                f.write(u'"%s" -> "%s"\n' % (dist.name, other.name))
     if not skip_disconnected and len(disconnected) > 0:
-        f.write('subgraph disconnected {\n')
-        f.write('label = "Disconnected"\n')
-        f.write('bgcolor = red\n')
+        f.write(u'subgraph disconnected {\n')
+        f.write(u'label = "Disconnected"\n')
+        f.write(u'bgcolor = red\n')
 
         for dist in disconnected:
-            f.write('"%s"' % dist.name)
-            f.write('\n')
-        f.write('}\n')
-    f.write('}\n')
+            f.write(u'"%s"' % dist.name)
+            f.write(u'\n')
+        f.write(u'}\n')
+    f.write(u'}\n')
 
 
 def generate_graph(dists):
     """Generates a dependency graph from the given distributions.
 
     :parameter dists: a list of distributions
-    :type dists: list of :class:`pkgutil.Distribution` and
-                         :class:`pkgutil.EggInfoDistribution` instances
-    :rtype: an :class:`DependencyGraph` instance
+    :type dists: list of :class:`distutils2.database.Distribution` and
+                 :class:`distutils2.database.EggInfoDistribution` instances
+    :rtype: a :class:`DependencyGraph` instance
     """
     graph = DependencyGraph()
     provided = {}  # maps names to lists of (version, dist) tuples
-    dists = list(dists)  # maybe use generator_tools in future
 
     # first, build the graph and find out the provides
     for dist in dists:
         graph.add_distribution(dist)
         provides = (dist.metadata['Provides-Dist'] +
                     dist.metadata['Provides'] +
-                    ['%s (%s)' % (dist.name, dist.metadata['Version'])])
+                    ['%s (%s)' % (dist.name, dist.version)])
 
         for p in provides:
             comps = p.strip().rsplit(" ", 1)
@@ -150,10 +154,10 @@ def generate_graph(dists):
             if len(comps) == 2:
                 version = comps[1]
                 if len(version) < 3 or version[0] != '(' or version[-1] != ')':
-                    raise DistutilsError('Distribution %s has ill formed' \
-                                         'provides field: %s' % (dist.name, p))
+                    raise PackagingError('distribution %r has ill-formed'
+                                         'provides field: %r' % (dist.name, p))
                 version = version[1:-1]  # trim off parenthesis
-            if not name in provided:
+            if name not in provided:
                 provided[name] = []
             provided[name].append((version, dist))
 
@@ -170,7 +174,7 @@ def generate_graph(dists):
 
             name = predicate.name
 
-            if not name in provided:
+            if name not in provided:
                 graph.add_missing(dist, req)
             else:
                 matched = False
@@ -200,8 +204,9 @@ def dependent_dists(dists, dist):
     :param dists: a list of distributions
     :param dist: a distribution, member of *dists* for which we are interested
     """
-    if not dist in dists:
-        raise ValueError('The given distribution is not a member of the list')
+    if dist not in dists:
+        raise ValueError('given distribution %r is not a member of the list' %
+                         dist.name)
     graph = generate_graph(dists)
 
     dep = [dist]  # dependent distributions
@@ -211,7 +216,7 @@ def dependent_dists(dists, dist):
         node = fringe.pop()
         dep.append(node)
         for prev in graph.reverse_list[node]:
-            if not prev in dep:
+            if prev not in dep:
                 fringe.append(prev)
 
     dep.pop(0)  # remove dist from dep, was there to prevent infinite loops
@@ -219,7 +224,7 @@ def dependent_dists(dists, dist):
 
 
 def main():
-    from distutils2._backport.pkgutil import get_distributions
+    from distutils2.database import get_distributions
     tempout = StringIO()
     try:
         old = sys.stderr
@@ -229,20 +234,23 @@ def main():
             graph = generate_graph(dists)
         finally:
             sys.stderr = old
-    except Exception, e:
+    except Exception:
+        e = sys.exc_info()[1]
         tempout.seek(0)
         tempout = tempout.read()
-        print('Could not generate the graph\n%s\n%s\n' % (tempout, str(e)))
+        print(u'Could not generate the graph')
+        print(tempout)
+        print(e)
         sys.exit(1)
 
-    for dist, reqs in graph.missing.iteritems():
+    for dist, reqs in graph.missing.items():
         if len(reqs) > 0:
-            print("Warning: Missing dependencies for %s: %s" % (dist.name,
-                                                       ", ".join(reqs)))
+            print(u"Warning: Missing dependencies for %r:" % dist.name,
+                  ", ".join(reqs))
     # XXX replace with argparse
     if len(sys.argv) == 1:
-        print('Dependency graph:')
-        print('    ' + repr(graph).replace('\n', '\n    '))
+        print(u'Dependency graph:')
+        print(u'   ', repr(graph).replace(u'\n', u'\n    '))
         sys.exit(0)
     elif len(sys.argv) > 1 and sys.argv[1] in ('-d', '--dot'):
         if len(sys.argv) > 2:
@@ -250,15 +258,12 @@ def main():
         else:
             filename = 'depgraph.dot'
 
-        f = open(filename, 'w')
-        try:
+        with open(filename, 'w') as f:
             graph_to_dot(graph, f, True)
-        finally:
-            f.close()
         tempout.seek(0)
         tempout = tempout.read()
         print(tempout)
-        print('Dot file written at "%s"' % filename)
+        print('Dot file written at %r' % filename)
         sys.exit(0)
     else:
         print('Supported option: -d [filename]')

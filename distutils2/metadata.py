@@ -3,17 +3,19 @@
 Supports all metadata formats (1.0, 1.1, 1.2).
 """
 
+import codecs
 import re
+import logging
+
 from StringIO import StringIO
 from email import message_from_file
-
 from distutils2 import logger
 from distutils2.markers import interpret
 from distutils2.version import (is_valid_predicate, is_valid_version,
-                                is_valid_versions)
+                               is_valid_versions)
 from distutils2.errors import (MetadataMissingError,
-                               MetadataConflictError,
-                               MetadataUnrecognizedVersionError)
+                              MetadataConflictError,
+                              MetadataUnrecognizedVersionError)
 
 try:
     # docutils is installed
@@ -39,8 +41,7 @@ except ImportError:
     _HAS_DOCUTILS = False
 
 # public API of this module
-__all__ = ['Metadata', 'get_metadata_version', 'metadata_to_dict',
-           'PKG_INFO_ENCODING', 'PKG_INFO_PREFERRED_VERSION']
+__all__ = ['Metadata', 'PKG_INFO_ENCODING', 'PKG_INFO_PREFERRED_VERSION']
 
 # Encoding used for the PKG-INFO files
 PKG_INFO_ENCODING = 'utf-8'
@@ -99,7 +100,7 @@ def _best_version(fields):
                 return True
         return False
 
-    keys = fields.keys()
+    keys = list(fields)
     possible_versions = ['1.0', '1.1', '1.2']
 
     # first let's try to see if a field is not part of one of the version
@@ -136,52 +137,6 @@ def _best_version(fields):
 
     # default marker when 1.0 is disqualified
     return '1.2'
-
-
-def get_metadata_version(metadata):
-    """Return the Metadata-Version attribute
-
-    - *metadata* give a METADATA object
-    """
-    return metadata['Metadata-Version']
-
-
-def metadata_to_dict(metadata):
-    """Convert a metadata object to a dict
-
-    - *metadata* give a METADATA object
-    """
-    data = {
-        'metadata_version': metadata['Metadata-Version'],
-        'name': metadata['Name'],
-        'version': metadata['Version'],
-        'summary': metadata['Summary'],
-        'home_page': metadata['Home-page'],
-        'author': metadata['Author'],
-        'author_email': metadata['Author-email'],
-        'license': metadata['License'],
-        'description': metadata['Description'],
-        'keywords': metadata['Keywords'],
-        'platform': metadata['Platform'],
-        'classifier': metadata['Classifier'],
-        'download_url': metadata['Download-URL'],
-    }
-
-    if metadata['Metadata-Version'] == '1.2':
-        data['requires_dist'] = metadata['Requires-Dist']
-        data['requires_python'] = metadata['Requires-Python']
-        data['requires_external'] = metadata['Requires-External']
-        data['provides_dist'] = metadata['Provides-Dist']
-        data['obsoletes_dist'] = metadata['Obsoletes-Dist']
-        data['project_url'] = [','.join(url) for url in
-                               metadata['Project-URL']]
-
-    elif metadata['Metadata-Version'] == '1.1':
-        data['provides'] = metadata['Provides']
-        data['requires'] = metadata['Requires']
-        data['obsoletes'] = metadata['Obsoletes']
-
-    return data
 
 
 _ATTR2FIELD = {
@@ -225,6 +180,8 @@ _ELEMENTSFIELD = ('Keywords',)
 
 _UNICODEFIELDS = ('Author', 'Maintainer', 'Summary', 'Description')
 
+_MISSING = object()
+
 
 class NoDefault(object):
     """Marker object used for clean representation"""
@@ -248,10 +205,8 @@ class Metadata(object):
     # also document the mapping API and UNKNOWN default key
 
     def __init__(self, path=None, platform_dependent=False,
-                 execution_context=None, fileobj=None, mapping=None,
-                 display_warnings=False):
+                 execution_context=None, fileobj=None, mapping=None):
         self._fields = {}
-        self.display_warnings = display_warnings
         self.requires_files = []
         self.docutils_support = _HAS_DOCUTILS
         self.platform_dependent = platform_dependent
@@ -269,12 +224,7 @@ class Metadata(object):
         self._fields['Metadata-Version'] = _best_version(self._fields)
 
     def _write_field(self, file, name, value):
-        file.write('%s: %s\n' % (name, value))
-
-    def _encode_field(self, value):
-        if isinstance(value, unicode):
-            return value.encode(PKG_INFO_ENCODING)
-        return str(value)
+        file.write(u'%s: %s\n' % (name, value))
 
     def __getitem__(self, name):
         return self.get(name)
@@ -358,7 +308,8 @@ class Metadata(object):
 
     def read(self, filepath):
         """Read the metadata values from a file path."""
-        self.read_file(open(filepath))
+        with codecs.open(filepath, 'r', encoding='utf-8') as fp:
+            self.read_file(fp)
 
     def read_file(self, fileob):
         """Read the metadata values from a file object."""
@@ -380,11 +331,8 @@ class Metadata(object):
 
     def write(self, filepath):
         """Write the metadata fields to filepath."""
-        pkg_info = open(filepath, 'w')
-        try:
-            self.write_file(pkg_info)
-        finally:
-            pkg_info.close()
+        with codecs.open(filepath, 'w', encoding='utf-8') as fp:
+            self.write_file(fp)
 
     def write_file(self, fileobject):
         """Write the PKG-INFO format data to a file object."""
@@ -437,36 +385,38 @@ class Metadata(object):
 
         if ((name in _ELEMENTSFIELD or name == 'Platform') and
             not isinstance(value, (list, tuple))):
-            if isinstance(value, str):
+            if isinstance(value, basestring):
                 value = [v.strip() for v in value.split(',')]
             else:
                 value = []
         elif (name in _LISTFIELDS and
               not isinstance(value, (list, tuple))):
-            if isinstance(value, str):
+            if isinstance(value, basestring):
                 value = [value]
             else:
                 value = []
 
-        if self.display_warnings:
+        if logger.isEnabledFor(logging.WARNING):
+            project_name = self['Name']
+
             if name in _PREDICATE_FIELDS and value is not None:
                 for v in value:
                     # check that the values are valid predicates
                     if not is_valid_predicate(v.split(';')[0]):
-                        logger.warn('"%s" is not a valid predicate (field "%s")' %
-                            (v, name))
+                        logger.warning(
+                            '%r: %r is not a valid predicate (field %r)',
+                            project_name, v, name)
             # FIXME this rejects UNKNOWN, is that right?
             elif name in _VERSIONS_FIELDS and value is not None:
                 if not is_valid_versions(value):
-                    logger.warn('"%s" is not a valid version (field "%s")' %
-                        (value, name))
+                    logger.warning('%r: %r is not a valid version (field %r)',
+                                   project_name, value, name)
             elif name in _VERSION_FIELDS and value is not None:
                 if not is_valid_version(value):
-                    logger.warn('"%s" is not a valid version (field "%s")' %
-                        (value, name))
+                    logger.warning('%r: %r is not a valid version (field %r)',
+                                   project_name, value, name)
 
         if name in _UNICODEFIELDS:
-            value = self._encode_field(value)
             if name == 'Description':
                 value = self._remove_line_prefix(value)
 
@@ -482,7 +432,7 @@ class Metadata(object):
             return default
         if name in _UNICODEFIELDS:
             value = self._fields[name]
-            return self._encode_field(value)
+            return value
         elif name in _LISTFIELDS:
             value = self._fields[name]
             if value is None:
@@ -493,17 +443,17 @@ class Metadata(object):
                 if not valid:
                     continue
                 if name not in _LISTTUPLEFIELDS:
-                    res.append(self._encode_field(val))
+                    res.append(val)
                 else:
                     # That's for Project-URL
-                    res.append((self._encode_field(val[0]), val[1]))
+                    res.append((val[0], val[1]))
             return res
 
         elif name in _ELEMENTSFIELD:
             valid, value = self._platform(self._fields[name])
             if not valid:
                 return []
-            if isinstance(value, str):
+            if isinstance(value, basestring):
                 return value.split(',')
         valid, value = self._platform(self._fields[name])
         if not valid:
@@ -551,13 +501,55 @@ class Metadata(object):
 
         return missing, warnings
 
+    def todict(self):
+        """Return fields as a dict.
+
+        Field names will be converted to use the underscore-lowercase style
+        instead of hyphen-mixed case (i.e. home_page instead of Home-page).
+        """
+        data = {
+            'metadata_version': self['Metadata-Version'],
+            'name': self['Name'],
+            'version': self['Version'],
+            'summary': self['Summary'],
+            'home_page': self['Home-page'],
+            'author': self['Author'],
+            'author_email': self['Author-email'],
+            'license': self['License'],
+            'description': self['Description'],
+            'keywords': self['Keywords'],
+            'platform': self['Platform'],
+            'classifier': self['Classifier'],
+            'download_url': self['Download-URL'],
+        }
+
+        if self['Metadata-Version'] == '1.2':
+            data['requires_dist'] = self['Requires-Dist']
+            data['requires_python'] = self['Requires-Python']
+            data['requires_external'] = self['Requires-External']
+            data['provides_dist'] = self['Provides-Dist']
+            data['obsoletes_dist'] = self['Obsoletes-Dist']
+            data['project_url'] = [','.join(url) for url in
+                                   self['Project-URL']]
+
+        elif self['Metadata-Version'] == '1.1':
+            data['provides'] = self['Provides']
+            data['requires'] = self['Requires']
+            data['obsoletes'] = self['Obsoletes']
+
+        return data
+
     # Mapping API
 
     def keys(self):
         return _version2fieldlist(self['Metadata-Version'])
 
+    def __iter__(self):
+        for key in self.keys():
+            yield key
+
     def values(self):
-        return [self[key] for key in self.keys()]
+        return [self[key] for key in list(self.keys())]
 
     def items(self):
-        return [(key, self[key]) for key in self.keys()]
+        return [(key, self[key]) for key in list(self.keys())]

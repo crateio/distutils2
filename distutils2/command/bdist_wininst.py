@@ -1,25 +1,21 @@
-"""distutils.command.bdist_wininst
+"""Create an executable installer for Windows."""
 
-Implements the Distutils 'bdist_wininst' command: create a windows installer
-exe-program."""
-
+# FIXME synchronize bytes/str use with same file in distutils
 
 import sys
 import os
-import string
+
 from shutil import rmtree
-try:
-    from sysconfig import get_python_version
-except ImportError:
-    from distutils2._backport.sysconfig import get_python_version
+from sysconfig import get_python_version
 from distutils2.command.cmd import Command
-from distutils2.errors import DistutilsOptionError, DistutilsPlatformError
+from distutils2.errors import PackagingOptionError, PackagingPlatformError
 from distutils2 import logger
 from distutils2.util import get_platform
 
-class bdist_wininst (Command):
 
-    description = "create an executable installer for MS Windows"
+class bdist_wininst(Command):
+
+    description = "create an executable installer for Windows"
 
     user_options = [('bdist-dir=', None,
                      "temporary directory for creating the distribution"),
@@ -61,25 +57,23 @@ class bdist_wininst (Command):
     boolean_options = ['keep-temp', 'no-target-compile', 'no-target-optimize',
                        'skip-build']
 
-    def initialize_options (self):
+    def initialize_options(self):
         self.bdist_dir = None
         self.plat_name = None
-        self.keep_temp = 0
-        self.no_target_compile = 0
-        self.no_target_optimize = 0
+        self.keep_temp = False
+        self.no_target_compile = False
+        self.no_target_optimize = False
         self.target_version = None
         self.dist_dir = None
         self.bitmap = None
         self.title = None
-        self.skip_build = 0
+        self.skip_build = False
         self.install_script = None
         self.pre_install_script = None
         self.user_access_control = None
 
-    # initialize_options()
 
-
-    def finalize_options (self):
+    def finalize_options(self):
         if self.bdist_dir is None:
             if self.skip_build and self.plat_name:
                 # If build is skipped and plat_name is overridden, bdist will
@@ -94,9 +88,8 @@ class bdist_wininst (Command):
         if not self.skip_build and self.distribution.has_ext_modules():
             short_version = get_python_version()
             if self.target_version and self.target_version != short_version:
-                raise DistutilsOptionError, \
-                      "target version can only be %s, or the '--skip-build'" \
-                      " option must be specified" % (short_version,)
+                raise PackagingOptionError("target version can only be %s, or the '--skip-build'" \
+                      " option must be specified" % (short_version,))
             self.target_version = short_version
 
         self.set_undefined_options('bdist', 'dist_dir', 'plat_name')
@@ -106,32 +99,30 @@ class bdist_wininst (Command):
                 if self.install_script == os.path.basename(script):
                     break
             else:
-                raise DistutilsOptionError, \
-                      "install_script '%s' not found in scripts" % \
-                      self.install_script
-    # finalize_options()
+                raise PackagingOptionError("install_script '%s' not found in scripts" % \
+                      self.install_script)
 
-
-    def run (self):
+    def run(self):
         if (sys.platform != "win32" and
             (self.distribution.has_ext_modules() or
              self.distribution.has_c_libraries())):
-            raise DistutilsPlatformError \
+            raise PackagingPlatformError \
                   ("distribution contains extensions and/or C libraries; "
                    "must be compiled on a Windows 32 platform")
 
         if not self.skip_build:
             self.run_command('build')
 
-        install = self.get_reinitialized_command('install', reinit_subcommands=1)
+        install = self.get_reinitialized_command('install',
+                                                 reinit_subcommands=True)
         install.root = self.bdist_dir
         install.skip_build = self.skip_build
-        install.warn_dir = 0
+        install.warn_dir = False
         install.plat_name = self.plat_name
 
         install_lib = self.get_reinitialized_command('install_lib')
         # we do not want to include pyc or pyo files
-        install_lib.compile = 0
+        install_lib.compile = False
         install_lib.optimize = 0
 
         if self.distribution.has_ext_modules():
@@ -153,7 +144,7 @@ class bdist_wininst (Command):
         # Use a custom scheme for the zip-file, because we have to decide
         # at installation time which scheme to use.
         for key in ('purelib', 'platlib', 'headers', 'scripts', 'data'):
-            value = string.upper(key)
+            value = key.upper()
             if key == 'headers':
                 value = value + '/Include/$dist_name'
             setattr(install,
@@ -196,7 +187,7 @@ class bdist_wininst (Command):
             else:
                 rmtree(self.bdist_dir)
 
-    def get_inidata (self):
+    def get_inidata(self):
         # Return data describing the installation.
 
         lines = []
@@ -211,14 +202,14 @@ class bdist_wininst (Command):
 
         # Escape newline characters
         def escape(s):
-            return string.replace(s, "\n", "\\n")
+            return s.replace("\n", "\\n")
 
         for name in ["author", "author_email", "description", "maintainer",
                      "maintainer_email", "name", "url", "version"]:
             data = getattr(metadata, name, "")
             if data:
                 info = info + ("\n    %s: %s" % \
-                               (string.capitalize(name), escape(data)))
+                               (name.capitalize(), escape(data)))
                 lines.append("%s=%s" % (name, escape(data)))
 
         # The [setup] section contains entries controlling
@@ -241,11 +232,9 @@ class bdist_wininst (Command):
         build_info = "Built %s with distutils2-%s" % \
                      (time.ctime(time.time()), distutils2.__version__)
         lines.append("build_info=%s" % build_info)
-        return string.join(lines, "\n")
+        return "\n".join(lines)
 
-    # get_inidata()
-
-    def create_exe (self, arcname, fullname, bitmap=None):
+    def create_exe(self, arcname, fullname, bitmap=None):
         import struct
 
         self.mkpath(self.dist_dir)
@@ -253,52 +242,48 @@ class bdist_wininst (Command):
         cfgdata = self.get_inidata()
 
         installer_name = self.get_installer_filename(fullname)
-        self.announce("creating %s" % installer_name)
+        logger.info("creating %s", installer_name)
 
         if bitmap:
-            bitmapdata = open(bitmap, "rb").read()
+            with open(bitmap, "rb") as fp:
+                bitmapdata = fp.read()
             bitmaplen = len(bitmapdata)
         else:
             bitmaplen = 0
 
-        file = open(installer_name, "wb")
-        file.write(self.get_exe_bytes())
-        if bitmap:
-            file.write(bitmapdata)
+        with open(installer_name, "wb") as file:
+            file.write(self.get_exe_bytes())
+            if bitmap:
+                file.write(bitmapdata)
 
-        # Convert cfgdata from unicode to ascii, mbcs encoded
-        try:
-            unicode
-        except NameError:
-            pass
-        else:
+            # Convert cfgdata from unicode to ascii, mbcs encoded
             if isinstance(cfgdata, unicode):
                 cfgdata = cfgdata.encode("mbcs")
 
-        # Append the pre-install script
-        cfgdata = cfgdata + "\0"
-        if self.pre_install_script:
-            script_data = open(self.pre_install_script, "r").read()
-            cfgdata = cfgdata + script_data + "\n\0"
-        else:
-            # empty pre-install script
+            # Append the pre-install script
             cfgdata = cfgdata + "\0"
-        file.write(cfgdata)
+            if self.pre_install_script:
+                with open(self.pre_install_script) as fp:
+                    script_data = fp.read()
+                cfgdata = cfgdata + script_data + "\n\0"
+            else:
+                # empty pre-install script
+                cfgdata = cfgdata + "\0"
+            file.write(cfgdata)
 
-        # The 'magic number' 0x1234567B is used to make sure that the
-        # binary layout of 'cfgdata' is what the wininst.exe binary
-        # expects.  If the layout changes, increment that number, make
-        # the corresponding changes to the wininst.exe sources, and
-        # recompile them.
-        header = struct.pack("<iii",
-                             0x1234567B,       # tag
-                             len(cfgdata),     # length
-                             bitmaplen,        # number of bytes in bitmap
-                             )
-        file.write(header)
-        file.write(open(arcname, "rb").read())
-
-    # create_exe()
+            # The 'magic number' 0x1234567B is used to make sure that the
+            # binary layout of 'cfgdata' is what the wininst.exe binary
+            # expects.  If the layout changes, increment that number, make
+            # the corresponding changes to the wininst.exe sources, and
+            # recompile them.
+            header = struct.pack("<iii",
+                                 0x1234567B,       # tag
+                                 len(cfgdata),     # length
+                                 bitmaplen,        # number of bytes in bitmap
+                                 )
+            file.write(header)
+            with open(arcname, "rb") as fp:
+                file.write(fp.read())
 
     def get_installer_filename(self, fullname):
         # Factored out to allow overriding in subclasses
@@ -312,9 +297,8 @@ class bdist_wininst (Command):
             installer_name = os.path.join(self.dist_dir,
                                           "%s.%s.exe" % (fullname, self.plat_name))
         return installer_name
-    # get_installer_filename()
 
-    def get_exe_bytes (self):
+    def get_exe_bytes(self):
         from distutils2.compiler.msvccompiler import get_build_version
         # If a target-version other than the current version has been
         # specified, then using the MSVC version from *this* build is no good.
@@ -354,5 +338,5 @@ class bdist_wininst (Command):
             sfix = ''
 
         filename = os.path.join(directory, "wininst-%.1f%s.exe" % (bv, sfix))
-        return open(filename, "rb").read()
-# class bdist_wininst
+        with open(filename, "rb") as fp:
+            return fp.read()

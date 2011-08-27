@@ -1,8 +1,6 @@
-"""distutils.command
+"""Subpackage containing all standard commands."""
 
-Package containing implementation of all the standard Distutils
-commands."""
-from distutils2.errors import DistutilsModuleError
+from distutils2.errors import PackagingModuleError
 from distutils2.util import resolve_name
 
 __all__ = ['get_command_names', 'set_command', 'get_command_class',
@@ -50,9 +48,9 @@ def get_command_class(name):
     """Return the registered command"""
     try:
         cls = _COMMANDS[name]
-        if isinstance(cls, str):
+        if isinstance(cls, basestring):
             cls = resolve_name(cls)
             _COMMANDS[name] = cls
         return cls
     except KeyError:
-        raise DistutilsModuleError("Invalid command %s" % name)
+        raise PackagingModuleError("Invalid command %s" % name)

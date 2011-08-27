@@ -1,27 +1,20 @@
-"""distutils.command.install
-
-Implements the Distutils 'install_dist' command."""
-
+"""Main install command, which calls the other install_* commands."""
 
 import sys
 import os
 
-from distutils2._backport import sysconfig
-from distutils2._backport.sysconfig import (get_config_vars, get_paths,
-                                            get_path, get_config_var)
+import sysconfig
+from sysconfig import get_config_vars, get_paths, get_path, get_config_var
 
 from distutils2 import logger
 from distutils2.command.cmd import Command
-from distutils2.errors import DistutilsPlatformError
+from distutils2.errors import PackagingPlatformError
 from distutils2.util import write_file
 from distutils2.util import convert_path, change_root, get_platform
-from distutils2.errors import DistutilsOptionError
+from distutils2.errors import PackagingOptionError
 
-# compatibility with 2.4 and 2.5
-if sys.version < '2.6':
-    HAS_USER_SITE = False
-else:
-    HAS_USER_SITE = True
+
+HAS_USER_SITE = True
 
 
 class install_dist(Command):
@@ -123,7 +116,7 @@ class install_dist(Command):
         self.exec_prefix = None
         self.home = None
         if HAS_USER_SITE:
-            self.user = 0
+            self.user = False
 
         # These select only the installation base; it's up to the user to
         # specify the installation scheme (currently, that means supplying
@@ -158,7 +151,7 @@ class install_dist(Command):
         # 'install_path_file' is always true unless some outsider meddles
         # with it.
         self.extra_path = None
-        self.install_path_file = 1
+        self.install_path_file = True
 
         # 'force' forces installation, even if target files are not
         # out-of-date.  'skip_build' skips running the "build" command,
@@ -166,9 +159,9 @@ class install_dist(Command):
         # a user option, it's just there so the bdist_* commands can turn
         # it off) determines whether we warn about installing to a
         # directory not in sys.path.
-        self.force = 0
-        self.skip_build = 0
-        self.warn_dir = 1
+        self.force = False
+        self.skip_build = False
+        self.warn_dir = True
 
         # These are only here as a conduit from the 'build' command to the
         # 'install_*' commands that do the real work.  ('build_base' isn't
@@ -218,25 +211,27 @@ class install_dist(Command):
 
         if ((self.prefix or self.exec_prefix or self.home) and
             (self.install_base or self.install_platbase)):
-            raise DistutilsOptionError(
+            raise PackagingOptionError(
                 "must supply either prefix/exec-prefix/home or "
                 "install-base/install-platbase -- not both")
 
         if self.home and (self.prefix or self.exec_prefix):
-            raise DistutilsOptionError(
+            raise PackagingOptionError(
                 "must supply either home or prefix/exec-prefix -- not both")
 
         if HAS_USER_SITE and self.user and (
                 self.prefix or self.exec_prefix or self.home or
                 self.install_base or self.install_platbase):
-            raise DistutilsOptionError(
+            raise PackagingOptionError(
                 "can't combine user with prefix/exec_prefix/home or "
                 "install_base/install_platbase")
 
         # Next, stuff that's wrong (or dubious) only on certain platforms.
         if os.name != "posix":
             if self.exec_prefix:
-                self.warn("exec-prefix option ignored on this platform")
+                logger.warning(
+                    '%s: exec-prefix option ignored on this platform',
+                    self.get_command_name())
                 self.exec_prefix = None
 
         # Now the interesting logic -- so interesting that we farm it out
@@ -355,14 +350,14 @@ class install_dist(Command):
                 self.install_headers is None or
                 self.install_scripts is None or
                 self.install_data is None):
-                raise DistutilsOptionError(
+                raise PackagingOptionError(
                     "install-base or install-platbase supplied, but "
                     "installation scheme is incomplete")
             return
 
         if HAS_USER_SITE and self.user:
             if self.install_userbase is None:
-                raise DistutilsPlatformError(
+                raise PackagingPlatformError(
                     "user base directory is not specified")
             self.install_base = self.install_platbase = self.install_userbase
             self.select_scheme("posix_user")
@@ -372,7 +367,7 @@ class install_dist(Command):
         else:
             if self.prefix is None:
                 if self.exec_prefix is not None:
-                    raise DistutilsOptionError(
+                    raise PackagingOptionError(
                         "must not supply exec-prefix without prefix")
 
                 self.prefix = os.path.normpath(sys.prefix)
@@ -390,7 +385,7 @@ class install_dist(Command):
         """Finalize options for non-posix platforms"""
         if HAS_USER_SITE and self.user:
             if self.install_userbase is None:
-                raise DistutilsPlatformError(
+                raise PackagingPlatformError(
                     "user base directory is not specified")
             self.install_base = self.install_platbase = self.install_userbase
             self.select_scheme(os.name + "_user")
@@ -405,7 +400,7 @@ class install_dist(Command):
             try:
                 self.select_scheme(os.name)
             except KeyError:
-                raise DistutilsPlatformError(
+                raise PackagingPlatformError(
                     "no support for installation on '%s'" % os.name)
 
     def dump_dirs(self, msg):
@@ -428,7 +423,7 @@ class install_dist(Command):
         """Set the install directories by applying the install schemes."""
         # it's the caller's problem if they supply a bad name!
         scheme = get_paths(name, expand=False)
-        for key, value in scheme.iteritems():
+        for key, value in scheme.items():
             if key == 'platinclude':
                 key = 'headers'
                 value = os.path.join(value, self.distribution.metadata['Name'])
@@ -469,7 +464,7 @@ class install_dist(Command):
             self.extra_path = self.distribution.extra_path
 
         if self.extra_path is not None:
-            if isinstance(self.extra_path, str):
+            if isinstance(self.extra_path, basestring):
                 self.extra_path = self.extra_path.split(',')
 
             if len(self.extra_path) == 1:
@@ -477,7 +472,7 @@ class install_dist(Command):
             elif len(self.extra_path) == 2:
                 path_file, extra_dirs = self.extra_path
             else:
-                raise DistutilsOptionError(
+                raise PackagingOptionError(
                     "'extra_path' option must be a list, tuple, or "
                     "comma-separated string with 1 or 2 elements")
 
@@ -504,9 +499,9 @@ class install_dist(Command):
         if HAS_USER_SITE and not self.user:
             return
         home = convert_path(os.path.expanduser("~"))
-        for name, path in self.config_vars.iteritems():
+        for name, path in self.config_vars.items():
             if path.startswith(home) and not os.path.isdir(path):
-                os.makedirs(path, 0700)
+                os.makedirs(path, 0o700)
 
     # -- Command execution methods -------------------------------------
 
@@ -521,7 +516,7 @@ class install_dist(Command):
             # internally, and not to sys.path, so we don't check the platform
             # matches what we are running.
             if self.warn_dir and build_plat != get_platform():
-                raise DistutilsPlatformError("Can't install when "
+                raise PackagingPlatformError("Can't install when "
                                              "cross-compiling")
 
         # Run all sub-commands (at least those that need to be run)
@@ -536,16 +531,16 @@ class install_dist(Command):
             outputs = self.get_outputs()
             if self.root:               # strip any package prefix
                 root_len = len(self.root)
-                for counter in xrange(len(outputs)):
+                for counter in range(len(outputs)):
                     outputs[counter] = outputs[counter][root_len:]
             self.execute(write_file,
                          (self.record, outputs),
                          "writing list of installed files to '%s'" %
                          self.record)
 
-        sys_path = map(os.path.normpath, sys.path)
-        sys_path = map(os.path.normcase, sys_path)
-        install_lib = os.path.normcase(os.path.normpath(self.install_lib))
+        normpath, normcase = os.path.normpath, os.path.normcase
+        sys_path = [normcase(normpath(p)) for p in sys.path]
+        install_lib = normcase(normpath(self.install_lib))
         if (self.warn_dir and
             not (self.path_file and self.install_path_file) and
             install_lib not in sys_path):
@@ -563,7 +558,8 @@ class install_dist(Command):
                          (filename, [self.extra_dirs]),
                          "creating %s" % filename)
         else:
-            self.warn("path file '%s' not created" % filename)
+            logger.warning('%s: path file %r not created',
+                           self.get_command_name(),  filename)
 
     # -- Reporting methods ---------------------------------------------
 

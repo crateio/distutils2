@@ -1,24 +1,26 @@
 """Tests for distutils.cmd."""
 import os
-from distutils2.tests import run_unittest
 
 from distutils2.command.cmd import Command
 from distutils2.dist import Distribution
-from distutils2.errors import DistutilsOptionError
-from distutils2.tests import unittest
+from distutils2.errors import PackagingOptionError
+from distutils2.tests import support, unittest
+
 
 class MyCmd(Command):
     def initialize_options(self):
         pass
 
-class CommandTestCase(unittest.TestCase):
+
+class CommandTestCase(support.LoggingCatcher,
+                      unittest.TestCase):
 
     def setUp(self):
+        super(CommandTestCase, self).setUp()
         dist = Distribution()
         self.cmd = MyCmd(dist)
 
     def test_make_file(self):
-
         cmd = self.cmd
 
         # making sure it raises when infiles is not a string or a list/tuple
@@ -33,12 +35,7 @@ class CommandTestCase(unittest.TestCase):
         cmd.make_file(infiles='in', outfile='out', func='func', args=())
 
     def test_dump_options(self):
-
-        msgs = []
-        def _announce(msg, level):
-            msgs.append(msg)
         cmd = self.cmd
-        cmd.announce = _announce
         cmd.option1 = 1
         cmd.option2 = 1
         cmd.user_options = [('option1', '', ''), ('option2', '', '')]
@@ -46,6 +43,7 @@ class CommandTestCase(unittest.TestCase):
 
         wanted = ["command options for 'MyCmd':", '  option1 = 1',
                   '  option2 = 1']
+        msgs = self.get_logs()
         self.assertEqual(msgs, wanted)
 
     def test_ensure_string(self):
@@ -58,7 +56,7 @@ class CommandTestCase(unittest.TestCase):
         self.assertTrue(hasattr(cmd, 'option2'))
 
         cmd.option3 = 1
-        self.assertRaises(DistutilsOptionError, cmd.ensure_string, 'option3')
+        self.assertRaises(PackagingOptionError, cmd.ensure_string, 'option3')
 
     def test_ensure_string_list(self):
         cmd = self.cmd
@@ -75,10 +73,10 @@ class CommandTestCase(unittest.TestCase):
 
         cmd.not_string_list = ['one', 2, 'three']
         cmd.not_string_list2 = object()
-        self.assertRaises(DistutilsOptionError,
+        self.assertRaises(PackagingOptionError,
                           cmd.ensure_string_list, 'not_string_list')
 
-        self.assertRaises(DistutilsOptionError,
+        self.assertRaises(PackagingOptionError,
                           cmd.ensure_string_list, 'not_string_list2')
 
     def test_ensure_filename(self):
@@ -86,17 +84,18 @@ class CommandTestCase(unittest.TestCase):
         cmd.option1 = __file__
         cmd.ensure_filename('option1')
         cmd.option2 = 'xxx'
-        self.assertRaises(DistutilsOptionError, cmd.ensure_filename, 'option2')
+        self.assertRaises(PackagingOptionError, cmd.ensure_filename, 'option2')
 
     def test_ensure_dirname(self):
         cmd = self.cmd
         cmd.option1 = os.path.dirname(__file__) or os.curdir
         cmd.ensure_dirname('option1')
         cmd.option2 = 'xxx'
-        self.assertRaises(DistutilsOptionError, cmd.ensure_dirname, 'option2')
+        self.assertRaises(PackagingOptionError, cmd.ensure_dirname, 'option2')
+
 
 def test_suite():
     return unittest.makeSuite(CommandTestCase)
 
 if __name__ == '__main__':
-    run_unittest(test_suite())
+    unittest.main(defaultTest='test_suite')

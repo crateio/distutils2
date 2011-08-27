@@ -2,20 +2,19 @@ import os
 import re
 import sys
 import shutil
+import logging
 import unittest as ut1
+import distutils2.database
 
-from copy import copy
 from os.path import join
 from operator import getitem, setitem, delitem
-from StringIO import StringIO
-
 from distutils2.command.build import build
 from distutils2.tests import unittest
-from distutils2.tests.support import TempdirManager, LoggingCatcher
+from distutils2.tests.support import (TempdirManager, EnvironRestorer,
+                                     LoggingCatcher)
 from distutils2.command.test import test
 from distutils2.command import set_command
 from distutils2.dist import Distribution
-from distutils2._backport import pkgutil
 
 
 EXPECTED_OUTPUT_RE = r'''FAIL: test_blah \(myowntestmodule.SomeTest\)
@@ -28,32 +27,37 @@ AssertionError: horribly
 
 here = os.path.dirname(os.path.abspath(__file__))
 
-_RECORD = []
 
 class MockBuildCmd(build):
     build_lib = "mock build lib"
     command_name = 'build'
     plat_name = 'whatever'
-    def initialize_options(self): pass
-    def finalize_options(self): pass
-    def run(self): _RECORD.append("build run")
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        self._record.append("build has run")
 
 
 class TestTest(TempdirManager,
+               EnvironRestorer,
                LoggingCatcher,
                unittest.TestCase):
 
+    restore_environ = ['PYTHONPATH']
+
     def setUp(self):
         super(TestTest, self).setUp()
-
-        distutils2path = os.path.dirname(os.path.dirname(here))
-        self.old_pythonpath = os.environ.get('PYTHONPATH', '')
-        os.environ['PYTHONPATH'] = distutils2path + os.pathsep + self.old_pythonpath
-
-    def tearDown(self):
-        pkgutil.clear_cache()
-        os.environ['PYTHONPATH'] = self.old_pythonpath
-        super(TestTest, self).tearDown()
+        self.addCleanup(distutils2.database.clear_cache)
+        new_pythonpath = os.path.dirname(os.path.dirname(here))
+        pythonpath = os.environ.get('PYTHONPATH')
+        if pythonpath is not None:
+            new_pythonpath = os.pathsep.join((new_pythonpath, pythonpath))
+        os.environ['PYTHONPATH'] = new_pythonpath
 
     def assert_re_match(self, pattern, string):
         def quote(s):
@@ -71,7 +75,8 @@ class TestTest(TempdirManager,
         shutil.copytree(pkg_dir, temp_pkg_dir)
         return temp_pkg_dir
 
-    def safely_replace(self, obj, attr, new_val=None, delete=False, dictionary=False):
+    def safely_replace(self, obj, attr,
+                       new_val=None, delete=False, dictionary=False):
         """Replace a object's attribute returning to its original state at the
         end of the test run. Creates the attribute if not present before
         (deleting afterwards). When delete=True, makes sure the value is del'd
@@ -79,10 +84,12 @@ class TestTest(TempdirManager,
         rather than attributes."""
         if dictionary:
             _setattr, _getattr, _delattr = setitem, getitem, delitem
+
             def _hasattr(_dict, value):
                 return value in _dict
         else:
-            _setattr, _getattr, _delattr, _hasattr = setattr, getattr, delattr, hasattr
+            _setattr, _getattr, _delattr, _hasattr = (setattr, getattr,
+                                                      delattr, hasattr)
 
         orig_has_attr = _hasattr(obj, attr)
         if orig_has_attr:
@@ -107,9 +114,12 @@ class TestTest(TempdirManager,
         a_module.recorder = lambda *args: record.append("suite")
 
         class MockTextTestRunner(object):
-            def __init__(*_, **__): pass
+            def __init__(*_, **__):
+                pass
+
             def run(_self, suite):
                 record.append("run")
+
         self.safely_replace(ut1, "TextTestRunner", MockTextTestRunner)
 
         dist = Distribution()
@@ -119,17 +129,16 @@ class TestTest(TempdirManager,
         self.assertEqual(record, ["suite", "run"])
 
     def test_builds_before_running_tests(self):
+        self.addCleanup(set_command, 'distutils2.command.build.build')
         set_command('distutils2.tests.test_command_test.MockBuildCmd')
-        try:
-            dist = Distribution()
-            cmd = test(dist)
-            cmd.runner = self.prepare_named_function(lambda: None)
-            _RECORD[:] = []
-            cmd.ensure_finalized()
-            cmd.run()
-            self.assertEqual(_RECORD, ['build run'])
-        finally:
-            set_command('distutils2.command.build.build')
+
+        dist = Distribution()
+        dist.get_command_obj('build')._record = record = []
+        cmd = test(dist)
+        cmd.runner = self.prepare_named_function(lambda: None)
+        cmd.ensure_finalized()
+        cmd.run()
+        self.assertEqual(['build has run'], record)
 
     def _test_works_with_2to3(self):
         pass
@@ -139,16 +148,14 @@ class TestTest(TempdirManager,
         cmd = test(dist)
         phony_project = 'ohno_ohno-impossible_1234-name_stop-that!'
         cmd.tests_require = [phony_project]
-        record = []
-        cmd.announce = lambda *args: record.append(args)
         cmd.ensure_finalized()
-        self.assertEqual(1, len(record))
-        self.assertIn(phony_project, record[0][0])
+        logs = self.get_logs(logging.WARNING)
+        self.assertIn(phony_project, logs[-1])
 
     def prepare_a_module(self):
         tmp_dir = self.mkdtemp()
         sys.path.append(tmp_dir)
-        self.addCleanup(lambda: sys.path.remove(tmp_dir))
+        self.addCleanup(sys.path.remove, tmp_dir)
 
         self.write_file((tmp_dir, 'distutils2_tests_a.py'), '')
         import distutils2_tests_a as a_module
@@ -163,21 +170,30 @@ class TestTest(TempdirManager,
         dist = Distribution()
         cmd = test(dist)
         record = []
-        cmd.runner = self.prepare_named_function(lambda: record.append("runner called"))
+        cmd.runner = self.prepare_named_function(
+            lambda: record.append("runner called"))
         cmd.ensure_finalized()
         cmd.run()
         self.assertEqual(["runner called"], record)
 
     def prepare_mock_ut2(self):
         class MockUTClass(object):
-            def __init__(*_, **__): pass
-            def discover(self): pass
-            def run(self, _): pass
+            def __init__(*_, **__):
+                pass
+
+            def discover(self):
+                pass
+
+            def run(self, _):
+                pass
+
         class MockUTModule(object):
             TestLoader = MockUTClass
             TextTestRunner = MockUTClass
+
         mock_ut2 = MockUTModule()
-        self.safely_replace(sys.modules, "unittest2", mock_ut2, dictionary=True)
+        self.safely_replace(sys.modules, "unittest2",
+                            mock_ut2, dictionary=True)
         return mock_ut2
 
     def test_gets_unittest_discovery(self):
@@ -193,12 +209,13 @@ class TestTest(TempdirManager,
     def test_calls_discover(self):
         self.safely_replace(ut1.TestLoader, "discover", delete=True)
         mock_ut2 = self.prepare_mock_ut2()
-        _RECORD[:] = []
-        mock_ut2.TestLoader.discover = lambda self, path: _RECORD.append(path)
+        record = []
+        mock_ut2.TestLoader.discover = lambda self, path: record.append(path)
         dist = Distribution()
         cmd = test(dist)
         cmd.run()
-        self.assertEqual(_RECORD, [os.curdir])
+        self.assertEqual([os.curdir], record)
+
 
 def test_suite():
     return unittest.makeSuite(TestTest)

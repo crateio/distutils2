@@ -1,8 +1,9 @@
-"""Tests for distutils.msvc9compiler."""
-import sys
+"""Tests for distutils2.compiler.msvc9compiler."""
 import os
+import sys
 
-from distutils2.errors import DistutilsPlatformError
+from distutils2.errors import PackagingPlatformError
+
 from distutils2.tests import unittest, support
 
 _MANIFEST = """\
@@ -65,22 +66,22 @@ class msvc9compilerTestCase(support.TempdirManager,
 
     @unittest.skipUnless(sys.platform == "win32", "runs only on win32")
     def test_no_compiler(self):
-        # makes sure query_vcvarsall throws
-        # a DistutilsPlatformError if the compiler
-        # is not found
+        # make sure query_vcvarsall raises a PackagingPlatformError if
+        # the compiler is not found
         from distutils2.compiler.msvccompiler import get_build_version
         if get_build_version() < 8.0:
-            # this test is only for MSVC8.0 or above
-            return
+            raise unittest.SkipTest('only for MSVC8.0 or above')
+
+        from distutils2.compiler import msvc9compiler
         from distutils2.compiler.msvc9compiler import query_vcvarsall
+
         def _find_vcvarsall(version):
             return None
 
-        from distutils2 import msvc9compiler
         old_find_vcvarsall = msvc9compiler.find_vcvarsall
         msvc9compiler.find_vcvarsall = _find_vcvarsall
         try:
-            self.assertRaises(DistutilsPlatformError, query_vcvarsall,
+            self.assertRaises(PackagingPlatformError, query_vcvarsall,
                              'wont find this version')
         finally:
             msvc9compiler.find_vcvarsall = old_find_vcvarsall
@@ -97,16 +98,16 @@ class msvc9compilerTestCase(support.TempdirManager,
         # looking for values that should exist on all
         # windows registeries versions.
         path = r'Control Panel\Desktop'
-        v = Reg.get_value(path, u'dragfullwindows')
-        self.assertTrue(v in (u'0', u'1', u'2'))
+        v = Reg.get_value(path, 'dragfullwindows')
+        self.assertIn(v, ('0', '1', '2'))
 
-        import _winreg
-        HKCU = _winreg.HKEY_CURRENT_USER
+        import winreg
+        HKCU = winreg.HKEY_CURRENT_USER
         keys = Reg.read_keys(HKCU, 'xxxx')
         self.assertEqual(keys, None)
 
         keys = Reg.read_keys(HKCU, r'Control Panel')
-        self.assertTrue('Desktop' in keys)
+        self.assertIn('Desktop', keys)
 
     @unittest.skipUnless(sys.platform == "win32", "runs only on win32")
     def test_remove_visual_c_ref(self):
@@ -117,22 +118,16 @@ class msvc9compilerTestCase(support.TempdirManager,
         from distutils2.compiler.msvc9compiler import MSVCCompiler
         tempdir = self.mkdtemp()
         manifest = os.path.join(tempdir, 'manifest')
-        f = open(manifest, 'w')
-        try:
+        with open(manifest, 'w') as f:
             f.write(_MANIFEST)
-        finally:
-            f.close()
 
         compiler = MSVCCompiler()
         compiler._remove_visual_c_ref(manifest)
 
         # see what we got
-        f = open(manifest)
-        try:
+        with open(manifest) as f:
             # removing trailing spaces
-            content = '\n'.join([line.rstrip() for line in f.readlines()])
-        finally:
-            f.close()
+            content = '\n'.join(line.rstrip() for line in f.readlines())
 
         # makes sure the manifest was properly cleaned
         self.assertEqual(content, _CLEANED_MANIFEST)

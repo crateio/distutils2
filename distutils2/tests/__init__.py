@@ -5,39 +5,23 @@ distutils2.tests package.  Each test module has a name starting with
 'test' and contains a function test_suite().  The function is expected
 to return an initialized unittest.TestSuite instance.
 
-Tests for the command classes in the distutils2.command package are
-included in distutils2.tests as well, instead of using a separate
-distutils2.command.tests package, since command identification is done
-by import rather than matching pre-defined names.
-
-Always import unittest from this module, it will be the right version
-(standard library unittest for 3.2 and higher, third-party unittest2
-release for older versions).
-
-Utility code is included in distutils2.tests.support.  
+Utility code is included in distutils2.tests.support.
 """
+
+# Put this text back for the backport
+#Always import unittest from this module, it will be the right version
+#(standard library unittest for 3.2 and higher, third-party unittest2
+#elease for older versions).
 
 import os
 import sys
+import unittest2 as unittest
+from .support import TESTFN
 
-if sys.version_info >= (3, 2):
-    # improved unittest package from 3.2's standard library
-    import unittest
-else:
-    try:
-        # external release of same package for older versions
-        import unittest2 as unittest
-    except ImportError:
-        sys.exit('Error: You have to install unittest2')
-
-# use TESTFN from stdlib, pull in unlink for other modules to use as well
-if sys.version_info[0] == 3:
-  from test.support import TESTFN, unlink
-else :
-  from test.test_support import TESTFN, unlink
+# XXX move helpers to support, add tests for them, remove things that
+# duplicate test.support (or keep them for the backport; needs thinking)
 
 here = os.path.dirname(__file__) or os.curdir
-
 verbose = 1
 
 def test_suite():
@@ -49,6 +33,7 @@ def test_suite():
             module = sys.modules[modname]
             suite.addTest(module.test_suite())
     return suite
+
 
 class Error(Exception):
     """Base class for regression test exceptions."""
@@ -88,12 +73,13 @@ def _run_suite(suite, verbose_=1):
 def run_unittest(classes, verbose_=1):
     """Run tests from unittest.TestCase-derived classes.
 
-    Extracted from stdlib test.test_support and modified to support unittest.
+    Originally extracted from stdlib test.test_support and modified to
+    support unittest2.
     """
     valid_types = (unittest.TestSuite, unittest.TestCase)
     suite = unittest.TestSuite()
     for cls in classes:
-        if isinstance(cls, str):
+        if isinstance(cls, basestring):
             if cls in sys.modules:
                 suite.addTest(unittest.findTestCases(sys.modules[cls]))
             else:
@@ -111,7 +97,7 @@ def reap_children():
     stick around to hog resources and create problems when looking
     for refleaks.
 
-    Extracted from stdlib test.test_support.
+    Extracted from stdlib test.support.
     """
 
     # Reap all our dead child processes so we don't leave zombies around.
@@ -127,10 +113,11 @@ def reap_children():
             except:
                 break
 
+
 def captured_stdout(func, *args, **kw):
-    import StringIO
+    from StringIO import StringIO
     orig_stdout = getattr(sys, 'stdout')
-    setattr(sys, 'stdout', StringIO.StringIO())
+    setattr(sys, 'stdout', StringIO())
     try:
         res = func(*args, **kw)
         sys.stdout.seek(0)
@@ -138,12 +125,9 @@ def captured_stdout(func, *args, **kw):
     finally:
         setattr(sys, 'stdout', orig_stdout)
 
+
 def unload(name):
     try:
         del sys.modules[name]
     except KeyError:
         pass
-
-
-if __name__ == "__main__":
-    unittest.main(defaultTest="test_suite")

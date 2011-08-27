@@ -3,8 +3,9 @@ import os
 import sys
 
 from distutils2.command.build import build
+from sysconfig import get_platform
 from distutils2.tests import unittest, support
-from distutils2._backport.sysconfig import get_platform
+
 
 class BuildTestCase(support.TempdirManager,
                     support.LoggingCatcher,
@@ -40,11 +41,12 @@ class BuildTestCase(support.TempdirManager,
         self.assertEqual(cmd.build_temp, wanted)
 
         # build_scripts is build/scripts-x.x
-        wanted = os.path.join(cmd.build_base, 'scripts-' +  sys.version[0:3])
+        wanted = os.path.join(cmd.build_base, 'scripts-' + sys.version[0:3])
         self.assertEqual(cmd.build_scripts, wanted)
 
         # executable is os.path.normpath(sys.executable)
         self.assertEqual(cmd.executable, os.path.normpath(sys.executable))
+
 
 def test_suite():
     return unittest.makeSuite(BuildTestCase)

@@ -1,15 +1,12 @@
-"""distutils.command.build_py
-
-Implements the Distutils 'build_py' command."""
-
+"""Build pure Python modules (just copy to build directory)."""
 
 import os
 import sys
-import logging
 from glob import glob
 
+from distutils2 import logger
 from distutils2.command.cmd import Command
-from distutils2.errors import DistutilsOptionError, DistutilsFileError
+from distutils2.errors import PackagingOptionError, PackagingFileError
 from distutils2.util import convert_path
 from distutils2.compat import Mixin2to3
 
@@ -18,10 +15,10 @@ __all__ = ['build_py']
 
 class build_py(Command, Mixin2to3):
 
-    description = "\"build\" pure Python modules (copy to build directory)"
+    description = "build pure Python modules (copy to build directory)"
 
     user_options = [
-        ('build-lib=', 'd', "directory to \"build\" (copy) to"),
+        ('build-lib=', 'd', "directory to build (copy) to"),
         ('compile', 'c', "compile .py to .pyc"),
         ('no-compile', None, "don't compile .py files [default]"),
         ('optimize=', 'O',
@@ -45,7 +42,7 @@ class build_py(Command, Mixin2to3):
         self.package = None
         self.package_data = None
         self.package_dir = None
-        self.compile = 0
+        self.compile = False
         self.optimize = 0
         self.force = None
         self._updated_files = []
@@ -77,7 +74,7 @@ class build_py(Command, Mixin2to3):
                 self.optimize = int(self.optimize)
                 assert 0 <= self.optimize <= 2
             except (ValueError, AssertionError):
-                raise DistutilsOptionError("optimize must be 0, 1, or 2")
+                raise PackagingOptionError("optimize must be 0, 1, or 2")
 
     def run(self):
         # XXX copy_file by default preserves atime and mtime.  IMHO this is
@@ -111,7 +108,7 @@ class build_py(Command, Mixin2to3):
             self.run_2to3(self._updated_files, self._doctests_2to3,
                                             self.use_2to3_fixers)
 
-        self.byte_compile(self.get_outputs(include_bytecode=0))
+        self.byte_compile(self.get_outputs(include_bytecode=False))
 
     # -- Top-level worker functions ------------------------------------
 
@@ -154,7 +151,7 @@ class build_py(Command, Mixin2to3):
             # Each pattern has to be converted to a platform-specific path
             filelist = glob(os.path.join(src_dir, convert_path(pattern)))
             # Files that match more than one pattern are only added once
-            files.extend([fn for fn in filelist if fn not in files])
+            files.extend(fn for fn in filelist if fn not in files)
         return files
 
     def build_package_data(self):
@@ -179,6 +176,7 @@ class build_py(Command, Mixin2to3):
         """Return the directory, relative to the top of the source
            distribution, where package 'package' should be found
            (at least according to the 'package_dir' option, if any)."""
+
         path = package.split('.')
         if self.package_dir is not None:
             path.insert(0, self.package_dir)
@@ -197,10 +195,10 @@ class build_py(Command, Mixin2to3):
         # circumvent them.
         if package_dir != "":
             if not os.path.exists(package_dir):
-                raise DistutilsFileError(
+                raise PackagingFileError(
                       "package directory '%s' does not exist" % package_dir)
             if not os.path.isdir(package_dir):
-                raise DistutilsFileError(
+                raise PackagingFileError(
                        "supposed package directory '%s' exists, "
                        "but is not a directory" % package_dir)
 
@@ -210,8 +208,8 @@ class build_py(Command, Mixin2to3):
             if os.path.isfile(init_py):
                 return init_py
             else:
-                logging.warning(("package init file '%s' not found " +
-                                 "(or not a regular file)"), init_py)
+                logger.warning(("package init file '%s' not found " +
+                                "(or not a regular file)"), init_py)
 
         # Either not in a package at all (__init__.py not expected), or
         # __init__.py doesn't exist -- so don't return the filename.
@@ -219,8 +217,8 @@ class build_py(Command, Mixin2to3):
 
     def check_module(self, module, module_file):
         if not os.path.isfile(module_file):
-            logging.warning("file %s (for module %s) not found",
-                            module_file, module)
+            logger.warning("file %s (for module %s) not found",
+                           module_file, module)
             return False
         else:
             return True
@@ -240,7 +238,7 @@ class build_py(Command, Mixin2to3):
                 module = os.path.splitext(os.path.basename(f))[0]
                 modules.append((package, module, f))
             else:
-                self.debug_print("excluding %s" % setup_script)
+                logger.debug("excluding %s", setup_script)
         return modules
 
     def find_modules(self):
@@ -273,10 +271,10 @@ class build_py(Command, Mixin2to3):
             module_base = path[-1]
 
             try:
-                (package_dir, checked) = packages[package]
+                package_dir, checked = packages[package]
             except KeyError:
                 package_dir = self.get_package_dir(package)
-                checked = 0
+                checked = False
 
             if not checked:
                 init_py = self.check_package(package, package_dir)
@@ -323,10 +321,10 @@ class build_py(Command, Mixin2to3):
         outfile_path = [build_dir] + list(package) + [module + ".py"]
         return os.path.join(*outfile_path)
 
-    def get_outputs(self, include_bytecode=1):
+    def get_outputs(self, include_bytecode=True):
         modules = self.find_all_modules()
         outputs = []
-        for (package, module, module_file) in modules:
+        for package, module, module_file in modules:
             package = package.split('.')
             filename = self.get_module_outfile(self.build_lib, package, module)
             outputs.append(filename)
@@ -344,7 +342,7 @@ class build_py(Command, Mixin2to3):
         return outputs
 
     def build_module(self, module, module_file, package):
-        if isinstance(package, str):
+        if isinstance(package, basestring):
             package = package.split('.')
         elif not isinstance(package, (list, tuple)):
             raise TypeError(
@@ -356,11 +354,11 @@ class build_py(Command, Mixin2to3):
         outfile = self.get_module_outfile(self.build_lib, package, module)
         dir = os.path.dirname(outfile)
         self.mkpath(dir)
-        return self.copy_file(module_file, outfile, preserve_mode=0)
+        return self.copy_file(module_file, outfile, preserve_mode=False)
 
     def build_modules(self):
         modules = self.find_modules()
-        for (package, module, module_file) in modules:
+        for package, module, module_file in modules:
 
             # Now "build" the module -- ie. copy the source file to
             # self.build_lib (the build directory for Python source).
@@ -385,13 +383,14 @@ class build_py(Command, Mixin2to3):
 
             # Now loop over the modules we found, "building" each one (just
             # copy it to self.build_lib).
-            for (package_, module, module_file) in modules:
+            for package_, module, module_file in modules:
                 assert package == package_
                 self.build_module(module, module_file, package)
 
     def byte_compile(self, files):
         if hasattr(sys, 'dont_write_bytecode') and sys.dont_write_bytecode:
-            self.warn('byte-compiling is disabled, skipping.')
+            logger.warning('%s: byte-compiling is disabled, skipping.',
+                           self.get_command_name())
             return
 
         from distutils2.util import byte_compile

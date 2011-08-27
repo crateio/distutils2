@@ -1,8 +1,4 @@
-"""distutils.bcppcompiler
-
-Contains BorlandCCompiler, an implementation of the abstract CCompiler class
-for the Borland C++ compiler.
-"""
+"""CCompiler implementation for the Borland C++ compiler."""
 
 # This implementation by Lyle Johnson, based on the original msvccompiler.py
 # module and using the directions originally published by Gordon Williams.
@@ -10,10 +6,11 @@ for the Borland C++ compiler.
 # XXX looks like there's a LOT of overlap between these two classes:
 # someone should sit down and factor out the common code as
 # WindowsCCompiler!  --GPW
-import os
 
-from distutils2.errors import (DistutilsExecError, CompileError, LibError,
-                               LinkError, UnknownFileError)
+import os, sys
+
+from distutils2.errors import (PackagingExecError, CompileError, LibError,
+                              LinkError, UnknownFileError)
 from distutils2.compiler.ccompiler import CCompiler
 from distutils2.compiler import gen_preprocess_options
 from distutils2.file_util import write_file
@@ -50,12 +47,8 @@ class BCPPCompiler(CCompiler) :
     exe_extension = '.exe'
 
 
-    def __init__ (self,
-                  verbose=0,
-                  dry_run=0,
-                  force=0):
-
-        CCompiler.__init__ (self, verbose, dry_run, force)
+    def __init__(self, verbose=0, dry_run=False, force=False):
+        CCompiler.__init__(self, verbose, dry_run, force)
 
         # These executables are assumed to all be in the path.
         # Borland doesn't seem to use any special registry settings to
@@ -79,18 +72,18 @@ class BCPPCompiler(CCompiler) :
     # -- Worker methods ------------------------------------------------
 
     def compile(self, sources,
-                output_dir=None, macros=None, include_dirs=None, debug=0,
+                output_dir=None, macros=None, include_dirs=None, debug=False,
                 extra_preargs=None, extra_postargs=None, depends=None):
 
         macros, objects, extra_postargs, pp_opts, build = \
                 self._setup_compile(output_dir, macros, include_dirs, sources,
                                     depends, extra_postargs)
         compile_opts = extra_preargs or []
-        compile_opts.append ('-c')
+        compile_opts.append('-c')
         if debug:
-            compile_opts.extend (self.compile_options_debug)
+            compile_opts.extend(self.compile_options_debug)
         else:
-            compile_opts.extend (self.compile_options)
+            compile_opts.extend(self.compile_options)
 
         for obj in objects:
             try:
@@ -110,9 +103,9 @@ class BCPPCompiler(CCompiler) :
             if ext == '.rc':
                 # This needs to be compiled to a .res file -- do it now.
                 try:
-                    self.spawn (["brcc32", "-fo", obj, src])
-                except DistutilsExecError, msg:
-                    raise CompileError, msg
+                    self.spawn(["brcc32", "-fo", obj, src])
+                except PackagingExecError:
+                    raise CompileError(sys.exc_info()[1])
                 continue # the 'for' loop
 
             # The next two are both for the real compiler.
@@ -132,72 +125,53 @@ class BCPPCompiler(CCompiler) :
             # Note that the source file names must appear at the end of
             # the command line.
             try:
-                self.spawn ([self.cc] + compile_opts + pp_opts +
-                            [input_opt, output_opt] +
-                            extra_postargs + [src])
-            except DistutilsExecError, msg:
-                raise CompileError, msg
+                self.spawn([self.cc] + compile_opts + pp_opts +
+                           [input_opt, output_opt] +
+                           extra_postargs + [src])
+            except PackagingExecError:
+                raise CompileError(sys.exc_info()[1])
 
         return objects
 
-    # compile ()
 
-
-    def create_static_lib (self,
-                           objects,
-                           output_libname,
-                           output_dir=None,
-                           debug=0,
-                           target_lang=None):
-
-        (objects, output_dir) = self._fix_object_args (objects, output_dir)
+    def create_static_lib(self, objects, output_libname, output_dir=None,
+                          debug=False, target_lang=None):
+        objects, output_dir = self._fix_object_args(objects, output_dir)
         output_filename = \
-            self.library_filename (output_libname, output_dir=output_dir)
+            self.library_filename(output_libname, output_dir=output_dir)
 
-        if self._need_link (objects, output_filename):
+        if self._need_link(objects, output_filename):
             lib_args = [output_filename, '/u'] + objects
             if debug:
                 pass                    # XXX what goes here?
             try:
-                self.spawn ([self.lib] + lib_args)
-            except DistutilsExecError, msg:
-                raise LibError, msg
+                self.spawn([self.lib] + lib_args)
+            except PackagingExecError:
+                raise LibError(sys.exc_info()[1])
         else:
             logger.debug("skipping %s (up-to-date)", output_filename)
 
-    # create_static_lib ()
 
-
-    def link (self,
-              target_desc,
-              objects,
-              output_filename,
-              output_dir=None,
-              libraries=None,
-              library_dirs=None,
-              runtime_library_dirs=None,
-              export_symbols=None,
-              debug=0,
-              extra_preargs=None,
-              extra_postargs=None,
-              build_temp=None,
-              target_lang=None):
+    def link(self, target_desc, objects, output_filename, output_dir=None,
+             libraries=None, library_dirs=None, runtime_library_dirs=None,
+             export_symbols=None, debug=False, extra_preargs=None,
+             extra_postargs=None, build_temp=None, target_lang=None):
 
         # XXX this ignores 'build_temp'!  should follow the lead of
         # msvccompiler.py
 
-        (objects, output_dir) = self._fix_object_args (objects, output_dir)
-        (libraries, library_dirs, runtime_library_dirs) = \
-            self._fix_lib_args (libraries, library_dirs, runtime_library_dirs)
+        objects, output_dir = self._fix_object_args(objects, output_dir)
+        libraries, library_dirs, runtime_library_dirs = \
+            self._fix_lib_args(libraries, library_dirs, runtime_library_dirs)
 
         if runtime_library_dirs:
             logger.warning("don't know what to do with "
                            "'runtime_library_dirs': %r", runtime_library_dirs)
 
         if output_dir is not None:
-            output_filename = os.path.join (output_dir, output_filename)
+            output_filename = os.path.join(output_dir, output_filename)
 
-        if self._need_link (objects, output_filename):
+        if self._need_link(objects, output_filename):
 
             # Figure out linker args based on type of target.
             if target_desc == CCompiler.EXECUTABLE:
@@ -218,10 +192,10 @@ class BCPPCompiler(CCompiler) :
             if export_symbols is None:
                 def_file = ''
             else:
-                head, tail = os.path.split (output_filename)
-                modname, ext = os.path.splitext (tail)
+                head, tail = os.path.split(output_filename)
+                modname, ext = os.path.splitext(tail)
                 temp_dir = os.path.dirname(objects[0]) # preserve tree structure
-                def_file = os.path.join (temp_dir, '%s.def' % modname)
+                def_file = os.path.join(temp_dir, '%s.def' % modname)
                 contents = ['EXPORTS']
                 for sym in (export_symbols or []):
                     contents.append('  %s=_%s' % (sym, sym))
@@ -229,13 +203,13 @@ class BCPPCompiler(CCompiler) :
                              "writing %s" % def_file)
 
             # Borland C++ has problems with '/' in paths
-            objects2 = map(os.path.normpath, objects)
+            objects2 = [os.path.normpath(o) for o in objects]
             # split objects in .obj and .res files
             # Borland C++ needs them at different positions in the command line
             objects = [startup_obj]
             resources = []
             for file in objects2:
-                (base, ext) = os.path.splitext(os.path.normcase(file))
+                base, ext = os.path.splitext(os.path.normcase(file))
                 if ext == '.res':
                     resources.append(file)
                 else:
@@ -260,7 +234,7 @@ class BCPPCompiler(CCompiler) :
             # them.  Arghghh!.  Apparently it works fine as coded...
 
             # name of dll/exe file
-            ld_args.extend([',',output_filename])
+            ld_args.extend((',',output_filename))
             # no map file and start libraries
             ld_args.append(',,')
 
@@ -276,11 +250,11 @@ class BCPPCompiler(CCompiler) :
                     ld_args.append(libfile)
 
             # some default libraries
-            ld_args.append ('import32')
-            ld_args.append ('cw32mt')
+            ld_args.append('import32')
+            ld_args.append('cw32mt')
 
             # def file for export symbols
-            ld_args.extend([',',def_file])
+            ld_args.extend((',',def_file))
             # add resource files
             ld_args.append(',')
             ld_args.extend(resources)
@@ -291,27 +265,25 @@ class BCPPCompiler(CCompiler) :
             if extra_postargs:
                 ld_args.extend(extra_postargs)
 
-            self.mkpath (os.path.dirname (output_filename))
+            self.mkpath(os.path.dirname(output_filename))
             try:
-                self.spawn ([self.linker] + ld_args)
-            except DistutilsExecError, msg:
-                raise LinkError, msg
+                self.spawn([self.linker] + ld_args)
+            except PackagingExecError:
+                raise LinkError(sys.exc_info()[1])
 
         else:
             logger.debug("skipping %s (up-to-date)", output_filename)
 
-    # link ()
-
     # -- Miscellaneous methods -----------------------------------------
 
 
-    def find_library_file (self, dirs, lib, debug=0):
+    def find_library_file(self, dirs, lib, debug=False):
         # List of effective library names to try, in order of preference:
         # xxx_bcpp.lib is better than xxx.lib
         # and xxx_d.lib is better than xxx.lib if debug is set
         #
         # The "_bcpp" suffix is to handle a Python installation for people
-        # with multiple compilers (primarily Distutils hackers, I suspect
+        # with multiple compilers (primarily Packaging hackers, I suspect
         # ;-).  The idea is they'd have one static library for each
         # compiler they care about, since (almost?) every Windows compiler
         # seems to have a different format for static libraries.
@@ -331,43 +303,35 @@ class BCPPCompiler(CCompiler) :
             return None
 
     # overwrite the one from CCompiler to support rc and res-files
-    def object_filenames (self,
-                          source_filenames,
-                          strip_dir=0,
-                          output_dir=''):
-        if output_dir is None: output_dir = ''
+    def object_filenames(self, source_filenames, strip_dir=False,
+                         output_dir=''):
+        if output_dir is None:
+            output_dir = ''
         obj_names = []
         for src_name in source_filenames:
             # use normcase to make sure '.rc' is really '.rc' and not '.RC'
-            (base, ext) = os.path.splitext (os.path.normcase(src_name))
+            base, ext = os.path.splitext(os.path.normcase(src_name))
             if ext not in (self.src_extensions + ['.rc','.res']):
-                raise UnknownFileError, \
-                      "unknown file type '%s' (from '%s')" % \
-                      (ext, src_name)
+                raise UnknownFileError("unknown file type '%s' (from '%s')" % \
+                      (ext, src_name))
             if strip_dir:
-                base = os.path.basename (base)
+                base = os.path.basename(base)
             if ext == '.res':
                 # these can go unchanged
-                obj_names.append (os.path.join (output_dir, base + ext))
+                obj_names.append(os.path.join(output_dir, base + ext))
             elif ext == '.rc':
                 # these need to be compiled to .res-files
-                obj_names.append (os.path.join (output_dir, base + '.res'))
+                obj_names.append(os.path.join(output_dir, base + '.res'))
             else:
-                obj_names.append (os.path.join (output_dir,
-                                            base + self.obj_extension))
+                obj_names.append(os.path.join(output_dir,
+                                              base + self.obj_extension))
         return obj_names
 
-    # object_filenames ()
 
-    def preprocess (self,
-                    source,
-                    output_file=None,
-                    macros=None,
-                    include_dirs=None,
-                    extra_preargs=None,
-                    extra_postargs=None):
-
-        (_, macros, include_dirs) = \
+    def preprocess(self, source, output_file=None, macros=None,
+                   include_dirs=None, extra_preargs=None,
+                   extra_postargs=None):
+        _, macros, include_dirs = \
             self._fix_compile_args(None, macros, include_dirs)
         pp_opts = gen_preprocess_options(macros, include_dirs)
         pp_args = ['cpp32.exe'] + pp_opts
@@ -387,8 +351,7 @@ class BCPPCompiler(CCompiler) :
                 self.mkpath(os.path.dirname(output_file))
             try:
                 self.spawn(pp_args)
-            except DistutilsExecError, msg:
-                print msg
-                raise CompileError, msg
-
-    # preprocess()
+            except PackagingExecError:
+                msg = sys.exc_info()[1]
+                print(msg)
+                raise CompileError(msg)

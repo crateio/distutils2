@@ -1,12 +1,15 @@
-"""distutils.command.bdist
+"""Create a built (binary) distribution.
 
-Implements the Distutils 'bdist' command (create a built [binary]
-distribution)."""
+If a --formats option was given on the command line, this command will
+call the corresponding bdist_* commands; if the option was absent, a
+bdist_* command depending on the current platform will be called.
+"""
+
 import os
 
 from distutils2 import util
 from distutils2.command.cmd import Command
-from distutils2.errors import DistutilsPlatformError, DistutilsOptionError
+from distutils2.errors import PackagingPlatformError, PackagingOptionError
 
 
 def show_formats():
@@ -52,8 +55,10 @@ class bdist(Command):
          "lists available distribution formats", show_formats),
         ]
 
-    # This won't do in reality: will need to distinguish RPM-ish Linux,
-    # Debian-ish Linux, Solaris, FreeBSD, ..., Windows, Mac OS.
+    # This is of course very simplistic.  The various UNIX family operating
+    # systems have their specific formats, but they are out of scope for us;
+    # bdist_dumb is, well, dumb; it's more a building block for other
+    # distutils2 tools than a real end-user binary format.
     default_format = {'posix': 'gztar',
                       'nt': 'zip',
                       'os2': 'zip'}
@@ -79,7 +84,7 @@ class bdist(Command):
         self.plat_name = None
         self.formats = None
         self.dist_dir = None
-        self.skip_build = 0
+        self.skip_build = False
         self.group = None
         self.owner = None
 
@@ -104,9 +109,8 @@ class bdist(Command):
             try:
                 self.formats = [self.default_format[os.name]]
             except KeyError:
-                raise DistutilsPlatformError, \
-                      "don't know how to create built distributions " + \
-                      "on platform %s" % os.name
+                raise PackagingPlatformError("don't know how to create built distributions " + \
+                      "on platform %s" % os.name)
 
         if self.dist_dir is None:
             self.dist_dir = "dist"
@@ -118,12 +122,13 @@ class bdist(Command):
             try:
                 commands.append(self.format_command[format][0])
             except KeyError:
-                raise DistutilsOptionError, "invalid format '%s'" % format
+                raise PackagingOptionError("invalid format '%s'" % format)
 
         # Reinitialize and run each command.
         for i in range(len(self.formats)):
             cmd_name = commands[i]
             sub_cmd = self.get_reinitialized_command(cmd_name)
+            sub_cmd.format = self.formats[i]
 
             # passing the owner and group names for tar archiving
             if cmd_name == 'bdist_dumb':
@@ -133,5 +138,5 @@ class bdist(Command):
             # If we're going to need to run this command again, tell it to
             # keep its temporary files around so subsequent runs go faster.
             if cmd_name in commands[i+1:]:
-                sub_cmd.keep_temp = 1
+                sub_cmd.keep_temp = True
             self.run_command(cmd_name)

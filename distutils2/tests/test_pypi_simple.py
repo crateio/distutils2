@@ -1,15 +1,26 @@
-"""Tests for the pypi.simple module.
-
-"""
-import sys
+"""Tests for the distutils2.pypi.simple module."""
+import re
 import os
+import sys
+import httplib
 import urllib2
 
-from distutils2.index.simple import Crawler
+from distutils2.pypi.simple import Crawler
+
 from distutils2.tests import unittest
-from distutils2.tests.support import TempdirManager, LoggingCatcher
-from distutils2.tests.pypi_server import (use_pypi_server, PyPIServer,
-                                          PYPI_DEFAULT_STATIC_PATH)
+from distutils2.tests.support import (TempdirManager, LoggingCatcher,
+                                     fake_dec)
+
+try:
+    import _thread
+    from distutils2.tests.pypi_server import (use_pypi_server, PyPIServer,
+                                             PYPI_DEFAULT_STATIC_PATH)
+except ImportError:
+    _thread = None
+    use_pypi_server = fake_dec
+    PYPI_DEFAULT_STATIC_PATH = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), 'pypiserver')
+
 
 
 class SimpleCrawlerTestCase(TempdirManager,
@@ -17,53 +28,55 @@ class SimpleCrawlerTestCase(TempdirManager,
                             unittest.TestCase):
 
     def _get_simple_crawler(self, server, base_url="/simple/", hosts=None,
-                          *args, **kwargs):
-        """Build and return a SimpleIndex instance, with the test server
-        urls
-        """
+                            *args, **kwargs):
+        """Build and return a SimpleIndex with the test server urls"""
         if hosts is None:
             hosts = (server.full_address.replace("http://", ""),)
         kwargs['hosts'] = hosts
         return Crawler(server.full_address + base_url, *args,
-            **kwargs)
+                       **kwargs)
 
+    @unittest.skipIf(_thread is None, 'needs threads')
     @use_pypi_server()
     def test_bad_urls(self, server):
         crawler = Crawler()
         url = 'http://127.0.0.1:0/nonesuch/test_simple'
         try:
             v = crawler._open_url(url)
-        except Exception, v:
-            self.assertTrue(url in str(v))
+        except Exception:
+            self.assertIn(url, str(sys.exc_info()[1]))
         else:
-            self.assertTrue(isinstance(v, urllib2.HTTPError))
+            v.close()
+            self.assertIsInstance(v, urllib2.HTTPError)
 
         # issue 16
         # easy_install inquant.contentmirror.plone breaks because of a typo
         # in its home URL
         crawler = Crawler(hosts=('example.org',))
-        url = 'url:%20https://svn.plone.org/svn/collective/inquant.contentmirror.plone/trunk'
+        url = ('url:%20https://svn.plone.org/svn/collective/'
+               'inquant.contentmirror.plone/trunk')
         try:
             v = crawler._open_url(url)
-        except Exception, v:
-            self.assertTrue(url in str(v))
+        except Exception:
+            self.assertIn(url, str(sys.exc_info()[1]))
         else:
-            self.assertTrue(isinstance(v, urllib2.HTTPError))
+            v.close()
+            self.assertIsInstance(v, urllib2.HTTPError)
 
         def _urlopen(*args):
-            import httplib
             raise httplib.BadStatusLine('line')
 
         old_urlopen = urllib2.urlopen
         urllib2.urlopen = _urlopen
         url = 'http://example.org'
         try:
-            try:
-                v = crawler._open_url(url)
-            except Exception, v:
-                self.assertTrue('line' in str(v))
-            else:
-                raise AssertionError('Should have raise here!')
+            v = crawler._open_url(url)
+        except Exception:
+            self.assertIn('line', str(sys.exc_info()[1]))
+        else:
+            v.close()
+            # TODO use self.assertRaises
+            raise AssertionError('Should have raise here!')
         finally:
             urllib2.urlopen = old_urlopen
 
@@ -71,17 +84,16 @@ class SimpleCrawlerTestCase(TempdirManager,
         url = 'http://http://svn.pythonpaste.org/Paste/wphp/trunk'
         try:
             crawler._open_url(url)
-        except Exception, v:
-            self.assertTrue('nonnumeric port' in str(v))
+        except Exception:
+            self.assertIn('nonnumeric port', str(sys.exc_info()[1]))
 
         # issue #160
-        if sys.version_info[0] == 2 and sys.version_info[1] == 7:
-            # this should not fail
-            url = server.full_address
-            page = ('<a href="http://www.famfamfam.com]('
-                    'http://www.famfamfam.com/">')
-            crawler._process_url(url, page)
+        url = server.full_address
+        page = ('<a href="http://www.famfamfam.com]('
+                'http://www.famfamfam.com/">')
+        crawler._process_url(url, page)
 
+    @unittest.skipIf(_thread is None, 'needs threads')
     @use_pypi_server("test_found_links")
     def test_found_links(self, server):
         # Browse the index, asking for a specified release version
@@ -106,7 +118,7 @@ class SimpleCrawlerTestCase(TempdirManager,
         # Now, when following externals, we can have a list of hosts to trust.
         # and don't follow other external links than the one described here.
         crawler = Crawler(hosts=["pypi.python.org", "example.org"],
-                                   follow_externals=True)
+                          follow_externals=True)
         good_urls = (
             "http://pypi.python.org/foo/bar",
             "http://pypi.python.org/simple/foobar",
@@ -132,10 +144,12 @@ class SimpleCrawlerTestCase(TempdirManager,
 
         # specify a list of hosts we want to allow
         crawler = Crawler(follow_externals=True,
-                                   hosts=("*.example.org",))
+                          hosts=("*.example.org",))
         self.assertFalse(crawler._is_browsable("http://an-external.link/path"))
-        self.assertTrue(crawler._is_browsable("http://pypi.example.org/a/path"))
+        self.assertTrue(
+            crawler._is_browsable("http://pypi.example.org/a/path"))
 
+    @unittest.skipIf(_thread is None, 'needs threads')
     @use_pypi_server("with_externals")
     def test_follow_externals(self, server):
         # Include external pages
@@ -146,6 +160,7 @@ class SimpleCrawlerTestCase(TempdirManager,
         self.assertIn(server.full_address + "/external/external.html",
             crawler._processed_urls)
 
+    @unittest.skipIf(_thread is None, 'needs threads')
     @use_pypi_server("with_real_externals")
     def test_restrict_hosts(self, server):
         # Only use a list of allowed hosts is possible
@@ -156,6 +171,7 @@ class SimpleCrawlerTestCase(TempdirManager,
         self.assertNotIn(server.full_address + "/external/external.html",
             crawler._processed_urls)
 
+    @unittest.skipIf(_thread is None, 'needs threads')
     @use_pypi_server(static_filesystem_paths=["with_externals"],
         static_uri_paths=["simple", "external"])
     def test_links_priority(self, server):
@@ -189,6 +205,7 @@ class SimpleCrawlerTestCase(TempdirManager,
                          releases[0].dists['sdist'].url['hashval'])
         self.assertEqual('md5', releases[0].dists['sdist'].url['hashname'])
 
+    @unittest.skipIf(_thread is None, 'needs threads')
     @use_pypi_server(static_filesystem_paths=["with_norel_links"],
         static_uri_paths=["simple", "external"])
     def test_not_scan_all_links(self, server):
@@ -214,6 +231,7 @@ class SimpleCrawlerTestCase(TempdirManager,
         self.assertIn("%s/foobar-2.0.tar.gz" % server.full_address,
             crawler._processed_urls)  # linked from external homepage (rel)
 
+    @unittest.skipIf(_thread is None, 'needs threads')
     def test_uses_mirrors(self):
         # When the main repository seems down, try using the given mirrors"""
         server = PyPIServer("foo_bar_baz")
@@ -222,17 +240,18 @@ class SimpleCrawlerTestCase(TempdirManager,
 
         try:
             # create the index using both servers
-            crawler = Crawler(server.full_address + "/simple/",
-                hosts=('*',), timeout=1,  # set the timeout to 1s for the tests
-                mirrors=[mirror.full_address])
+            crawler = Crawler(server.full_address + "/simple/", hosts=('*',),
+                              # set the timeout to 1s for the tests
+                              timeout=1, mirrors=[mirror.full_address])
 
             # this should not raise a timeout
             self.assertEqual(4, len(crawler.get_releases("foo")))
         finally:
             mirror.stop()
+            server.stop()
 
     def test_simple_link_matcher(self):
-        # Test that the simple link matcher yields the right links"""
+        # Test that the simple link matcher finds the right links"""
         crawler = Crawler(follow_externals=False)
 
         # Here, we define:
@@ -249,32 +268,40 @@ class SimpleCrawlerTestCase(TempdirManager,
         <a href="http://dl-link2" rel="homepage">homepage_link1</a>
         <a href="%(index_url)stest" rel="homepage">homepage_link2</a>
         <a href="%(index_url)stest/foobar-1.tar.gz#md5=abcdef>download_link2</a>
-        """ % {'index_url': crawler.index_url }
+        """ % {'index_url': crawler.index_url}
 
         # Test that the simple link matcher yield the good links.
         generator = crawler._simple_link_matcher(content, crawler.index_url)
-        self.assertEqual(('%stest/foobar-1.tar.gz#md5=abcdef' % crawler.index_url,
-                         True), generator.next())
-        self.assertEqual(('http://dl-link1', True), generator.next())
+        self.assertEqual(('%stest/foobar-1.tar.gz#md5=abcdef' %
+                          crawler.index_url, True), next(generator))
+        self.assertEqual(('http://dl-link1', True), next(generator))
         self.assertEqual(('%stest' % crawler.index_url, False),
-                         generator.next())
+                         next(generator))
         self.assertRaises(StopIteration, generator.next)
 
         # Follow the external links is possible (eg. homepages)
         crawler.follow_externals = True
         generator = crawler._simple_link_matcher(content, crawler.index_url)
-        self.assertEqual(('%stest/foobar-1.tar.gz#md5=abcdef' % crawler.index_url,
-                         True), generator.next())
-        self.assertEqual(('http://dl-link1', True), generator.next())
-        self.assertEqual(('http://dl-link2', False), generator.next())
+        self.assertEqual(('%stest/foobar-1.tar.gz#md5=abcdef' %
+                          crawler.index_url, True), next(generator))
+        self.assertEqual(('http://dl-link1', True), next(generator))
+        self.assertEqual(('http://dl-link2', False), next(generator))
         self.assertEqual(('%stest' % crawler.index_url, False),
-                         generator.next())
+                         next(generator))
         self.assertRaises(StopIteration, generator.next)
 
     def test_browse_local_files(self):
         # Test that we can browse local files"""
-        index_path = os.sep.join(["file://" + PYPI_DEFAULT_STATIC_PATH,
-                                  "test_found_links", "simple"])
+        index_url = "file://" + PYPI_DEFAULT_STATIC_PATH
+        if sys.platform == 'win32':
+            # under windows the correct syntax is:
+            #   file:///C|\the\path\here
+            # instead of
+            #   file://C:\the\path\here
+            fix = re.compile(r'^(file://)([A-Za-z])(:)')
+            index_url = fix.sub('\\1/\\2|', index_url)
+
+        index_path = os.sep.join([index_url, "test_found_links", "simple"])
         crawler = Crawler(index_path)
         dists = crawler.get_releases("foobar")
         self.assertEqual(4, len(dists))
@@ -289,19 +316,20 @@ class SimpleCrawlerTestCase(TempdirManager,
     def test_default_link_matcher(self):
         crawler = Crawler("http://example.org", mirrors=[])
         crawler.follow_externals = True
-        crawler._is_browsable = lambda *args:True
+        crawler._is_browsable = lambda *args: True
         base_url = "http://example.org/some/file/"
         content = """
 <a href="../homepage" rel="homepage">link</a>
 <a href="../download" rel="download">link2</a>
 <a href="../simpleurl">link2</a>
         """
-        found_links = set(dict(crawler._default_link_matcher(content,
-                                                             base_url)))
+        found_links = set(uri for uri, _ in
+                          crawler._default_link_matcher(content, base_url))
         self.assertIn('http://example.org/some/homepage', found_links)
         self.assertIn('http://example.org/some/simpleurl', found_links)
         self.assertIn('http://example.org/some/download', found_links)
 
+    @unittest.skipIf(_thread is None, 'needs threads')
     @use_pypi_server("project_list")
     def test_search_projects(self, server):
         # we can search the index for some projects, on their names
@@ -309,11 +337,12 @@ class SimpleCrawlerTestCase(TempdirManager,
         crawler = self._get_simple_crawler(server)
         tests = (('Foobar', ['FooBar-bar', 'Foobar-baz', 'Baz-FooBar']),
                  ('foobar*', ['FooBar-bar', 'Foobar-baz']),
-                 ('*foobar', ['Baz-FooBar',]))
+                 ('*foobar', ['Baz-FooBar']))
 
         for search, expected in tests:
             projects = [p.name for p in crawler.search_projects(search)]
             self.assertListEqual(expected, projects)
+
 
 def test_suite():
     return unittest.makeSuite(SimpleCrawlerTestCase)

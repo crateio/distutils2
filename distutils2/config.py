@@ -1,21 +1,19 @@
-""" distutil2.config
+"""Utilities to find and read config files used by distutils2."""
 
-    Know how to read all config files Distutils2 uses.
-"""
-import os.path
+import codecs
 import os
 import sys
 import logging
-from ConfigParser import RawConfigParser
-from shlex import split
 
+from shlex import split
+from ConfigParser import RawConfigParser
 from distutils2 import logger
-from distutils2.errors import DistutilsOptionError
+from distutils2.errors import PackagingOptionError
 from distutils2.compiler.extension import Extension
-from distutils2.util import check_environ, resolve_name, strtobool
+from distutils2.util import (check_environ, iglob, resolve_name, strtobool,
+                            split_multiline)
 from distutils2.compiler import set_compiler
 from distutils2.command import set_command
-from distutils2.resources import resources_dests
 from distutils2.markers import interpret
 
 
@@ -25,29 +23,54 @@ def _pop_values(values_dct, key):
     if not vals_str:
         return
     fields = []
-    for field in vals_str.split(os.linesep):
+    # the line separator is \n for setup.cfg files
+    for field in vals_str.split('\n'):
         tmp_vals = field.split('--')
-        if (len(tmp_vals) == 2) and (not interpret(tmp_vals[1])):
+        if len(tmp_vals) == 2 and not interpret(tmp_vals[1]):
             continue
         fields.append(tmp_vals[0])
-    # Get bash options like `gcc -print-file-name=libgcc.a`
+    # Get bash options like `gcc -print-file-name=libgcc.a` XXX bash options?
     vals = split(' '.join(fields))
     if vals:
         return vals
 
 
+def _rel_path(base, path):
+    # normalizes and returns a lstripped-/-separated path
+    base = base.replace(os.path.sep, '/')
+    path = path.replace(os.path.sep, '/')
+    assert path.startswith(base)
+    return path[len(base):].lstrip('/')
+
+
+def get_resources_dests(resources_root, rules):
+    """Find destinations for resources files"""
+    destinations = {}
+    for base, suffix, dest in rules:
+        prefix = os.path.join(resources_root, base)
+        for abs_base in iglob(prefix):
+            abs_glob = os.path.join(abs_base, suffix)
+            for abs_path in iglob(abs_glob):
+                resource_file = _rel_path(resources_root, abs_path)
+                if dest is None:  # remove the entry if it was here
+                    destinations.pop(resource_file, None)
+                else:
+                    rel_path = _rel_path(abs_base, abs_path)
+                    rel_dest = dest.replace(os.path.sep, '/').rstrip('/')
+                    destinations[resource_file] = rel_dest + '/' + rel_path
+    return destinations
+
+
 class Config(object):
-    """Reads configuration files and work with the Distribution instance
-    """
+    """Class used to work with configuration files"""
     def __init__(self, dist):
         self.dist = dist
-        self.setup_hook = None
+        self.setup_hooks = []
 
-    def run_hook(self, config):
-        if self.setup_hook is None:
-            return
-        # the hook gets only the config
-        self.setup_hook(config)
+    def run_hooks(self, config):
+        """Run setup hooks in the order defined in the spec."""
+        for hook in self.setup_hooks:
+            hook(config)
 
     def find_config_files(self):
         """Find as many configuration files as should be processed for this
@@ -55,9 +78,9 @@ class Config(object):
         should be parsed.  The filenames returned are guaranteed to exist
         (modulo nasty race conditions).
 
-        There are three possible config files: distutils.cfg in the
-        Distutils installation directory (ie. where the top-level
-        Distutils __inst__.py file lives), a file in the user's home
+        There are three possible config files: distutils2.cfg in the
+        Packaging installation directory (ie. where the top-level
+        Packaging __inst__.py file lives), a file in the user's home
         directory named .pydistutils.cfg on Unix and pydistutils.cfg
         on Windows/Mac; and setup.cfg in the current directory.
 
@@ -67,11 +90,11 @@ class Config(object):
         files = []
         check_environ()
 
-        # Where to look for the system-wide Distutils config file
+        # Where to look for the system-wide Packaging config file
         sys_dir = os.path.dirname(sys.modules['distutils2'].__file__)
 
         # Look for the system config file
-        sys_file = os.path.join(sys_dir, "distutils.cfg")
+        sys_file = os.path.join(sys_dir, "distutils2.cfg")
         if os.path.isfile(sys_file):
             files.append(sys_file)
 
@@ -101,33 +124,41 @@ class Config(object):
         # XXX
         return value
 
-    def _multiline(self, value):
-        value = [v for v in
-                [v.strip() for v in value.split('\n')]
-                if v != '']
-        return value
-
     def _read_setup_cfg(self, parser, cfg_filename):
         cfg_directory = os.path.dirname(os.path.abspath(cfg_filename))
         content = {}
         for section in parser.sections():
             content[section] = dict(parser.items(section))
 
-        # global:setup_hook is called *first*
+        # global setup hooks are called first
         if 'global' in content:
-            if 'setup_hook' in content['global']:
-                setup_hook = content['global']['setup_hook']
-                self.setup_hook = resolve_name(setup_hook)
-                self.run_hook(content)
+            if 'setup_hooks' in content['global']:
+                setup_hooks = split_multiline(content['global']['setup_hooks'])
+
+                # add project directory to sys.path, to allow hooks to be
+                # distributed with the project
+                sys.path.insert(0, cfg_directory)
+                try:
+                    for line in setup_hooks:
+                        try:
+                            hook = resolve_name(line)
+                        except ImportError:
+                            logger.warning('cannot find setup hook: %s',
+                                           sys.exc_info()[1].args[0])
+                        else:
+                            self.setup_hooks.append(hook)
+                    self.run_hooks(content)
+                finally:
+                    sys.path.pop(0)
 
         metadata = self.dist.metadata
 
         # setting the metadata values
         if 'metadata' in content:
-            for key, value in content['metadata'].iteritems():
+            for key, value in content['metadata'].items():
                 key = key.replace('_', '-')
                 if metadata.is_multi_field(key):
-                    value = self._multiline(value)
+                    value = split_multiline(value)
 
                 if key == 'project-url':
                     value = [(label.strip(), url.strip())
@@ -138,71 +169,74 @@ class Config(object):
                     if 'description' in content['metadata']:
                         msg = ("description and description-file' are "
                                "mutually exclusive")
-                        raise DistutilsOptionError(msg)
+                        raise PackagingOptionError(msg)
 
-                    if isinstance(value, list):
-                        filenames = value
-                    else:
-                        filenames = value.split()
+                    filenames = value.split()
 
-                    # concatenate each files
-                    value = ''
+                    # concatenate all files
+                    value = []
                     for filename in filenames:
                         # will raise if file not found
-                        description_file = open(filename)
-                        try:
-                            value += description_file.read().strip() + '\n'
-                        finally:
-                            description_file.close()
+                        with open(filename) as description_file:
+                            value.append(description_file.read().strip())
                         # add filename as a required file
                         if filename not in metadata.requires_files:
                             metadata.requires_files.append(filename)
-                    value = value.strip()
+                    value = '\n'.join(value).strip()
                     key = 'description'
 
                 if metadata.is_metadata_field(key):
                     metadata[key] = self._convert_metadata(key, value)
 
-
         if 'files' in content:
-            def _convert(key, value):
-                if key not in ('packages_root',):
-                    value = self._multiline(value)
-                return value
+            files = content['files']
+            self.dist.package_dir = files.pop('packages_root', None)
 
-            files = dict([(key, _convert(key, value))
-                          for key, value in content['files'].iteritems()])
+            files = dict((key, split_multiline(value)) for key, value in
+                         files.items())
+
             self.dist.packages = []
-            self.dist.package_dir = files.get('packages_root')
 
             packages = files.get('packages', [])
-            if isinstance(packages, str):
+            if isinstance(packages, basestring):
                 packages = [packages]
 
             for package in packages:
+                if ':' in package:
+                    dir_, package = package.split(':')
+                    self.dist.package_dir[package] = dir_
                 self.dist.packages.append(package)
 
             self.dist.py_modules = files.get('modules', [])
-            if isinstance(self.dist.py_modules, str):
+            if isinstance(self.dist.py_modules, basestring):
                 self.dist.py_modules = [self.dist.py_modules]
             self.dist.scripts = files.get('scripts', [])
-            if isinstance(self.dist.scripts, str):
+            if isinstance(self.dist.scripts, basestring):
                 self.dist.scripts = [self.dist.scripts]
 
             self.dist.package_data = {}
             for data in files.get('package_data', []):
                 data = data.split('=')
                 if len(data) != 2:
-                    continue # XXX error should never pass silently
+                    continue  # XXX error should never pass silently
                 key, value = data
                 self.dist.package_data[key.strip()] = value.strip()
+
+            self.dist.data_files = []
+            for data in files.get('data_files', []):
+                data = data.split('=')
+                if len(data) != 2:
+                    continue
+                key, value = data
+                values = [v.strip() for v in value.split(',')]
+                self.dist.data_files.append((key, values))
 
             # manifest template
             self.dist.extra_files = files.get('extra_files', [])
 
             resources = []
             for rule in files.get('resources', []):
-                glob , destination  = rule.split('=', 1)
+                glob, destination = rule.split('=', 1)
                 rich_glob = glob.strip().split(' ', 1)
                 if len(rich_glob) == 2:
                     prefix, suffix = rich_glob
@@ -212,13 +246,15 @@ class Config(object):
                     suffix = glob
                 if destination == '<exclude>':
                     destination = None
-                resources.append((prefix.strip(), suffix.strip(), destination.strip()))
-                self.dist.data_files = resources_dests(cfg_directory, resources)
+                resources.append(
+                    (prefix.strip(), suffix.strip(), destination.strip()))
+                self.dist.data_files = get_resources_dests(
+                    cfg_directory, resources)
 
         ext_modules = self.dist.ext_modules
         for section_key in content:
             labels = section_key.split('=')
-            if (len(labels) == 2) and (labels[0] == 'extension'):
+            if len(labels) == 2 and labels[0] == 'extension':
                 # labels[1] not used from now but should be implemented
                 # for extension build dependency
                 values_dct = content[section_key]
@@ -239,8 +275,7 @@ class Config(object):
                     _pop_values(values_dct, 'depends'),
                     values_dct.pop('language', None),
                     values_dct.pop('optional', None),
-                    **values_dct
-                ))
+                    **values_dct))
 
     def parse_config_files(self, filenames=None):
         if filenames is None:
@@ -252,7 +287,8 @@ class Config(object):
 
         for filename in filenames:
             logger.debug("  reading %s", filename)
-            parser.read(filename)
+            with codecs.open(filename, 'r', encoding='utf-8') as f:
+                parser.readfp(f)
 
             if os.path.split(filename)[-1] == 'setup.cfg':
                 self._read_setup_cfg(parser, filename)
@@ -275,8 +311,8 @@ class Config(object):
                     opt = opt.replace('-', '_')
 
                     if opt == 'sub_commands':
-                        val = self._multiline(val)
-                        if isinstance(val, str):
+                        val = split_multiline(val)
+                        if isinstance(val, basestring):
                             val = [val]
 
                     # Hooks use a suffix system to prevent being overriden
@@ -287,8 +323,8 @@ class Config(object):
                     if (opt.startswith("pre_hook.") or
                         opt.startswith("post_hook.")):
                         hook_type, alias = opt.split(".")
-                        hook_dict = opt_dict.setdefault(hook_type,
-                                                        (filename, {}))[1]
+                        hook_dict = opt_dict.setdefault(
+                            hook_type, (filename, {}))[1]
                         hook_dict[alias] = val
                     else:
                         opt_dict[opt] = filename, val
@@ -300,28 +336,28 @@ class Config(object):
         # If there was a "global" section in the config file, use it
         # to set Distribution options.
         if 'global' in self.dist.command_options:
-            for (opt, (src, val)) in self.dist.command_options['global'].iteritems():
+            for opt, (src, val) in self.dist.command_options['global'].items():
                 alias = self.dist.negative_opt.get(opt)
                 try:
                     if alias:
                         setattr(self.dist, alias, not strtobool(val))
-                    elif opt in ('verbose', 'dry_run'):  # ugh!
+                    elif opt == 'dry_run':  # FIXME ugh!
                         setattr(self.dist, opt, strtobool(val))
                     else:
                         setattr(self.dist, opt, val)
-                except ValueError, msg:
-                    raise DistutilsOptionError(msg)
+                except ValueError:
+                    raise PackagingOptionError(sys.exc_info()[1])
 
     def _load_compilers(self, compilers):
-        compilers = self._multiline(compilers)
-        if isinstance(compilers, str):
+        compilers = split_multiline(compilers)
+        if isinstance(compilers, basestring):
             compilers = [compilers]
         for compiler in compilers:
             set_compiler(compiler.strip())
 
     def _load_commands(self, commands):
-        commands = self._multiline(commands)
-        if isinstance(commands, str):
+        commands = split_multiline(commands)
+        if isinstance(commands, basestring):
             commands = [commands]
         for command in commands:
             set_command(command.strip())

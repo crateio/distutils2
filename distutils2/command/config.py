@@ -1,6 +1,6 @@
-"""distutils.command.config
+"""Prepare the build.
 
-Implements the Distutils 'config' command, a (mostly) empty command class
+This module provides config, a (mostly) empty command class
 that exists mainly to be sub-classed by specific module distributions and
 applications.  The idea is that while every "config" command is different,
 at least they're all named the same, and users always see "config" in the
@@ -8,11 +8,12 @@ list of standard commands.  Also, this is a good place to put common
 configure-like tasks: "try to compile this C code", or "figure out where
 this header file lives".
 """
+
 import os
 import re
 
 from distutils2.command.cmd import Command
-from distutils2.errors import DistutilsExecError
+from distutils2.errors import PackagingExecError
 from distutils2.compiler import customize_compiler
 from distutils2 import logger
 
@@ -20,7 +21,7 @@ LANG_EXT = {'c': '.c', 'c++': '.cxx'}
 
 class config(Command):
 
-    description = "prepare to build"
+    description = "prepare the build"
 
     user_options = [
         ('compiler=', None,
@@ -56,8 +57,8 @@ class config(Command):
         self.library_dirs = None
 
         # maximal output for now
-        self.noisy = 1
-        self.dump_source = 1
+        self.noisy = True
+        self.dump_source = True
 
         # list of temporary files generated along-the-way that we have
         # to clean at some point
@@ -66,17 +67,17 @@ class config(Command):
     def finalize_options(self):
         if self.include_dirs is None:
             self.include_dirs = self.distribution.include_dirs or []
-        elif isinstance(self.include_dirs, str):
+        elif isinstance(self.include_dirs, basestring):
             self.include_dirs = self.include_dirs.split(os.pathsep)
 
         if self.libraries is None:
             self.libraries = []
-        elif isinstance(self.libraries, str):
+        elif isinstance(self.libraries, basestring):
             self.libraries = [self.libraries]
 
         if self.library_dirs is None:
             self.library_dirs = []
-        elif isinstance(self.library_dirs, str):
+        elif isinstance(self.library_dirs, basestring):
             self.library_dirs = self.library_dirs.split(os.pathsep)
 
     def run(self):
@@ -97,7 +98,7 @@ class config(Command):
         from distutils2.compiler import new_compiler
         if not isinstance(self.compiler, CCompiler):
             self.compiler = new_compiler(compiler=self.compiler,
-                                         dry_run=self.dry_run, force=1)
+                                         dry_run=self.dry_run, force=True)
             customize_compiler(self.compiler)
             if self.include_dirs:
                 self.compiler.set_include_dirs(self.include_dirs)
@@ -109,36 +110,35 @@ class config(Command):
 
     def _gen_temp_sourcefile(self, body, headers, lang):
         filename = "_configtest" + LANG_EXT[lang]
-        file = open(filename, "w")
-        if headers:
-            for header in headers:
-                file.write("#include <%s>\n" % header)
-            file.write("\n")
-        file.write(body)
-        if body[-1] != "\n":
-            file.write("\n")
-        file.close()
+        with open(filename, "w") as file:
+            if headers:
+                for header in headers:
+                    file.write("#include <%s>\n" % header)
+                file.write("\n")
+            file.write(body)
+            if body[-1] != "\n":
+                file.write("\n")
         return filename
 
     def _preprocess(self, body, headers, include_dirs, lang):
         src = self._gen_temp_sourcefile(body, headers, lang)
         out = "_configtest.i"
-        self.temp_files.extend([src, out])
+        self.temp_files.extend((src, out))
         self.compiler.preprocess(src, out, include_dirs=include_dirs)
-        return (src, out)
+        return src, out
 
     def _compile(self, body, headers, include_dirs, lang):
         src = self._gen_temp_sourcefile(body, headers, lang)
         if self.dump_source:
             dump_file(src, "compiling '%s':" % src)
-        (obj,) = self.compiler.object_filenames([src])
-        self.temp_files.extend([src, obj])
+        obj = self.compiler.object_filenames([src])[0]
+        self.temp_files.extend((src, obj))
         self.compiler.compile([src], include_dirs=include_dirs)
-        return (src, obj)
+        return src, obj
 
     def _link(self, body, headers, include_dirs, libraries, library_dirs,
               lang):
-        (src, obj) = self._compile(body, headers, include_dirs, lang)
+        src, obj = self._compile(body, headers, include_dirs, lang)
         prog = os.path.splitext(os.path.basename(src))[0]
         self.compiler.link_executable([obj], prog,
                                       libraries=libraries,
@@ -149,7 +149,7 @@ class config(Command):
             prog = prog + self.compiler.exe_extension
         self.temp_files.append(prog)
 
-        return (src, obj, prog)
+        return src, obj, prog
 
     def _clean(self, *filenames):
         if not filenames:
@@ -182,11 +182,11 @@ class config(Command):
         """
         from distutils2.compiler.ccompiler import CompileError
         self._check_compiler()
-        ok = 1
+        ok = True
         try:
             self._preprocess(body, headers, include_dirs, lang)
         except CompileError:
-            ok = 0
+            ok = False
 
         self._clean()
         return ok
@@ -203,20 +203,19 @@ class config(Command):
         self._check_compiler()
         src, out = self._preprocess(body, headers, include_dirs, lang)
 
-        if isinstance(pattern, str):
+        if isinstance(pattern, basestring):
             pattern = re.compile(pattern)
 
-        file = open(out)
-        match = 0
-        while 1:
-            line = file.readline()
-            if line == '':
-                break
-            if pattern.search(line):
-                match = 1
-                break
+        with open(out) as file:
+            match = False
+            while True:
+                line = file.readline()
+                if line == '':
+                    break
+                if pattern.search(line):
+                    match = True
+                    break
 
-        file.close()
         self._clean()
         return match
 
@@ -228,9 +227,9 @@ class config(Command):
         self._check_compiler()
         try:
             self._compile(body, headers, include_dirs, lang)
-            ok = 1
+            ok = True
         except CompileError:
-            ok = 0
+            ok = False
 
         logger.info(ok and "success!" or "failure.")
         self._clean()
@@ -247,9 +246,9 @@ class config(Command):
         try:
             self._link(body, headers, include_dirs,
                        libraries, library_dirs, lang)
-            ok = 1
+            ok = True
         except (CompileError, LinkError):
-            ok = 0
+            ok = False
 
         logger.info(ok and "success!" or "failure.")
         self._clean()
@@ -267,9 +266,9 @@ class config(Command):
             src, obj, exe = self._link(body, headers, include_dirs,
                                        libraries, library_dirs, lang)
             self.spawn([exe])
-            ok = 1
-        except (CompileError, LinkError, DistutilsExecError):
-            ok = 0
+            ok = True
+        except (CompileError, LinkError, PackagingExecError):
+            ok = False
 
         logger.info(ok and "success!" or "failure.")
         self._clean()
@@ -281,7 +280,7 @@ class config(Command):
     # when implementing a real-world config command!)
 
     def check_func(self, func, headers=None, include_dirs=None,
-                   libraries=None, library_dirs=None, decl=0, call=0):
+                   libraries=None, library_dirs=None, decl=False, call=False):
 
         """Determine if function 'func' is available by constructing a
         source file that refers to 'func', and compiles and links it.
@@ -311,8 +310,6 @@ class config(Command):
 
         return self.try_link(body, headers, include_dirs,
                              libraries, library_dirs)
-
-    # check_func ()
 
     def check_lib(self, library, library_dirs=None, headers=None,
                   include_dirs=None, other_libraries=[]):
@@ -348,8 +345,5 @@ def dump_file(filename, head=None):
         logger.info(filename)
     else:
         logger.info(head)
-    file = open(filename)
-    try:
+    with open(filename) as file:
         logger.info(file.read())
-    finally:
-        file.close()

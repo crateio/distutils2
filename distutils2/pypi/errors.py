@@ -1,27 +1,25 @@
-"""distutils2.pypi.errors
+"""Exceptions raised by distutils2.pypi code."""
 
-All errors and exceptions raised by PyPiIndex classes.
-"""
-from distutils2.errors import DistutilsIndexError
+from distutils2.errors import PackagingPyPIError
 
 
-class ProjectNotFound(DistutilsIndexError):
+class ProjectNotFound(PackagingPyPIError):
     """Project has not been found"""
 
 
-class DistributionNotFound(DistutilsIndexError):
+class DistributionNotFound(PackagingPyPIError):
     """The release has not been found"""
 
 
-class ReleaseNotFound(DistutilsIndexError):
+class ReleaseNotFound(PackagingPyPIError):
     """The release has not been found"""
 
 
-class CantParseArchiveName(DistutilsIndexError):
+class CantParseArchiveName(PackagingPyPIError):
     """An archive name can't be parsed to find distribution name and version"""
 
 
-class DownloadError(DistutilsIndexError):
+class DownloadError(PackagingPyPIError):
     """An error has occurs while downloading"""
 
 
@@ -29,13 +27,13 @@ class HashDoesNotMatch(DownloadError):
     """Compared hashes does not match"""
 
 
-class UnsupportedHashName(DistutilsIndexError):
+class UnsupportedHashName(PackagingPyPIError):
     """A unsupported hashname has been used"""
 
 
-class UnableToDownload(DistutilsIndexError):
+class UnableToDownload(PackagingPyPIError):
     """All mirrors have been tried, without success"""
 
 
-class InvalidSearchField(DistutilsIndexError):
+class InvalidSearchField(PackagingPyPIError):
     """An invalid search field has been used"""

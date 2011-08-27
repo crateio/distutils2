@@ -1,7 +1,8 @@
 """Tests for distutils.command.bdist_wininst."""
 
-from distutils2.tests import unittest, support, run_unittest
 from distutils2.command.bdist_wininst import bdist_wininst
+from distutils2.tests import unittest, support
+
 
 class BuildWinInstTestCase(support.TempdirManager,
                            support.LoggingCatcher,
@@ -20,10 +21,12 @@ class BuildWinInstTestCase(support.TempdirManager,
         # and make sure it finds it and returns its content
         # no matter what platform we have
         exe_file = cmd.get_exe_bytes()
-        self.assertTrue(len(exe_file) > 10)
+        self.assertGreater(len(exe_file), 10)
+
 
 def test_suite():
     return unittest.makeSuite(BuildWinInstTestCase)
 
+
 if __name__ == '__main__':
-    run_unittest(test_suite())
+    unittest.main(defaultTest='test_suite')

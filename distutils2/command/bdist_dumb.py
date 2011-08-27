@@ -1,22 +1,19 @@
-"""distutils.command.bdist_dumb
+"""Create a "dumb" built distribution.
 
-Implements the Distutils 'bdist_dumb' command (create a "dumb" built
-distribution -- i.e., just an archive to be unpacked under $prefix or
-$exec_prefix)."""
-
+A dumb distribution is just an archive meant to be unpacked under
+sys.prefix or sys.exec_prefix.
+"""
 
 import os
+
 from shutil import rmtree
-try:
-    from sysconfig import get_python_version
-except ImportError:
-    from distutils2._backport.sysconfig import get_python_version
+from sysconfig import get_python_version
 from distutils2.util import get_platform
 from distutils2.command.cmd import Command
-from distutils2.errors import DistutilsPlatformError
+from distutils2.errors import PackagingPlatformError
 from distutils2 import logger
 
-class bdist_dumb (Command):
+class bdist_dumb(Command):
 
     description = 'create a "dumb" built distribution'
 
@@ -52,14 +49,14 @@ class bdist_dumb (Command):
                        'os2': 'zip' }
 
 
-    def initialize_options (self):
+    def initialize_options(self):
         self.bdist_dir = None
         self.plat_name = None
         self.format = None
-        self.keep_temp = 0
+        self.keep_temp = False
         self.dist_dir = None
-        self.skip_build = 0
-        self.relative = 0
+        self.skip_build = False
+        self.relative = False
         self.owner = None
         self.group = None
 
@@ -72,9 +69,8 @@ class bdist_dumb (Command):
             try:
                 self.format = self.default_format[os.name]
             except KeyError:
-                raise DistutilsPlatformError, \
-                      ("don't know how to create dumb built distributions " +
-                       "on platform %s") % os.name
+                raise PackagingPlatformError(("don't know how to create dumb built distributions " +
+                       "on platform %s") % os.name)
 
         self.set_undefined_options('bdist', 'dist_dir', 'plat_name')
 
@@ -82,10 +78,11 @@ class bdist_dumb (Command):
         if not self.skip_build:
             self.run_command('build')
 
-        install = self.get_reinitialized_command('install_dist', reinit_subcommands=1)
+        install = self.get_reinitialized_command('install_dist',
+                                                 reinit_subcommands=True)
         install.root = self.bdist_dir
         install.skip_build = self.skip_build
-        install.warn_dir = 0
+        install.warn_dir = False
 
         logger.info("installing to %s", self.bdist_dir)
         self.run_command('install_dist')
@@ -106,7 +103,7 @@ class bdist_dumb (Command):
         else:
             if (self.distribution.has_ext_modules() and
                 (install.install_base != install.install_platbase)):
-                raise DistutilsPlatformError(
+                raise PackagingPlatformError(
                     "can't make a dumb built distribution where base and "
                     "platbase are different (%r, %r)" %
                     (install.install_base, install.install_platbase))

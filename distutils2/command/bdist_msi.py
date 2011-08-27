@@ -1,24 +1,32 @@
-# -*- coding: iso-8859-1 -*-
-# Copyright (C) 2005, 2006 Martin von Löwis
+"""Create a Microsoft Installer (.msi) binary distribution."""
+
+# Copyright (C) 2005, 2006 Martin von LÃ¶wis
 # Licensed to PSF under a Contributor Agreement.
-# The bdist_wininst command proper
-# based on bdist_wininst
-"""
-Implements the bdist_msi command.
-"""
-import sys, os
-from sysconfig import get_python_version
 
-from distutils2.core import Command
-from distutils2.version import StrictVersion
-from distutils2.errors import DistutilsOptionError
-from distutils2 import log
-from distutils2.util import get_platform
-from distutils2._backport.shutil import rmtree
-
+import sys
+import os
 import msilib
+
+
+from sysconfig import get_python_version
+from shutil import rmtree
+from distutils2.command.cmd import Command
+from distutils2.version import NormalizedVersion
+from distutils2.errors import PackagingOptionError
+from distutils2 import logger as log
+from distutils2.util import get_platform
 from msilib import schema, sequence, text
 from msilib import Directory, Feature, Dialog, add_data
+
+class MSIVersion(NormalizedVersion):
+    """
+    MSI ProductVersion must be strictly numeric.
+    MSIVersion disallows prerelease and postrelease versions.
+    """
+    def __init__(self, *args, **kwargs):
+        super(MSIVersion, self).__init__(*args, **kwargs)
+        if not self.is_final:
+            raise ValueError("ProductVersion must be strictly numeric")
 
 class PyDialog(Dialog):
     """Dialog class with a fixed layout: controls at the top, then a ruler,
@@ -81,7 +89,7 @@ class PyDialog(Dialog):
         Return the button, so that events can be associated"""
         return self.pushbutton(name, int(self.w*xpos - 28), self.h-27, 56, 17, 3, title, next)
 
-class bdist_msi (Command):
+class bdist_msi(Command):
 
     description = "create a Microsoft Installer (.msi) binary distribution"
 
@@ -123,20 +131,20 @@ class bdist_msi (Command):
                     '3.5', '3.6', '3.7', '3.8', '3.9']
     other_version = 'X'
 
-    def initialize_options (self):
+    def initialize_options(self):
         self.bdist_dir = None
         self.plat_name = None
-        self.keep_temp = 0
-        self.no_target_compile = 0
-        self.no_target_optimize = 0
+        self.keep_temp = False
+        self.no_target_compile = False
+        self.no_target_optimize = False
         self.target_version = None
         self.dist_dir = None
-        self.skip_build = 0
+        self.skip_build = False
         self.install_script = None
         self.pre_install_script = None
         self.versions = None
 
-    def finalize_options (self):
+    def finalize_options(self):
         if self.bdist_dir is None:
             bdist_base = self.get_finalized_command('bdist').bdist_base
             self.bdist_dir = os.path.join(bdist_base, 'msi')
@@ -147,41 +155,39 @@ class bdist_msi (Command):
             self.versions = [self.target_version]
             if not self.skip_build and self.distribution.has_ext_modules()\
                and self.target_version != short_version:
-                raise DistutilsOptionError, \
-                      "target version can only be %s, or the '--skip-build'" \
-                      " option must be specified" % (short_version,)
+                raise PackagingOptionError("target version can only be %s, or the '--skip-build'" \
+                      " option must be specified" % (short_version,))
         else:
             self.versions = list(self.all_versions)
 
         self.set_undefined_options('bdist', 'dist_dir', 'plat_name')
 
         if self.pre_install_script:
-            raise DistutilsOptionError, "the pre-install-script feature is not yet implemented"
+            raise PackagingOptionError("the pre-install-script feature is not yet implemented")
 
         if self.install_script:
             for script in self.distribution.scripts:
                 if self.install_script == os.path.basename(script):
                     break
             else:
-                raise DistutilsOptionError, \
-                      "install_script '%s' not found in scripts" % \
-                      self.install_script
+                raise PackagingOptionError("install_script '%s' not found in scripts" % \
+                      self.install_script)
         self.install_script_key = None
-    # finalize_options()
 
 
-    def run (self):
+    def run(self):
         if not self.skip_build:
             self.run_command('build')
 
-        install = self.get_reinitialized_command('install_dist', reinit_subcommands=1)
+        install = self.get_reinitialized_command('install_dist',
+                                                 reinit_subcommands=True)
         install.prefix = self.bdist_dir
         install.skip_build = self.skip_build
-        install.warn_dir = 0
+        install.warn_dir = False
 
         install_lib = self.get_reinitialized_command('install_lib')
         # we do not want to include pyc or pyo files
-        install_lib.compile = 0
+        install_lib.compile = False
         install_lib.optimize = 0
 
         if self.distribution.has_ext_modules():
@@ -223,10 +229,7 @@ class bdist_msi (Command):
             author = metadata.maintainer
         if not author:
             author = "UNKNOWN"
-        version = metadata.get_version()
-        # ProductVersion must be strictly numeric
-        # XXX need to deal with prerelease versions
-        sversion = "%d.%d.%d" % StrictVersion(version).version
+        version = MSIVersion(metadata.get_version())
         # Prefix ProductName with Python x.y, so that
         # it sorts together with the other Python packages
         # in Add-Remove-Programs (APR)
@@ -237,7 +240,7 @@ class bdist_msi (Command):
             product_name = "Python %s" % (fullname)
         self.db = msilib.init_database(installer_name, schema,
                 product_name, msilib.gen_uuid(),
-                sversion, author)
+                str(version), author)
         msilib.add_tables(self.db, sequence)
         props = [('DistVersion', version)]
         email = metadata.author_email or metadata.maintainer_email
@@ -307,7 +310,7 @@ class bdist_msi (Command):
                             key = seen[afile] = dir.add_file(file)
                             if file==self.install_script:
                                 if self.install_script_key:
-                                    raise DistutilsOptionError(
+                                    raise PackagingOptionError(
                                           "Multiple files with name %s" % file)
                                 self.install_script_key = '[#%s]' % key
                         else:
@@ -387,27 +390,27 @@ class bdist_msi (Command):
         #     entries for each version as the above code does
         if self.pre_install_script:
             scriptfn = os.path.join(self.bdist_dir, "preinstall.bat")
-            f = open(scriptfn, "w")
-            # The batch file will be executed with [PYTHON], so that %1
-            # is the path to the Python interpreter; %0 will be the path
-            # of the batch file.
-            # rem ="""
-            # %1 %0
-            # exit
-            # """
-            # <actual script>
-            f.write('rem ="""\n%1 %0\nexit\n"""\n')
-            f.write(open(self.pre_install_script).read())
-            f.close()
+            with open(scriptfn, "w") as f:
+                # The batch file will be executed with [PYTHON], so that %1
+                # is the path to the Python interpreter; %0 will be the path
+                # of the batch file.
+                # rem ="""
+                # %1 %0
+                # exit
+                # """
+                # <actual script>
+                f.write('rem ="""\n%1 %0\nexit\n"""\n')
+                with open(self.pre_install_script) as fp:
+                    f.write(fp.read())
             add_data(self.db, "Binary",
-                [("PreInstall", msilib.Binary(scriptfn))
-                ])
+                     [("PreInstall", msilib.Binary(scriptfn)),
+                     ])
             add_data(self.db, "CustomAction",
-                [("PreInstall", 2, "PreInstall", None)
-                ])
+                     [("PreInstall", 2, "PreInstall", None),
+                     ])
             add_data(self.db, "InstallExecuteSequence",
-                    [("PreInstall", "NOT Installed", 450)])
-
+                     [("PreInstall", "NOT Installed", 450),
+                     ])
 
     def add_ui(self):
         db = self.db

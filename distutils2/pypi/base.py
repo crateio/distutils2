@@ -1,4 +1,6 @@
-from distutils2.index.dist import ReleasesList
+"""Base class for index crawlers."""
+
+from distutils2.pypi.dist import ReleasesList
 
 
 class BaseClient(object):

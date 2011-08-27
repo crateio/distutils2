@@ -1,11 +1,9 @@
-"""Tests for distutils.command.install_scripts."""
-
+"""Tests for distutils2.command.install_scripts."""
 import os
 
+from distutils2.tests import unittest, support
 from distutils2.command.install_scripts import install_scripts
 from distutils2.dist import Distribution
-
-from distutils2.tests import unittest, support
 
 
 class InstallScriptsTestCase(support.TempdirManager,
@@ -18,14 +16,14 @@ class InstallScriptsTestCase(support.TempdirManager,
             build_scripts="/foo/bar")
         dist.command_obj["install_dist"] = support.DummyCommand(
             install_scripts="/splat/funk",
-            force=1,
-            skip_build=1,
+            force=True,
+            skip_build=True,
             )
         cmd = install_scripts(dist)
-        self.assertTrue(not cmd.force)
-        self.assertTrue(not cmd.skip_build)
-        self.assertTrue(cmd.build_dir is None)
-        self.assertTrue(cmd.install_dir is None)
+        self.assertFalse(cmd.force)
+        self.assertFalse(cmd.skip_build)
+        self.assertIs(cmd.build_dir, None)
+        self.assertIs(cmd.install_dir, None)
 
         cmd.finalize_options()
 
@@ -40,11 +38,8 @@ class InstallScriptsTestCase(support.TempdirManager,
 
         def write_script(name, text):
             expected.append(name)
-            f = open(os.path.join(source, name), "w")
-            try:
+            with open(os.path.join(source, name), "w") as f:
                 f.write(text)
-            finally:
-                f.close()
 
         write_script("script1.py", ("#! /usr/bin/env python2.3\n"
                                     "# bogus script w/ Python sh-bang\n"
@@ -61,8 +56,8 @@ class InstallScriptsTestCase(support.TempdirManager,
         dist.command_obj["build"] = support.DummyCommand(build_scripts=source)
         dist.command_obj["install_dist"] = support.DummyCommand(
             install_scripts=target,
-            force=1,
-            skip_build=1,
+            force=True,
+            skip_build=True,
             )
         cmd = install_scripts(dist)
         cmd.finalize_options()
@@ -70,7 +65,7 @@ class InstallScriptsTestCase(support.TempdirManager,
 
         installed = os.listdir(target)
         for name in expected:
-            self.assertTrue(name in installed)
+            self.assertIn(name, installed)
 
 
 def test_suite():

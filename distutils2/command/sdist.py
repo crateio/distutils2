@@ -1,40 +1,34 @@
-"""distutils.command.sdist
+"""Create a source distribution."""
 
-Implements the Distutils 'sdist' command (create a source distribution)."""
 import os
-import sys
-from shutil import rmtree
 import re
+import sys
 from StringIO import StringIO
+from shutil import rmtree
 
-try:
-    from shutil import get_archive_formats
-except ImportError:
-    from distutils2._backport.shutil import get_archive_formats
-
+from distutils2 import logger
+from distutils2.util import resolve_name, get_archive_formats
+from distutils2.errors import (PackagingPlatformError, PackagingOptionError,
+                              PackagingModuleError, PackagingFileError)
 from distutils2.command import get_command_names
 from distutils2.command.cmd import Command
-from distutils2.errors import (DistutilsPlatformError, DistutilsOptionError,
-                               DistutilsModuleError, DistutilsFileError)
 from distutils2.manifest import Manifest
-from distutils2 import logger
-from distutils2.util import resolve_name
+
 
 def show_formats():
     """Print all possible values for the 'formats' option (used by
     the "--help-formats" command-line option).
     """
     from distutils2.fancy_getopt import FancyGetopt
-    formats = []
-    for name, desc in get_archive_formats():
-        formats.append(("formats=" + name, None, desc))
-    formats.sort()
+    formats = sorted(('formats=' + name, None, desc)
+                     for name, desc in get_archive_formats())
     FancyGetopt(formats).print_help(
         "List of available source distribution formats:")
 
 # a \ followed by some spaces + EOL
 _COLLAPSE_PATTERN = re.compile('\\\w\n', re.M)
 _COMMENTED_LINE = re.compile('^#.*\n$|^\w*\n$', re.M)
+
 
 class sdist(Command):
 
@@ -84,26 +78,24 @@ class sdist(Command):
         ]
 
     negative_opt = {'no-defaults': 'use-defaults',
-                    'no-prune': 'prune' }
+                    'no-prune': 'prune'}
 
     default_format = {'posix': 'gztar',
-                      'nt': 'zip' }
-
+                      'nt': 'zip'}
 
     def initialize_options(self):
         self.manifest = None
-
         # 'use_defaults': if true, we will include the default file set
         # in the manifest
-        self.use_defaults = 1
-        self.prune = 1
-        self.manifest_only = 0
+        self.use_defaults = True
+        self.prune = True
+        self.manifest_only = False
         self.formats = None
-        self.keep_temp = 0
+        self.keep_temp = False
         self.dist_dir = None
 
         self.archive_files = None
-        self.metadata_check = 1
+        self.metadata_check = True
         self.owner = None
         self.group = None
         self.filelist = None
@@ -125,14 +117,13 @@ class sdist(Command):
             try:
                 self.formats = [self.default_format[os.name]]
             except KeyError:
-                raise DistutilsPlatformError, \
-                      "don't know how to create source distributions " + \
-                      "on platform %s" % os.name
+                raise PackagingPlatformError("don't know how to create source "
+                       "distributions on platform %s" % os.name)
 
         bad_format = self._check_archive_formats(self.formats)
         if bad_format:
-            raise DistutilsOptionError, \
-                  "unknown archive format '%s'" % bad_format
+            raise PackagingOptionError("unknown archive format '%s'" \
+                        % bad_format)
 
         if self.dist_dir is None:
             self.dist_dir = "dist"
@@ -143,7 +134,7 @@ class sdist(Command):
         if self.manifest_builders is None:
             self.manifest_builders = []
         else:
-            if isinstance(self.manifest_builders, str):
+            if isinstance(self.manifest_builders, basestring):
                 self.manifest_builders = self.manifest_builders.split(',')
             builders = []
             for builder in self.manifest_builders:
@@ -152,13 +143,12 @@ class sdist(Command):
                     continue
                 try:
                     builder = resolve_name(builder)
-                except ImportError, e:
-                    raise DistutilsModuleError(e)
+                except ImportError:
+                    raise PackagingModuleError(sys.exc_info()[1])
 
                 builders.append(builder)
 
             self.manifest_builders = builders
-
 
     def run(self):
         # 'filelist' contains the list of files that will make up the
@@ -191,7 +181,8 @@ class sdist(Command):
         """
         template_exists = len(self.distribution.extra_files) > 0
         if not template_exists:
-            self.warn('Using default file list')
+            logger.warning('%s: using default file list',
+                           self.get_command_name())
         self.filelist.findall()
 
         if self.use_defaults:
@@ -210,20 +201,24 @@ class sdist(Command):
         self.filelist.write(self.manifest)
 
     def add_defaults(self):
-        """Add all the default files to self.filelist:
-          - all pure Python modules mentioned in setup script
-          - all files pointed by package_data (build_py)
-          - all files defined in data_files.
-          - all files defined as scripts.
-          - all C sources listed as part of extensions or C libraries
-            in the setup script (doesn't catch C headers!)
-        Warns if (README or README.txt) or setup.py are missing; everything
-        else is optional.
+        """Add all default files to self.filelist.
+
+        In addition to the setup.cfg file, this will include all files returned
+        by the get_source_files of every registered command.  This will find
+        Python modules and packages, data files listed in package_data_,
+        data_files and extra_files, scripts, C sources of extension modules or
+        C libraries (headers are missing).
         """
+        if os.path.exists('setup.cfg'):
+            self.filelist.append('setup.cfg')
+        else:
+            logger.warning("%s: standard 'setup.cfg' file not found",
+                           self.get_command_name())
+
         for cmd_name in get_command_names():
             try:
                 cmd_obj = self.get_finalized_command(cmd_name)
-            except DistutilsOptionError:
+            except PackagingOptionError:
                 pass
             else:
                 self.filelist.extend(cmd_obj.get_source_files())
@@ -252,8 +247,7 @@ class sdist(Command):
         vcs_dirs = ['RCS', 'CVS', r'\.svn', r'\.hg', r'\.git', r'\.bzr',
                     '_darcs']
         vcs_ptrn = r'(^|%s)(%s)(%s).*' % (seps, '|'.join(vcs_dirs), seps)
-        self.filelist.exclude_pattern(vcs_ptrn, is_regex=1)
-
+        self.filelist.exclude_pattern(vcs_ptrn, is_regex=True)
 
     def make_release_tree(self, base_dir, files):
         """Create the directory tree that will become the source
@@ -285,18 +279,19 @@ class sdist(Command):
             msg = "copying files to %s..." % base_dir
 
         if not files:
-            logger.warn("no files to distribute -- empty manifest?")
+            logger.warning("no files to distribute -- empty manifest?")
         else:
             logger.info(msg)
 
         for file in self.distribution.metadata.requires_files:
             if file not in files:
-                msg = "'%s' must be included explicitly in 'extra_files'" % file
-                raise DistutilsFileError(msg)
+                msg = "'%s' must be included explicitly in 'extra_files'" \
+                        % file
+                raise PackagingFileError(msg)
 
         for file in files:
             if not os.path.isfile(file):
-                logger.warn("'%s' not a regular file -- skipping", file)
+                logger.warning("'%s' not a regular file -- skipping", file)
             else:
                 dest = os.path.join(base_dir, file)
                 self.copy_file(file, dest, link=link)
@@ -342,12 +337,12 @@ class sdist(Command):
         """
         return self.archive_files
 
-    def create_tree(self, base_dir, files, mode=0777, verbose=1, dry_run=0):
-        need_dir = {}
+    def create_tree(self, base_dir, files, mode=0o777, verbose=1,
+                    dry_run=False):
+        need_dir = set()
         for file in files:
-            need_dir[os.path.join(base_dir, os.path.dirname(file))] = 1
-        need_dirs = sorted(need_dir)
+            need_dir.add(os.path.join(base_dir, os.path.dirname(file)))
 
         # Now create them
-        for dir in need_dirs:
+        for dir in sorted(need_dir):
             self.mkpath(dir, mode, verbose=verbose, dry_run=dry_run)

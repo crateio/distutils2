@@ -1,13 +1,11 @@
-"""distutils.command.build
+"""Main build command, which calls the other build_* commands."""
 
-Implements the Distutils 'build' command.
-"""
 import sys
 import os
 
 from distutils2.util import get_platform
 from distutils2.command.cmd import Command
-from distutils2.errors import DistutilsOptionError
+from distutils2.errors import PackagingOptionError
 from distutils2.compiler import show_compilers
 
 
@@ -67,7 +65,7 @@ class build(Command):
         self.compiler = None
         self.plat_name = None
         self.debug = None
-        self.force = 0
+        self.force = False
         self.executable = None
         self.use_2to3 = False
         self.convert_2to3_doctests = None
@@ -81,7 +79,7 @@ class build(Command):
             # supported via ./configure flags, if at all).  Avoid misleading
             # other platforms.
             if os.name != 'nt':
-                raise DistutilsOptionError(
+                raise PackagingOptionError(
                             "--plat-name only supported on Windows (try "
                             "using './configure --help' on your platform)")
 

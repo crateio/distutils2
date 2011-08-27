@@ -201,10 +201,10 @@ def prepare_hashlib_extensions():
 
     return exts
 
-setup_kwargs = {'scripts': ['distutils2/pysetup']}
+setup_kwargs = {'scripts': ['scripts/pysetup']}
 
 if sys.version < '2.6':
-    setup_kwargs['scripts'].append('distutils2/mkcfg.py')
+    setup_kwargs['scripts'].append('distutils2/create.py')
 
 if sys.version < '2.5':
     setup_kwargs['ext_modules'] = prepare_hashlib_extensions()
@@ -236,7 +236,7 @@ setup(name="Distutils2",
           'distutils2.compiler', 
           'distutils2.command', 
           'distutils2._backport', 
-          'distutils2.index', 
+          'distutils2.pypi', 
           'distutils2.tests.fixer', 
           'distutils2._backport.tests',
       ],

@@ -1,12 +1,20 @@
-import logging
-import xmlrpclib
+"""Spider using the XML-RPC PyPI API.
 
+This module contains the class Client, a spider that can be used to find
+and retrieve distributions from a project index (like the Python Package
+Index), using its XML-RPC API (see documentation of the reference
+implementation at http://wiki.python.org/moin/PyPiXmlRpc).
+"""
+
+import xmlrpclib, sys
+
+from distutils2 import logger
 from distutils2.errors import IrrationalVersionError
-from distutils2.index.base import BaseClient
-from distutils2.index.errors import (ProjectNotFound, InvalidSearchField,
-                                     ReleaseNotFound)
-from distutils2.index.dist import ReleaseInfo
 from distutils2.version import get_version_predicate
+from distutils2.pypi.base import BaseClient
+from distutils2.pypi.errors import (ProjectNotFound, InvalidSearchField,
+                                   ReleaseNotFound)
+from distutils2.pypi.dist import ReleaseInfo
 
 __all__ = ['Client', 'DEFAULT_XMLRPC_INDEX_URL']
 
@@ -23,11 +31,11 @@ class Client(BaseClient):
     If no server_url is specified, use the default PyPI XML-RPC URL,
     defined in the DEFAULT_XMLRPC_INDEX_URL constant::
 
-        >>> client = XMLRPCClient()
+        >>> client = Client()
         >>> client.server_url == DEFAULT_XMLRPC_INDEX_URL
         True
 
-        >>> client = XMLRPCClient("http://someurl/")
+        >>> client = Client("http://someurl/")
         >>> client.server_url
         'http://someurl/'
     """
@@ -46,8 +54,8 @@ class Client(BaseClient):
         predicate = get_version_predicate(requirements)
         releases = self.get_releases(predicate.name)
         release = releases.get_last(predicate, prefer_final)
-        self.get_metadata(release.name, "%s" % release.version)
-        self.get_distributions(release.name, "%s" % release.version)
+        self.get_metadata(release.name, str(release.version))
+        self.get_distributions(release.name, str(release.version))
         return release
 
     def get_releases(self, requirements, prefer_final=None, show_hidden=True,
@@ -61,7 +69,7 @@ class Client(BaseClient):
         informations (eg. make a new XML-RPC call).
         ::
 
-            >>> client = XMLRPCClient()
+            >>> client = Client()
             >>> client.get_releases('Foo')
             ['1.1', '1.2', '1.3']
 
@@ -84,8 +92,7 @@ class Client(BaseClient):
                 # list of releases that does not contains hidden ones
                 all_versions = get_versions(project_name, show_hidden)
                 existing_versions = project.get_versions()
-                hidden_versions = list(set(all_versions) -
-                                       set(existing_versions))
+                hidden_versions = set(all_versions) - set(existing_versions)
                 for version in hidden_versions:
                     project.add_release(release=ReleaseInfo(project_name,
                                             version, index=self._index))
@@ -102,6 +109,7 @@ class Client(BaseClient):
             raise ReleaseNotFound("%s" % predicate)
         project.sort_releases(prefer_final)
         return project
+
 
     def get_distributions(self, project_name, version):
         """Grab informations about distributions from XML-RPC.
@@ -163,8 +171,9 @@ class Client(BaseClient):
                 project.add_release(release=ReleaseInfo(p['name'],
                     p['version'], metadata={'summary': p['summary']},
                     index=self._index))
-            except IrrationalVersionError, e:
-                logging.warn("Irrational version error found: %s", e)
+            except IrrationalVersionError:
+                e = sys.exc_info()[1]
+                logger.warning("Irrational version error found: %s", e)
         return [self._projects[p['name'].lower()] for p in projects]
 
     def get_all_projects(self):
@@ -181,7 +190,7 @@ class Client(BaseClient):
 
         If no server proxy is defined yet, creates a new one::
 
-            >>> client = XmlRpcClient()
+            >>> client = Client()
             >>> client.proxy()
             <ServerProxy for python.org/pypi>
 

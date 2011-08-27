@@ -1,10 +1,6 @@
-"""distutils.extension
+"""Class representing C/C++ extension modules."""
 
-Provides the Extension class, used to describe C/C++ extension
-modules in setup scripts."""
-
-
-import warnings
+from distutils2 import logger
 
 # This class is really only used by the "build_ext" command, so it might
 # make sense to put it in distutils.command.build_ext.  However, that
@@ -82,33 +78,22 @@ class Extension(object):
         build process, but simply not install the failing extension.
     """
 
-    # When adding arguments to this constructor, be sure to update
-    # setup_keywords in core.py.
-    def __init__(self, name, sources,
-                  include_dirs=None,
-                  define_macros=None,
-                  undef_macros=None,
-                  library_dirs=None,
-                  libraries=None,
-                  runtime_library_dirs=None,
-                  extra_objects=None,
-                  extra_compile_args=None,
-                  extra_link_args=None,
-                  export_symbols=None,
-                  swig_opts=None,
-                  depends=None,
-                  language=None,
-                  optional=None,
-                  **kw # To catch unknown keywords
-                 ):
-        if not isinstance(name, str):
+    # **kwargs are allowed so that a warning is emitted instead of an
+    # exception
+    def __init__(self, name, sources, include_dirs=None, define_macros=None,
+                 undef_macros=None, library_dirs=None, libraries=None,
+                 runtime_library_dirs=None, extra_objects=None,
+                 extra_compile_args=None, extra_link_args=None,
+                 export_symbols=None, swig_opts=None, depends=None,
+                 language=None, optional=None, **kw):
+        if not isinstance(name, basestring):
             raise AssertionError("'name' must be a string")
 
         if not isinstance(sources, list):
             raise AssertionError("'sources' must be a list of strings")
 
         for v in sources:
-            if not isinstance(v, str):
+            if not isinstance(v, basestring):
                 raise AssertionError("'sources' must be a list of strings")
 
         self.name = name
@@ -132,5 +117,5 @@ class Extension(object):
         if len(kw) > 0:
             options = [repr(option) for option in kw]
             options = ', '.join(sorted(options))
-            msg = "Unknown Extension options: %s" % options
-            warnings.warn(msg)
+            logger.warning(
+                'unknown arguments given to Extension: %s', options)

@@ -2,7 +2,7 @@
 import os
 
 from distutils2.compiler import (get_default_compiler, customize_compiler,
-                                 gen_lib_options)
+                                gen_lib_options)
 from distutils2.tests import unittest, support
 
 
@@ -17,26 +17,26 @@ class FakeCompiler(object):
     def runtime_library_dir_option(self, dir):
         return ["-cool", "-R" + dir]
 
-    def find_library_file(self, dirs, lib, debug=0):
+    def find_library_file(self, dirs, lib, debug=False):
         return 'found'
 
     def library_option(self, lib):
         return "-l" + lib
 
 
-class CompilerTestCase(support.EnvironGuard, unittest.TestCase):
+class CompilerTestCase(support.EnvironRestorer, unittest.TestCase):
 
+    restore_environ = ['AR', 'ARFLAGS']
+
+    @unittest.skipUnless(get_default_compiler() == 'unix',
+                        'irrelevant if default compiler is not unix')
     def test_customize_compiler(self):
-
-        # not testing if default compiler is not unix
-        if get_default_compiler() != 'unix':
-            return
 
         os.environ['AR'] = 'my_ar'
         os.environ['ARFLAGS'] = '-arflags'
 
         # make sure AR gets caught
-        class compiler:
+        class compiler(object):
             name = 'unix'
 
             def set_executables(self, **kw):

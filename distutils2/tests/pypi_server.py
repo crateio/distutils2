@@ -22,48 +22,44 @@ I think of something like that:
 
 Then, the server must have only one port to rely on, eg.
 
-    >>> server.fulladress()
+    >>> server.fulladdress()
     "http://ip:port/"
 
 It could be simple to have one HTTP server, relaying the requests to the two
 implementations (static HTTP and XMLRPC over HTTP).
 """
 
-import os.path
+import os
+import queue
 import select
-import socket
 import threading
-
-# several packages had different names in Python 2.x
-try:
-    import queue
-    import socketserver
-    from http.server import HTTPServer, SimpleHTTPRequestHandler
-    from xmlrpc.server import SimpleXMLRPCServer
-except ImportError:
-    import Queue as queue
-    import SocketServer as socketserver
-    from BaseHTTPServer import HTTPServer    
-    from SimpleHTTPServer import SimpleHTTPRequestHandler
-    from SimpleXMLRPCServer import SimpleXMLRPCServer
+import socketserver
+from functools import wraps
+from http.server import HTTPServer, SimpleHTTPRequestHandler
+from xmlrpc.server import SimpleXMLRPCServer
 
 from distutils2.tests import unittest
 
-PYPI_DEFAULT_STATIC_PATH = os.path.dirname(os.path.abspath(__file__)) + "/pypiserver"
+PYPI_DEFAULT_STATIC_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), 'pypiserver')
+
 
 def use_xmlrpc_server(*server_args, **server_kwargs):
     server_kwargs['serve_xmlrpc'] = True
     return use_pypi_server(*server_args, **server_kwargs)
 
+
 def use_http_server(*server_args, **server_kwargs):
     server_kwargs['serve_xmlrpc'] = False
     return use_pypi_server(*server_args, **server_kwargs)
+
 
 def use_pypi_server(*server_args, **server_kwargs):
     """Decorator to make use of the PyPIServer for test methods,
     just when needed, and not for the entire duration of the testcase.
     """
     def wrapper(func):
+        @wraps(func)
         def wrapped(*args, **kwargs):
             server = PyPIServer(*server_args, **server_kwargs)
             server.start()
@@ -74,16 +70,15 @@ def use_pypi_server(*server_args, **server_kwargs):
         return wrapped
     return wrapper
 
+
 class PyPIServerTestCase(unittest.TestCase):
 
     def setUp(self):
         super(PyPIServerTestCase, self).setUp()
         self.pypi = PyPIServer()
         self.pypi.start()
+        self.addCleanup(self.pypi.stop)
 
-    def tearDown(self):
-        super(PyPIServerTestCase, self).tearDown()
-        self.pypi.stop()
 
 class PyPIServer(threading.Thread):
     """PyPI Mocked server.
@@ -93,8 +88,8 @@ class PyPIServer(threading.Thread):
     """
 
     def __init__(self, test_static_path=None,
-                 static_filesystem_paths=["default"],
-                 static_uri_paths=["simple"], serve_xmlrpc=False) :
+                 static_filesystem_paths=None,
+                 static_uri_paths=["simple", "packages"], serve_xmlrpc=False):
         """Initialize the server.
 
         Default behavior is to start the HTTP server. You can either start the
@@ -110,6 +105,8 @@ class PyPIServer(threading.Thread):
         threading.Thread.__init__(self)
         self._run = True
         self._serve_xmlrpc = serve_xmlrpc
+        if static_filesystem_paths is None:
+            static_filesystem_paths = ["default"]
 
         #TODO allow to serve XMLRPC and HTTP static files at the same time.
         if not self._serve_xmlrpc:
@@ -118,15 +115,18 @@ class PyPIServer(threading.Thread):
 
             self.request_queue = queue.Queue()
             self._requests = []
-            self.default_response_status = 200
+            self.default_response_status = 404
             self.default_response_headers = [('Content-type', 'text/plain')]
-            self.default_response_data = "hello"
+            self.default_response_data = "The page does not exists"
 
             # initialize static paths / filesystems
             self.static_uri_paths = static_uri_paths
+
+            # append the static paths defined locally
             if test_static_path is not None:
                 static_filesystem_paths.append(test_static_path)
-            self.static_filesystem_paths = [PYPI_DEFAULT_STATIC_PATH + "/" + path
+            self.static_filesystem_paths = [
+                PYPI_DEFAULT_STATIC_PATH + "/" + path
                 for path in static_filesystem_paths]
         else:
             # XMLRPC server
@@ -136,7 +136,7 @@ class PyPIServer(threading.Thread):
             self.server.register_introspection_functions()
             self.server.register_instance(self.xmlrpc)
 
-        self.address = (self.server.server_name, self.server.server_port)
+        self.address = ('127.0.0.1', self.server.server_port)
         # to not have unwanted outputs.
         self.server.RequestHandlerClass.log_request = lambda *_: None
 
@@ -150,6 +150,9 @@ class PyPIServer(threading.Thread):
     def stop(self):
         """self shutdown is not supported for python < 2.6"""
         self._run = False
+        if self.is_alive():
+            self.join()
+        self.server.server_close()
 
     def get_next_response(self):
         return (self.default_response_status,
@@ -177,29 +180,23 @@ class PyPIRequestHandler(SimpleHTTPRequestHandler):
     # we need to access the pypi server while serving the content
     pypi_server = None
 
-    def do_POST(self):
-        return self.serve_request()
-    def do_GET(self):
-        return self.serve_request()
-    def do_DELETE(self):
-        return self.serve_request()
-    def do_PUT(self):
-        return self.serve_request()
-
     def serve_request(self):
         """Serve the content.
 
         Also record the requests to be accessed later. If trying to access an
         url matching a static uri, serve static content, otherwise serve
         what is provided by the `get_next_response` method.
+
+        If nothing is defined there, return a 404 header.
         """
         # record the request. Read the input only on PUT or POST requests
         if self.command in ("PUT", "POST"):
-            if 'content-length' in self.headers.dict:
+            if 'content-length' in self.headers:
                 request_data = self.rfile.read(
                     int(self.headers['content-length']))
             else:
                 request_data = self.rfile.read()
+
         elif self.command in ("GET", "DELETE"):
             request_data = ''
 
@@ -220,13 +217,19 @@ class PyPIRequestHandler(SimpleHTTPRequestHandler):
                 try:
                     if self.path.endswith("/"):
                         relative_path += "index.html"
-                    file = open(fs_path + relative_path)
-                    data = file.read()
+
                     if relative_path.endswith('.tar.gz'):
-                        headers=[('Content-type', 'application/x-gtar')]
+                        with open(fs_path + relative_path, 'br') as file:
+                            data = file.read()
+                        headers = [('Content-type', 'application/x-gtar')]
                     else:
-                        headers=[('Content-type', 'text/html')]
+                        with open(fs_path + relative_path) as file:
+                            data = file.read().encode()
+                        headers = [('Content-type', 'text/html')]
+
+                    headers.append(('Content-Length', len(data)))
                     self.make_response(data, headers=headers)
+
                 except IOError:
                     pass
 
@@ -238,6 +241,8 @@ class PyPIRequestHandler(SimpleHTTPRequestHandler):
             # send back a response
             status, headers, data = self.pypi_server.get_next_response()
             self.make_response(data, status, headers)
+
+    do_POST = do_GET = do_DELETE = do_PUT = serve_request
 
     def make_response(self, data, status=200,
                       headers=[('Content-type', 'text/html')]):
@@ -254,18 +259,24 @@ class PyPIRequestHandler(SimpleHTTPRequestHandler):
         for header, value in headers:
             self.send_header(header, value)
         self.end_headers()
+
+        if type(data) is str:
+            data = data.encode()
+
         self.wfile.write(data)
+
 
 class PyPIXMLRPCServer(SimpleXMLRPCServer):
     def server_bind(self):
         """Override server_bind to store the server name."""
         socketserver.TCPServer.server_bind(self)
         host, port = self.socket.getsockname()[:2]
-        self.server_name = socket.getfqdn(host)
         self.server_port = port
+
 
 class MockDist(object):
     """Fake distribution, used in the Mock PyPI Server"""
+
     def __init__(self, name, version="1.0", hidden=False, url="http://url/",
              type="sdist", filename="", size=10000,
              digest="123456", downloads=7, has_sig=False,
@@ -377,6 +388,7 @@ class MockDist(object):
             'summary': self.summary,
         }
 
+
 class XMLRPCMockIndex(object):
     """Mock XMLRPC server"""
 
@@ -386,7 +398,7 @@ class XMLRPCMockIndex(object):
 
     def add_distributions(self, dists):
         for dist in dists:
-           self._dists.append(MockDist(**dist))
+            self._dists.append(MockDist(**dist))
 
     def set_distributions(self, dists):
         self._dists = []

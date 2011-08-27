@@ -1,30 +1,26 @@
-"""distutils.command.build_ext
+"""Build extension modules."""
 
-Implements the Distutils 'build_ext' command, for building extension
-modules (currently limited to C extensions, should accommodate C++
-extensions ASAP)."""
+# FIXME Is this module limited to C extensions or do C++ extensions work too?
+# The docstring of this module said that C++ was not supported, but other
+# comments contradict that.
 
-
-import sys, os, re
-from warnings import warn
+import os
+import re
+import sys
+import logging
+import sysconfig
 
 from distutils2.util import get_platform
 from distutils2.command.cmd import Command
-from distutils2.errors import (CCompilerError, CompileError, DistutilsError,
-                               DistutilsPlatformError, DistutilsSetupError)
+from distutils2.errors import (CCompilerError, CompileError, PackagingError,
+                               PackagingPlatformError, PackagingSetupError)
 from distutils2.compiler import customize_compiler, show_compilers
 from distutils2.util import newer_group
 from distutils2.compiler.extension import Extension
 from distutils2 import logger
-from distutils2._backport import sysconfig
 
-# this keeps compatibility from 2.3 to 2.5
-if sys.version < "2.6":
-    USER_BASE = None
-    HAS_USER_SITE = False
-else:
-    from site import USER_BASE
-    HAS_USER_SITE = True
+import site
+HAS_USER_SITE = True
 
 if os.name == 'nt':
     from distutils2.compiler.msvccompiler import get_build_version
@@ -38,11 +34,11 @@ extension_name_re = re.compile \
 
 class build_ext(Command):
 
-    description = "build C/C++ extensions (compile/link to build directory)"
+    description = "build C/C++ extension modules (compile/link to build directory)"
 
     # XXX thoughts on how to deal with complex command-line options like
     # these, i.e. how to make it so fancy_getopt can suck them off the
-    # command line and make it look like setup.py defined the appropriate
+    # command line and turn them into the appropriate
     # lists of tuples of what-have-you.
     #   - each command needs a callback to process its command-line options
     #   - Command.__init__() needs access to its share of the whole
@@ -90,15 +86,13 @@ class build_ext(Command):
          "forcibly build everything (ignore file timestamps)"),
         ('compiler=', 'c',
          "specify the compiler type"),
-        ('swig-cpp', None,
-         "make SWIG create C++ files (default is C)"),
         ('swig-opts=', None,
          "list of SWIG command-line options"),
         ('swig=', None,
          "path to the SWIG executable"),
         ]
 
-    boolean_options = ['inplace', 'debug', 'force', 'swig-cpp']
+    boolean_options = ['inplace', 'debug', 'force']
 
     if HAS_USER_SITE:
         user_options.append(('user', None,
@@ -110,46 +104,12 @@ class build_ext(Command):
          "list available compilers", show_compilers),
         ]
 
-
-    # making 'compiler' a property to deprecate
-    # its usage as something else than a compiler type
-    # e.g. like a compiler instance
-    def __init__(self, dist):
-        self._compiler = None
-        Command.__init__(self, dist)
-
-    def __setattr__(self, name, value):
-        # need this to make sure setattr() (used in distutils)
-        # doesn't kill our property
-        if name == 'compiler':
-            self._set_compiler(value)
-        else:
-            self.__dict__[name] = value
-
-    def _set_compiler(self, compiler):
-        if not isinstance(compiler, str) and compiler is not None:
-            # we don't want to allow that anymore in the future
-            warn("'compiler' specifies the compiler type in build_ext. "
-                 "If you want to get the compiler object itself, "
-                 "use 'compiler_obj'", DeprecationWarning)
-        self._compiler = compiler
-
-    def _get_compiler(self):
-        if not isinstance(self._compiler, str) and self._compiler is not None:
-            # we don't want to allow that anymore in the future
-            warn("'compiler' specifies the compiler type in build_ext. "
-                 "If you want to get the compiler object itself, "
-                 "use 'compiler_obj'", DeprecationWarning)
-        return self._compiler
-
-    compiler = property(_get_compiler, _set_compiler)
-
     def initialize_options(self):
         self.extensions = None
         self.build_lib = None
         self.plat_name = None
         self.build_temp = None
-        self.inplace = 0
+        self.inplace = False
         self.package = None
 
         self.include_dirs = None
@@ -163,7 +123,6 @@ class build_ext(Command):
         self.force = None
         self.compiler = None
         self.swig = None
-        self.swig_cpp = None
         self.swig_opts = None
         if HAS_USER_SITE:
             self.user = None
@@ -183,7 +142,7 @@ class build_ext(Command):
             if not isinstance(self.extensions, (list, tuple)):
                 type_name = (self.extensions is None and 'None'
                             or type(self.extensions).__name__)
-                raise DistutilsSetupError(
+                raise PackagingSetupError(
                     "'ext_modules' must be a sequence of Extension instances,"
                     " not %s" % (type_name,))
             for i, ext in enumerate(self.extensions):
@@ -191,7 +150,7 @@ class build_ext(Command):
                     continue                # OK! (assume type-checking done
                                             # by Extension constructor)
                 type_name = (ext is None and 'None' or type(ext).__name__)
-                raise DistutilsSetupError(
+                raise PackagingSetupError(
                     "'ext_modules' item %d must be an Extension instance,"
                     " not %s" % (i, type_name))
 
@@ -201,7 +160,7 @@ class build_ext(Command):
         plat_py_include = sysconfig.get_path('platinclude')
         if self.include_dirs is None:
             self.include_dirs = self.distribution.include_dirs or []
-        if isinstance(self.include_dirs, str):
+        if isinstance(self.include_dirs, basestring):
             self.include_dirs = self.include_dirs.split(os.pathsep)
 
         # Put the Python "system" include dir at the end, so that
@@ -210,7 +169,7 @@ class build_ext(Command):
         if plat_py_include != py_include:
             self.include_dirs.append(plat_py_include)
 
-        if isinstance(self.libraries, str):
+        if isinstance(self.libraries, basestring):
             self.libraries = [self.libraries]
 
         # Life is easier if we're not forever checking for None, so
@@ -219,12 +178,12 @@ class build_ext(Command):
             self.libraries = []
         if self.library_dirs is None:
             self.library_dirs = []
-        elif isinstance(self.library_dirs, str):
+        elif isinstance(self.library_dirs, basestring):
             self.library_dirs = self.library_dirs.split(os.pathsep)
 
         if self.rpath is None:
             self.rpath = []
-        elif isinstance(self.rpath, str):
+        elif isinstance(self.rpath, basestring):
             self.rpath = self.rpath.split(os.pathsep)
 
         # for extensions under windows use different directories
@@ -317,8 +276,8 @@ class build_ext(Command):
 
         # Finally add the user include and library directories if requested
         if HAS_USER_SITE and self.user:
-            user_include = os.path.join(USER_BASE, "include")
-            user_lib = os.path.join(USER_BASE, "lib")
+            user_include = os.path.join(site.USER_BASE, "include")
+            user_lib = os.path.join(site.USER_BASE, "lib")
             if os.path.isdir(user_include):
                 self.include_dirs.append(user_include)
             if os.path.isdir(user_lib):
@@ -327,18 +286,6 @@ class build_ext(Command):
 
     def run(self):
         from distutils2.compiler import new_compiler
-
-        # 'self.extensions', as supplied by setup.py, is a list of
-        # Extension instances.  See the documentation for Extension (in
-        # distutils.extension) for details.
-        #
-        # For backwards compatibility with Distutils 0.8.2 and earlier, we
-        # also allow the 'extensions' list to be a list of tuples:
-        #    (ext_name, build_info)
-        # where build_info is a dictionary containing everything that
-        # Extension instances do except the name, with a few things being
-        # differently named.  We convert these 2-tuples to Extension
-        # instances as needed.
 
         if not self.extensions:
             return
@@ -351,23 +298,16 @@ class build_ext(Command):
             self.libraries.extend(build_clib.get_library_names() or [])
             self.library_dirs.append(build_clib.build_clib)
 
+        # Temporary kludge until we remove the verbose arguments and use
+        # logging everywhere
+        verbose = logger.getEffectiveLevel() >= logging.DEBUG
+
         # Setup the CCompiler object that we'll use to do all the
         # compiling and linking
-
-        # used to prevent the usage of an existing compiler for the
-        # compiler option when calling new_compiler()
-        # this will be removed in 3.3 and 2.8
-        if not isinstance(self._compiler, str):
-            self._compiler = None
-
-        self.compiler_obj = new_compiler(compiler=self._compiler,
-                                         verbose=self.verbose,
+        self.compiler_obj = new_compiler(compiler=self.compiler,
+                                         verbose=verbose,
                                          dry_run=self.dry_run,
                                          force=self.force)
-
-        # used to keep the compiler object reachable with
-        # "self.compiler". this will be removed in 3.3 and 2.8
-        self._compiler = self.compiler_obj
 
         customize_compiler(self.compiler_obj)
         # If we are cross-compiling, init the compiler now (if we are not
@@ -384,7 +324,7 @@ class build_ext(Command):
             self.compiler_obj.set_include_dirs(self.include_dirs)
         if self.define is not None:
             # 'define' option is a list of (name,value) tuples
-            for (name, value) in self.define:
+            for name, value in self.define:
                 self.compiler_obj.define_macro(name, value)
         if self.undef is not None:
             for macro in self.undef:
@@ -423,19 +363,19 @@ class build_ext(Command):
         for ext in self.extensions:
             try:
                 self.build_extension(ext)
-            except (CCompilerError, DistutilsError, CompileError), e:
+            except (CCompilerError, PackagingError, CompileError):
                 if not ext.optional:
                     raise
-                self.warn('building extension "%s" failed: %s' %
-                          (ext.name, e))
+                logger.warning('%s: building extension %r failed: %s',
+                               self.get_command_name(), ext.name,
+                               sys.exc_info()[1])
 
     def build_extension(self, ext):
         sources = ext.sources
         if sources is None or not isinstance(sources, (list, tuple)):
-            raise DistutilsSetupError, \
-                  ("in 'ext_modules' option (extension '%s'), " +
+            raise PackagingSetupError(("in 'ext_modules' option (extension '%s'), " +
                    "'sources' must be present and must be " +
-                   "a list of source filenames") % ext.name
+                   "a list of source filenames") % ext.name)
         sources = list(sources)
 
         ext_path = self.get_ext_fullpath(ext.name)
@@ -484,7 +424,7 @@ class build_ext(Command):
         # The setup.py script for Python on Unix needs to be able to
         # get this list so it can perform all the clean up needed to
         # avoid keeping object files around when cleaning out a failed
-        # build of an extension module.  Since Distutils does not
+        # build of an extension module.  Since Packaging does not
         # track dependencies, we have to get rid of intermediates to
         # ensure all the intermediates will be properly re-built.
         #
@@ -527,17 +467,13 @@ class build_ext(Command):
         # source -- but there should be an option to put SWIG output in
         # the temp dir.
 
-        if self.swig_cpp:
-            logger.warn("--swig-cpp is deprecated - use --swig-opts=-c++")
-
-        if self.swig_cpp or ('-c++' in self.swig_opts) or \
-           ('-c++' in extension.swig_opts):
+        if ('-c++' in self.swig_opts or '-c++' in extension.swig_opts):
             target_ext = '.cpp'
         else:
             target_ext = '.c'
 
         for source in sources:
-            (base, ext) = os.path.splitext(source)
+            base, ext = os.path.splitext(source)
             if ext == ".i":             # SWIG interface file
                 new_sources.append(base + '_wrap' + target_ext)
                 swig_sources.append(source)
@@ -551,8 +487,6 @@ class build_ext(Command):
         swig = self.swig or self.find_swig()
         swig_cmd = [swig, "-python"]
         swig_cmd.extend(self.swig_opts)
-        if self.swig_cpp:
-            swig_cmd.append("-c++")
 
         # Do not override commandline arguments
         if not self.swig_opts:
@@ -591,9 +525,8 @@ class build_ext(Command):
             return "swig.exe"
 
         else:
-            raise DistutilsPlatformError, \
-                  ("I don't know how to find (much less run) SWIG "
-                   "on platform '%s'") % os.name
+            raise PackagingPlatformError(("I don't know how to find (much less run) SWIG "
+                   "on platform '%s'") % os.name)
 
     # -- Name generators -----------------------------------------------
     # (extension names, filenames, whatever)
@@ -654,7 +587,7 @@ class build_ext(Command):
         provided, "init" + module_name.  Only relevant on Windows, where
         the .pyd file (DLL) must export the module "init" function.
         """
-        initfunc_name = "init" + ext.name.split('.')[-1]
+        initfunc_name = "PyInit_" + ext.name.split('.')[-1]
         if initfunc_name not in ext.export_symbols:
             ext.export_symbols.append(initfunc_name)
         return ext.export_symbols
@@ -723,9 +656,8 @@ class build_ext(Command):
 
         else:
             if sysconfig.get_config_var('Py_ENABLE_SHARED'):
-                template = "python%d.%d"
-                pythonlib = (template %
-                             (sys.hexversion >> 24, (sys.hexversion >> 16) & 0xff))
+                pythonlib = 'python{}.{}'.format(
+                    sys.hexversion >> 24, (sys.hexversion >> 16) & 0xff)
                 return ext.libraries + [pythonlib]
             else:
                 return ext.libraries

@@ -1,35 +1,25 @@
-"""distutils2.index.dist
+"""Classes representing releases and distributions retrieved from indexes.
 
-Provides useful classes to represent the release and distributions retrieved
-from indexes.
+A project (= unique name) can have several releases (= versions) and
+each release can have several distributions (= sdist and bdists).
 
-A project can have several releases (=versions) and each release can have
-several distributions (sdist, bdist).
-
-The release contains the metadata related informations (see PEP 384), and the
-distributions contains download related informations.
-
+Release objects contain metadata-related information (see PEP 376);
+distribution objects contain download-related information.
 """
-import mimetypes
+
 import re
-import tarfile
+import hashlib
 import tempfile
 import urllib
 import urlparse
-import zipfile
-try:
-    import hashlib
-except ImportError:
-    from distutils2._backport import hashlib
-
-from distutils2._backport.shutil import unpack_archive
 from distutils2.errors import IrrationalVersionError
-from distutils2.index.errors import (HashDoesNotMatch, UnsupportedHashName,
-                                     CantParseArchiveName)
 from distutils2.version import (suggest_normalized_version, NormalizedVersion,
-                                get_version_predicate)
+                               get_version_predicate)
 from distutils2.metadata import Metadata
-from distutils2.util import splitext
+from distutils2.pypi.errors import (HashDoesNotMatch, UnsupportedHashName,
+                                   CantParseArchiveName)
+from distutils2.util import unpack_archive
+
 
 __all__ = ['ReleaseInfo', 'DistInfo', 'ReleasesList', 'get_infos_from_url']
 
@@ -94,7 +84,7 @@ class ReleaseInfo(IndexReference):
     def fetch_metadata(self):
         """If the metadata is not set, use the indexes to get it"""
         if not self.metadata:
-            self._index.get_metadata(self.name, '%s' % self.version)
+            self._index.get_metadata(self.name, str(self.version))
         return self.metadata
 
     @property
@@ -104,7 +94,7 @@ class ReleaseInfo(IndexReference):
 
     def fetch_distributions(self):
         if self.dists is None:
-            self._index.get_distributions(self.name, '%s' % self.version)
+            self._index.get_distributions(self.name, str(self.version))
             if self.dists is None:
                 self.dists = {}
         return self.dists
@@ -140,14 +130,14 @@ class ReleaseInfo(IndexReference):
         not return one existing distribution.
         """
         if len(self.dists) == 0:
-            raise LookupError()
+            raise LookupError
         if dist_type:
             return self[dist_type]
         if prefer_source:
             if "sdist" in self.dists:
                 dist = self["sdist"]
             else:
-                dist = self.dists.values()[0]
+                dist = next(self.dists.values())
             return dist
 
     def unpack(self, path=None, prefer_source=True):
@@ -254,14 +244,14 @@ class DistInfo(IndexReference):
         self._url = None
         self.add_url(url, hashname, hashval, is_external)
 
-    def add_url(self, url, hashname=None, hashval=None, is_external=True):
+    def add_url(self, url=None, hashname=None, hashval=None, is_external=True):
         """Add a new url to the list of urls"""
         if hashname is not None:
             try:
                 hashlib.new(hashname)
             except ValueError:
                 raise UnsupportedHashName(hashname)
-        if not url in [u['url'] for u in self.urls]:
+        if url not in [u['url'] for u in self.urls]:
             self.urls.append({
                 'url': url,
                 'hashname': hashname,
@@ -323,20 +313,21 @@ class DistInfo(IndexReference):
                 path = tempfile.mkdtemp()
 
             filename = self.download(path)
-            content_type = mimetypes.guess_type(filename)[0]
-            self._unpacked_dir = unpack_archive(filename, path)
+            unpack_archive(filename, path)
+            self._unpacked_dir = path
 
-        return self._unpacked_dir
+        return path
 
     def _check_md5(self, filename):
         """Check that the md5 checksum of the given file matches the one in
         url param"""
         hashname = self.url['hashname']
         expected_hashval = self.url['hashval']
-        if not None in (expected_hashval, hashname):
-            f = open(filename)
-            hashval = hashlib.new(hashname)
-            hashval.update(f.read())
+        if None not in (expected_hashval, hashname):
+            with open(filename, 'rb') as f:
+                hashval = hashlib.new(hashname)
+                hashval.update(f.read())
+
             if hashval.hexdigest() != expected_hashval:
                 raise HashDoesNotMatch("got %s instead of %s"
                     % (hashval.hexdigest(), expected_hashval))
@@ -408,19 +399,19 @@ class ReleasesList(IndexReference):
         """
         if release:
             if release.name.lower() != self.name.lower():
-                raise ValueError("%s is not the same project than %s" %
+                raise ValueError("%s is not the same project as %s" %
                                  (release.name, self.name))
-            version = '%s' % release.version
+            version = str(release.version)
 
-            if not version in self.get_versions():
+            if version not in self.get_versions():
                 # append only if not already exists
                 self.releases.append(release)
-            for dist in release.dists.itervalues():
+            for dist in release.dists.values():
                 for url in dist.urls:
                     self.add_release(version, dist.dist_type, **url)
         else:
-            matches = [r for r in self.releases if '%s' % r.version == version
-                                                 and r.name == self.name]
+            matches = [r for r in self.releases
+                       if str(r.version) == version and r.name == self.name]
             if not matches:
                 release = ReleaseInfo(self.name, version, index=self._index)
                 self.releases.append(release)
@@ -448,19 +439,19 @@ class ReleasesList(IndexReference):
         sort_by.append("version")
 
         self.releases.sort(
-            key=lambda i: [getattr(i, arg) for arg in sort_by],
+            key=lambda i: tuple(getattr(i, arg) for arg in sort_by),
             reverse=reverse, *args, **kwargs)
 
     def get_release(self, version):
         """Return a release from its version."""
-        matches = [r for r in self.releases if "%s" % r.version == version]
+        matches = [r for r in self.releases if str(r.version) == version]
         if len(matches) != 1:
             raise KeyError(version)
         return matches[0]
 
     def get_versions(self):
         """Return a list of releases versions contained"""
-        return ["%s" % r.version for r in self.releases]
+        return [str(r.version) for r in self.releases]
 
     def __getitem__(self, key):
         return self.releases[key]
@@ -532,7 +523,7 @@ def split_archive_name(archive_name, probable_name=None):
             # we dont get a good version number: recurse !
             return eager_split(str, maxsplit - 1)
         else:
-            return (name, version)
+            return name, version
     if probable_name is not None:
         probable_name = probable_name.lower()
     name = None
@@ -545,6 +536,6 @@ def split_archive_name(archive_name, probable_name=None):
 
     version = suggest_normalized_version(version)
     if version is not None and name != "":
-        return (name.lower(), version)
+        return name.lower(), version
     else:
         raise CantParseArchiveName(archive_name)

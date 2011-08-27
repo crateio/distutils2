@@ -1,11 +1,10 @@
-"""Tests for distutils.manifest."""
+"""Tests for distutils2.manifest."""
 import os
 import logging
 from StringIO import StringIO
-
-from distutils2.tests import run_unittest
-from distutils2.tests import unittest, support
 from distutils2.manifest import Manifest
+
+from distutils2.tests import unittest, support
 
 _MANIFEST = """\
 recursive-include foo *.py   # ok
@@ -24,66 +23,55 @@ file1
 
 
 class ManifestTestCase(support.TempdirManager,
-                       # enable this after LoggingCatcher is fixed
-                       #support.LoggingCatcher,
+                       support.LoggingCatcher,
                        unittest.TestCase):
+
+    def setUp(self):
+        super(ManifestTestCase, self).setUp()
+        self.cwd = os.getcwd()
+
+    def tearDown(self):
+        os.chdir(self.cwd)
+        super(ManifestTestCase, self).tearDown()
 
     def test_manifest_reader(self):
         tmpdir = self.mkdtemp()
         MANIFEST = os.path.join(tmpdir, 'MANIFEST.in')
-        f = open(MANIFEST, 'w')
-        try:
+        with open(MANIFEST, 'w') as f:
             f.write(_MANIFEST)
-        finally:
-            f.close()
+
         manifest = Manifest()
+        manifest.read_template(MANIFEST)
 
-        # remove this when LoggingCatcher is fixed
-        warns = []
-        def _warn(*args):
-            warns.append(args[0])
-
-        old_warn = logging.warning
-        logging.warning = _warn
-        try:
-            manifest.read_template(MANIFEST)
-        finally:
-            logging.warning = old_warn
-
-        # the manifest should have been read
-        # and 3 warnings issued (we ddidn't provided the files)
-        self.assertEqual(len(warns), 3)
-        for warn in warns:
-            self.assertIn('no files found matching', warn)
+        warnings = self.get_logs(logging.WARNING)
+        # the manifest should have been read and 3 warnings issued
+        # (we didn't provide the files)
+        self.assertEqual(3, len(warnings))
+        for warning in warnings:
+            self.assertIn('no files found matching', warning)
 
         # manifest also accepts file-like objects
-        old_warn = logging.warning
-        logging.warning = _warn
-        try:
-            manifest.read_template(open(MANIFEST))
-        finally:
-            logging.warning = old_warn
+        with open(MANIFEST) as f:
+            manifest.read_template(f)
 
-        # the manifest should have been read
-        # and 3 warnings issued (we ddidn't provided the files)
-        self.assertEqual(len(warns), 6)
+        # the manifest should have been read and 3 warnings issued
+        # (we didn't provide the files)
+        self.assertEqual(3, len(warnings))
 
     def test_default_actions(self):
         tmpdir = self.mkdtemp()
-        old_dir = os.getcwd()
+        self.addCleanup(os.chdir, os.getcwd())
         os.chdir(tmpdir)
-        try:
-            self.write_file('README', 'xxx')
-            self.write_file('file1', 'xxx')
-            content = StringIO(_MANIFEST2)
-            manifest = Manifest()
-            manifest.read_template(content)
-            self.assertEqual(manifest.files, ['README', 'file1'])
-        finally:
-            os.chdir(old_dir)
+        self.write_file('README', 'xxx')
+        self.write_file('file1', 'xxx')
+        content = StringIO(_MANIFEST2)
+        manifest = Manifest()
+        manifest.read_template(content)
+        self.assertEqual(['README', 'file1'], manifest.files)
+
 
 def test_suite():
     return unittest.makeSuite(ManifestTestCase)
 
 if __name__ == '__main__':
-    run_unittest(test_suite())
+    unittest.main(defaultTest='test_suite')

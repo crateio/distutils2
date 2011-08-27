@@ -1,10 +1,11 @@
-"""index.simple
+"""Spider using the screen-scraping "simple" PyPI API.
 
-Contains the class "SimpleIndexCrawler", a simple spider to find and retrieve
-distributions on the Python Package Index, using its "simple" API,
-avalaible at http://pypi.python.org/simple/
+This module contains the class Crawler, a simple spider that
+can be used to find and retrieve distributions from a project index
+(like the Python Package Index), using its so-called simple API (see
+reference implementation available at http://pypi.python.org/simple/).
 """
-from fnmatch import translate
+
 import httplib
 import re
 import socket
@@ -13,17 +14,20 @@ import urllib2
 import urlparse
 import os
 
+from fnmatch import translate
+from functools import wraps
 from distutils2 import logger
-from distutils2.index.base import BaseClient
-from distutils2.index.dist import (ReleasesList, EXTENSIONS,
-                                   get_infos_from_url, MD5_HASH)
-from distutils2.index.errors import (DistutilsIndexError, DownloadError,
-                                     UnableToDownload, CantParseArchiveName,
-                                     ReleaseNotFound, ProjectNotFound)
-from distutils2.index.mirrors import get_mirrors
 from distutils2.metadata import Metadata
 from distutils2.version import get_version_predicate
-from distutils2 import __version__ as __distutils2_version__
+from distutils2 import __version__ as distutils2_version
+from distutils2.pypi.base import BaseClient
+from distutils2.pypi.dist import (ReleasesList, EXTENSIONS,
+                                  get_infos_from_url, MD5_HASH)
+from distutils2.pypi.errors import (PackagingPyPIError, DownloadError,
+                                    UnableToDownload, CantParseArchiveName,
+                                    ReleaseNotFound, ProjectNotFound)
+from distutils2.pypi.mirrors import get_mirrors
+from distutils2.metadata import Metadata
 
 __all__ = ['Crawler', 'DEFAULT_SIMPLE_INDEX_URL']
 
@@ -32,7 +36,7 @@ DEFAULT_SIMPLE_INDEX_URL = "http://a.pypi.python.org/simple/"
 DEFAULT_HOSTS = ("*",)
 SOCKET_TIMEOUT = 15
 USER_AGENT = "Python-urllib/%s distutils2/%s" % (
-    sys.version[:3], __distutils2_version__)
+    sys.version[:3], distutils2_version)
 
 # -- Regexps -------------------------------------------------
 EGG_FRAGMENT = re.compile(r'^egg=([-A-Za-z0-9_.]+)$')
@@ -48,8 +52,9 @@ REL = re.compile("""<([^>]*\srel\s*=\s*['"]?([^'">]+)[^>]*)>""", re.I)
 def socket_timeout(timeout=SOCKET_TIMEOUT):
     """Decorator to add a socket timeout when requesting pages on PyPI.
     """
-    def _socket_timeout(func):
-        def _socket_timeout(self, *args, **kwargs):
+    def wrapper(func):
+        @wraps(func)
+        def wrapped(self, *args, **kwargs):
             old_timeout = socket.getdefaulttimeout()
             if hasattr(self, "_timeout"):
                 timeout = self._timeout
@@ -58,13 +63,14 @@ def socket_timeout(timeout=SOCKET_TIMEOUT):
                 return func(self, *args, **kwargs)
             finally:
                 socket.setdefaulttimeout(old_timeout)
-        return _socket_timeout
-    return _socket_timeout
+        return wrapped
+    return wrapper
 
 
 def with_mirror_support():
     """Decorator that makes the mirroring support easier"""
     def wrapper(func):
+        @wraps(func)
         def wrapped(self, *args, **kwargs):
             try:
                 return func(self, *args, **kwargs)
@@ -103,7 +109,7 @@ class Crawler(BaseClient):
     :param follow_externals: tell if following external links is needed or
                              not. Default is False.
     :param mirrors_url: the url to look on for DNS records giving mirror
-                        adresses.
+                        addresses.
     :param mirrors: a list of mirrors (see PEP 381).
     :param timeout: time in seconds to consider a url has timeouted.
     :param mirrors_max_tries": number of times to try requesting informations
@@ -113,13 +119,20 @@ class Crawler(BaseClient):
     def __init__(self, index_url=DEFAULT_SIMPLE_INDEX_URL, prefer_final=False,
                  prefer_source=True, hosts=DEFAULT_HOSTS,
                  follow_externals=False, mirrors_url=None, mirrors=None,
-                 timeout=SOCKET_TIMEOUT, mirrors_max_tries=0):
+                 timeout=SOCKET_TIMEOUT, mirrors_max_tries=0, verbose=False):
         super(Crawler, self).__init__(prefer_final, prefer_source)
         self.follow_externals = follow_externals
+        self.verbose = verbose
 
         # mirroring attributes.
-        if not index_url.endswith("/"):
-            index_url += "/"
+        parsed = urlparse.urlparse(index_url)
+        self.scheme = parsed[0]
+        if self.scheme == 'file':
+            ender = os.path.sep
+        else:
+            ender = '/'
+        if not index_url.endswith(ender):
+            index_url += ender
         # if no mirrors are defined, use the method described in PEP 381.
         if mirrors is None:
             mirrors = get_mirrors(mirrors_url)
@@ -145,33 +158,39 @@ class Crawler(BaseClient):
 
         Return a list of names.
         """
-        index = self._open_url(self.index_url)
-        if '*' in name:
-            name.replace('*', '.*')
-        else:
-            name = "%s%s%s" % ('*.?', name, '*.?')
-        name = name.replace('*', '[^<]*')  # avoid matching of the tag's end
-        projectname = re.compile("""<a[^>]*>(%s)</a>""" % name, flags=re.I)
-        matching_projects = []
-        for match in projectname.finditer(index.read()):
+        with self._open_url(self.index_url) as index:
+            if '*' in name:
+                name.replace('*', '.*')
+            else:
+                name = "%s%s%s" % ('*.?', name, '*.?')
+            name = name.replace('*', '[^<]*')  # avoid matching end tag
+            projectname = re.compile('<a[^>]*>(%s)</a>' % name, re.I)
+            matching_projects = []
+
+            index_content = index.read()
+
+        # FIXME should use bytes I/O and regexes instead of decoding
+        index_content = index_content.decode()
+
+        for match in projectname.finditer(index_content):
             project_name = match.group(1)
             matching_projects.append(self._get_project(project_name))
         return matching_projects
 
     def get_releases(self, requirements, prefer_final=None,
                      force_update=False):
-        """Search for releases and return a ReleaseList object containing
+        """Search for releases and return a ReleasesList object containing
         the results.
         """
         predicate = get_version_predicate(requirements)
         if predicate.name.lower() in self._projects and not force_update:
             return self._projects.get(predicate.name.lower())
         prefer_final = self._get_prefer_final(prefer_final)
-        logger.info('reading info on PyPI about %s', predicate.name)
+        logger.debug('Reading info on PyPI about %s', predicate.name)
         self._process_index_page(predicate.name)
 
         if predicate.name.lower() not in self._projects:
-            raise ProjectNotFound()
+            raise ProjectNotFound
 
         releases = self._projects.get(predicate.name.lower())
         releases.sort_releases(prefer_final=prefer_final)
@@ -199,10 +218,10 @@ class Crawler(BaseClient):
         Currently, download one archive, extract it and use the PKG-INFO file.
         """
         release = self.get_distributions(project_name, version)
-        if not release._metadata:
+        if not release.metadata:
             location = release.get_distribution().unpack()
             pkg_info = os.path.join(location, 'PKG-INFO')
-            release._metadata = Metadata(pkg_info)
+            release.metadata = Metadata(pkg_info)
         return release
 
     def _switch_to_next_mirror(self):
@@ -213,7 +232,8 @@ class Crawler(BaseClient):
         """
         self._mirrors_used.add(self.index_url)
         index_url = self._mirrors.pop()
-        if not ("http://" or "https://" or "file://") in index_url:
+        # XXX use urlparse for a real check of missing scheme part
+        if not index_url.startswith(("http://", "https://", "file://")):
             index_url = "http://%s" % index_url
 
         if not index_url.endswith("/simple"):
@@ -264,9 +284,8 @@ class Crawler(BaseClient):
             name = release.name
         else:
             name = release_info['name']
-        if not name.lower() in self._projects:
-            self._projects[name.lower()] = ReleasesList(name,
-                                                        index=self._index)
+        if name.lower() not in self._projects:
+            self._projects[name.lower()] = ReleasesList(name, index=self._index)
 
         if release:
             self._projects[name.lower()].add_release(release=release)
@@ -292,27 +311,32 @@ class Crawler(BaseClient):
                              method on it)
         """
         f = self._open_url(url)
-        base_url = f.url
-        if url not in self._processed_urls:
-            self._processed_urls.append(url)
-            link_matcher = self._get_link_matcher(url)
-            for link, is_download in link_matcher(f.read(), base_url):
-                if link not in self._processed_urls:
-                    if self._is_distribution(link) or is_download:
-                        self._processed_urls.append(link)
-                        # it's a distribution, so create a dist object
-                        try:
-                            infos = get_infos_from_url(link, project_name,
-                                        is_external=not self.index_url in url)
-                        except CantParseArchiveName, e:
-                            logger.warning(
-                                "version has not been parsed: %s", e)
+        try:
+            base_url = f.url
+            if url not in self._processed_urls:
+                self._processed_urls.append(url)
+                link_matcher = self._get_link_matcher(url)
+                for link, is_download in link_matcher(f.read().decode(), base_url):
+                    if link not in self._processed_urls:
+                        if self._is_distribution(link) or is_download:
+                            self._processed_urls.append(link)
+                            # it's a distribution, so create a dist object
+                            try:
+                                infos = get_infos_from_url(link, project_name,
+                                            is_external=self.index_url not in url)
+                            except CantParseArchiveName:
+                                e = sys.exc_info()[1]
+                                if self.verbose:
+                                    logger.warning(
+                                        "version has not been parsed: %s", e)
+                            else:
+                                self._register_release(release_info=infos)
                         else:
-                            self._register_release(release_info=infos)
-                    else:
-                        if self._is_browsable(link) and follow_links:
-                            self._process_url(link, project_name,
-                                follow_links=False)
+                            if self._is_browsable(link) and follow_links:
+                                self._process_url(link, project_name,
+                                    follow_links=False)
+        finally:
+            f.close()
 
     def _get_link_matcher(self, url):
         """Returns the right link matcher function of the given url
@@ -331,6 +355,9 @@ class Crawler(BaseClient):
         This matches the simple index requirements for matching links.
         If follow_externals is set to False, dont yeld the external
         urls.
+
+        :param content: the content of the page we want to parse
+        :param base_url: the url of this page.
         """
         for match in HREF.finditer(content):
             url = self._get_full_url(match.group(1), base_url)
@@ -340,7 +367,7 @@ class Crawler(BaseClient):
         for match in REL.finditer(content):
             # search for rel links.
             tag, rel = match.groups()
-            rels = map(str.strip, rel.lower().split(','))
+            rels = [s.strip() for s in rel.lower().split(',')]
             if 'homepage' in rels or 'download' in rels:
                 for match in HREF.finditer(tag):
                     url = self._get_full_url(match.group(1), base_url)
@@ -363,7 +390,11 @@ class Crawler(BaseClient):
         :param name: the name of the project to find the page
         """
         # Browse and index the content of the given PyPI page.
-        url = self.index_url + name + "/"
+        if self.scheme == 'file':
+            ender = os.path.sep
+        else:
+            ender = '/'
+        url = self.index_url + name + ender
         self._process_url(url, name)
 
     @socket_timeout()
@@ -376,19 +407,19 @@ class Crawler(BaseClient):
 
         # authentication stuff
         if scheme in ('http', 'https'):
-            auth, host = urllib2.splituser(netloc)
+            auth, host = urlparse.splituser(netloc)
         else:
             auth = None
 
         # add index.html automatically for filesystem paths
         if scheme == 'file':
-            if url.endswith('/'):
+            if url.endswith(os.path.sep):
                 url += "index.html"
 
         # add authorization headers if auth is provided
         if auth:
             auth = "Basic " + \
-                urllib2.unquote(auth).encode('base64').strip()
+                urlparse.unquote(auth).encode('base64').strip()
             new_url = urlparse.urlunparse((
                 scheme, host, path, params, query, frag))
             request = urllib2.Request(new_url)
@@ -398,17 +429,21 @@ class Crawler(BaseClient):
         request.add_header('User-Agent', USER_AGENT)
         try:
             fp = urllib2.urlopen(request)
-        except (ValueError, httplib.InvalidURL), v:
+        except (ValueError, httplib.InvalidURL):
+            v = sys.exc_info()[1]
             msg = ' '.join([str(arg) for arg in v.args])
-            raise DistutilsIndexError('%s %s' % (url, msg))
-        except urllib2.HTTPError, v:
-            return v
-        except urllib2.URLError, v:
+            raise PackagingPyPIError('%s %s' % (url, msg))
+        except urllib2.HTTPError:
+            return sys.exc_info()[1]
+        except urllib2.URLError:
+            v = sys.exc_info()[1]
             raise DownloadError("Download error for %s: %s" % (url, v.reason))
-        except httplib.BadStatusLine, v:
+        except httplib.BadStatusLine:
+            v = sys.exc_info()[1]
             raise DownloadError('%s returned a bad status line. '
                 'The server might be down, %s' % (url, v.line))
-        except httplib.HTTPException, v:
+        except httplib.HTTPException:
+            v = sys.exc_info()[1]
             raise DownloadError("Download error for %s: %s" % (url, v))
         except socket.timeout:
             raise DownloadError("The server timeouted")
@@ -430,9 +465,9 @@ class Crawler(BaseClient):
         elif what.startswith('#'):
             what = int(what[1:])
         else:
-            from htmlentitydefs import name2codepoint
+            from html.entities import name2codepoint
             what = name2codepoint.get(what, match.group(0))
-        return unichr(what)
+        return chr(what)
 
     def _htmldecode(self, text):
         """Decode HTML entities in the given text."""

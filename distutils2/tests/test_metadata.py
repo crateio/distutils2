@@ -1,27 +1,25 @@
-"""Tests for distutils.metadata."""
+"""Tests for distutils2.metadata."""
+import codecs
 import os
 import sys
-import platform
+import logging
 from StringIO import StringIO
 
-from distutils2.metadata import (Metadata, get_metadata_version,
-                                 PKG_INFO_PREFERRED_VERSION)
-from distutils2.tests import run_unittest, unittest
-from distutils2.tests.support import LoggingCatcher, WarningsCatcher
-from distutils2.errors import (MetadataConflictError,
-                               MetadataUnrecognizedVersionError)
+from distutils2.errors import (MetadataConflictError, MetadataMissingError,
+                              MetadataUnrecognizedVersionError)
+from distutils2.metadata import Metadata, PKG_INFO_PREFERRED_VERSION
+
+from distutils2.tests import unittest
+from distutils2.tests.support import LoggingCatcher
 
 
-class MetadataTestCase(LoggingCatcher, WarningsCatcher,
-                                   unittest.TestCase):
+class MetadataTestCase(LoggingCatcher,
+                       unittest.TestCase):
 
     def test_instantiation(self):
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
-        fp = open(PKG_INFO)
-        try:
-            contents = fp.read()
-        finally:
-            fp.close()
+        with codecs.open(PKG_INFO, 'r', encoding='utf-8') as f:
+            contents = f.read()
         fp = StringIO(contents)
 
         m = Metadata()
@@ -54,15 +52,16 @@ class MetadataTestCase(LoggingCatcher, WarningsCatcher,
         out.seek(0)
         res = Metadata()
         res.read_file(out)
-        for k in metadata.keys():
-            self.assertTrue(metadata[k] == res[k])
+        for k in metadata:
+            self.assertEqual(metadata[k], res[k])
 
     def test_metadata_markers(self):
         # see if we can be platform-aware
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
-        content = open(PKG_INFO).read()
-        content = content % sys.platform
+        with codecs.open(PKG_INFO, 'r', encoding='utf-8') as f:
+            content = f.read() % sys.platform
         metadata = Metadata(platform_dependent=True)
+
         metadata.read_file(StringIO(content))
         self.assertEqual(metadata['Requires-Dist'], ['bar'])
         metadata['Name'] = "baz; sys.platform == 'blah'"
@@ -79,14 +78,15 @@ class MetadataTestCase(LoggingCatcher, WarningsCatcher,
 
     def test_description(self):
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
-        content = open(PKG_INFO).read()
-        content = content % sys.platform
+        with codecs.open(PKG_INFO, 'r', encoding='utf-8') as f:
+            content = f.read() % sys.platform
         metadata = Metadata()
         metadata.read_file(StringIO(content))
 
         # see if we can read the description now
         DESC = os.path.join(os.path.dirname(__file__), 'LONG_DESC.txt')
-        wanted = open(DESC).read()
+        with open(DESC) as f:
+            wanted = f.read()
         self.assertEqual(wanted, metadata['Description'])
 
         # save the file somewhere and make sure we can read it back
@@ -98,8 +98,8 @@ class MetadataTestCase(LoggingCatcher, WarningsCatcher,
 
     def test_mapping_api(self):
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
-        content = open(PKG_INFO).read()
-        content = content % sys.platform
+        with codecs.open(PKG_INFO, 'r', encoding='utf-8') as f:
+            content = f.read() % sys.platform
         metadata = Metadata(fileobj=StringIO(content))
         self.assertIn('Version', metadata.keys())
         self.assertIn('0.5', metadata.values())
@@ -109,6 +109,8 @@ class MetadataTestCase(LoggingCatcher, WarningsCatcher,
         self.assertEqual(metadata['Version'], '0.6')
         metadata.update([('version', '0.7')])
         self.assertEqual(metadata['Version'], '0.7')
+
+        self.assertEqual(list(metadata), list(metadata.keys()))
 
     def test_versions(self):
         metadata = Metadata()
@@ -126,27 +128,27 @@ class MetadataTestCase(LoggingCatcher, WarningsCatcher,
         del metadata['Obsoletes-Dist']
         metadata['Version'] = '1'
         self.assertEqual(metadata['Metadata-Version'], '1.0')
-        self.assertEqual(get_metadata_version(metadata), '1.0')
 
         PKG_INFO = os.path.join(os.path.dirname(__file__),
                                 'SETUPTOOLS-PKG-INFO')
-        metadata.read_file(StringIO(open(PKG_INFO).read()))
+        with codecs.open(PKG_INFO, 'r', encoding='utf-8') as f:
+            content = f.read()
+        metadata.read_file(StringIO(content))
         self.assertEqual(metadata['Metadata-Version'], '1.0')
-        self.assertEqual(get_metadata_version(metadata), '1.0')
 
         PKG_INFO = os.path.join(os.path.dirname(__file__),
                                 'SETUPTOOLS-PKG-INFO2')
-        metadata.read_file(StringIO(open(PKG_INFO).read()))
+        with codecs.open(PKG_INFO, 'r', encoding='utf-8') as f:
+            content = f.read()
+        metadata.read_file(StringIO(content))
         self.assertEqual(metadata['Metadata-Version'], '1.1')
-        self.assertEqual(get_metadata_version(metadata), '1.1')
 
         # Update the _fields dict directly to prevent 'Metadata-Version'
         # from being updated by the _set_best_version() method.
         metadata._fields['Metadata-Version'] = '1.618'
         self.assertRaises(MetadataUnrecognizedVersionError, metadata.keys)
 
-    # XXX Spurious Warnings were disabled
-    def XXXtest_warnings(self):
+    def test_warnings(self):
         metadata = Metadata()
 
         # these should raise a warning
@@ -157,7 +159,7 @@ class MetadataTestCase(LoggingCatcher, WarningsCatcher,
             metadata.set(name, value)
 
         # we should have a certain amount of warnings
-        self.assertEqual(len(self.logs), 2)
+        self.assertEqual(len(self.get_logs()), 2)
 
     def test_multiple_predicates(self):
         metadata = Metadata()
@@ -167,7 +169,7 @@ class MetadataTestCase(LoggingCatcher, WarningsCatcher,
         metadata['Requires-Python'] = '>=2.6, <3.0'
         metadata['Requires-Dist'] = ['Foo (>=2.6, <3.0)']
 
-        self.assertEqual(len(self.warnings), 0)
+        self.assertEqual([], self.get_logs(logging.WARNING))
 
     def test_project_url(self):
         metadata = Metadata()
@@ -191,7 +193,6 @@ class MetadataTestCase(LoggingCatcher, WarningsCatcher,
         metadata['Home-page'] = 'http://pypi.python.org'
         metadata['Author'] = 'Monty Python'
         metadata.docutils_support = False
-        from distutils2.errors import MetadataMissingError
         self.assertRaises(MetadataMissingError, metadata.check, strict=True)
 
     def test_check_name(self):
@@ -209,7 +210,6 @@ class MetadataTestCase(LoggingCatcher, WarningsCatcher,
         metadata['Home-page'] = 'http://pypi.python.org'
         metadata['Author'] = 'Monty Python'
         metadata.docutils_support = False
-        from distutils2.errors import MetadataMissingError
         self.assertRaises(MetadataMissingError, metadata.check, strict=True)
 
     def test_check_author(self):
@@ -251,11 +251,8 @@ class MetadataTestCase(LoggingCatcher, WarningsCatcher,
         metadata['Version'] = '1.0'
         self.assertEqual(metadata['Metadata-Version'],
                          PKG_INFO_PREFERRED_VERSION)
-        self.assertEqual(get_metadata_version(metadata),
-                         PKG_INFO_PREFERRED_VERSION)
         metadata['Classifier'] = ['ok']
         self.assertEqual(metadata['Metadata-Version'], '1.2')
-        self.assertEqual(get_metadata_version(metadata), '1.2')
 
     def test_project_urls(self):
         # project-url is a bit specific, make sure we write it
@@ -280,4 +277,4 @@ def test_suite():
     return unittest.makeSuite(MetadataTestCase)
 
 if __name__ == '__main__':
-    run_unittest(test_suite())
+    unittest.main(defaultTest='test_suite')

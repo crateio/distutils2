@@ -1,12 +1,12 @@
-"""Tests for distutils.command.install_headers."""
+"""Tests for distutils2.command.install_headers."""
 import os
 
 from distutils2.command.install_headers import install_headers
 from distutils2.tests import unittest, support
 
+
 class InstallHeadersTestCase(support.TempdirManager,
                              support.LoggingCatcher,
-                             support.EnvironGuard,
                              unittest.TestCase):
 
     def test_simple_run(self):
@@ -29,6 +29,7 @@ class InstallHeadersTestCase(support.TempdirManager,
 
         # let's check the results
         self.assertEqual(len(cmd.get_outputs()), 2)
+
 
 def test_suite():
     return unittest.makeSuite(InstallHeadersTestCase)

@@ -1,9 +1,6 @@
-"""distutils.command.clean
+"""Clean up temporary files created by the build command."""
 
-Implements the Distutils 'clean' command."""
-
-# contributed by Bastian Kleineidam <calvin@cs.uni-sb.de>, added 2000-03-18
-
+# Contributed by Bastian Kleineidam <calvin@cs.uni-sb.de>
 
 import os
 from shutil import rmtree
@@ -66,7 +63,7 @@ class clean(Command):
                     else:
                         rmtree(directory)
                 else:
-                    logger.warn("'%s' does not exist -- can't clean it",
+                    logger.warning("'%s' does not exist -- can't clean it",
                                 directory)
 
         # just for the heck of it, try to remove the base build directory:
@@ -77,5 +74,3 @@ class clean(Command):
                 logger.info("removing '%s'", self.build_base)
             except OSError:
                 pass
-
-# class clean

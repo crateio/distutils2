@@ -1,7 +1,7 @@
-"""Implementation of the 'x' command."""
+"""Do X and Y."""
 
-import logging
-from distutils2.command.cmd import Command
+from packaging import logger
+from packaging.command.cmd import Command
 
 
 class x(Command):
@@ -12,10 +12,9 @@ class x(Command):
     # List of option tuples: long name, short name (None if no short
     # name), and help string.
     user_options = [
-        ('', '', # long option, short option (one letter) or None
-         ""), # help text
+        ('', '',  # long option, short option (one letter) or None
+         ""),  # help text
         ]
-
 
     def initialize_options(self):
         self. = None
@@ -28,7 +27,7 @@ class x(Command):
 
     def run(self):
         ...
-        logging.info(...)
+        logger.info(...)
 
         if not self.dry_run:
             ...

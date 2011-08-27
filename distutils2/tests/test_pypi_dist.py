@@ -1,15 +1,19 @@
-"""Tests for the distutils2.index.dist module."""
+"""Tests for the distutils2.pypi.dist module."""
 
 import os
-
-from distutils2.tests.pypi_server import use_pypi_server
-from distutils2.tests import run_unittest
-from distutils2.tests import unittest
-from distutils2.tests.support import TempdirManager
 from distutils2.version import VersionPredicate
-from distutils2.index.errors import HashDoesNotMatch, UnsupportedHashName
-from distutils2.index.dist import (ReleaseInfo, ReleasesList, DistInfo,
-                                   split_archive_name, get_infos_from_url)
+from distutils2.pypi.dist import (ReleaseInfo, ReleasesList, DistInfo,
+                                 split_archive_name, get_infos_from_url)
+from distutils2.pypi.errors import HashDoesNotMatch, UnsupportedHashName
+
+from distutils2.tests import unittest
+from distutils2.tests.support import TempdirManager, requires_zlib, fake_dec
+try:
+    import threading
+    from distutils2.tests.pypi_server import use_pypi_server
+except ImportError:
+    threading = None
+    use_pypi_server = fake_dec
 
 
 def Dist(*args, **kwargs):
@@ -84,6 +88,7 @@ class TestReleaseInfo(unittest.TestCase):
 
 
 class TestDistInfo(TempdirManager, unittest.TestCase):
+    srcpath = "/packages/source/f/foobar/foobar-0.1.tar.gz"
 
     def test_get_url(self):
         # Test that the url property works well
@@ -120,12 +125,14 @@ class TestDistInfo(TempdirManager, unittest.TestCase):
         # assert we can't compare dists with different names
         self.assertRaises(TypeError, foo1.__eq__, bar)
 
+    @unittest.skipIf(threading is None, 'needs threading')
     @use_pypi_server("downloads_with_md5")
     def test_download(self, server):
         # Download is possible, and the md5 is checked if given
 
-        url = "%s/simple/foobar/foobar-0.1.tar.gz" % server.full_address
-        # check md5 if given
+        url = server.full_address + self.srcpath
+
+        # check that a md5 if given
         dist = Dist(url=url, hashname="md5",
                     hashval="fe18804c5b722ff024cabdf514924fc4")
         dist.download(self.mkdtemp())
@@ -147,7 +154,7 @@ class TestDistInfo(TempdirManager, unittest.TestCase):
         path2_base = self.mkdtemp()
         dist4 = Dist(url=url)
         path2 = dist4.download(path=path2_base)
-        self.assertTrue(path2_base in path2)
+        self.assertIn(path2_base, path2)
 
     def test_hashname(self):
         # Invalid hashnames raises an exception on assignation
@@ -157,13 +164,17 @@ class TestDistInfo(TempdirManager, unittest.TestCase):
                           hashname="invalid_hashname",
                           hashval="value")
 
+    @unittest.skipIf(threading is None, 'needs threading')
+    @requires_zlib
     @use_pypi_server('downloads_with_md5')
     def test_unpack(self, server):
-        url = "%s/simple/foobar/foobar-0.1.tar.gz" % server.full_address
+        url = server.full_address + self.srcpath
         dist1 = Dist(url=url)
-        # doing an unpack
+
+        # unpack the distribution in a specfied folder
         dist1_here = self.mkdtemp()
         dist1_there = dist1.unpack(path=dist1_here)
+
         # assert we unpack to the path provided
         self.assertEqual(dist1_here, dist1_there)
         dist1_result = os.listdir(dist1_there)
@@ -177,14 +188,6 @@ class TestDistInfo(TempdirManager, unittest.TestCase):
         dist2_result = os.listdir(dist2_there)
         self.assertIn('paf', dist2_result)
         os.remove(os.path.join(dist2_there, 'paf'))
-
-    def test_hashname(self):
-        # Invalid hashnames raises an exception on assignation
-        Dist(hashname="md5", hashval="value")
-
-        self.assertRaises(UnsupportedHashName, Dist,
-                          hashname="invalid_hashname",
-                          hashval="value")
 
 
 class TestReleasesList(unittest.TestCase):
@@ -236,7 +239,6 @@ class TestReleasesList(unittest.TestCase):
 
     def test_prefer_final(self):
         # Can order the distributions using prefer_final
-
         fb10 = ReleaseInfo("FooBar", "1.0")  # final distribution
         fb11a = ReleaseInfo("FooBar", "1.1a1")  # alpha
         fb12a = ReleaseInfo("FooBar", "1.2a1")  # alpha
@@ -249,22 +251,23 @@ class TestReleasesList(unittest.TestCase):
         dists.sort_releases(prefer_final=False)
         self.assertEqual(fb12b, dists[0])
 
-#    def test_prefer_source(self):
-#        # Ordering support prefer_source
-#        fb_source = Dist("FooBar", "1.0", type="source")
-#        fb_binary = Dist("FooBar", "1.0", type="binary")
-#        fb2_binary = Dist("FooBar", "2.0", type="binary")
-#        dists = ReleasesList([fb_binary, fb_source])
-#
-#        dists.sort_distributions(prefer_source=True)
-#        self.assertEqual(fb_source, dists[0])
-#
-#        dists.sort_distributions(prefer_source=False)
-#        self.assertEqual(fb_binary, dists[0])
-#
-#        dists.append(fb2_binary)
-#        dists.sort_distributions(prefer_source=True)
-#        self.assertEqual(fb2_binary, dists[0])
+    @unittest.skip('method not implemented yet')
+    def test_prefer_source(self):
+        # Ordering supports prefer_source
+        fb_source = Dist("FooBar", "1.0", type="source")
+        fb_binary = Dist("FooBar", "1.0", type="binary")
+        fb2_binary = Dist("FooBar", "2.0", type="binary")
+        dists = ReleasesList([fb_binary, fb_source])
+
+        dists.sort_distributions(prefer_source=True)
+        self.assertEqual(fb_source, dists[0])
+
+        dists.sort_distributions(prefer_source=False)
+        self.assertEqual(fb_binary, dists[0])
+
+        dists.append(fb2_binary)
+        dists.sort_distributions(prefer_source=True)
+        self.assertEqual(fb2_binary, dists[0])
 
     def test_get_last(self):
         dists = ReleasesList('Foo')
@@ -279,4 +282,4 @@ def test_suite():
     return suite
 
 if __name__ == '__main__':
-    run_unittest(test_suite())
+    unittest.main(defaultTest='test_suite')

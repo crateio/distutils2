@@ -1,11 +1,26 @@
+"""Compiler abstraction model used by distutils2.
+
+An abstract base class is defined in the ccompiler submodule, and
+concrete implementations suitable for various platforms are defined in
+the other submodules.  The extension module is also placed in this
+package.
+
+In general, code should not instantiate compiler classes directly but
+use the new_compiler and customize_compiler functions provided in this
+module.
+
+The compiler system has a registration API: get_default_compiler,
+set_compiler, show_compilers.
+"""
+
 import os
 import sys
 import re
+import sysconfig
 
-from distutils2._backport import sysconfig
 from distutils2.util import resolve_name
-from distutils2.errors import DistutilsPlatformError
-
+from distutils2.errors import PackagingPlatformError
+from distutils2 import logger
 
 def customize_compiler(compiler):
     """Do any platform-specific customization of a CCompiler instance.
@@ -14,10 +29,10 @@ def customize_compiler(compiler):
     varies across Unices and is stored in Python's Makefile.
     """
     if compiler.name == "unix":
-        (cc, cxx, opt, cflags, ccshared, ldshared, so_ext, ar, ar_flags) = \
+        cc, cxx, opt, cflags, ccshared, ldshared, so_ext, ar, ar_flags = (
             sysconfig.get_config_vars('CC', 'CXX', 'OPT', 'CFLAGS',
-                                       'CCSHARED', 'LDSHARED', 'SO', 'AR',
-                                       'ARFLAGS')
+                                      'CCSHARED', 'LDSHARED', 'SO', 'AR',
+                                      'ARFLAGS'))
 
         if 'CC' in os.environ:
             cc = os.environ['CC']
@@ -68,19 +83,16 @@ def customize_compiler(compiler):
 # patterns. Order is important; platform mappings are preferred over
 # OS names.
 _default_compilers = (
-
     # Platform string mappings
 
     # on a cygwin built python we can use gcc like an ordinary UNIXish
     # compiler
     ('cygwin.*', 'unix'),
-    ('os2emx', 'emx'),
 
     # OS name mappings
     ('posix', 'unix'),
     ('nt', 'msvc'),
-
-    )
+)
 
 def get_default_compiler(osname=None, platform=None):
     """ Determine the default compiler to use for the given platform.
@@ -101,17 +113,19 @@ def get_default_compiler(osname=None, platform=None):
         if re.match(pattern, platform) is not None or \
            re.match(pattern, osname) is not None:
             return compiler
-    # Default to Unix compiler
+    # Defaults to Unix compiler
     return 'unix'
 
 
+# compiler mapping
+# XXX useful to expose them? (i.e. get_compiler_names)
 _COMPILERS = {
     'unix': 'distutils2.compiler.unixccompiler.UnixCCompiler',
     'msvc': 'distutils2.compiler.msvccompiler.MSVCCompiler',
     'cygwin': 'distutils2.compiler.cygwinccompiler.CygwinCCompiler',
     'mingw32': 'distutils2.compiler.cygwinccompiler.Mingw32CCompiler',
-    'bcpp': 'distutils2.compilers.bcppcompiler.BCPPCompiler'}
-
+    'bcpp': 'distutils2.compiler.bcppcompiler.BCPPCompiler',
+}
 
 def set_compiler(location):
     """Add or change a compiler"""
@@ -127,8 +141,8 @@ def show_compilers():
     from distutils2.fancy_getopt import FancyGetopt
     compilers = []
 
-    for name, cls in _COMPILERS.iteritems():
-        if isinstance(cls, str):
+    for name, cls in _COMPILERS.items():
+        if isinstance(cls, basestring):
             cls = resolve_name(cls)
             _COMPILERS[name] = cls
 
@@ -139,7 +153,8 @@ def show_compilers():
     pretty_printer.print_help("List of available compilers:")
 
 
-def new_compiler(plat=None, compiler=None, verbose=0, dry_run=0, force=0):
+def new_compiler(plat=None, compiler=None, verbose=0, dry_run=False,
+                 force=False):
     """Generate an instance of some CCompiler subclass for the supplied
     platform/compiler combination.  'plat' defaults to 'os.name'
     (eg. 'posix', 'nt'), and 'compiler' defaults to the default compiler
@@ -162,9 +177,9 @@ def new_compiler(plat=None, compiler=None, verbose=0, dry_run=0, force=0):
         msg = "don't know how to compile C/C++ code on platform '%s'" % plat
         if compiler is not None:
             msg = msg + " with '%s' compiler" % compiler
-        raise DistutilsPlatformError(msg)
+        raise PackagingPlatformError(msg)
 
-    if isinstance(cls, str):
+    if isinstance(cls, basestring):
         cls = resolve_name(cls)
         _COMPILERS[compiler] = cls
 
@@ -200,26 +215,24 @@ def gen_preprocess_options(macros, include_dirs):
     pp_opts = []
     for macro in macros:
 
-        if not (isinstance(macro, tuple) and
-                1 <= len (macro) <= 2):
-            raise TypeError, \
-                  ("bad macro definition '%s': " +
-                   "each element of 'macros' list must be a 1- or 2-tuple") % \
-                  macro
+        if not isinstance(macro, tuple) and 1 <= len(macro) <= 2:
+            raise TypeError(
+                "bad macro definition '%s': each element of 'macros'"
+                "list must be a 1- or 2-tuple" % macro)
 
-        if len (macro) == 1:        # undefine this macro
-            pp_opts.append ("-U%s" % macro[0])
-        elif len (macro) == 2:
+        if len(macro) == 1:        # undefine this macro
+            pp_opts.append("-U%s" % macro[0])
+        elif len(macro) == 2:
             if macro[1] is None:    # define with no explicit value
-                pp_opts.append ("-D%s" % macro[0])
+                pp_opts.append("-D%s" % macro[0])
             else:
                 # XXX *don't* need to be clever about quoting the
                 # macro value here, because we're going to avoid the
                 # shell at all costs when we spawn the command!
-                pp_opts.append ("-D%s=%s" % macro)
+                pp_opts.append("-D%s=%s" % macro)
 
     for dir in include_dirs:
-        pp_opts.append ("-I%s" % dir)
+        pp_opts.append("-I%s" % dir)
 
     return pp_opts
 
@@ -258,7 +271,7 @@ def gen_lib_options(compiler, library_dirs, runtime_library_dirs, libraries):
             if lib_file is not None:
                 lib_opts.append(lib_file)
             else:
-                compiler.warn("no library file corresponding to "
+                logger.warning("no library file corresponding to "
                               "'%s' found (skipping)" % lib)
         else:
             lib_opts.append(compiler.library_option(lib))

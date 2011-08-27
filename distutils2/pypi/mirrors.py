@@ -1,6 +1,4 @@
-"""Utilities related to the mirror infrastructure defined in PEP 381.
-See http://www.python.org/dev/peps/pep-0381/
-"""
+"""Utilities related to the mirror infrastructure defined in PEP 381."""
 
 from string import ascii_lowercase
 import socket
@@ -12,7 +10,7 @@ def get_mirrors(hostname=None):
     """Return the list of mirrors from the last record found on the DNS
     entry::
 
-    >>> from distutils2.index.mirrors import get_mirrors
+    >>> from distutils2.pypi.mirrors import get_mirrors
     >>> get_mirrors()
     ['a.pypi.python.org', 'b.pypi.python.org', 'c.pypi.python.org',
     'd.pypi.python.org']
@@ -46,7 +44,7 @@ def string_range(last):
 
 
 def product(*args, **kwds):
-    pools = map(tuple, args) * kwds.get('repeat', 1)
+    pools = [tuple(arg) for arg in args] * kwds.get('repeat', 1)
     result = [[]]
     for pool in pools:
         result = [x + [y] for x in result for y in pool]

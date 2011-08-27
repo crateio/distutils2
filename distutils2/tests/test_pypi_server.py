@@ -1,32 +1,46 @@
-"""Tests for distutils.command.bdist."""
-import urllib
-import urllib2
-import os.path
+"""Tests for distutils2.command.bdist."""
+import sys
 
-from distutils2.tests.pypi_server import PyPIServer, PYPI_DEFAULT_STATIC_PATH
+import urllib2
+
+try:
+    import threading
+    from distutils2.tests.pypi_server import PyPIServer, PYPI_DEFAULT_STATIC_PATH
+except ImportError:
+    threading = None
+    PyPIServer = None
+    PYPI_DEFAULT_STATIC_PATH = None
+
 from distutils2.tests import unittest
 
 
+@unittest.skipIf(threading is None, "Needs threading")
 class PyPIServerTest(unittest.TestCase):
 
     def test_records_requests(self):
         # We expect that PyPIServer can log our requests
         server = PyPIServer()
-        server.start()
-        self.assertEqual(len(server.requests), 0)
+        server.default_response_status = 200
 
-        data = "Rock Around The Bunker"
-        headers = {"X-test-header": "Mister Iceberg"}
+        try:
+            server.start()
+            self.assertEqual(len(server.requests), 0)
 
-        request = urllib2.Request(server.full_address, data, headers)
-        urllib2.urlopen(request)
-        self.assertEqual(len(server.requests), 1)
-        handler, request_data = server.requests[-1]
-        self.assertIn("Rock Around The Bunker", request_data)
-        self.assertIn("x-test-header", handler.headers.dict)
-        self.assertEqual(handler.headers.dict["x-test-header"],
-                         "Mister Iceberg")
-        server.stop()
+            data = b'Rock Around The Bunker'
+
+            headers = {"X-test-header": "Mister Iceberg"}
+
+            request = urllib2.Request(server.full_address, data, headers)
+            urllib2.urlopen(request)
+            self.assertEqual(len(server.requests), 1)
+            handler, request_data = server.requests[-1]
+            self.assertIn(data, request_data)
+            self.assertIn("x-test-header", handler.headers)
+            self.assertEqual(handler.headers["x-test-header"], "Mister Iceberg")
+
+        finally:
+            server.stop()
+
 
     def test_serve_static_content(self):
         # PYPI Mocked server can serve static content from disk.
@@ -38,28 +52,30 @@ class PyPIServerTest(unittest.TestCase):
             url = server.full_address + url_path
             request = urllib2.Request(url)
             response = urllib2.urlopen(request)
-            file = open(PYPI_DEFAULT_STATIC_PATH + "/test_pypi_server" +
-               url_path)
-            return response.read() == file.read()
+            with open(PYPI_DEFAULT_STATIC_PATH + "/test_pypi_server"
+                      + url_path) as file:
+                return response.read().decode() == file.read()
 
         server = PyPIServer(static_uri_paths=["simple", "external"],
             static_filesystem_paths=["test_pypi_server"])
         server.start()
-
-        # the file does not exists on the disc, so it might not be served
-        url = server.full_address + "/simple/unexisting_page"
-        request = urllib2.Request(url)
         try:
-            urllib2.urlopen(request)
-        except urllib2.HTTPError,e:
-            self.assertEqual(e.code, 404)
+            # the file does not exists on the disc, so it might not be served
+            url = server.full_address + "/simple/unexisting_page"
+            request = urllib2.Request(url)
+            try:
+                urllib2.urlopen(request)
+            except urllib2.HTTPError:
+                self.assertEqual(sys.exc_info()[1].code, 404)
 
-        # now try serving a content that do exists
-        self.assertTrue(uses_local_files_for(server, "/simple/index.html"))
+            # now try serving a content that do exists
+            self.assertTrue(uses_local_files_for(server, "/simple/index.html"))
 
-        # and another one in another root path
-        self.assertTrue(uses_local_files_for(server, "/external/index.html"))
-        server.stop()
+            # and another one in another root path
+            self.assertTrue(uses_local_files_for(server, "/external/index.html"))
+
+        finally:
+            server.stop()
 
 
 def test_suite():

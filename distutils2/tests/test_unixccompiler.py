@@ -1,15 +1,17 @@
-"""Tests for distutils.unixccompiler."""
+"""Tests for distutils2.unixccompiler."""
 import sys
 
-from distutils2._backport import sysconfig
+import sysconfig
 from distutils2.compiler.unixccompiler import UnixCCompiler
 from distutils2.tests import unittest
+
 
 class UnixCCompilerTestCase(unittest.TestCase):
 
     def setUp(self):
         self._backup_platform = sys.platform
         self._backup_get_config_var = sysconfig.get_config_var
+
         class CompilerWrapper(UnixCCompiler):
             def rpath_foo(self):
                 return self.runtime_library_dir_option('/foo')
@@ -19,16 +21,11 @@ class UnixCCompilerTestCase(unittest.TestCase):
         sys.platform = self._backup_platform
         sysconfig.get_config_var = self._backup_get_config_var
 
+    @unittest.skipIf(sys.platform == 'win32', 'irrelevant on win32')
     def test_runtime_libdir_option(self):
 
-        # not tested under windows
-        if sys.platform == 'win32':
-            return
-
-        # Issue#5900
-        #
-        # Ensure RUNPATH is added to extension modules with RPATH if
-        # GNU ld is used
+        # Issue #5900: Ensure RUNPATH is added to extension
+        # modules with RPATH if GNU ld is used
 
         # darwin
         sys.platform = 'darwin'
@@ -37,6 +34,7 @@ class UnixCCompilerTestCase(unittest.TestCase):
         # hp-ux
         sys.platform = 'hp-ux'
         old_gcv = sysconfig.get_config_var
+
         def gcv(v):
             return 'xxx'
         sysconfig.get_config_var = gcv
@@ -64,6 +62,7 @@ class UnixCCompilerTestCase(unittest.TestCase):
 
         # GCC GNULD
         sys.platform = 'bar'
+
         def gcv(v):
             if v == 'CC':
                 return 'gcc'
@@ -74,6 +73,7 @@ class UnixCCompilerTestCase(unittest.TestCase):
 
         # GCC non-GNULD
         sys.platform = 'bar'
+
         def gcv(v):
             if v == 'CC':
                 return 'gcc'
@@ -85,6 +85,7 @@ class UnixCCompilerTestCase(unittest.TestCase):
         # GCC GNULD with fully qualified configuration prefix
         # see #7617
         sys.platform = 'bar'
+
         def gcv(v):
             if v == 'CC':
                 return 'x86_64-pc-linux-gnu-gcc-4.4.2'
@@ -93,9 +94,9 @@ class UnixCCompilerTestCase(unittest.TestCase):
         sysconfig.get_config_var = gcv
         self.assertEqual(self.cc.rpath_foo(), '-Wl,--enable-new-dtags,-R/foo')
 
-
         # non-GCC GNULD
         sys.platform = 'bar'
+
         def gcv(v):
             if v == 'CC':
                 return 'cc'
@@ -106,6 +107,7 @@ class UnixCCompilerTestCase(unittest.TestCase):
 
         # non-GCC non-GNULD
         sys.platform = 'bar'
+
         def gcv(v):
             if v == 'CC':
                 return 'cc'
@@ -116,6 +118,7 @@ class UnixCCompilerTestCase(unittest.TestCase):
 
         # AIX C/C++ linker
         sys.platform = 'aix'
+
         def gcv(v):
             return 'xxx'
         sysconfig.get_config_var = gcv

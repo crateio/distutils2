@@ -1,10 +1,19 @@
-"""Tests for the distutils2.index.xmlrpc module."""
+"""Tests for the distutils2.pypi.xmlrpc module."""
 
-from distutils2.tests.pypi_server import use_xmlrpc_server
-from distutils2.tests import unittest, run_unittest
-from distutils2.index.xmlrpc import Client, InvalidSearchField, ProjectNotFound
+from distutils2.pypi.xmlrpc import Client, InvalidSearchField, ProjectNotFound
+
+from distutils2.tests import unittest
+from distutils2.tests.support import fake_dec
+
+try:
+    import threading
+    from distutils2.tests.pypi_server import use_xmlrpc_server
+except ImportError:
+    threading = None
+    use_xmlrpc_server = fake_dec
 
 
+@unittest.skipIf(threading is None, "Needs threading")
 class TestXMLRPCClient(unittest.TestCase):
     def _get_client(self, server, *args, **kwargs):
         return Client(server.full_address, *args, **kwargs)
@@ -21,26 +30,8 @@ class TestXMLRPCClient(unittest.TestCase):
 
     def test_search_projects_bad_fields(self):
         client = Client()
-        self.assertRaises(InvalidSearchField, client.search_projects, 
+        self.assertRaises(InvalidSearchField, client.search_projects,
                           invalid="test")
-
-    @use_xmlrpc_server()
-    def test_get_all_projects(self, server):
-        client = self._get_client(server)
-        server.xmlrpc.set_distributions([
-            {'name': 'FooBar', 'version': '1.1'},
-            {'name': 'FooBar', 'version': '1.2'},
-            {'name': 'Foo', 'version': '1.1'},
-        ])
-        results = client.get_all_projects()
-        self.assertEqual(2, len(results))
-
-        # check we do have two releases for Foobar's project
-        self.assertEqual(2, len(results[0].releases))
-
-        names = [r.name for r in results]
-        self.assertIn('FooBar', names)
-        self.assertIn('Foo', names)
 
     @use_xmlrpc_server()
     def test_get_releases(self, server):
@@ -62,17 +53,18 @@ class TestXMLRPCClient(unittest.TestCase):
         self.assertIn('1.2', versions)
         self.assertNotIn('1.3', versions)
 
-        self.assertRaises(ProjectNotFound, client.get_releases,'Foo')
+        self.assertRaises(ProjectNotFound, client.get_releases, 'Foo')
 
     @use_xmlrpc_server()
     def test_get_distributions(self, server):
         client = self._get_client(server)
         server.xmlrpc.set_distributions([
-            {'name':'FooBar', 'version': '1.1', 'url':
-             'http://example.org/foobar-1.1-sdist.tar.gz',
-             'digest': '1234567', 'type': 'sdist', 'python_version':'source'},
-            {'name':'FooBar', 'version': '1.1', 'url':
-             'http://example.org/foobar-1.1-bdist.tar.gz',
+            {'name': 'FooBar', 'version': '1.1',
+             'url': 'http://example.org/foobar-1.1-sdist.tar.gz',
+             'digest': '1234567',
+             'type': 'sdist', 'python_version': 'source'},
+            {'name':'FooBar', 'version': '1.1',
+             'url': 'http://example.org/foobar-1.1-bdist.tar.gz',
              'digest': '8912345', 'type': 'bdist'},
         ])
 
@@ -84,12 +76,12 @@ class TestXMLRPCClient(unittest.TestCase):
         self.assertTrue('http://example.org/foobar-1.1-bdist.tar.gz',
                 release['bdist'].url['url'])
         self.assertEqual(release['sdist'].python_version, 'source')
-    
+
     @use_xmlrpc_server()
     def test_get_metadata(self, server):
         client = self._get_client(server)
         server.xmlrpc.set_distributions([
-            {'name':'FooBar', 
+            {'name': 'FooBar',
              'version': '1.1',
              'keywords': '',
              'obsoletes_dist': ['FooFoo'],
@@ -106,4 +98,4 @@ def test_suite():
     return suite
 
 if __name__ == '__main__':
-    run_unittest(test_suite())
+    unittest.main(defaultTest='test_suite')

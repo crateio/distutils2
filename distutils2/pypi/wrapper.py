@@ -1,4 +1,10 @@
-from distutils2.index import simple, xmlrpc
+"""Convenient client for all PyPI APIs.
+
+This module provides a ClientWrapper class which will use the "simple"
+or XML-RPC API to request information or files from an index.
+"""
+
+from distutils2.pypi import simple, xmlrpc
 
 _WRAPPER_MAPPINGS = {'get_release': 'simple',
                      'get_releases': 'simple',
@@ -19,14 +25,14 @@ def switch_index_if_fails(func, wrapper):
         exception = None
         methods = [func]
         for f in wrapper._indexes.values():
-            if f != func.im_self and hasattr(f, func.__name__):
+            if f != func.__self__ and hasattr(f, func.__name__):
                 methods.append(getattr(f, func.__name__))
         for method in methods:
             try:
                 response = method(*args, **kwargs)
                 retry = False
-            except Exception, e:
-                exception = e
+            except Exception:
+                exception = sys.exc_info()[1]
             if not retry:
                 break
         if retry and exception:
@@ -43,7 +49,7 @@ class ClientWrapper(object):
     mappings.
     If one of the indexes returns an error, tries to use others indexes.
 
-    :param index: tell wich index to rely on by default.
+    :param index: tell which index to rely on by default.
     :param index_classes: a dict of name:class to use as indexes.
     :param indexes: a dict of name:index already instantiated
     :param mappings: the mappings to use for this wrapper
@@ -58,7 +64,7 @@ class ClientWrapper(object):
 
         # instantiate the classes and set their _project attribute to the one
         # of the wrapper.
-        for name, cls in index_classes.iteritems():
+        for name, cls in index_classes.items():
             obj = self._indexes.setdefault(name, cls())
             obj._projects = self._projects
             obj._index = self

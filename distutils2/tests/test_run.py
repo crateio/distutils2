@@ -1,14 +1,14 @@
 """Tests for distutils2.run."""
 
-import StringIO
 import os
-import shutil
 import sys
+import shutil
+from tempfile import mkstemp
+from StringIO import StringIO
 
-import distutils2
+from distutils2 import install
+from distutils2.tests import unittest, support, TESTFN
 from distutils2.run import main
-from distutils2.tests import captured_stdout
-from distutils2.tests import unittest, support
 
 # setup script that uses __file__
 setup_using___file__ = """\
@@ -29,7 +29,8 @@ setup()
 """
 
 
-class CoreTestCase(support.EnvironGuard, unittest.TestCase):
+class CoreTestCase(support.TempdirManager, support.LoggingCatcher,
+                   unittest.TestCase):
 
     def setUp(self):
         super(CoreTestCase, self).setUp()
@@ -45,15 +46,36 @@ class CoreTestCase(support.EnvironGuard, unittest.TestCase):
         super(CoreTestCase, self).tearDown()
 
     def cleanup_testfn(self):
-        path = distutils2.tests.TESTFN
+        path = TESTFN
         if os.path.isfile(path):
             os.remove(path)
         elif os.path.isdir(path):
             shutil.rmtree(path)
 
-    def write_setup(self, text, path=distutils2.tests.TESTFN):
-        open(path, "w").write(text)
+    def write_setup(self, text, path=TESTFN):
+        with open(path, "w") as fp:
+            fp.write(text)
         return path
+
+    # TODO restore the tests removed six months ago and port them to pysetup
+
+    def test_install(self):
+        # making sure install returns 0 or 1 exit codes
+        project = os.path.join(os.path.dirname(__file__), 'package.tgz')
+        install_path = self.mkdtemp()
+        old_get_path = install.get_path
+        install.get_path = lambda path: install_path
+        old_mod = os.stat(install_path).st_mode
+        os.chmod(install_path, 0)
+        old_stderr = sys.stderr
+        sys.stderr = StringIO()
+        try:
+            self.assertFalse(install.install(project))
+            self.assertEqual(main(['install', 'blabla']), 1)
+        finally:
+            sys.stderr = old_stderr
+            os.chmod(install_path, old_mod)
+            install.get_path = old_get_path
 
 
 def test_suite():
