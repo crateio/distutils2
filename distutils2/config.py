@@ -177,8 +177,9 @@ class Config(object):
                     value = []
                     for filename in filenames:
                         # will raise if file not found
-                        with open(filename) as description_file:
-                            value.append(description_file.read().strip())
+                        description_file = open(filename)
+                        value.append(description_file.read().strip())
+                        description_file.close()
                         # add filename as a required file
                         if filename not in metadata.requires_files:
                             metadata.requires_files.append(filename)
@@ -287,8 +288,9 @@ class Config(object):
 
         for filename in filenames:
             logger.debug("  reading %s", filename)
-            with codecs.open(filename, 'r', encoding='utf-8') as f:
-                parser.readfp(f)
+            f = codecs.open(filename, 'r', encoding='utf-8')
+            parser.readfp(f)
+            f.close()
 
             if os.path.split(filename)[-1] == 'setup.cfg':
                 self._read_setup_cfg(parser, filename)

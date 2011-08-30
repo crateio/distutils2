@@ -6,7 +6,10 @@ import codecs
 import csv
 import os
 import re
-import hashlib
+try:
+    import hashlib
+except ImportError: #<2.5
+    from distutils2._backport import hashlib
 
 from distutils2.command.cmd import Command
 from distutils2 import logger
@@ -92,8 +95,9 @@ class install_distinfo(Command):
 
             installer_path = os.path.join(self.distinfo_dir, 'INSTALLER')
             logger.info('creating %s', installer_path)
-            with open(installer_path, 'w') as f:
-                f.write(self.installer)
+            f = open(installer_path, 'w')
+            f.write(self.installer)
+            f.close()
             self.outputs.append(installer_path)
 
             if self.requested:
@@ -109,40 +113,42 @@ class install_distinfo(Command):
                     resources_path = os.path.join(self.distinfo_dir,
                                                   'RESOURCES')
                     logger.info('creating %s', resources_path)
-                    with open(resources_path, 'wb') as f:
-                        writer = csv.writer(f, delimiter=',',
-                                            lineterminator='\n',
-                                            quotechar='"')
-                        for tuple in install_data.get_resources_out():
-                            writer.writerow(tuple)
+                    f = open(resources_path, 'wb')
+                    writer = csv.writer(f, delimiter=',',
+                                        lineterminator='\n',
+                                        quotechar='"')
+                    for tuple in install_data.get_resources_out():
+                        writer.writerow(tuple)
 
-                        self.outputs.append(resources_path)
+                    f.close()
+                    self.outputs.append(resources_path)
 
             if not self.no_record:
                 record_path = os.path.join(self.distinfo_dir, 'RECORD')
                 logger.info('creating %s', record_path)
-                with codecs.open(record_path, 'w', encoding='utf-8') as f:
-                    writer = csv.writer(f, delimiter=',',
+                f = codecs.open(record_path, 'w', encoding='utf-8')
+                writer = csv.writer(f, delimiter=',',
                                         lineterminator='\n',
                                         quotechar='"')
 
-                    install = self.get_finalized_command('install_dist')
+                install = self.get_finalized_command('install_dist')
 
-                    for fpath in install.get_outputs():
-                        if fpath.endswith('.pyc') or fpath.endswith('.pyo'):
-                            # do not put size and md5 hash, as in PEP-376
-                            writer.writerow((fpath, '', ''))
-                        else:
-                            size = os.path.getsize(fpath)
-                            with open(fpath, 'rb') as fp:
-                                hash = hashlib.md5()
-                                hash.update(fp.read())
-                            md5sum = hash.hexdigest()
-                            writer.writerow((fpath, md5sum, size))
+                for fpath in install.get_outputs():
+                    if fpath.endswith('.pyc') or fpath.endswith('.pyo'):
+                        # do not put size and md5 hash, as in PEP-376
+                        writer.writerow((fpath, '', ''))
+                    else:
+                        size = os.path.getsize(fpath)
+                        fp = open(fpath, 'rb')
+                        hash = hashlib.md5()
+                        hash.update(fp.read())
+                        fp.close()
+                        md5sum = hash.hexdigest()
+                        writer.writerow((fpath, md5sum, size))
 
-                    # add the RECORD file itself
-                    writer.writerow((record_path, '', ''))
-                    self.outputs.append(record_path)
+                # add the RECORD file itself
+                writer.writerow((record_path, '', ''))
+                self.outputs.append(record_path)
 
     def get_outputs(self):
         return self.outputs

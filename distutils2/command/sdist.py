@@ -337,7 +337,7 @@ class sdist(Command):
         """
         return self.archive_files
 
-    def create_tree(self, base_dir, files, mode=0o777, verbose=1,
+    def create_tree(self, base_dir, files, mode=00777, verbose=1,
                     dry_run=False):
         need_dir = set()
         for file in files:

@@ -5,7 +5,6 @@ interface for the compiler abstraction model used by distutils2.
 """
 
 import os
-import sys
 from shutil import move
 from distutils2 import logger
 from distutils2.util import split_quoted, execute, newer_group, spawn
@@ -728,14 +727,15 @@ class CCompiler(object):
         if library_dirs is None:
             library_dirs = []
         fd, fname = tempfile.mkstemp(".c", funcname, text=True)
-        with os.fdopen(fd, "w") as f:
-            for incl in includes:
-                f.write("""#include "%s"\n""" % incl)
-            f.write("""\
+        f = os.fdopen(fd, "w")
+        for incl in includes:
+            f.write("""#include "%s"\n""" % incl)
+        f.write("""\
 main (int argc, char **argv) {
     %s();
 }
 """ % funcname)
+        f.close()
         try:
             objects = self.compile([fname], include_dirs=include_dirs)
         except CompileError:
@@ -852,7 +852,7 @@ main (int argc, char **argv) {
             return
         return move(src, dst)
 
-    def mkpath(self, name, mode=0o777):
+    def mkpath(self, name, mode=00777):
         name = os.path.normpath(name)
         if os.path.isdir(name) or name == '':
             return

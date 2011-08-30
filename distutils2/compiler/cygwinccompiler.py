@@ -344,11 +344,12 @@ def check_config_h():
     # let's see if __GNUC__ is mentioned in python.h
     fn = sysconfig.get_config_h_filename()
     try:
-        with open(fn) as config_h:
-            if "__GNUC__" in config_h.read():
-                return CONFIG_H_OK, "'%s' mentions '__GNUC__'" % fn
-            else:
-                return CONFIG_H_NOTOK, "'%s' does not mention '__GNUC__'" % fn
+        config_h = open(fn)
+        if "__GNUC__" in config_h.read():
+            return CONFIG_H_OK, "'%s' mentions '__GNUC__'" % fn
+        else:
+            return CONFIG_H_NOTOK, "'%s' does not mention '__GNUC__'" % fn
+        config_h.close()
     except IOError:
         exc = sys.exc_info()[1]
         return (CONFIG_H_UNCERTAIN,

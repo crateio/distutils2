@@ -17,7 +17,10 @@ class MarkersTestCase(LoggingCatcher,
         os_name = os.name
         platform_version = platform.version()
         platform_machine = platform.machine()
-        platform_python_implementation = platform.python_implementation()
+        try:
+            platform_python_implementation = platform.python_implementation()
+        except AttributeError: #assume CPython
+            platform_python_implementation = 'CPython'
 
         self.assertTrue(interpret("sys.platform == '%s'" % sys_platform))
         self.assertTrue(interpret(

@@ -13,10 +13,10 @@ from distutils2.command import set_command
 from distutils2.command.cmd import Command
 from distutils2.metadata import Metadata
 from distutils2.errors import PackagingModuleError, PackagingOptionError
-from distutils2.tests import TESTFN, captured_stdout
+from distutils2.tests import captured_stdout
 from distutils2.tests import support, unittest
 from distutils2.tests.support import create_distribution
-from .support import unload
+from distutils2.tests.support import unload, TESTFN
 
 
 class test_dist(Command):
@@ -52,9 +52,10 @@ class DistributionTestCase(support.TempdirManager,
 
     def test_debug_mode(self):
         self.addCleanup(os.unlink, TESTFN)
-        with open(TESTFN, "w") as f:
-            f.write("[global]\n")
-            f.write("command_packages = foo.bar, splat")
+        f = open(TESTFN, "w")
+        f.write("[global]\n")
+        f.write("command_packages = foo.bar, splat")
+        f.close()
 
         files = [TESTFN]
         sys.argv.append("build")
@@ -82,8 +83,9 @@ class DistributionTestCase(support.TempdirManager,
         # let's make sure the file can be written
         # with Unicode fields. they are encoded with
         # PKG_INFO_ENCODING
-        with codecs.open(my_file, 'w', encoding='utf-8') as fp:
-            dist.metadata.write_file(fp)
+        fp = codecs.open(my_file, 'w', encoding='utf-8')
+        dist.metadata.write_file(fp)
+        fp.close()
 
         # regular ascii is of course always usable
         dist = cls(attrs={'author': 'Mister Cafe',
@@ -92,8 +94,9 @@ class DistributionTestCase(support.TempdirManager,
                           'summary': 'Cafe torrefie',
                           'description': 'Hehehe'})
 
-        with open(my_file, 'w') as fp:
-            dist.metadata.write_file(fp)
+        fp = open(my_file, 'w')
+        dist.metadata.write_file(fp)
+        fp.close()
 
     def test_bad_attr(self):
         Distribution(attrs={'author': 'xxx',
@@ -161,8 +164,9 @@ class DistributionTestCase(support.TempdirManager,
         else:
             user_filename = os.path.join(temp_home, "pydistutils.cfg")
 
-        with open(user_filename, 'w') as f:
-            f.write('[distutils2]\n')
+        f = open(user_filename, 'w')
+        f.write('[distutils2]\n')
+        f.close()
 
         def _expander(path):
             return temp_home
@@ -176,8 +180,10 @@ class DistributionTestCase(support.TempdirManager,
             d = distutils2.dist.Distribution(attrs={'script_args':
                                                    ['--no-user-cfg']})
             files = d.find_config_files()
-        finally:
+        except:
             os.path.expanduser = old_expander
+            raise
+        os.path.expanduser = old_expander
 
         # make sure --no-user-cfg disables the user cfg file
         self.assertEqual((len(all_files) - 1), len(files))
@@ -370,8 +376,9 @@ class MetadataTestCase(support.TempdirManager,
 
         temp_dir = self.mkdtemp()
         user_filename = os.path.join(temp_dir, user_filename)
-        with open(user_filename, 'w') as f:
-            f.write('.')
+        f = open(user_filename, 'w')
+        f.write('.')
+        f.close()
 
         dist = Distribution()
 

@@ -5,9 +5,11 @@ import socket
 import logging
 import platform
 import urlparse
-from io import BytesIO
 from base64 import standard_b64encode
-from hashlib import md5
+try:
+    from hashlib import md5
+except ImportError:
+    from distutils2._backport.hashlib import md5
 from urllib2 import HTTPError
 from urllib2 import urlopen, Request
 
@@ -102,8 +104,9 @@ class upload(Command):
 
         # Fill in the data - send all the metadata in case we need to
         # register a new release
-        with open(filename, 'rb') as f:
-            content = f.read()
+        f = open(filename, 'rb')
+        content = f.read()
+        f.close()
 
         data = self.distribution.metadata.todict()
 
@@ -119,8 +122,9 @@ class upload(Command):
             data['comment'] = 'built for %s' % platform.platform(terse=True)
 
         if self.sign:
-            with open(filename + '.asc') as fp:
-                sig = fp.read()
+            fp = open(filename + '.asc')
+            sig = fp.read()
+            fp.close()
             data['gpg_signature'] = [
                 (os.path.basename(filename) + ".asc", sig)]
 
@@ -128,7 +132,7 @@ class upload(Command):
         # The exact encoding of the authentication string is debated.
         # Anyway PyPI only accepts ascii for both username or password.
         user_pass = (self.username + ":" + self.password).encode('ascii')
-        auth = b"Basic " + standard_b64encode(user_pass)
+        auth = "Basic " + standard_b64encode(user_pass)
 
         # Build up the MIME payload for the POST data
         files = []

@@ -24,7 +24,10 @@ _OPERATORS = {'==': lambda x, y: x == y,
 def _operate(operation, x, y):
     return _OPERATORS[operation](x, y)
 
-
+try:
+    python_implementation = platform.python_implementation()
+except AttributeError: #<2.6 - assume CPython?
+    python_implementation = 'CPython'
 # restricted set of variables
 _VARS = {'sys.platform': sys.platform,
          'python_version': sys.version[:3],
@@ -32,7 +35,7 @@ _VARS = {'sys.platform': sys.platform,
          'os.name': os.name,
          'platform.version': platform.version(),
          'platform.machine': platform.machine(),
-         'platform.python_implementation': platform.python_implementation()}
+         'platform.python_implementation': python_implementation}
 
 
 class _Operation(object):

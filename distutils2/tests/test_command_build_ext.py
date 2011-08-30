@@ -10,9 +10,9 @@ from distutils2.errors import (UnknownFileError, CompileError,
                               PackagingPlatformError)
 from distutils2.command.build_ext import build_ext
 from distutils2.compiler.extension import Extension
-from .support import assert_python_ok
+from distutils2.tests.support import assert_python_ok
 
-from distutils2.tests import support, unittest, verbose, unload
+from distutils2.tests import support, unittest, verbose
 
 
 def _get_source_filename():
@@ -92,8 +92,10 @@ class BuildExtTestCase(support.TempdirManager,
         try:
             cmd.ensure_finalized()
             cmd.run()
-        finally:
+        except:
             sys.stdout = old_stdout
+            raise
+        sys.stdout = old_stdout
 
         code = """if 1:
             import sys
@@ -124,14 +126,18 @@ class BuildExtTestCase(support.TempdirManager,
 
         old_var = _CONFIG_VARS.get('Py_ENABLE_SHARED')
         _CONFIG_VARS['Py_ENABLE_SHARED'] = 1
-        try:
-            cmd.ensure_finalized()
-        finally:
+        def cleanup():
             sys.platform = old
             if old_var is None:
                 del _CONFIG_VARS['Py_ENABLE_SHARED']
             else:
                 _CONFIG_VARS['Py_ENABLE_SHARED'] = old_var
+        try:
+            cmd.ensure_finalized()
+        except:
+            cleanup()
+            raise
+        cleanup()
 
         # make sure we get some library dirs under solaris
         self.assertGreater(len(cmd.library_dirs), 0)
@@ -407,8 +413,8 @@ class BuildExtTestCase(support.TempdirManager,
 
         deptarget_c = os.path.join(self.tmp_dir, 'deptargetmodule.c')
 
-        with open(deptarget_c, 'w') as fp:
-            fp.write(textwrap.dedent('''\
+        fp = open(deptarget_c, 'w')
+        fp.write(textwrap.dedent('''\
                 #include <AvailabilityMacros.h>
 
                 int dummy;
@@ -419,6 +425,7 @@ class BuildExtTestCase(support.TempdirManager,
                 #endif
 
             ''' % operator))
+        fp.close()
 
         # get the deployment target that the interpreter was built with
         target = sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')

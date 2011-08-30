@@ -748,7 +748,7 @@ def unpack_archive(filename, extract_dir=None, format=None):
         try:
             format_info = _UNPACK_FORMATS[format]
         except KeyError:
-            raise ValueError("Unknown unpack format '{0}'".format(format))
+            raise ValueError("Unknown unpack format '%s'" % format)
 
         func = format_info[0]
         func(filename, extract_dir, **dict(format_info[1]))
@@ -756,7 +756,7 @@ def unpack_archive(filename, extract_dir=None, format=None):
         # we need to look at the registered unpackers supported extensions
         format = _find_unpack_format(filename)
         if format is None:
-            raise ReadError("Unknown archive format '{0}'".format(filename))
+            raise ReadError("Unknown archive format '%s'" % filename)
 
         func = _UNPACK_FORMATS[format][1]
         kwargs = dict(_UNPACK_FORMATS[format][2])

@@ -308,8 +308,9 @@ class Metadata(object):
 
     def read(self, filepath):
         """Read the metadata values from a file path."""
-        with codecs.open(filepath, 'r', encoding='utf-8') as fp:
-            self.read_file(fp)
+        fp = codecs.open(filepath, 'r', encoding='utf-8')
+        self.read_file(fp)
+        fp.close()
 
     def read_file(self, fileob):
         """Read the metadata values from a file object."""
@@ -331,8 +332,9 @@ class Metadata(object):
 
     def write(self, filepath):
         """Write the metadata fields to filepath."""
-        with codecs.open(filepath, 'w', encoding='utf-8') as fp:
-            self.write_file(fp)
+        fp = codecs.open(filepath, 'w', encoding='utf-8')
+        self.write_file(fp)
+        fp.close()
 
     def write_file(self, fileobject):
         """Write the PKG-INFO format data to a file object."""

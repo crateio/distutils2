@@ -1,5 +1,6 @@
 """Tests for distutils2.create."""
 from StringIO import StringIO
+import codecs
 import os
 import sys
 import sysconfig
@@ -135,8 +136,10 @@ class CreateTestCase(support.TempdirManager,
         sys.stdin.seek(0)
         main()
 
-        with open(os.path.join(self.wdir, 'setup.cfg'), encoding='utf-8') as fp:
-            contents = fp.read()
+        fp = codecs.open(os.path.join(self.wdir, 'setup.cfg'),
+                encoding='utf-8')
+        contents = fp.read()
+        fp.close()
 
         self.assertEqual(contents, dedent(u"""\
             [metadata]
@@ -181,8 +184,9 @@ class CreateTestCase(support.TempdirManager,
                         dedent(u"""
         # coding: utf-8
         from distutils.core import setup
-        with open('README.txt') as fp:
-            long_description = fp.read()
+        fp = open('README.txt')
+        long_description = fp.read()
+        fp.close()
 
         setup(name='pyxfoil',
               version='0.2',
@@ -210,8 +214,9 @@ ho, baby!
         sys.stdin.seek(0)
         # FIXME Out of memory error.
         main()
-        with open(os.path.join(self.wdir, 'setup.cfg'), encoding='utf-8') as fp:
-            contents = fp.read()
+        fp = codecs.open(os.path.join(self.wdir, 'setup.cfg'), encoding='utf-8')
+        contents = fp.read()
+        fp.close()
 
         self.assertEqual(contents, dedent(u"""\
             [metadata]

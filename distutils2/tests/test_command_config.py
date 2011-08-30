@@ -13,8 +13,9 @@ class ConfigTestCase(support.LoggingCatcher,
 
     def test_dump_file(self):
         this_file = __file__.rstrip('co')
-        with open(this_file) as f:
-            numlines = len(f.readlines())
+        f = open(this_file)
+        numlines = len(f.readlines())
+        f.close()
 
         dump_file(this_file, 'I am the header')
 

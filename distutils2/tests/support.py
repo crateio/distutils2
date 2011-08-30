@@ -171,8 +171,9 @@ class TempdirManager(object):
         """
         if isinstance(path, (list, tuple)):
             path = os.path.join(*path)
-        with codecs.open(path, 'w', encoding=encoding) as f:
-            f.write(content)
+        f = codecs.open(path, 'w', encoding=encoding)
+        f.write(content)
+        f.close()
 
     def create_dist(self, **kw):
         """Create a stub distribution object and files.
@@ -297,7 +298,7 @@ else:
 
 # Disambiguate TESTFN for parallel testing, while letting it remain a valid
 # module name.
-TESTFN = "{0}_{1}_tmp".format(TESTFN, os.getpid())
+TESTFN = "%s_%s_tmp" % (TESTFN, os.getpid())
 
 
 # TESTFN_UNICODE is a non-ascii filename
@@ -333,12 +334,12 @@ if os.name in ('nt', 'ce'):
 elif sys.platform != 'darwin':
     try:
         # ascii and utf-8 cannot encode the byte 0xff
-        b'\xff'.decode(TESTFN_ENCODING)
+        '\xff'.decode(TESTFN_ENCODING)
     except UnicodeDecodeError:
         # 0xff will be encoded using the surrogate character u+DCFF
         try:
             TESTFN_UNENCODABLE = TESTFN \
-                + b'-\xff'.decode(TESTFN_ENCODING, 'surrogateescape')
+                + '-\xff'.decode(TESTFN_ENCODING, 'surrogateescape')
         except LookupError:
             pass
     else:

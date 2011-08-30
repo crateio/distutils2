@@ -118,16 +118,18 @@ class msvc9compilerTestCase(support.TempdirManager,
         from distutils2.compiler.msvc9compiler import MSVCCompiler
         tempdir = self.mkdtemp()
         manifest = os.path.join(tempdir, 'manifest')
-        with open(manifest, 'w') as f:
-            f.write(_MANIFEST)
+        f = open(manifest, 'w')
+        f.write(_MANIFEST)
+        f.close()
 
         compiler = MSVCCompiler()
         compiler._remove_visual_c_ref(manifest)
 
         # see what we got
-        with open(manifest) as f:
-            # removing trailing spaces
-            content = '\n'.join(line.rstrip() for line in f.readlines())
+        f = open(manifest)
+        # removing trailing spaces
+        content = '\n'.join(line.rstrip() for line in f.readlines())
+        f.close()
 
         # makes sure the manifest was properly cleaned
         self.assertEqual(content, _CLEANED_MANIFEST)
