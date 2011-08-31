@@ -3,8 +3,14 @@ import csv
 import sys
 import shutil
 import tempfile
-from os.path import relpath  # separate import for backport concerns
-from hashlib import md5
+try:
+    from os.path import relpath  # separate import for backport concerns
+except:
+    from distutils2._backport.path import relpath
+try:
+    from hashlib import md5
+except ImportError:
+    from distutils2._backport.hashlib import md5
 from textwrap import dedent
 
 from distutils2.tests.test_util import GlobTestCaseBase
@@ -26,8 +32,9 @@ from distutils2.database import (
 
 
 def get_hexdigest(filename):
-    with open(filename, 'rb') as file:
-        checksum = md5(file.read())
+    fp = open(filename, 'rb')
+    checksum = md5(fp.read())
+    fp.close()
     return checksum.hexdigest()
 
 
@@ -58,11 +65,11 @@ class FakeDistsMixin(object):
         # could pass a custom copy_function to change the mode of files, but
         # shutil gives no control over the mode of directories :(
         for root, dirs, files in os.walk(self.fake_dists_path):
-            os.chmod(root, 0o755)
+            os.chmod(root, 00755)
             for f in files:
-                os.chmod(os.path.join(root, f), 0o644)
+                os.chmod(os.path.join(root, f), 00644)
             for d in dirs:
-                os.chmod(os.path.join(root, d), 0o755)
+                os.chmod(os.path.join(root, d), 00755)
 
 
 class CommonDistributionTests(FakeDistsMixin):
@@ -131,31 +138,33 @@ class TestDistribution(CommonDistributionTests, unittest.TestCase):
         for distinfo_dir in self.dirs:
 
             record_file = os.path.join(distinfo_dir, 'RECORD')
-            with open(record_file, 'w') as file:
-                record_writer = csv.writer(
-                    file, delimiter=',', quoting=csv.QUOTE_NONE,
-                    lineterminator='\n')
+            fp = open(record_file, 'w')
+            record_writer = csv.writer(
+                fp, delimiter=',', quoting=csv.QUOTE_NONE,
+                lineterminator='\n')
 
-                dist_location = distinfo_dir.replace('.dist-info', '')
+            dist_location = distinfo_dir.replace('.dist-info', '')
 
-                for path, dirs, files in os.walk(dist_location):
-                    for f in files:
-                        record_writer.writerow(record_pieces(
-                                               os.path.join(path, f)))
-                for file in ('INSTALLER', 'METADATA', 'REQUESTED'):
+            for path, dirs, files in os.walk(dist_location):
+                for f in files:
                     record_writer.writerow(record_pieces(
-                                           os.path.join(distinfo_dir, file)))
-                record_writer.writerow([relpath(record_file, sys.prefix)])
+                                           os.path.join(path, f)))
+            for file in ('INSTALLER', 'METADATA', 'REQUESTED'):
+                record_writer.writerow(record_pieces(
+                                       os.path.join(distinfo_dir, file)))
+            record_writer.writerow([relpath(record_file, sys.prefix)])
+            fp.close()
 
-            with open(record_file) as file:
-                record_reader = csv.reader(file, lineterminator='\n')
-                record_data = {}
-                for row in record_reader:
-                    if row == []:
-                        continue
-                    path, md5_, size = (row[:] +
-                                        [None for i in range(len(row), 3)])
-                    record_data[path] = md5_, size
+            fp = open(record_file)
+            record_reader = csv.reader(fp, lineterminator='\n')
+            record_data = {}
+            for row in record_reader:
+                if row == []:
+                    continue
+                path, md5_, size = (row[:] +
+                                    [None for i in range(len(row), 3)])
+                record_data[path] = md5_, size
+            fp.close()
             self.records[distinfo_dir] = record_data
 
     def test_instantiation(self):
@@ -197,11 +206,12 @@ class TestDistribution(CommonDistributionTests, unittest.TestCase):
         ]
 
         for distfile in distinfo_files:
-            with dist.get_distinfo_file(distfile) as value:
-                self.assertIsInstance(value, file)
-                # Is it the correct file?
-                self.assertEqual(value.name,
-                                 os.path.join(distinfo_dir, distfile))
+            value = dist.get_distinfo_file(distfile)
+            self.assertIsInstance(value, file)
+            # Is it the correct file?
+            self.assertEqual(value.name,
+                             os.path.join(distinfo_dir, distfile))
+            value.close()
 
         # Test an absolute path that is part of another distributions dist-info
         other_distinfo_file = os.path.join(
@@ -621,26 +631,28 @@ class DataFilesTestCase(GlobTestCaseBase):
         metadata_path = os.path.join(dist_info, 'METADATA')
         resources_path = os.path.join(dist_info, 'RESOURCES')
 
-        with open(metadata_path, 'w') as fp:
-            fp.write(dedent("""\
-                Metadata-Version: 1.2
-                Name: test
-                Version: 0.1
-                Summary: test
-                Author: me
-                """))
-
+        fp = open(metadata_path, 'w')
+        fp.write(dedent("""\
+            Metadata-Version: 1.2
+            Name: test
+            Version: 0.1
+            Summary: test
+            Author: me
+            """))
+        fp.close()
         test_path = 'test.cfg'
 
         fd, test_resource_path = tempfile.mkstemp()
         os.close(fd)
         self.addCleanup(os.remove, test_resource_path)
 
-        with open(test_resource_path, 'w') as fp:
-            fp.write('Config')
+        fp = open(test_resource_path, 'w')
+        fp.write('Config')
+        fp.close()
 
-        with open(resources_path, 'w') as fp:
-            fp.write('%s,%s' % (test_path, test_resource_path))
+        fp = open(resources_path, 'w')
+        fp.write('%s,%s' % (test_path, test_resource_path))
+        fp.close()
 
         # Add fake site-packages to sys.path to retrieve fake dist
         self.addCleanup(sys.path.remove, temp_site_packages)
@@ -655,8 +667,9 @@ class DataFilesTestCase(GlobTestCaseBase):
                          test_resource_path)
         self.assertRaises(KeyError, get_file_path, dist_name, 'i-dont-exist')
 
-        with get_file(dist_name, test_path) as fp:
-            self.assertEqual(fp.read(), 'Config')
+        fp = get_file(dist_name, test_path)
+        self.assertEqual(fp.read(), 'Config')
+        fp.close()
         self.assertRaises(KeyError, get_file, dist_name, 'i-dont-exist')
 
 

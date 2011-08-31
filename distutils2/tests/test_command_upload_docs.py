@@ -1,6 +1,5 @@
 """Tests for distutils2.command.upload_docs."""
 import os
-import sys
 import shutil
 import zipfile
 try:
@@ -33,8 +32,8 @@ password = long_island
 """
 
 
-@unittest.skipIf(threading is None, "Needs threading")
-class UploadDocsTestCase(support.TempdirManager,
+class UploadDocsTestCase(unittest.TestCase,
+                         support.TempdirManager,
                          support.EnvironRestorer,
                          support.LoggingCatcher,
                          PyPIServerTestCase):
@@ -103,7 +102,7 @@ class UploadDocsTestCase(support.TempdirManager,
 
         self.assertEqual(len(self.pypi.requests), 1)
         handler, request_data = self.pypi.requests[-1]
-        self.assertIn(b"content", request_data)
+        self.assertIn("content", request_data)
         self.assertIn("Basic", handler.headers['authorization'])
         self.assertTrue(handler.headers['content-type']
             .startswith('multipart/form-data;'))
@@ -113,16 +112,16 @@ class UploadDocsTestCase(support.TempdirManager,
 
 
         # check that we picked the right chunks
-        self.assertIn(b'name=":action"', action)
-        self.assertIn(b'name="name"', name)
-        self.assertIn(b'name="version"', version)
-        self.assertIn(b'name="content"', content)
+        self.assertIn('name=":action"', action)
+        self.assertIn('name="name"', name)
+        self.assertIn('name="version"', version)
+        self.assertIn('name="content"', content)
 
         # check their contents
-        self.assertIn(b'doc_upload', action)
-        self.assertIn(b'distr-name', name)
-        self.assertIn(b'docs/index.html', content)
-        self.assertIn(b'Ce mortel ennui', content)
+        self.assertIn('doc_upload', action)
+        self.assertIn('distr-name', name)
+        self.assertIn('docs/index.html', content)
+        self.assertIn('Ce mortel ennui', content)
 
     @unittest.skipIf(_ssl is None, 'Needs SSL support')
     def test_https_connection(self):
@@ -184,6 +183,7 @@ class UploadDocsTestCase(support.TempdirManager,
         self.assertTrue(record, "should report the response")
         self.assertIn(self.pypi.default_response_data, record)
 
+UploadDocsTestCase = unittest.skipIf(threading is None, "Needs threading")(UploadDocsTestCase)
 def test_suite():
     return unittest.makeSuite(UploadDocsTestCase)
 

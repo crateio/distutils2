@@ -351,7 +351,7 @@ class Command(object):
     def execute(self, func, args, msg=None, level=1):
         util.execute(func, args, msg, dry_run=self.dry_run)
 
-    def mkpath(self, name, mode=0o777, dry_run=None, verbose=0):
+    def mkpath(self, name, mode=00777, dry_run=None, verbose=0):
         if dry_run is None:
             dry_run = self.dry_run
         name = os.path.normpath(name)

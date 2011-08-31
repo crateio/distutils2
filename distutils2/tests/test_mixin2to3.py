@@ -1,4 +1,3 @@
-import sys
 import textwrap
 
 from distutils2.tests import unittest, support
@@ -15,15 +14,17 @@ class Mixin2to3TestCase(support.TempdirManager,
         # used to check if code gets converted properly.
         code = "print 'test'"
 
-        with self.mktempfile() as fp:
-            fp.write(code)
+        fp = self.mktempfile()
+        fp.write(code)
+        fp.close()
 
         mixin2to3 = Mixin2to3()
         mixin2to3._run_2to3([fp.name])
         expected = "print('test')"
 
-        with open(fp.name) as fp:
-            converted = fp.read()
+        fp = open(fp.name)
+        converted = fp.read()
+        fp.close()
 
         self.assertEqual(expected, converted)
 
@@ -40,8 +41,9 @@ class Mixin2to3TestCase(support.TempdirManager,
             It works.
             """''')
 
-        with self.mktempfile() as fp:
-            fp.write(doctest)
+        fp = self.mktempfile()
+        fp.write(doctest)
+        fp.close()
 
         mixin2to3 = Mixin2to3()
         mixin2to3._run_2to3([fp.name])
@@ -54,8 +56,9 @@ class Mixin2to3TestCase(support.TempdirManager,
             It works.
             """\n''')
 
-        with open(fp.name) as fp:
-            converted = fp.read()
+        fp = open(fp.name)
+        converted = fp.read()
+        fp.close()
 
         self.assertEqual(expected, converted)
 
@@ -65,8 +68,9 @@ class Mixin2to3TestCase(support.TempdirManager,
         # used to check if use_2to3_fixers works
         code = 'type(x) is not T'
 
-        with self.mktempfile() as fp:
-            fp.write(code)
+        fp = self.mktempfile()
+        fp.write(code)
+        fp.close()
 
         mixin2to3 = Mixin2to3()
         mixin2to3._run_2to3(files=[fp.name], doctests=[fp.name],
@@ -74,8 +78,9 @@ class Mixin2to3TestCase(support.TempdirManager,
 
         expected = 'not isinstance(x, T)'
 
-        with open(fp.name) as fp:
-            converted = fp.read()
+        fp = open(fp.name)
+        converted = fp.read()
+        fp.close()
 
         self.assertEqual(expected, converted)
 

@@ -71,14 +71,14 @@ class SimpleCrawlerTestCase(TempdirManager,
         url = 'http://example.org'
         try:
             v = crawler._open_url(url)
-        except Exception:
+        except:
+            urllib2.urlopen = old_urlopen
             self.assertIn('line', str(sys.exc_info()[1]))
         else:
             v.close()
             # TODO use self.assertRaises
             raise AssertionError('Should have raise here!')
-        finally:
-            urllib2.urlopen = old_urlopen
+        urllib2.urlopen = old_urlopen
 
         # issue 20
         url = 'http://http://svn.pythonpaste.org/Paste/wphp/trunk'
@@ -246,9 +246,12 @@ class SimpleCrawlerTestCase(TempdirManager,
 
             # this should not raise a timeout
             self.assertEqual(4, len(crawler.get_releases("foo")))
-        finally:
+        except:
             mirror.stop()
             server.stop()
+            raise
+        mirror.stop()
+        server.stop()
 
     def test_simple_link_matcher(self):
         # Test that the simple link matcher finds the right links"""
@@ -273,21 +276,21 @@ class SimpleCrawlerTestCase(TempdirManager,
         # Test that the simple link matcher yield the good links.
         generator = crawler._simple_link_matcher(content, crawler.index_url)
         self.assertEqual(('%stest/foobar-1.tar.gz#md5=abcdef' %
-                          crawler.index_url, True), next(generator))
-        self.assertEqual(('http://dl-link1', True), next(generator))
+                          crawler.index_url, True), generator.next())
+        self.assertEqual(('http://dl-link1', True), generator.next())
         self.assertEqual(('%stest' % crawler.index_url, False),
-                         next(generator))
+                         generator.next())
         self.assertRaises(StopIteration, generator.next)
 
         # Follow the external links is possible (eg. homepages)
         crawler.follow_externals = True
         generator = crawler._simple_link_matcher(content, crawler.index_url)
         self.assertEqual(('%stest/foobar-1.tar.gz#md5=abcdef' %
-                          crawler.index_url, True), next(generator))
-        self.assertEqual(('http://dl-link1', True), next(generator))
-        self.assertEqual(('http://dl-link2', False), next(generator))
+                          crawler.index_url, True), generator.next())
+        self.assertEqual(('http://dl-link1', True), generator.next())
+        self.assertEqual(('http://dl-link2', False), generator.next())
         self.assertEqual(('%stest' % crawler.index_url, False),
-                         next(generator))
+                         generator.next())
         self.assertRaises(StopIteration, generator.next)
 
     def test_browse_local_files(self):

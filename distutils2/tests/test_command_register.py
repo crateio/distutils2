@@ -128,8 +128,9 @@ class RegisterTestCase(support.TempdirManager,
         self.assertTrue(os.path.exists(self.rc))
 
         # with the content similar to WANTED_PYPIRC
-        with open(self.rc) as fp:
-            content = fp.read()
+        fp = open(self.rc)
+        content = fp.read()
+        fp.close()
         self.assertEqual(content, WANTED_PYPIRC)
 
         # now let's make sure the .pypirc file generated
@@ -149,7 +150,7 @@ class RegisterTestCase(support.TempdirManager,
         req1 = dict(self.conn.reqs[0].headers)
         req2 = dict(self.conn.reqs[1].headers)
         self.assertEqual(req2['Content-length'], req1['Content-length'])
-        self.assertIn(b'xxx', self.conn.reqs[1].data)
+        self.assertIn('xxx', self.conn.reqs[1].data)
 
     def test_password_not_in_file(self):
 
@@ -178,7 +179,7 @@ class RegisterTestCase(support.TempdirManager,
         req = self.conn.reqs[0]
         headers = dict(req.headers)
         self.assertEqual(headers['Content-length'], '628')
-        self.assertIn(b'tarek', req.data)
+        self.assertIn('tarek', req.data)
 
     def test_password_reset(self):
         # this test runs choice 3
@@ -193,7 +194,7 @@ class RegisterTestCase(support.TempdirManager,
         req = self.conn.reqs[0]
         headers = dict(req.headers)
         self.assertEqual(headers['Content-length'], '298')
-        self.assertIn(b'tarek', req.data)
+        self.assertIn('tarek', req.data)
 
     @unittest.skipUnless(DOCUTILS_SUPPORT, 'needs docutils')
     def test_strict(self):

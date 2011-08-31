@@ -245,45 +245,50 @@ class bdist_wininst(Command):
         logger.info("creating %s", installer_name)
 
         if bitmap:
-            with open(bitmap, "rb") as fp:
-                bitmapdata = fp.read()
+            fp = open(bitmap, "rb")
+            bitmapdata = fp.read()
+            fp.close()
             bitmaplen = len(bitmapdata)
         else:
             bitmaplen = 0
 
-        with open(installer_name, "wb") as file:
-            file.write(self.get_exe_bytes())
-            if bitmap:
-                file.write(bitmapdata)
+        file = open(installer_name, "wb")
+        file.write(self.get_exe_bytes())
+        if bitmap:
+            file.write(bitmapdata)
 
-            # Convert cfgdata from unicode to ascii, mbcs encoded
-            if isinstance(cfgdata, unicode):
-                cfgdata = cfgdata.encode("mbcs")
+        # Convert cfgdata from unicode to ascii, mbcs encoded
+        if isinstance(cfgdata, unicode):
+            cfgdata = cfgdata.encode("mbcs")
 
-            # Append the pre-install script
+        # Append the pre-install script
+        cfgdata = cfgdata + "\0"
+        if self.pre_install_script:
+            fp = open(self.pre_install_script)
+            script_data = fp.read()
+            fp.close()
+            cfgdata = cfgdata + script_data + "\n\0"
+        else:
+            # empty pre-install script
             cfgdata = cfgdata + "\0"
-            if self.pre_install_script:
-                with open(self.pre_install_script) as fp:
-                    script_data = fp.read()
-                cfgdata = cfgdata + script_data + "\n\0"
-            else:
-                # empty pre-install script
-                cfgdata = cfgdata + "\0"
-            file.write(cfgdata)
+        file.write(cfgdata)
 
-            # The 'magic number' 0x1234567B is used to make sure that the
-            # binary layout of 'cfgdata' is what the wininst.exe binary
-            # expects.  If the layout changes, increment that number, make
-            # the corresponding changes to the wininst.exe sources, and
-            # recompile them.
-            header = struct.pack("<iii",
-                                 0x1234567B,       # tag
-                                 len(cfgdata),     # length
-                                 bitmaplen,        # number of bytes in bitmap
-                                 )
-            file.write(header)
-            with open(arcname, "rb") as fp:
-                file.write(fp.read())
+        # The 'magic number' 0x1234567B is used to make sure that the
+        # binary layout of 'cfgdata' is what the wininst.exe binary
+        # expects.  If the layout changes, increment that number, make
+        # the corresponding changes to the wininst.exe sources, and
+        # recompile them.
+        header = struct.pack("<iii",
+                             0x1234567B,       # tag
+                             len(cfgdata),     # length
+                             bitmaplen,        # number of bytes in bitmap
+                             )
+        file.write(header)
+        file.close()
+
+        fp = open(arcname, "rb")
+        file.write(fp.read())
+        fp.close()
 
     def get_installer_filename(self, fullname):
         # Factored out to allow overriding in subclasses
@@ -338,5 +343,7 @@ class bdist_wininst(Command):
             sfix = ''
 
         filename = os.path.join(directory, "wininst-%.1f%s.exe" % (bv, sfix))
-        with open(filename, "rb") as fp:
-            return fp.read()
+        fp = open(filename, "rb")
+        content = fp.read()
+        fp.close()
+        return content

@@ -3,11 +3,11 @@
 import os
 import sys
 import shutil
-from tempfile import mkstemp
 from StringIO import StringIO
 
 from distutils2 import install
-from distutils2.tests import unittest, support, TESTFN
+from distutils2.tests import unittest, support
+from distutils2.tests.support import TESTFN
 from distutils2.run import main
 
 # setup script that uses __file__
@@ -53,8 +53,9 @@ class CoreTestCase(support.TempdirManager, support.LoggingCatcher,
             shutil.rmtree(path)
 
     def write_setup(self, text, path=TESTFN):
-        with open(path, "w") as fp:
-            fp.write(text)
+        fp = open(path, "w")
+        fp.write(text)
+        fp.close()
         return path
 
     # TODO restore the tests removed six months ago and port them to pysetup

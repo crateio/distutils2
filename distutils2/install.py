@@ -495,9 +495,10 @@ def install(project):
 
     # trying to write a file there
     try:
-        with tempfile.NamedTemporaryFile(suffix=project,
-                                         dir=purelib_path) as testfile:
-            testfile.write(b'test')
+        testfile = tempfile.NamedTemporaryFile(suffix=project,
+                dir=purelib_path)
+        testfile.write('test')
+        testfile.close()
     except OSError:
         # FIXME this should check the errno, or be removed altogether (race
         # condition: the directory permissions could be changed between here

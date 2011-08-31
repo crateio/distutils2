@@ -8,10 +8,7 @@ from sysconfig import (get_scheme_names, get_config_vars,
 
 _CONFIG_VARS = get_config_vars()
 
-from distutils2.tests import captured_stdout
-
 from distutils2.command.install_dist import install_dist
-from distutils2.command import install_dist as install_module
 from distutils2.dist import Distribution
 from distutils2.errors import PackagingOptionError
 
@@ -46,9 +43,12 @@ class InstallTestCase(support.TempdirManager,
             cmd = install_dist(dist)
             cmd.home = destination
             cmd.ensure_finalized()
-        finally:
+        except:
             _SCHEMES.set('posix_prefix', 'platinclude', old_posix_prefix)
             _SCHEMES.set('posix_home', 'platinclude', old_posix_home)
+            raise
+        _SCHEMES.set('posix_prefix', 'platinclude', old_posix_prefix)
+        _SCHEMES.set('posix_home', 'platinclude', old_posix_home)
 
         self.assertEqual(cmd.install_base, destination)
         self.assertEqual(cmd.install_platbase, destination)
@@ -88,13 +88,17 @@ class InstallTestCase(support.TempdirManager,
         self.old_expand = os.path.expanduser
         os.path.expanduser = _expanduser
 
-        try:
-            # this is the actual test
-            self._test_user_site()
-        finally:
+        def cleanup():
             _CONFIG_VARS['userbase'] = self.old_user_base
             _SCHEMES.set(scheme, 'purelib', self.old_user_site)
             os.path.expanduser = self.old_expand
+        try:
+            # this is the actual test
+            self._test_user_site()
+        except:
+            cleanup()
+            raise
+        cleanup()
 
     def _test_user_site(self):
         schemes = get_scheme_names()
@@ -191,8 +195,11 @@ class InstallTestCase(support.TempdirManager,
         # let's check the record file was created with four
         # lines, one for each .dist-info entry: METADATA,
         # INSTALLER, REQUSTED, RECORD
-        with open(cmd.record) as f:
-            self.assertEqual(len(f.readlines()), 4)
+        f = open(cmd.record)
+        lines = f.readlines()
+        f.close()
+        self.assertEqual(len(lines), 4)
+
 
         # XXX test that fancy_getopt is okay with options named
         # record and no-record but unrelated

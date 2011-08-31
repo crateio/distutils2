@@ -61,7 +61,7 @@ class BuildPyTestCase(support.TempdirManager,
         self.assertIn("__init__.py", files)
         self.assertIn("README.txt", files)
         # XXX even with -O, distutils writes pyc, not pyo; bug?
-        if sys.dont_write_bytecode:
+        if hasattr(sys , 'dont_write_bytecode'):
             self.assertNotIn("__init__.pyc", files)
         else:
             self.assertIn("__init__.pyc", files)

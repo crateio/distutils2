@@ -55,20 +55,20 @@ password:xxx
 """
 
 EXPECTED_MULTIPART_OUTPUT = [
-    b'---x',
-    b'Content-Disposition: form-data; name="username"',
-    b'',
-    b'wok',
-    b'---x',
-    b'Content-Disposition: form-data; name="password"',
-    b'',
-    b'secret',
-    b'---x',
-    b'Content-Disposition: form-data; name="picture"; filename="wok.png"',
-    b'',
-    b'PNG89',
-    b'---x--',
-    b'',
+    '---x',
+    'Content-Disposition: form-data; name="username"',
+    '',
+    'wok',
+    '---x',
+    'Content-Disposition: form-data; name="password"',
+    '',
+    'secret',
+    '---x',
+    'Content-Disposition: form-data; name="picture"; filename="wok.png"',
+    '',
+    'PNG89',
+    '---x--',
+    '',
 ]
 
 
@@ -457,24 +457,24 @@ class UtilTestCase(support.EnvironRestorer,
         if os.name == 'posix':
             exe = os.path.join(tmpdir, 'foo.sh')
             self.write_file(exe, '#!/bin/sh\nexit 1')
-            os.chmod(exe, 0o777)
+            os.chmod(exe, 00777)
         else:
             exe = os.path.join(tmpdir, 'foo.bat')
             self.write_file(exe, 'exit 1')
 
-        os.chmod(exe, 0o777)
+        os.chmod(exe, 00777)
         self.assertRaises(PackagingExecError, spawn, [exe])
 
         # now something that works
         if os.name == 'posix':
             exe = os.path.join(tmpdir, 'foo.sh')
             self.write_file(exe, '#!/bin/sh\nexit 0')
-            os.chmod(exe, 0o777)
+            os.chmod(exe, 00777)
         else:
             exe = os.path.join(tmpdir, 'foo.bat')
             self.write_file(exe, 'exit 0')
 
-        os.chmod(exe, 0o777)
+        os.chmod(exe, 00777)
         spawn([exe])  # should work without any error
 
     def test_server_registration(self):
@@ -506,8 +506,9 @@ class UtilTestCase(support.EnvironRestorer,
         self.assertFalse(os.path.exists(rc))
         generate_pypirc('tarek', 'xxx')
         self.assertTrue(os.path.exists(rc))
-        with open(rc) as f:
-            content = f.read()
+        f = open(rc)
+        content = f.read()
+        f.close()
         self.assertEqual(content, WANTED)
 
     def test_cfg_to_args(self):
@@ -544,10 +545,10 @@ class UtilTestCase(support.EnvironRestorer,
 
     def test_encode_multipart(self):
         fields = [('username', 'wok'), ('password', 'secret')]
-        files = [('picture', 'wok.png', b'PNG89')]
-        content_type, body = encode_multipart(fields, files, b'-x')
-        self.assertEqual(b'multipart/form-data; boundary=-x', content_type)
-        self.assertEqual(EXPECTED_MULTIPART_OUTPUT, body.split(b'\r\n'))
+        files = [('picture', 'wok.png', 'PNG89')]
+        content_type, body = encode_multipart(fields, files, '-x')
+        self.assertEqual('multipart/form-data; boundary=-x', content_type)
+        self.assertEqual(EXPECTED_MULTIPART_OUTPUT, body.split('\r\n'))
 
 
 class GlobTestCaseBase(support.TempdirManager,
@@ -793,16 +794,17 @@ class EggInfoToDistInfoTestCase(support.TempdirManager,
             dir_paths.append(path)
         for f in files:
             path = os.path.join(tempdir, f)
-            with open(path, 'w') as _f:
-                _f.write(f)
+            _f = open(path, 'w')
+            _f.write(f)
+            _f.close()
             file_paths.append(path)
 
-        with open(record_file_path, 'w') as record_file:
-            for fpath in file_paths:
-                record_file.write(fpath + '\n')
-            for dpath in dir_paths:
-                record_file.write(dpath + '\n')
-
+        record_file = open(record_file_path, 'w')
+        for fpath in file_paths:
+            record_file.write(fpath + '\n')
+        for dpath in dir_paths:
+            record_file.write(dpath + '\n')
+        record_file.close()
         return (tempdir, record_file_path)
 
 

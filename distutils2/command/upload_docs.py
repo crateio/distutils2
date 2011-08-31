@@ -7,7 +7,7 @@ import zipfile
 import logging
 import httplib
 import urlparse
-from io import BytesIO
+from StringIO import StringIO
 
 from distutils2 import logger
 from distutils2.util import (read_pypirc, DEFAULT_REPOSITORY, DEFAULT_REALM,
@@ -18,14 +18,15 @@ from distutils2.command.cmd import Command
 
 def zip_dir(directory):
     """Compresses recursively contents of directory into a BytesIO object"""
-    destination = BytesIO()
-    with zipfile.ZipFile(destination, "w") as zip_file:
-        for root, dirs, files in os.walk(directory):
-            for name in files:
-                full = os.path.join(root, name)
-                relative = root[len(directory):].lstrip(os.path.sep)
-                dest = os.path.join(relative, name)
-                zip_file.write(full, dest)
+    destination = StringIO()
+    zip_file = zipfile.ZipFile(destination, "w")
+    for root, dirs, files in os.walk(directory):
+        for name in files:
+            full = os.path.join(root, name)
+            relative = root[len(directory):].lstrip(os.path.sep)
+            dest = os.path.join(relative, name)
+            zip_file.write(full, dest)
+    zip_file.close()
     return destination
 
 
@@ -87,7 +88,7 @@ class upload_docs(Command):
         content_type, body = encode_multipart(fields, files)
 
         credentials = self.username + ':' + self.password
-        auth = b"Basic " + base64.encodebytes(credentials.encode()).strip()
+        auth = "Basic " + base64.encodebytes(credentials.encode()).strip()
 
         logger.info("Submitting documentation to %s", self.repository)
 

@@ -8,13 +8,19 @@ import sys
 import errno
 import shutil
 import string
-import hashlib
+try:
+    import hashlib
+except ImportError: #<2.5
+    from _backport import hashlib
 import tarfile
 import zipfile
 import posixpath
 import subprocess
 import sysconfig
-from glob import iglob as std_iglob
+try:
+    from glob import iglob as std_iglob
+except ImportError:#<2.5
+    from glob import glob as std_iglob
 from fnmatch import fnmatchcase
 from inspect import getsource
 from ConfigParser import RawConfigParser
@@ -359,34 +365,33 @@ def byte_compile(py_files, optimize=0, force=False, prefix=None,
             else:
                 script = codecs.open(script_name, "w", encoding='utf-8')
 
-            with script:
-                script.write("""\
+            script.write("""\
 from distutils2.util import byte_compile
 files = [
 """)
 
-                # XXX would be nice to write absolute filenames, just for
-                # safety's sake (script should be more robust in the face of
-                # chdir'ing before running it).  But this requires abspath'ing
-                # 'prefix' as well, and that breaks the hack in build_lib's
-                # 'byte_compile()' method that carefully tacks on a trailing
-                # slash (os.sep really) to make sure the prefix here is "just
-                # right".  This whole prefix business is rather delicate -- the
-                # problem is that it's really a directory, but I'm treating it
-                # as a dumb string, so trailing slashes and so forth matter.
+            # XXX would be nice to write absolute filenames, just for
+            # safety's sake (script should be more robust in the face of
+            # chdir'ing before running it).  But this requires abspath'ing
+            # 'prefix' as well, and that breaks the hack in build_lib's
+            # 'byte_compile()' method that carefully tacks on a trailing
+            # slash (os.sep really) to make sure the prefix here is "just
+            # right".  This whole prefix business is rather delicate -- the
+            # problem is that it's really a directory, but I'm treating it
+            # as a dumb string, so trailing slashes and so forth matter.
 
-                #py_files = map(os.path.abspath, py_files)
-                #if prefix:
-                #    prefix = os.path.abspath(prefix)
+            #py_files = map(os.path.abspath, py_files)
+            #if prefix:
+            #    prefix = os.path.abspath(prefix)
 
-                script.write(",\n".join(map(repr, py_files)) + "]\n")
-                script.write("""
+            script.write(",\n".join(map(repr, py_files)) + "]\n")
+            script.write("""
 byte_compile(files, optimize=%r, force=%r,
              prefix=%r, base_dir=%r,
              verbose=%r, dry_run=False,
              direct=True)
 """ % (optimize, force, prefix, base_dir, verbose))
-
+        script.close()
         cmd = [sys.executable, script_name]
         if optimize == 1:
             cmd.insert(1, "-O")
@@ -547,10 +552,10 @@ def write_file(filename, contents):
 
     *contents* is a sequence of strings without line terminators.
     """
-    with open(filename, "w") as f:
-        for line in contents:
-            f.write(line + "\n")
-
+    f = open(filename, "w")
+    for line in contents:
+        f.write(line + "\n")
+    f.close()
 
 def _is_package(path):
     return os.path.isdir(path) and os.path.isfile(
@@ -671,25 +676,28 @@ def unzip_file(filename, location, flatten=True):
     """Unzip the file *filename* into the *location* directory."""
     if not os.path.exists(location):
         os.makedirs(location)
-    with open(filename, 'rb') as zipfp:
-        zip = zipfile.ZipFile(zipfp)
-        leading = has_leading_dir(zip.namelist()) and flatten
-        for name in zip.namelist():
-            data = zip.read(name)
-            fn = name
-            if leading:
-                fn = split_leading_dir(name)[1]
-            fn = os.path.join(location, fn)
-            dir = os.path.dirname(fn)
-            if not os.path.exists(dir):
-                os.makedirs(dir)
-            if fn.endswith('/') or fn.endswith('\\'):
-                # A directory
-                if not os.path.exists(fn):
-                    os.makedirs(fn)
-            else:
-                with open(fn, 'wb') as fp:
-                    fp.write(data)
+    zipfp = open(filename, 'rb')
+
+    zip = zipfile.ZipFile(zipfp)
+    leading = has_leading_dir(zip.namelist()) and flatten
+    for name in zip.namelist():
+        data = zip.read(name)
+        fn = name
+        if leading:
+            fn = split_leading_dir(name)[1]
+        fn = os.path.join(location, fn)
+        dir = os.path.dirname(fn)
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        if fn.endswith('/') or fn.endswith('\\'):
+            # A directory
+            if not os.path.exists(fn):
+                os.makedirs(fn)
+        else:
+            fp = open(fn, 'wb')
+            fp.write(data)
+            fp.close()
+    zipfp.close()
 
 
 def untar_file(filename, location):
@@ -705,31 +713,34 @@ def untar_file(filename, location):
         mode = 'r'
     else:
         mode = 'r:*'
-    with tarfile.open(filename, mode) as tar:
-        leading = has_leading_dir(member.name for member in tar.getmembers())
-        for member in tar.getmembers():
-            fn = member.name
-            if leading:
-                fn = split_leading_dir(fn)[1]
-            path = os.path.join(location, fn)
-            if member.isdir():
-                if not os.path.exists(path):
-                    os.makedirs(path)
-            else:
-                try:
-                    fp = tar.extractfile(member)
-                except (KeyError, AttributeError):
-                    # Some corrupt tar files seem to produce this
-                    # (specifically bad symlinks)
-                    continue
-                try:
-                    if not os.path.exists(os.path.dirname(path)):
-                        os.makedirs(os.path.dirname(path))
-                        with open(path, 'wb') as destfp:
-                            shutil.copyfileobj(fp, destfp)
-                finally:
-                    fp.close()
 
+    tar = tarfile.open(filename, mode)
+    leading = has_leading_dir(member.name for member in tar.getmembers())
+    for member in tar.getmembers():
+        fn = member.name
+        if leading:
+            fn = split_leading_dir(fn)[1]
+        path = os.path.join(location, fn)
+        if member.isdir():
+            if not os.path.exists(path):
+                os.makedirs(path)
+        else:
+            try:
+                fp = tar.extractfile(member)
+            except (KeyError, AttributeError):
+                # Some corrupt tar files seem to produce this
+                # (specifically bad symlinks)
+                continue
+            try:
+                if not os.path.exists(os.path.dirname(path)):
+                    os.makedirs(os.path.dirname(path))
+                    destfp = open(path, 'wb')
+                    shutil.copyfileobj(fp, destfp)
+                    destfp.close()
+            except:
+                fp.close()
+                raise
+            fp.close()
 
 def has_leading_dir(paths):
     """Return true if all the paths have the same leading path name.
@@ -860,10 +871,12 @@ def get_pypirc_path():
 def generate_pypirc(username, password):
     """Create a default .pypirc file."""
     rc = get_pypirc_path()
-    with open(rc, 'w') as f:
-        f.write(DEFAULT_PYPIRC % (username, password))
+    f = open(rc, 'w')
+    f.write(DEFAULT_PYPIRC % (username, password))
+    f.close()
+
     try:
-        os.chmod(rc, 0o600)
+        os.chmod(rc, 00600)
     except OSError:
         # should do something better here
         pass
@@ -1070,8 +1083,9 @@ def cfg_to_args(path='setup.cfg'):
     if not os.path.exists(path):
         raise PackagingFileError("file '%s' does not exist" %
                                  os.path.abspath(path))
-    with codecs.open(path, encoding='utf-8') as f:
-        config.readfp(f)
+    f = codecs.open(path, encoding='utf-8')
+    config.readfp(f)
+    f.close()
 
     kwargs = {}
     for arg in D1_D2_SETUP_ARGS:
@@ -1093,8 +1107,9 @@ def cfg_to_args(path='setup.cfg'):
                     filenames = split_multiline(filenames)
                     in_cfg_value = []
                     for filename in filenames:
-                        with open(filename) as fp:
-                            in_cfg_value.append(fp.read())
+                        fp = open(filename)
+                        in_cfg_value.append(fp.read())
+                        fp.close()
                     in_cfg_value = '\n\n'.join(in_cfg_value)
             else:
                 continue
@@ -1131,8 +1146,9 @@ def generate_setup_py():
     if os.path.exists("setup.py"):
         raise PackagingFileError("a setup.py file already exists")
 
-    with codecs.open("setup.py", "w", encoding='utf-8') as fp:
-        fp.write(_SETUP_TMPL % {'func': getsource(cfg_to_args)})
+    fp = codecs.open("setup.py", "w", encoding='utf-8')
+    fp.write(_SETUP_TMPL % {'func': getsource(cfg_to_args)})
+    fp.close()
 
 
 # Taken from the pip project
@@ -1151,27 +1167,27 @@ def ask(message, options):
 
 def _parse_record_file(record_file):
     distinfo, extra_metadata, installed = ({}, [], [])
-    with open(record_file, 'r') as rfile:
-        for path in rfile:
-            path = path.strip()
-            if path.endswith('egg-info') and os.path.isfile(path):
-                distinfo_dir = path.replace('egg-info', 'dist-info')
-                metadata = path
-                egginfo = path
-            elif path.endswith('egg-info') and os.path.isdir(path):
-                distinfo_dir = path.replace('egg-info', 'dist-info')
-                egginfo = path
-                for metadata_file in os.listdir(path):
-                    metadata_fpath = os.path.join(path, metadata_file)
-                    if metadata_file == 'PKG-INFO':
-                        metadata = metadata_fpath
-                    else:
-                        extra_metadata.append(metadata_fpath)
-            elif 'egg-info' in path and os.path.isfile(path):
-                # skip extra metadata files
-                continue
-            else:
-                installed.append(path)
+    rfile = open(record_file, 'r')
+    for path in rfile:
+        path = path.strip()
+        if path.endswith('egg-info') and os.path.isfile(path):
+            distinfo_dir = path.replace('egg-info', 'dist-info')
+            metadata = path
+            egginfo = path
+        elif path.endswith('egg-info') and os.path.isdir(path):
+            distinfo_dir = path.replace('egg-info', 'dist-info')
+            egginfo = path
+            for metadata_file in os.listdir(path):
+                metadata_fpath = os.path.join(path, metadata_file)
+                if metadata_file == 'PKG-INFO':
+                    metadata = metadata_fpath
+                else:
+                    extra_metadata.append(metadata_fpath)
+        elif 'egg-info' in path and os.path.isfile(path):
+            # skip extra metadata files
+            continue
+        else:
+            installed.append(path)
 
     distinfo['egginfo'] = egginfo
     distinfo['metadata'] = metadata
@@ -1187,24 +1203,26 @@ def _parse_record_file(record_file):
 
 
 def _write_record_file(record_path, installed_files):
-    with codecs.open(record_path, 'w', encoding='utf-8') as f:
-        writer = csv.writer(f, delimiter=',', lineterminator=os.linesep,
-                            quotechar='"')
+    f = codecs.open(record_path, 'w', encoding='utf-8')
+    writer = csv.writer(f, delimiter=',', lineterminator=os.linesep,
+                        quotechar='"')
 
-        for fpath in installed_files:
-            if fpath.endswith('.pyc') or fpath.endswith('.pyo'):
-                # do not put size and md5 hash, as in PEP-376
-                writer.writerow((fpath, '', ''))
-            else:
-                hash = hashlib.md5()
-                with open(fpath, 'rb') as fp:
-                    hash.update(fp.read())
-                md5sum = hash.hexdigest()
-                size = os.path.getsize(fpath)
-                writer.writerow((fpath, md5sum, size))
+    for fpath in installed_files:
+        if fpath.endswith('.pyc') or fpath.endswith('.pyo'):
+            # do not put size and md5 hash, as in PEP-376
+            writer.writerow((fpath, '', ''))
+        else:
+            hash = hashlib.md5()
+            fp = open(fpath, 'rb')
+            hash.update(fp.read())
+            fp.close()
+            md5sum = hash.hexdigest()
+            size = os.path.getsize(fpath)
+            writer.writerow((fpath, md5sum, size))
 
-        # add the RECORD file itself
-        writer.writerow((record_path, '', ''))
+    # add the RECORD file itself
+    writer.writerow((record_path, '', ''))
+    f.close()
     return record_path
 
 
@@ -1239,8 +1257,9 @@ def egginfo_to_distinfo(record_file, installer=_DEFAULT_INSTALLER,
 
     installer_path = distinfo['installer_path']
     logger.info('creating %s', installer_path)
-    with open(installer_path, 'w') as f:
-        f.write(installer)
+    f = open(installer_path, 'w')
+    f.write(installer)
+    f.close()
 
     if requested:
         requested_path = distinfo['requested_path']
@@ -1281,20 +1300,23 @@ def _has_distutils_text(setup_py):
 
 
 def _has_text(setup_py, installer):
-    installer_pattern = re.compile('import {0}|from {0}'.format(installer))
-    with codecs.open(setup_py, 'r', encoding='utf-8') as setup:
-        for line in setup:
-            if re.search(installer_pattern, line):
-                logger.debug("Found %s text in setup.py.", installer)
-                return True
+    installer_pattern = re.compile('import %s|from %s' % (
+        installer[0], installer[1]))
+    setup = codecs.open(setup_py, 'r', encoding='utf-8')
+    for line in setup:
+        if re.search(installer_pattern, line):
+            logger.debug("Found %s text in setup.py.", installer)
+            return True
+    setup.close()
     logger.debug("No %s text found in setup.py.", installer)
     return False
 
 
 def _has_required_metadata(setup_cfg):
     config = RawConfigParser()
-    with codecs.open(setup_cfg, 'r', encoding='utf8') as f:
-        config.readfp(f)
+    f = codecs.open(setup_cfg, 'r', encoding='utf8')
+    config.readfp(f)
+    f.close()
     return (config.has_section('metadata') and
             'name' in config.options('metadata') and
             'version' in config.options('metadata'))
@@ -1443,7 +1465,7 @@ _path_created = set()
 # I don't use os.makedirs because a) it's new to Python 1.5.2, and
 # b) it blows up if the directory already exists (I want to silently
 # succeed in that case).
-def _mkpath(name, mode=0o777, verbose=True, dry_run=False):
+def _mkpath(name, mode=00777, verbose=True, dry_run=False):
     # Detect a common bug -- name is None
     if not isinstance(name, basestring):
         raise PackagingInternalError(
@@ -1509,8 +1531,8 @@ def encode_multipart(fields, files, boundary=None):
 
     if boundary is None:
         boundary = '--------------GHSKFJDLGDS7543FJKLFHRE75642756743254'
-    elif not isinstance(boundary, bytes):
-        raise TypeError('boundary must be bytes, not %r' % type(boundary))
+    elif not isinstance(boundary, str):
+        raise TypeError('boundary must be str, not %r' % type(boundary))
 
     l = []
     for key, values in fields:
@@ -1537,7 +1559,7 @@ def encode_multipart(fields, files, boundary=None):
     body = '\r\n'.join(l)
     content_type = 'multipart/form-data; boundary=' + boundary
     return content_type, body
-    
+
 # shutil stuff
 
 try:
@@ -1606,7 +1628,7 @@ def _make_tarball(base_name, base_dir, compress="gzip", verbose=0, dry_run=0,
     # flags for compression program, each element of list will be an argument
     if compress is not None and compress not in compress_ext.keys():
         raise ValueError("bad value for 'compress', or compression format not "
-                         "supported : {0}".format(compress))
+                         "supported : %s" % compress)
 
     archive_name = base_name + '.tar' + compress_ext.get(compress, '')
     archive_dir = os.path.dirname(archive_name)
@@ -1958,7 +1980,7 @@ def unpack_archive(filename, extract_dir=None, format=None):
         try:
             format_info = _UNPACK_FORMATS[format]
         except KeyError:
-            raise ValueError("Unknown unpack format '{0}'".format(format))
+            raise ValueError("Unknown unpack format '%s'" % format)
 
         func = format_info[1]
         func(filename, extract_dir, **dict(format_info[2]))
@@ -1966,12 +1988,12 @@ def unpack_archive(filename, extract_dir=None, format=None):
         # we need to look at the registered unpackers supported extensions
         format = _find_unpack_format(filename)
         if format is None:
-            raise ReadError("Unknown archive format '{0}'".format(filename))
+            raise ReadError("Unknown archive format '%s'" % filename)
 
         func = _UNPACK_FORMATS[format][1]
         kwargs = dict(_UNPACK_FORMATS[format][2])
         func(filename, extract_dir, **kwargs)
-        
+
 # tokenize stuff
 
 cookie_re = re.compile("coding[:=]\s*([-\w.]+)")
@@ -2095,4 +2117,3 @@ def fsencode(filename):
         return filename.encode(sys.getfilesystemencoding())
     else:
         raise TypeError("expect bytes or str, not %s" % type(filename).__name__)
-

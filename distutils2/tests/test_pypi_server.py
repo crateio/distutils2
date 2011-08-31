@@ -13,8 +13,6 @@ except ImportError:
 
 from distutils2.tests import unittest
 
-
-@unittest.skipIf(threading is None, "Needs threading")
 class PyPIServerTest(unittest.TestCase):
 
     def test_records_requests(self):
@@ -26,7 +24,7 @@ class PyPIServerTest(unittest.TestCase):
             server.start()
             self.assertEqual(len(server.requests), 0)
 
-            data = b'Rock Around The Bunker'
+            data = 'Rock Around The Bunker'
 
             headers = {"X-test-header": "Mister Iceberg"}
 
@@ -38,9 +36,10 @@ class PyPIServerTest(unittest.TestCase):
             self.assertIn("x-test-header", handler.headers)
             self.assertEqual(handler.headers["x-test-header"], "Mister Iceberg")
 
-        finally:
+        except:
             server.stop()
-
+            raise
+        server.stop()
 
     def test_serve_static_content(self):
         # PYPI Mocked server can serve static content from disk.
@@ -52,9 +51,11 @@ class PyPIServerTest(unittest.TestCase):
             url = server.full_address + url_path
             request = urllib2.Request(url)
             response = urllib2.urlopen(request)
-            with open(PYPI_DEFAULT_STATIC_PATH + "/test_pypi_server"
-                      + url_path) as file:
-                return response.read().decode() == file.read()
+            fp = open(PYPI_DEFAULT_STATIC_PATH + "/test_pypi_server"
+                    + url_path)
+            content = fp.read()
+            fp.close()
+            return response.read().decode() == content
 
         server = PyPIServer(static_uri_paths=["simple", "external"],
             static_filesystem_paths=["test_pypi_server"])
@@ -74,9 +75,13 @@ class PyPIServerTest(unittest.TestCase):
             # and another one in another root path
             self.assertTrue(uses_local_files_for(server, "/external/index.html"))
 
-        finally:
+        except:
             server.stop()
+            raise
+        server.stop()
 
+PyPIServerTest = unittest.skipIf(threading is None, "Needs threading")(
+        PyPIServerTest)
 
 def test_suite():
     return unittest.makeSuite(PyPIServerTest)

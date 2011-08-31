@@ -501,7 +501,7 @@ class install_dist(Command):
         home = convert_path(os.path.expanduser("~"))
         for name, path in self.config_vars.items():
             if path.startswith(home) and not os.path.isdir(path):
-                os.makedirs(path, 0o700)
+                os.makedirs(path, 00700)
 
     # -- Command execution methods -------------------------------------
 

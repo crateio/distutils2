@@ -26,8 +26,12 @@ import sys
 import glob
 import shutil
 import sysconfig
-import tokenize
-from hashlib import md5
+if 'any' not in dir(__builtins__):
+    from distutils2._backport import any
+try:
+    from hashlib import md5
+except ImportError:
+    from distutils2._backport.hashlib import md5
 from textwrap import dedent
 from distutils2.util import cmp_to_key, detect_encoding
 from ConfigParser import RawConfigParser
@@ -112,11 +116,12 @@ def load_setup():
     This function load the setup file in all cases (even if it have already
     been loaded before, because we are monkey patching its setup function with
     a particular one"""
-    with open("setup.py", "rb") as f:
-        encoding, lines = detect_encoding(f.readline)
-    with open("setup.py") as f:
-        imp.load_module("setup", f, "setup.py", (".py", "r", imp.PY_SOURCE))
-
+    f = open("setup.py", "rb")
+    encoding, lines = detect_encoding(f.readline)
+    f.close()
+    f = open("setup.py")
+    imp.load_module("setup", f, "setup.py", (".py", "r", imp.PY_SOURCE))
+    f.close()
 
 def ask_yn(question, default=None, helptext=None):
     question += ' (y/n)'
@@ -274,49 +279,51 @@ class MainProgram(object):
                 return
             shutil.move(_FILENAME, '%s.old' % _FILENAME)
 
-        with codecs.open(_FILENAME, 'w', encoding='utf-8') as fp:
-            fp.write('[metadata]\n')
-            # TODO use metadata module instead of hard-coding field-specific
-            # behavior here
+        fp = codecs.open(_FILENAME, 'w', encoding='utf-8')
+        fp.write(u'[metadata]\n')
+        # TODO use metadata module instead of hard-coding field-specific
+        # behavior here
 
-            # simple string entries
-            for name in ('name', 'version', 'summary', 'download_url'):
-                fp.write('%s = %s\n' % (name, self.data.get(name, 'UNKNOWN')))
+        # simple string entries
+        for name in ('name', 'version', 'summary', 'download_url'):
+            fp.write(u'%s = %s\n' % (name, self.data.get(name, 'UNKNOWN')))
 
-            # optional string entries
-            if 'keywords' in self.data and self.data['keywords']:
-                fp.write('keywords = %s\n' % ' '.join(self.data['keywords']))
-            for name in ('home_page', 'author', 'author_email',
-                         'maintainer', 'maintainer_email', 'description-file'):
-                if name in self.data and self.data[name]:
-                    fp.write('%s = %s\n' % (name, self.data[name]))
-            if 'description' in self.data:
-                fp.write(
-                    'description = %s\n'
-                    % '\n       |'.join(self.data['description'].split('\n')))
+        # optional string entries
+        if 'keywords' in self.data and self.data['keywords']:
+            fp.write(u'keywords = %s\n' % ' '.join(self.data['keywords']))
+        for name in ('home_page', 'author', 'author_email',
+                     'maintainer', 'maintainer_email', 'description-file'):
+            if name in self.data and self.data[name]:
+                fp.write(u'%s = %s\n' % (name.decode('utf-8'),
+                    self.data[name].decode('utf-8')))
+        if 'description' in self.data:
+            fp.write(
+                u'description = %s\n'
+                % u'\n       |'.join(self.data['description'].split('\n')))
 
-            # multiple use string entries
-            for name in ('platform', 'supported-platform', 'classifier',
-                         'requires-dist', 'provides-dist', 'obsoletes-dist',
-                         'requires-external'):
-                if not(name in self.data and self.data[name]):
-                    continue
-                fp.write('%s = ' % name)
-                fp.write(''.join('    %s\n' % val
-                                 for val in self.data[name]).lstrip())
-            fp.write('\n[files]\n')
-            for name in ('packages', 'modules', 'scripts',
-                         'package_data', 'extra_files'):
-                if not(name in self.data and self.data[name]):
-                    continue
-                fp.write('%s = %s\n'
-                         % (name, '\n    '.join(self.data[name]).strip()))
-            fp.write('\nresources =\n')
-            for src, dest in self.data['resources']:
-                fp.write('    %s = %s\n' % (src, dest))
-            fp.write('\n')
+        # multiple use string entries
+        for name in ('platform', 'supported-platform', 'classifier',
+                     'requires-dist', 'provides-dist', 'obsoletes-dist',
+                     'requires-external'):
+            if not(name in self.data and self.data[name]):
+                continue
+            fp.write(u'%s = ' % name)
+            fp.write(u''.join('    %s\n' % val
+                             for val in self.data[name]).lstrip())
+        fp.write(u'\n[files]\n')
+        for name in ('packages', 'modules', 'scripts',
+                     'package_data', 'extra_files'):
+            if not(name in self.data and self.data[name]):
+                continue
+            fp.write(u'%s = %s\n'
+                     % (name, u'\n    '.join(self.data[name]).strip()))
+        fp.write(u'\nresources =\n')
+        for src, dest in self.data['resources']:
+            fp.write(u'    %s = %s\n' % (src, dest))
+        fp.write(u'\n')
+        fp.close()
 
-        os.chmod(_FILENAME, 0o644)
+        os.chmod(_FILENAME, 00644)
         print('Wrote "%s".' % _FILENAME)
 
     def convert_py_to_cfg(self):
@@ -410,8 +417,9 @@ class MainProgram(object):
                                  self.data['description']).lower().encode())
                 ref = ref.digest()
                 for readme in glob.glob('README*'):
-                    with codecs.open(readme, encoding='utf-8') as fp:
-                        contents = fp.read()
+                    fp = codecs.open(readme, encoding='utf-8')
+                    contents = fp.read()
+                    fp.close()
                     contents = re.sub('\s', '', contents.lower()).encode()
                     val = md5(contents).digest()
                     if val == ref:

@@ -34,7 +34,11 @@ import queue
 import select
 import threading
 import socketserver
-from functools import wraps
+try:
+    from functools import wraps
+except ImportError:
+    from distutils2._backport.functools import wraps
+
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from xmlrpc.server import SimpleXMLRPCServer
 
@@ -219,12 +223,14 @@ class PyPIRequestHandler(SimpleHTTPRequestHandler):
                         relative_path += "index.html"
 
                     if relative_path.endswith('.tar.gz'):
-                        with open(fs_path + relative_path, 'br') as file:
-                            data = file.read()
+                        fp = open(fs_path + relative_path, 'br')
+                        data = fp.read()
+                        fp.close()
                         headers = [('Content-type', 'application/x-gtar')]
                     else:
-                        with open(fs_path + relative_path) as file:
-                            data = file.read().encode()
+                        fp = open(fs_path + relative_path)
+                        data = fp.read().encode()
+                        fp.close()
                         headers = [('Content-type', 'text/html')]
 
                     headers.append(('Content-Length', len(data)))

@@ -13,7 +13,6 @@ except ImportError:
     use_xmlrpc_server = fake_dec
 
 
-@unittest.skipIf(threading is None, "Needs threading")
 class TestXMLRPCClient(unittest.TestCase):
     def _get_client(self, server, *args, **kwargs):
         return Client(server.full_address, *args, **kwargs)
@@ -91,6 +90,9 @@ class TestXMLRPCClient(unittest.TestCase):
         self.assertEqual(['Foo'], release.metadata['requires_external'])
         self.assertEqual(['FooFoo'], release.metadata['obsoletes_dist'])
 
+#Compatibility Python pre-2.6
+TestXMLRPCClient = unittest.skipIf(threading is None, "Needs threading")(
+        TestXMLRPCClient)
 
 def test_suite():
     suite = unittest.TestSuite()

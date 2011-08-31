@@ -440,8 +440,10 @@ class ConfigTestCase(support.TempdirManager,
         cmd.finalize_options()
         cmd.get_file_list()
         cmd.make_distribution()
-        with open('MANIFEST') as fp:
-            self.assertIn('README\nREADME2\n', fp.read())
+        fp = open('MANIFEST')
+        content = fp.read()
+        fp.close()
+        self.assertIn('README\nREADME2\n', content)
 
     def test_sub_commands(self):
         self.write_setup()

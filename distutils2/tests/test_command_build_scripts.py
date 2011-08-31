@@ -70,8 +70,9 @@ class BuildScriptsTestCase(support.TempdirManager,
         return expected
 
     def write_script(self, dir, name, text):
-        with open(os.path.join(dir, name), "w") as f:
-            f.write(text)
+        f = open(os.path.join(dir, name), "w")
+        f.write(text)
+        f.close()
 
     def test_version_int(self):
         source = self.mkdtemp()
@@ -93,9 +94,12 @@ class BuildScriptsTestCase(support.TempdirManager,
         sysconfig._CONFIG_VARS['VERSION'] = 4
         try:
             cmd.run()
-        finally:
+        except:
             if old is not None:
                 sysconfig._CONFIG_VARS['VERSION'] = old
+            raise
+        if old is not None:
+            sysconfig._CONFIG_VARS['VERSION'] = old
 
         built = os.listdir(target)
         for name in expected:

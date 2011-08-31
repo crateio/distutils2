@@ -11,7 +11,7 @@ from distutils2.compat import Mixin2to3
 
 
 # check if Python is called on the first line with this expression
-first_line_re = re.compile(b'^#!.*python[0-9.]*([ \t].*)?$')
+first_line_re = re.compile('^#!.*python[0-9.]*([ \t].*)?$')
 
 class build_scripts(Command, Mixin2to3):
 
@@ -93,7 +93,7 @@ class build_scripts(Command, Mixin2to3):
                 match = first_line_re.match(first_line)
                 if match:
                     adjust = True
-                    post_interp = match.group(1) or b''
+                    post_interp = match.group(1) or ''
 
             if adjust:
                 logger.info("copying and adjusting %s -> %s", script,
@@ -107,7 +107,7 @@ class build_scripts(Command, Mixin2to3):
                            "python%s%s" % (sysconfig.get_config_var("VERSION"),
                                            sysconfig.get_config_var("EXE")))
                     executable = fsencode(executable)
-                    shebang = b"#!" + executable + post_interp + b"\n"
+                    shebang = "#!" + executable + post_interp + "\n"
                     # Python parser starts to read a script using UTF-8 until
                     # it gets a #coding:xxx cookie. The shebang has to be the
                     # first line of a file, the #coding:xxx cookie cannot be
@@ -117,8 +117,8 @@ class build_scripts(Command, Mixin2to3):
                         shebang.decode('utf-8')
                     except UnicodeDecodeError:
                         raise ValueError(
-                            "The shebang ({!r}) is not decodable "
-                            "from utf-8".format(shebang))
+                            "The shebang (%r) is not decodable "
+                            "from utf-8" % shebang)
                     # If the script is encoded to a custom encoding (use a
                     # #coding:xxx cookie), the shebang has to be decodable from
                     # the script encoding too.
@@ -126,12 +126,13 @@ class build_scripts(Command, Mixin2to3):
                         shebang.decode(encoding)
                     except UnicodeDecodeError:
                         raise ValueError(
-                            "The shebang ({!r}) is not decodable "
-                            "from the script encoding ({})"
-                            .format(shebang, encoding))
-                    with open(outfile, "wb") as outf:
-                        outf.write(shebang)
-                        outf.writelines(f.readlines())
+                            "The shebang (%r) is not decodable "
+                            "from the script encoding (%s)" % (
+                                shebang, encoding))
+                    outf = open(outfile, "wb")
+                    outf.write(shebang)
+                    outf.writelines(f.readlines())
+                    outf.close()
                 if f:
                     f.close()
             else:
@@ -144,8 +145,8 @@ class build_scripts(Command, Mixin2to3):
                 if self.dry_run:
                     logger.info("changing mode of %s", file)
                 else:
-                    oldmode = os.stat(file).st_mode & 0o7777
-                    newmode = (oldmode | 0o555) & 0o7777
+                    oldmode = os.stat(file).st_mode & 07777
+                    newmode = (oldmode | 00555) & 07777
                     if newmode != oldmode:
                         logger.info("changing mode of %s from %o to %o",
                                  file, oldmode, newmode)

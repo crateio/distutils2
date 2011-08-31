@@ -1,6 +1,5 @@
 """Tests for distutils2.command.upload."""
 import os
-import sys
 
 from distutils2.command.upload import upload
 from distutils2.dist import Distribution
@@ -44,7 +43,6 @@ repository:http://another.pypi/
 """
 
 
-@unittest.skipIf(threading is None, 'needs threading')
 class UploadTestCase(support.TempdirManager, support.EnvironRestorer,
                      support.LoggingCatcher, PyPIServerTestCase):
 
@@ -114,7 +112,7 @@ class UploadTestCase(support.TempdirManager, support.EnvironRestorer,
         handler, request_data = self.pypi.requests[-1]
         headers = handler.headers
         #self.assertIn('d\xc3d\xc3', str(request_data))
-        self.assertIn(b'xxx', request_data)
+        self.assertIn('xxx', request_data)
 
         self.assertEqual(int(headers['content-length']), len(request_data))
         self.assertLess(int(headers['content-length']), 2500)
@@ -152,10 +150,12 @@ class UploadTestCase(support.TempdirManager, support.EnvironRestorer,
             "----------------GHSKFJDLGDS7543FJKLFHRE75642756743254"
             .encode())[1:4]
 
-        self.assertIn(b'name=":action"', action)
-        self.assertIn(b'doc_upload', action)
+        self.assertIn('name=":action"', action)
+        self.assertIn('doc_upload', action)
 
 
+UploadTestCase = unittest.skipIf(threading is None, 'needs threading')(
+        UploadTestCase)
 def test_suite():
     return unittest.makeSuite(UploadTestCase)
 

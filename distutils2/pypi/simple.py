@@ -15,7 +15,10 @@ import urlparse
 import os
 
 from fnmatch import translate
-from functools import wraps
+try:
+    from functools import wraps
+except ImportError:
+    from distutils2._backport.functools import wraps
 from distutils2 import logger
 from distutils2.metadata import Metadata
 from distutils2.version import get_version_predicate
@@ -27,7 +30,6 @@ from distutils2.pypi.errors import (PackagingPyPIError, DownloadError,
                                     UnableToDownload, CantParseArchiveName,
                                     ReleaseNotFound, ProjectNotFound)
 from distutils2.pypi.mirrors import get_mirrors
-from distutils2.metadata import Metadata
 
 __all__ = ['Crawler', 'DEFAULT_SIMPLE_INDEX_URL']
 
@@ -158,16 +160,17 @@ class Crawler(BaseClient):
 
         Return a list of names.
         """
-        with self._open_url(self.index_url) as index:
-            if '*' in name:
-                name.replace('*', '.*')
-            else:
-                name = "%s%s%s" % ('*.?', name, '*.?')
-            name = name.replace('*', '[^<]*')  # avoid matching end tag
-            projectname = re.compile('<a[^>]*>(%s)</a>' % name, re.I)
-            matching_projects = []
+        index = self._open_url(self.index_url)
+        if '*' in name:
+            name.replace('*', '.*')
+        else:
+            name = "%s%s%s" % ('*.?', name, '*.?')
+        name = name.replace('*', '[^<]*')  # avoid matching end tag
+        projectname = re.compile('<a[^>]*>(%s)</a>' % name, re.I)
+        matching_projects = []
 
-            index_content = index.read()
+        index_content = index.read()
+        index.close()
 
         # FIXME should use bytes I/O and regexes instead of decoding
         index_content = index_content.decode()

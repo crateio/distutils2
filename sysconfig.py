@@ -209,10 +209,7 @@ def _parse_makefile(filename, vars=None):
     done = {}
     notdone = {}
 
-    with open(filename) as f:
-        lines = f.readlines()
-
-    for line in lines:
+    for line in open(filename).readlines():
         if line.startswith('#') or line.strip() == '':
             continue
         m = _variable_rx.match(line)
@@ -326,7 +323,7 @@ def _init_posix(vars):
     makefile = get_makefile_filename()
     try:
         _parse_makefile(makefile, vars)
-    except IOError as e:
+    except IOError, e:
         msg = "invalid Python installation: unable to open %s" % makefile
         if hasattr(e, "strerror"):
             msg = msg + " (%s)" % e.strerror
@@ -334,9 +331,10 @@ def _init_posix(vars):
     # load the installed pyconfig.h:
     config_h = get_config_h_filename()
     try:
-        with open(config_h) as f:
-            parse_config_h(f, vars)
-    except IOError as e:
+        f = open(config_h)
+        parse_config_h(f, vars)
+        f.close()
+    except IOError, e:
         msg = "invalid Python installation: unable to open %s" % config_h
         if hasattr(e, "strerror"):
             msg = msg + " (%s)" % e.strerror

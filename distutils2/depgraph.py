@@ -258,8 +258,9 @@ def main():
         else:
             filename = 'depgraph.dot'
 
-        with open(filename, 'w') as f:
-            graph_to_dot(graph, f, True)
+        f = open(filename, 'w')
+        graph_to_dot(graph, f, True)
+        f.close()
         tempout.seek(0)
         tempout = tempout.read()
         print(tempout)

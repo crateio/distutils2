@@ -684,10 +684,12 @@ def main(args=None):
     except (IOError, os.error, PackagingError, CCompilerError):
         logger.exception(sys.exc_info()[1])
         return 1
-    finally:
+    except:
         logger.setLevel(old_level)
         logger.handlers[:] = old_handlers
-
+        raise
+    logger.setLevel(old_level)
+    logger.handlers[:] = old_handlers
 
 if __name__ == '__main__':
     sys.exit(main())
