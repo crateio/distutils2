@@ -238,19 +238,19 @@ def main():
         e = sys.exc_info()[1]
         tempout.seek(0)
         tempout = tempout.read()
-        print(u'Could not generate the graph')
-        print(tempout)
-        print(e)
+        print 'Could not generate the graph'
+        print tempout
+        print e
         sys.exit(1)
 
     for dist, reqs in graph.missing.items():
         if len(reqs) > 0:
-            print(u"Warning: Missing dependencies for %r:" % dist.name,
-                  ", ".join(reqs))
+            print 'Warning: Missing dependencies for %r:' % dist.name, \
+                  ', '.join(reqs)
     # XXX replace with argparse
     if len(sys.argv) == 1:
-        print(u'Dependency graph:')
-        print(u'   ', repr(graph).replace(u'\n', u'\n    '))
+        print 'Dependency graph:'
+        print '   ', repr(graph).replace('\n', '\n    ')
         sys.exit(0)
     elif len(sys.argv) > 1 and sys.argv[1] in ('-d', '--dot'):
         if len(sys.argv) > 2:
@@ -263,11 +263,11 @@ def main():
         f.close()
         tempout.seek(0)
         tempout = tempout.read()
-        print(tempout)
-        print('Dot file written at %r' % filename)
+        print tempout
+        print 'Dot file written at %r' % filename
         sys.exit(0)
     else:
-        print('Supported option: -d [filename]')
+        print 'Supported option: -d [filename]'
         sys.exit(1)
 
 

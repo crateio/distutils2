@@ -1159,8 +1159,8 @@ def ask(message, options):
         response = input(message)
         response = response.strip().lower()
         if response not in options:
-            print('invalid response:', repr(response))
-            print('choose one of', ', '.join(repr(o) for o in options))
+            print 'invalid response:', repr(response)
+            print 'choose one of', ', '.join(repr(o) for o in options)
         else:
             return response
 

@@ -251,7 +251,7 @@ class TestSysConfig(EnvironGuard, unittest.TestCase):
         # Issue 7880
         def get(python):
             cmd = [python, '-c',
-                   'import sysconfig; print(sysconfig.get_platform())']
+                   'import sysconfig; print sysconfig.get_platform()']
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=os.environ)
             return p.communicate()
         real = os.path.realpath(sys.executable)
