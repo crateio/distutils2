@@ -1156,7 +1156,7 @@ def generate_setup_py():
 def ask(message, options):
     """Prompt the user with *message*; *options* contains allowed responses."""
     while True:
-        response = input(message)
+        response = raw_input(message)
         response = response.strip().lower()
         if response not in options:
             print 'invalid response:', repr(response)

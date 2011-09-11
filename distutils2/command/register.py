@@ -144,7 +144,7 @@ We need to know who you are, so please choose either:
  4. quit
 Your selection [default 1]: ''')
 
-            choice = input()
+            choice = raw_input()
             if not choice:
                 choice = '1'
             elif choice not in choices:
@@ -153,7 +153,7 @@ Your selection [default 1]: ''')
         if choice == '1':
             # get the username and password
             while not username:
-                username = input('Username: ')
+                username = raw_input('Username: ')
             while not password:
                 password = getpass.getpass('Password: ')
 
@@ -179,7 +179,7 @@ Your selection [default 1]: ''')
                         get_pypirc_path())
                     choice = 'X'
                     while choice.lower() not in 'yn':
-                        choice = input('Save your login (y/N)?')
+                        choice = raw_input('Save your login (y/N)?')
                         if not choice:
                             choice = 'n'
                     if choice.lower() == 'y':
@@ -190,7 +190,7 @@ Your selection [default 1]: ''')
             data['name'] = data['password'] = data['email'] = ''
             data['confirm'] = None
             while not data['name']:
-                data['name'] = input('Username: ')
+                data['name'] = raw_input('Username: ')
             while data['password'] != data['confirm']:
                 while not data['password']:
                     data['password'] = getpass.getpass('Password: ')
@@ -201,7 +201,7 @@ Your selection [default 1]: ''')
                     data['confirm'] = None
                     print "Password and confirm don't match!"
             while not data['email']:
-                data['email'] = input('   EMail: ')
+                data['email'] = raw_input('   EMail: ')
             code, result = self.post_to_server(data)
             if code != 200:
                 logger.info('server response (%s): %s', code, result)
@@ -212,7 +212,7 @@ Your selection [default 1]: ''')
             data = {':action': 'password_reset'}
             data['email'] = ''
             while not data['email']:
-                data['email'] = input('Your email address: ')
+                data['email'] = raw_input('Your email address: ')
             code, result = self.post_to_server(data)
             logger.info('server response (%s): %s', code, result)
 
