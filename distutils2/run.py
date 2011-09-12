@@ -10,9 +10,7 @@ from distutils2 import logger
 from distutils2.dist import Distribution
 from distutils2.util import _is_archive_file, generate_setup_py
 from distutils2.command import get_command_class, STANDARD_COMMANDS
-from distutils2.install import install, install_local_project, remove
 from distutils2.database import get_distribution, get_distributions
-from distutils2.depgraph import generate_graph
 from distutils2.fancy_getopt import FancyGetopt
 from distutils2.errors import (PackagingArgError, PackagingError,
                               PackagingModuleError, PackagingClassError,
@@ -219,6 +217,7 @@ def _generate(distpatcher, args, **kw):
 
 @action_help(graph_usage)
 def _graph(dispatcher, args, **kw):
+    from distutils2.depgraph import generate_graph
     name = args[1]
     dist = get_distribution(name, use_egg_info=True)
     if dist is None:
@@ -232,6 +231,7 @@ def _graph(dispatcher, args, **kw):
 
 @action_help(install_usage)
 def _install(dispatcher, args, **kw):
+    from distutils2.install import install, install_local_project
     # first check if we are in a source directory
     if len(args) < 2:
         # are we inside a project dir?
@@ -290,6 +290,7 @@ def _metadata(dispatcher, args, **kw):
 
 @action_help(remove_usage)
 def _remove(distpatcher, args, **kw):
+    from distutils2.install import remove
     opts = _parse_args(args[1:], 'y', [])
     if 'y' in opts:
         auto_confirm = True
@@ -574,17 +575,17 @@ class Dispatcher(object):
         from distutils2.command.cmd import Command
 
         print('Usage: pysetup [options] action [action_options]')
-        print()
+        print(u'')
         if global_options_:
             self.print_usage(self.parser)
-            print()
+            print(u'')
 
         if display_options_:
             parser.set_option_table(display_options)
             parser.print_help(
                 "Information display options (just display " +
                 "information, ignore any commands)")
-            print()
+            print(u'')
 
         for command in commands:
             if isinstance(command, type) and issubclass(command, Command):
@@ -598,7 +599,7 @@ class Dispatcher(object):
                 parser.set_option_table(cls.user_options)
 
             parser.print_help("Options for %r command:" % cls.__name__)
-            print()
+            print(u'')
 
     def _show_command_help(self, command):
         if isinstance(command, basestring):
@@ -606,7 +607,7 @@ class Dispatcher(object):
 
         desc = getattr(command, 'description', '(no description available)')
         print('Description:', desc)
-        print()
+        print(u'')
 
         if (hasattr(command, 'help_options') and
             isinstance(command.help_options, list)):
@@ -616,7 +617,7 @@ class Dispatcher(object):
             self.parser.set_option_table(command.user_options)
 
         self.parser.print_help("Options:")
-        print()
+        print(u'')
 
     def _get_command_groups(self):
         """Helper function to retrieve all the command class names divided
@@ -643,7 +644,7 @@ class Dispatcher(object):
 
         self.print_command_list(std_commands, "Standard commands", max_length)
         if extra_commands:
-            print()
+            print(u'')
             self.print_command_list(extra_commands, "Extra commands",
                                     max_length)
 
