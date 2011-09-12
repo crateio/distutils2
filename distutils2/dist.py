@@ -61,7 +61,7 @@ class Distribution(object):
 
     # 'common_usage' is a short (2-3 line) string describing the common
     # usage of the setup script.
-    common_usage = u"""\
+    common_usage = """\
 Common commands: (see '--help-commands' for more)
 
   pysetup run build      will build the package underneath 'build/'
@@ -546,7 +546,7 @@ Common commands: (see '--help-commands' for more)
         # we ignore "foo bar").
         if self.help_commands:
             self.print_commands()
-            print()
+            print(u'')
             print(gen_usage(self.script_name))
             return 1
 
@@ -614,7 +614,7 @@ Common commands: (see '--help-commands' for more)
                                 "Standard commands",
                                 max_length)
         if extra_commands:
-            print()
+            print(u'')
             self.print_command_list(extra_commands,
                                     "Extra commands",
                                     max_length)
