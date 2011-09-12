@@ -16,8 +16,8 @@ set_compiler, show_compilers.
 import os
 import sys
 import re
-import sysconfig
 
+from distutils2._backport import sysconfig
 from distutils2.util import resolve_name
 from distutils2.errors import PackagingPlatformError
 from distutils2 import logger

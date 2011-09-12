@@ -1,7 +1,7 @@
 """Tests for distutils2.command.install_data."""
 import os
-import sysconfig
-from sysconfig import _get_default_scheme
+from distutils2._backport import sysconfig
+from distutils2._backport.sysconfig import _get_default_scheme
 from distutils2.tests import unittest, support
 from distutils2.command.install_data import install_data
 

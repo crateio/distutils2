@@ -8,8 +8,8 @@ import os
 import re
 import sys
 import logging
-import sysconfig
 
+from distutils2._backport import sysconfig
 from distutils2.util import get_platform
 from distutils2.command.cmd import Command
 from distutils2.errors import (CCompilerError, CompileError, PackagingError,

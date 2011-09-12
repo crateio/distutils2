@@ -8,8 +8,8 @@ import sys
 import zipimport
 try:
     from hashlib import md5
-except ImportError:
-    from _backport.hashlib import md5
+except ImportError: #<2.5
+    from md5 import md5
 from distutils2 import logger
 from distutils2.errors import PackagingError
 from distutils2.version import suggest_normalized_version, VersionPredicate

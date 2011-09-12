@@ -2,7 +2,7 @@
 
 import os
 import sys
-import sysconfig
+from distutils2._backport import sysconfig
 from distutils2.dist import Distribution
 from distutils2.command.build_scripts import build_scripts
 from distutils2.tests import unittest, support

@@ -25,13 +25,13 @@ import imp
 import sys
 import glob
 import shutil
-import sysconfig
+from distutils2._backport import sysconfig
 if 'any' not in dir(__builtins__):
     from distutils2._backport import any
 try:
     from hashlib import md5
-except ImportError:
-    from distutils2._backport.hashlib import md5
+except ImportError: #<2.5
+    from md5 import md5
 from textwrap import dedent
 from distutils2.util import cmp_to_key, detect_encoding
 from ConfigParser import RawConfigParser

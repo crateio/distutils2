@@ -1,7 +1,7 @@
 """Tests for distutils2.cygwinccompiler."""
 import os
 import sys
-import sysconfig
+from distutils2._backport import sysconfig
 from distutils2.compiler.cygwinccompiler import (
     check_config_h, get_msvcr,
     CONFIG_H_OK, CONFIG_H_NOTOK, CONFIG_H_UNCERTAIN)

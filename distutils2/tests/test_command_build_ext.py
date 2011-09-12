@@ -2,9 +2,9 @@ import os
 import sys
 import site
 import shutil
-import sysconfig
 import textwrap
 from StringIO import StringIO
+from distutils2._backport import sysconfig
 from distutils2.dist import Distribution
 from distutils2.errors import (UnknownFileError, CompileError,
                               PackagingPlatformError)

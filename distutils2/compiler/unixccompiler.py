@@ -21,7 +21,7 @@ from distutils2.compiler import gen_preprocess_options, gen_lib_options
 from distutils2.errors import (PackagingExecError, CompileError,
                                LibError, LinkError)
 from distutils2 import logger
-import sysconfig
+from distutils2._backport import sysconfig
 
 
 # XXX Things not currently handled:

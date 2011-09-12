@@ -2,8 +2,8 @@
 
 import os
 import re
-import sysconfig
 
+from distutils2._backport import sysconfig
 from distutils2.command.cmd import Command
 from distutils2.util import convert_path, newer, detect_encoding, fsencode
 from distutils2 import logger

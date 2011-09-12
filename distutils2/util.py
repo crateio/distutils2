@@ -9,14 +9,13 @@ import errno
 import shutil
 import string
 try:
-    import hashlib
+    from hashlib import md5
 except ImportError: #<2.5
-    from _backport import hashlib
+    from md5 import md5
 import tarfile
 import zipfile
 import posixpath
 import subprocess
-import sysconfig
 try:
     from glob import iglob as std_iglob
 except ImportError:#<2.5
@@ -29,6 +28,7 @@ from distutils2 import logger
 from distutils2.errors import (PackagingPlatformError, PackagingFileError,
                               PackagingByteCompileError, PackagingExecError,
                               InstallationException, PackagingInternalError)
+from distutils2._backport import sysconfig
 
 _PLATFORM = None
 _DEFAULT_INSTALLER = 'distutils2'
@@ -1212,7 +1212,7 @@ def _write_record_file(record_path, installed_files):
             # do not put size and md5 hash, as in PEP-376
             writer.writerow((fpath, '', ''))
         else:
-            hash = hashlib.md5()
+            hash = md5()
             fp = open(fpath, 'rb')
             hash.update(fp.read())
             fp.close()

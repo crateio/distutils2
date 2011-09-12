@@ -3,9 +3,9 @@
 import sys
 import os
 
-import sysconfig
-from sysconfig import get_config_vars, get_paths, get_path, get_config_var
-
+from distutils2._backport import sysconfig
+from distutils2._backport.sysconfig import (get_config_vars, get_paths,
+                                            get_path, get_config_var)
 from distutils2 import logger
 from distutils2.command.cmd import Command
 from distutils2.errors import PackagingPlatformError

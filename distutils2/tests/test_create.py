@@ -3,8 +3,8 @@ from StringIO import StringIO
 import codecs
 import os
 import sys
-import sysconfig
 from textwrap import dedent
+from distutils2._backport import sysconfig
 from distutils2.create import MainProgram, ask_yn, ask, main
 
 from distutils2.tests import support, unittest

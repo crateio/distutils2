@@ -4,7 +4,7 @@ import os
 import sys
 import logging
 import textwrap
-import sysconfig
+from distutils2._backport import sysconfig
 import distutils2.dist
 from StringIO import StringIO
 
