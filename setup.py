@@ -1,249 +1,204 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-import sys
 import os
 import re
-
-from distutils2 import __version__ as VERSION
-from distutils import log
+import sys
+import codecs
+from distutils import sysconfig
+from distutils.core import setup, Extension
 from distutils.ccompiler import new_compiler
-from distutils.command.sdist import sdist
-from distutils.command.install import install
-
-# Python 3.x hook to run 2to3 automatically
 try:
-    from distutils.command.build_py import build_py_2to3 as build_py
-    from distutils.core import setup, Extension
-except ImportError:
-    # 2.x, try to use setuptools if available
-    try :
-        from setuptools.command.build_py import build_py
-        from setuptools import setup, Extension
-    except ImportError:
-        from distutils.command.build_py import build_py
-        from distutils.core import setup, Extension
+    from configparser import RawConfigParser
+except ImportError: #<3.0
+    from ConfigParser import RawConfigParser
 
-
-f = open('README.txt')
-try:
-    README = f.read()
-finally:
-    f.close()
-
-def get_tip_revision(path=os.getcwd()):
-    from subprocess import Popen, PIPE
+def cfg_to_args(path='setup.cfg'):
+    from distutils2.util import split_multiline
+    def split_elements(value):
+        return [ v.strip() for v in value.split(',') ]
+    def split_files(value):
+        return [ str(v) for v in split_multiline(value) ]
+    opts_to_args =  {
+        'metadata': (
+            ('name', 'name', None),
+            ('version', 'version', None),
+            ('author', 'author', None),
+            ('author-email', 'author_email', None),
+            ('maintainer', 'maintainer', None),
+            ('maintainer-email', 'maintainer_email', None),
+            ('home-page', 'url', None),
+            ('summary', 'description', None),
+            ('description', 'long_description', None),
+            ('download-url', 'download_url', None),
+            ('classifier', 'classifiers', split_multiline),
+            ('platform', 'platforms', split_multiline),
+            ('license', 'license', None),
+            ('keywords', 'keywords', split_elements),
+            ),
+        'files': (
+            ('packages', 'packages', split_files),
+            ('modules', 'py_modules', split_files),
+            ('scripts', 'scripts', split_files),
+            ('package_data', 'package_data', split_files),
+            ),
+        }
+    config = RawConfigParser()
+    config.optionxform = lambda x: x.lower().replace('_', '-')
+    fp = codecs.open(path, encoding='utf-8')
     try:
-        cmd = Popen(['hg', 'tip', '--template', '{rev}', '-R', path],
-                    stdout=PIPE, stderr=PIPE)
-    except OSError:
-        return 0
-    rev = cmd.stdout.read()
-    if not rev :
-        # there has been an error in the command
-        return 0
-    return int(rev)
+        config.readfp(fp)
+    finally:
+        fp.close()
+    kwargs = {}
+    for section in opts_to_args:
+        for optname, argname, xform in opts_to_args[section]:
+            if config.has_option(section, optname):
+                value = config.get(section, optname)
+                if xform:
+                    value = xform(value)
+                kwargs[argname] = value
+    # Handle `description-file`
+    if ('long_description' not in kwargs and
+            config.has_option('metadata', 'description-file')):
+        filenames = config.get('metadata', 'description-file')
+        for filename in split_multiline(filenames):
+            descriptions = []
+            fp = open(filename)
+            try:
+                descriptions.append(fp.read())
+            finally:
+                fp.close()
+        kwargs['long_description'] = '\n\n'.join(descriptions)
+    # Handle `package_data`
+    if 'package_data' in kwargs:
+        package_data = {}
+        for data in kwargs['package_data']:
+            key, value = data.split('=', 1)
+            globs = package_data.setdefault(key.strip(), [])
+            globs.extend(split_elements(value))
+        kwargs['package_data'] = package_data
+    return kwargs
 
-DEV_SUFFIX = '.dev%d' % get_tip_revision('..')
-
-
-class install_hg(install):
-
-    user_options = install.user_options + [
-            ('dev', None, "Add a dev marker")
-            ]
-
-    def initialize_options(self):
-        install.initialize_options(self)
-        self.dev = 0
-
-    def run(self):
-        if self.dev:
-            self.distribution.metadata.version += DEV_SUFFIX
-        install.run(self)
-
-
-class sdist_hg(sdist):
-
-    user_options = sdist.user_options + [
-            ('dev', None, "Add a dev marker")
-            ]
-
-    def initialize_options(self):
-        sdist.initialize_options(self)
-        self.dev = 0
-
-    def run(self):
-        if self.dev:
-            self.distribution.metadata.version += DEV_SUFFIX
-        sdist.run(self)
-
-
-# additional paths to check, set from the command line
-SSL_INCDIR = ''   # --openssl-incdir=
-SSL_LIBDIR = ''   # --openssl-libdir=
-SSL_DIR = ''      # --openssl-prefix=
-
-def add_dir_to_list(dirlist, dir):
-    """Add the directory 'dir' to the list 'dirlist' (at the front) if
-    'dir' actually exists and is a directory.  If 'dir' is already in
-    'dirlist' it is moved to the front.
-    """
-    if dir is not None and os.path.isdir(dir) and dir not in dirlist:
-        if dir in dirlist:
-            dirlist.remove(dir)
-        dirlist.insert(0, dir)
-
-
+# (from Python's setup.py, in PyBuildExt.detect_modules())
 def prepare_hashlib_extensions():
     """Decide which C extensions to build and create the appropriate
     Extension objects to build them.  Return a list of Extensions.
     """
-    # this CCompiler object is only used to locate include files
-    compiler = new_compiler()
-
-    # Ensure that these paths are always checked
-    if os.name == 'posix':
-        add_dir_to_list(compiler.library_dirs, '/usr/local/lib')
-        add_dir_to_list(compiler.include_dirs, '/usr/local/include')
-
-        add_dir_to_list(compiler.library_dirs, '/usr/local/ssl/lib')
-        add_dir_to_list(compiler.include_dirs, '/usr/local/ssl/include')
-
-        add_dir_to_list(compiler.library_dirs, '/usr/contrib/ssl/lib')
-        add_dir_to_list(compiler.include_dirs, '/usr/contrib/ssl/include')
-
-        add_dir_to_list(compiler.library_dirs, '/usr/lib')
-        add_dir_to_list(compiler.include_dirs, '/usr/include')
-
-    # look in paths supplied on the command line
-    if SSL_LIBDIR:
-        add_dir_to_list(compiler.library_dirs, SSL_LIBDIR)
-    if SSL_INCDIR:
-        add_dir_to_list(compiler.include_dirs, SSL_INCDIR)
-    if SSL_DIR:
-        if os.name == 'nt':
-            add_dir_to_list(compiler.library_dirs, os.path.join(SSL_DIR, 'out32dll'))
-            # prefer the static library
-            add_dir_to_list(compiler.library_dirs, os.path.join(SSL_DIR, 'out32'))
-        else:
-            add_dir_to_list(compiler.library_dirs, os.path.join(SSL_DIR, 'lib'))
-        add_dir_to_list(compiler.include_dirs, os.path.join(SSL_DIR, 'include'))
-
-    oslibs = {'posix': ['ssl', 'crypto'],
-              'nt': ['libeay32',  'gdi32', 'advapi32', 'user32']}
-
-    if os.name not in oslibs:
-        sys.stderr.write(
-            'unknown operating system, impossible to compile _hashlib')
-        sys.exit(1)
-
-    exts = []
-
+    ssl_libs = None
+    ssl_inc_dir = None
+    ssl_lib_dirs = []
     ssl_inc_dirs = []
-    ssl_incs = []
-    for inc_dir in compiler.include_dirs:
-        f = os.path.join(inc_dir, 'openssl', 'ssl.h')
-        if os.path.exists(f):
-            ssl_incs.append(f)
-            ssl_inc_dirs.append(inc_dir)
+    if os.name == 'posix':
+        # (from Python's setup.py, in PyBuildExt.detect_modules())
+        # lib_dirs and inc_dirs are used to search for files;
+        # if a file is found in one of those directories, it can
+        # be assumed that no additional -I,-L directives are needed.
+        lib_dirs = []
+        inc_dirs = []
+        if os.path.normpath(sys.prefix) != '/usr':
+            lib_dirs.append(sysconfig.get_config_var('LIBDIR'))
+            inc_dirs.append(sysconfig.get_config_var('INCLUDEDIR'))
+        # Ensure that /usr/local is always used
+        lib_dirs.append('/usr/local/lib')
+        inc_dirs.append('/usr/local/include')
+        # Add the compiler defaults; this compiler object is only used
+        # to locate the OpenSSL files.
+        compiler = new_compiler()
+        lib_dirs.extend(compiler.library_dirs)
+        inc_dirs.extend(compiler.include_dirs)
+        # Now the platform defaults
+        lib_dirs.extend(['/lib64', '/usr/lib64', '/lib', '/usr/lib'])
+        inc_dirs.extend(['/usr/include'])
+        # Find the SSL library directory
+        ssl_libs = ['ssl', 'crypto']
+        ssl_lib = compiler.find_library_file(lib_dirs, 'ssl')
+        if ssl_lib is None:
+            ssl_lib_dirs = ['/usr/local/ssl/lib', '/usr/contrib/ssl/lib']
+            ssl_lib = compiler.find_library_file(ssl_lib_dirs, 'ssl')
+            if ssl_lib is not None:
+                ssl_lib_dirs.append(os.path.dirname(ssl_lib))
+            else:
+                ssl_libs = None
+        # Locate the SSL headers
+        for ssl_inc_dir in inc_dirs + ['/usr/local/ssl/include',
+                                       '/usr/contrib/ssl/include']:
+            ssl_h = os.path.join(ssl_inc_dir, 'openssl', 'ssl.h')
+            if os.path.exists(ssl_h):
+                if ssl_inc_dir not in inc_dirs:
+                    ssl_inc_dirs.append(ssl_inc_dir)
+                break
+    elif os.name == 'nt':
+        # (from Python's PCbuild/build_ssl.py, in find_best_ssl_dir())
+        # Look for SSL 1 level up from here.  That is, the same place the
+        # other externals for Python core live.
+        # note: do not abspath src_dir; the build will fail if any
+        # higher up directory name has spaces in it.
+        src_dir = '..'
+        try:
+            fnames = os.listdir(src_dir)
+        except OSError:
+            fnames = []
+        ssl_dir = None
+        best_parts = []
+        for fname in fnames:
+            fqn = os.path.join(src_dir, fname)
+            if os.path.isdir(fqn) and fname.startswith("openssl-"):
+                # We have a candidate, determine the best
+                parts = re.split("[.-]", fname)[1:]
+                # Ignore all "beta" or any other qualifiers;
+                # eg - openssl-0.9.7-beta1
+                if len(parts) < 4 and parts > best_parts:
+                    best_parts = parts
+                    ssl_dir = fqn
+        if ssl_dir is not None:
+            ssl_libs = ['gdi32', 'user32', 'advapi32',
+                        os.path.join(ssl_dir, 'out32', 'libeay32')]
+            ssl_inc_dir = os.path.join(ssl_dir, 'inc32')
+            ssl_inc_dirs.append(ssl_inc_dir)
 
-    ssl_lib = compiler.find_library_file(compiler.library_dirs, oslibs[os.name][0])
-
-    # find out which version of OpenSSL we have
+    # Find out which version of OpenSSL we have
     openssl_ver = 0
     openssl_ver_re = re.compile(
         '^\s*#\s*define\s+OPENSSL_VERSION_NUMBER\s+(0x[0-9a-fA-F]+)' )
-    ssl_inc_dir = ''
-    for ssl_inc_dir in ssl_inc_dirs:
-        name = os.path.join(ssl_inc_dir, 'openssl', 'opensslv.h')
-        if os.path.isfile(name):
-            try:
-                incfile = open(name, 'r')
-                for line in incfile:
-                    m = openssl_ver_re.match(line)
-                    if m:
-                        openssl_ver = int(m.group(1), 16)
-                        break
-            except IOError:
-                pass
+    if ssl_inc_dir is not None:
+        opensslv_h = os.path.join(ssl_inc_dir, 'openssl', 'opensslv.h')
+        try:
+            incfile = open(opensslv_h, 'r')
+            for line in incfile:
+                m = openssl_ver_re.match(line)
+                if m:
+                    openssl_ver = int(m.group(1), 16)
+        except IOError:
+            e = str(sys.last_value)
+            print("IOError while reading %s: %s" % (opensslv_h, e))
 
-        # first version found is what we'll use
-        if openssl_ver:
-            break
-
-    if (ssl_inc_dir and ssl_lib is not None and openssl_ver >= 0x00907000):
-
-        log.info('Using OpenSSL version 0x%08x from', openssl_ver)
-        log.info(' Headers:\t%s', ssl_inc_dir)
-        log.info(' Library:\t%s', ssl_lib)
-
+    # Now we can determine which extension modules need to be built.
+    exts = []
+    if ssl_libs is not None and openssl_ver >= 0x907000:
         # The _hashlib module wraps optimized implementations
         # of hash functions from the OpenSSL library.
         exts.append(Extension('distutils2._backport._hashlib',
                               ['distutils2/_backport/_hashopenssl.c'],
-                              include_dirs = [ssl_inc_dir],
-                              library_dirs = [os.path.dirname(ssl_lib)],
-                              libraries = oslibs[os.name]))
+                              include_dirs=ssl_inc_dirs,
+                              library_dirs=ssl_lib_dirs,
+                              libraries=ssl_libs))
     else:
+        # no openssl at all, use our own md5 and sha1
         exts.append(Extension('distutils2._backport._sha',
                               ['distutils2/_backport/shamodule.c']))
         exts.append(Extension('distutils2._backport._md5',
                               sources=['distutils2/_backport/md5module.c',
                                        'distutils2/_backport/md5.c'],
                               depends=['distutils2/_backport/md5.h']) )
-
-    if (not ssl_lib or openssl_ver < 0x00908000):
+    if openssl_ver < 0x908000:
         # OpenSSL doesn't do these until 0.9.8 so we'll bring our own
         exts.append(Extension('distutils2._backport._sha256',
                               ['distutils2/_backport/sha256module.c']))
         exts.append(Extension('distutils2._backport._sha512',
                               ['distutils2/_backport/sha512module.c']))
-
     return exts
 
-setup_kwargs = {'scripts': ['scripts/pysetup']}
-
-if sys.version < '2.6':
-    setup_kwargs['scripts'].append('distutils2/create.py')
-
+setup_kwargs = cfg_to_args('setup.cfg')
 if sys.version < '2.5':
     setup_kwargs['ext_modules'] = prepare_hashlib_extensions()
-
-_CLASSIFIERS = """\
-Development Status :: 3 - Alpha
-Intended Audience :: Developers
-License :: OSI Approved :: Python Software Foundation License
-Operating System :: OS Independent
-Programming Language :: Python
-Topic :: Software Development :: Libraries :: Python Modules
-Topic :: System :: Archiving :: Packaging
-Topic :: System :: Systems Administration
-Topic :: Utilities"""
-
-setup(name="Distutils2",
-      version=VERSION,
-      description="Python Distribution Utilities",
-      keywords=['packaging', 'distutils'],
-      author="Tarek Ziade",
-      author_email="tarek@ziade.org",
-      url="http://bitbucket.org/tarek/distutils2/wiki/Home",
-      license="PSF",
-      long_description=README,
-      classifiers=_CLASSIFIERS.split('\n'),
-      packages=[
-          'distutils2',
-          'distutils2.tests', 
-          'distutils2.compiler', 
-          'distutils2.command', 
-          'distutils2._backport', 
-          'distutils2.pypi', 
-          'distutils2.tests.fixer', 
-          'distutils2._backport.tests',
-      ],
-      cmdclass={
-          'build_py':build_py, 
-          'install_hg': install_hg,
-          'sdist_hg': sdist_hg, 
-      },
-      package_data={'distutils2._backport': ['sysconfig.cfg']},
-      **setup_kwargs)
+setup(**setup_kwargs)

@@ -221,7 +221,8 @@ class Config(object):
                 if len(data) != 2:
                     continue  # XXX error should never pass silently
                 key, value = data
-                self.dist.package_data[key.strip()] = value.strip()
+                globs = self.dist.package_data.setdefault(key.strip(), [])
+                globs.extend([v.strip() for v in value.split(',')])
 
             self.dist.data_files = []
             for data in files.get('data_files', []):
