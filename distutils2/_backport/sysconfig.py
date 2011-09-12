@@ -1,12 +1,24 @@
-"""Provide access to Python's configuration information."""
+"""Access to Python's configuration information."""
+
 import os
-import sys
 import re
+import sys
 from os.path import pardir, realpath
 from ConfigParser import RawConfigParser
 
-_PREFIX = os.path.normpath(sys.prefix)
-_EXEC_PREFIX = os.path.normpath(sys.exec_prefix)
+__all__ = [
+    'get_config_h_filename',
+    'get_config_var',
+    'get_config_vars',
+    'get_makefile_filename',
+    'get_path',
+    'get_path_names',
+    'get_paths',
+    'get_platform',
+    'get_python_version',
+    'get_scheme_names',
+    'parse_config_h',
+]
 
 # let's read the configuration file
 # XXX _CONFIG_DIR will be set by the Makefile later
@@ -49,26 +61,38 @@ def _expand_globals(config):
 
 _expand_globals(_SCHEMES)
 
+ # FIXME don't rely on sys.version here, its format is an implementatin detail
+ # of CPython, use sys.version_info or sys.hexversion
 _PY_VERSION = sys.version.split()[0]
 _PY_VERSION_SHORT = sys.version[:3]
 _PY_VERSION_SHORT_NO_DOT = _PY_VERSION[0] + _PY_VERSION[2]
+_PREFIX = os.path.normpath(sys.prefix)
+_EXEC_PREFIX = os.path.normpath(sys.exec_prefix)
 _CONFIG_VARS = None
 _USER_BASE = None
+
+
+def _safe_realpath(path):
+    try:
+        return realpath(path)
+    except OSError:
+        return path
+
 if sys.executable:
-    _PROJECT_BASE = os.path.dirname(realpath(sys.executable))
+    _PROJECT_BASE = os.path.dirname(_safe_realpath(sys.executable))
 else:
     # sys.executable can be empty if argv[0] has been changed and Python is
     # unable to retrieve the real program name
-    _PROJECT_BASE = realpath(os.getcwd())
+    _PROJECT_BASE = _safe_realpath(os.getcwd())
 
 if os.name == "nt" and "pcbuild" in _PROJECT_BASE[-8:].lower():
-    _PROJECT_BASE = realpath(os.path.join(_PROJECT_BASE, pardir))
+    _PROJECT_BASE = _safe_realpath(os.path.join(_PROJECT_BASE, pardir))
 # PC/VS7.1
 if os.name == "nt" and "\\pc\\v" in _PROJECT_BASE[-10:].lower():
-    _PROJECT_BASE = realpath(os.path.join(_PROJECT_BASE, pardir, pardir))
+    _PROJECT_BASE = _safe_realpath(os.path.join(_PROJECT_BASE, pardir, pardir))
 # PC/AMD64
 if os.name == "nt" and "\\pcbuild\\amd64" in _PROJECT_BASE[-14:].lower():
-    _PROJECT_BASE = realpath(os.path.join(_PROJECT_BASE, pardir, pardir))
+    _PROJECT_BASE = _safe_realpath(os.path.join(_PROJECT_BASE, pardir, pardir))
 
 
 def is_python_build():
@@ -102,8 +126,9 @@ def _subst_vars(path, local_vars):
 
 
 def _extend_dict(target_dict, other_dict):
-    for key, value in other_dict.iteritems():
-        if key in target_dict:
+    target_keys = target_dict.keys()
+    for key, value in other_dict.items():
+        if key in target_keys:
             continue
         target_dict[key] = value
 
@@ -120,14 +145,15 @@ def _expand_vars(scheme, vars):
         res[key] = os.path.normpath(_subst_vars(value, vars))
     return res
 
+
 def format_value(value, vars):
     def _replacer(matchobj):
-         name = matchobj.group(1)
-         if name in vars:
-             return vars[name]
-         return matchobj.group(0)
+        name = matchobj.group(1)
+        if name in vars:
+            return vars[name]
+        return matchobj.group(0)
     return _VAR_REPL.sub(_replacer, value)
- 
+
 
 def _get_default_scheme():
     if os.name == 'posix':
@@ -236,7 +262,8 @@ def _parse_makefile(filename, vars=None):
                     item = os.environ[n]
 
                 elif n in renamed_variables:
-                    if name.startswith('PY_') and name[3:] in renamed_variables:
+                    if (name.startswith('PY_') and
+                        name[3:] in renamed_variables):
                         item = ""
 
                     elif 'PY_' + n in notdone:
@@ -270,8 +297,15 @@ def _parse_makefile(filename, vars=None):
                                 done[name] = value
 
             else:
-                # bogus variable reference; just drop it since we can't deal
+                # bogus variable reference (e.g. "prefix=$/opt/python");
+                # just drop it since we can't deal
+                done[name] = value
                 variables.remove(name)
+
+    # strip spurious spaces
+    for k, v in done.items():
+        if isinstance(v, str):
+            done[k] = v.strip()
 
     # save the results in the global dictionary
     vars.update(done)
@@ -282,7 +316,11 @@ def get_makefile_filename():
     """Return the path of the Makefile."""
     if _PYTHON_BUILD:
         return os.path.join(_PROJECT_BASE, "Makefile")
-    return os.path.join(get_path('stdlib'), "config", "Makefile")
+    if hasattr(sys, 'abiflags'):
+        config_dir_name = 'config-%s%s' % (_PY_VERSION_SHORT, sys.abiflags)
+    else:
+        config_dir_name = 'config'
+    return os.path.join(get_path('stdlib'), config_dir_name, 'Makefile')
 
 
 def _init_posix(vars):
@@ -296,32 +334,17 @@ def _init_posix(vars):
         if hasattr(e, "strerror"):
             msg = msg + " (%s)" % e.strerror
         raise IOError(msg)
-
     # load the installed pyconfig.h:
     config_h = get_config_h_filename()
     try:
-        parse_config_h(open(config_h), vars)
+        f = open(config_h)
+        parse_config_h(f, vars)
+        f.close()
     except IOError, e:
         msg = "invalid Python installation: unable to open %s" % config_h
         if hasattr(e, "strerror"):
             msg = msg + " (%s)" % e.strerror
         raise IOError(msg)
-
-    # On MacOSX we need to check the setting of the environment variable
-    # MACOSX_DEPLOYMENT_TARGET: configure bases some choices on it so
-    # it needs to be compatible.
-    # If it isn't set we set it to the configure-time value
-    if sys.platform == 'darwin' and 'MACOSX_DEPLOYMENT_TARGET' in vars:
-        cfg_target = vars['MACOSX_DEPLOYMENT_TARGET']
-        cur_target = os.getenv('MACOSX_DEPLOYMENT_TARGET', '')
-        if cur_target == '':
-            cur_target = cfg_target
-            os.putenv('MACOSX_DEPLOYMENT_TARGET', cfg_target)
-        elif map(int, cfg_target.split('.')) > map(int, cur_target.split('.')):
-            msg = ('$MACOSX_DEPLOYMENT_TARGET mismatch: now "%s" but "%s" '
-                   'during configure' % (cur_target, cfg_target))
-            raise IOError(msg)
-
     # On AIX, there are wrong paths to the linker scripts in the Makefile
     # -- these paths are relative to the Python source, but when installed
     # the scripts are in another directory.
@@ -338,7 +361,7 @@ def _init_non_posix(vars):
     vars['SO'] = '.pyd'
     vars['EXE'] = '.exe'
     vars['VERSION'] = _PY_VERSION_SHORT_NO_DOT
-    vars['BINDIR'] = os.path.dirname(realpath(sys.executable))
+    vars['BINDIR'] = os.path.dirname(_safe_realpath(sys.executable))
 
 #
 # public APIs
@@ -434,7 +457,7 @@ def get_config_vars(*args):
         _CONFIG_VARS = {}
         # Normalized versions of prefix and exec_prefix are handy to have;
         # in fact, these are the standard versions used most places in the
-        # Distutils.
+        # distutils2 module.
         _CONFIG_VARS['prefix'] = _PREFIX
         _CONFIG_VARS['exec_prefix'] = _EXEC_PREFIX
         _CONFIG_VARS['py_version'] = _PY_VERSION
@@ -443,12 +466,16 @@ def get_config_vars(*args):
         _CONFIG_VARS['base'] = _PREFIX
         _CONFIG_VARS['platbase'] = _EXEC_PREFIX
         _CONFIG_VARS['projectbase'] = _PROJECT_BASE
+        try:
+            _CONFIG_VARS['abiflags'] = sys.abiflags
+        except AttributeError:
+            # sys.abiflags may not be defined on all platforms.
+            _CONFIG_VARS['abiflags'] = ''
 
         if os.name in ('nt', 'os2'):
             _init_non_posix(_CONFIG_VARS)
         if os.name == 'posix':
             _init_posix(_CONFIG_VARS)
-
         # Setting 'userbase' is done below the call to the
         # init function to enable using 'get_config_var' in
         # the init-function.
@@ -458,7 +485,7 @@ def get_config_vars(*args):
         if 'srcdir' not in _CONFIG_VARS:
             _CONFIG_VARS['srcdir'] = _PROJECT_BASE
         else:
-            _CONFIG_VARS['srcdir'] = realpath(_CONFIG_VARS['srcdir'])
+            _CONFIG_VARS['srcdir'] = _safe_realpath(_CONFIG_VARS['srcdir'])
 
         # Convert srcdir into an absolute path if it appears necessary.
         # Normally it is relative to the build directory.  However, during
@@ -466,8 +493,12 @@ def get_config_vars(*args):
         # from a different directory.
         if _PYTHON_BUILD and os.name == "posix":
             base = _PROJECT_BASE
+            try:
+                cwd = os.getcwd()
+            except OSError:
+                cwd = None
             if (not os.path.isabs(_CONFIG_VARS['srcdir']) and
-                base != os.getcwd()):
+                base != cwd):
                 # srcdir is relative and we are not in the same directory
                 # as the executable. Assume executable is in the build
                 # directory and make srcdir absolute.
@@ -583,7 +614,7 @@ def get_platform():
         if i == -1:
             return sys.platform
         j = sys.version.find(")", i)
-        look = sys.version[i + len(prefix):j].lower()
+        look = sys.version[i+len(prefix):j].lower()
         if look == 'amd64':
             return 'win-amd64'
         if look == 'itanium':
@@ -632,11 +663,9 @@ def get_platform():
         # machine is going to compile and link as if it were
         # MACOSX_DEPLOYMENT_TARGET.
         cfgvars = get_config_vars()
-        macver = os.environ.get('MACOSX_DEPLOYMENT_TARGET')
-        if not macver:
-            macver = cfgvars.get('MACOSX_DEPLOYMENT_TARGET')
+        macver = cfgvars.get('MACOSX_DEPLOYMENT_TARGET')
 
-        if 1:
+        if True:
             # Always calculate the release of the running machine,
             # needed to determine if we can build fat binaries or not.
 
@@ -667,8 +696,8 @@ def get_platform():
             release = macver
             osname = "macosx"
 
-            if (macrelease + '.') >= '10.4.' and \
-                    '-arch' in get_config_vars().get('CFLAGS', '').strip():
+            if ((macrelease + '.') >= '10.4.' and
+                '-arch' in get_config_vars().get('CFLAGS', '').strip()):
                 # The universal build will build fat binaries, but not on
                 # systems before 10.4
                 #
@@ -701,13 +730,13 @@ def get_platform():
                 # On OSX the machine type returned by uname is always the
                 # 32-bit variant, even if the executable architecture is
                 # the 64-bit variant
-                if sys.maxint >= (2 ** 32):
+                if sys.maxsize >= 2**32:
                     machine = 'x86_64'
 
             elif machine in ('PowerPC', 'Power_Macintosh'):
                 # Pick a sane name for the PPC architecture.
                 # See 'i386' case
-                if sys.maxint >= (2 ** 32):
+                if sys.maxsize >= 2**32:
                     machine = 'ppc64'
                 else:
                     machine = 'ppc'
@@ -720,20 +749,20 @@ def get_python_version():
 
 
 def _print_dict(title, data):
-    for index, (key, value) in enumerate(sorted(data.iteritems())):
+    for index, (key, value) in enumerate(sorted(data.items())):
         if index == 0:
-            print '%s: ' % (title)
-        print '\t%s = "%s"' % (key, value)
+            print('%s: ' % (title))
+        print('\t%s = "%s"' % (key, value))
 
 
 def _main():
     """Display all information sysconfig detains."""
-    print 'Platform: "%s"' % get_platform()
-    print 'Python version: "%s"' % get_python_version()
-    print 'Current installation scheme: "%s"' % _get_default_scheme()
-    print ''
+    print('Platform: "%s"' % get_platform())
+    print('Python version: "%s"' % get_python_version())
+    print('Current installation scheme: "%s"' % _get_default_scheme())
+    print(u'')
     _print_dict('Paths', get_paths())
-    print
+    print(u'')
     _print_dict('Variables', get_config_vars())
 
 
