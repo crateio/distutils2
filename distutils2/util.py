@@ -1,34 +1,34 @@
 """Miscellaneous utility functions."""
 
-import codecs
 import os
 import re
 import csv
 import sys
 import errno
+import codecs
 import shutil
 import string
-try:
-    import hashlib
-except ImportError: #<2.5
-    from _backport import hashlib
 import tarfile
 import zipfile
 import posixpath
 import subprocess
 import sysconfig
-try:
-    from glob import iglob as std_iglob
-except ImportError:#<2.5
-    from glob import glob as std_iglob
 from fnmatch import fnmatchcase
 from inspect import getsource
 from ConfigParser import RawConfigParser
+try:
+    from glob import iglob as std_iglob
+except ImportError:
+    from glob import glob as std_iglob
+try:
+    import hashlib
+except ImportError:
+    from distutils2._backport import hashlib
 
 from distutils2 import logger
 from distutils2.errors import (PackagingPlatformError, PackagingFileError,
-                              PackagingByteCompileError, PackagingExecError,
-                              InstallationException, PackagingInternalError)
+                               PackagingByteCompileError, PackagingExecError,
+                               InstallationException, PackagingInternalError)
 
 _PLATFORM = None
 _DEFAULT_INSTALLER = 'distutils2'

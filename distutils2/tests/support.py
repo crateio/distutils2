@@ -503,3 +503,8 @@ def unload(name):
     except KeyError:
         pass
 
+try:
+    from test.test_support import skip_unless_symlink
+except ImportError:
+    skip_unless_symlink = unittest.skip(
+        'requires test.test_support.skip_unless_symlink')

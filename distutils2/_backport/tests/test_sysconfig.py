@@ -15,7 +15,7 @@ from distutils2._backport.sysconfig import (
         get_scheme_names, _main, _SCHEMES)
 
 from distutils2.tests import unittest, TESTFN, unlink
-from distutils2.tests.support import EnvironGuard
+from distutils2.tests.support import EnvironRestorer
 from test.test_support import TESTFN, unlink
 
 try:
@@ -24,7 +24,10 @@ except ImportError:
     skip_unless_symlink = unittest.skip(
         'requires test.test_support.skip_unless_symlink')
 
-class TestSysConfig(EnvironGuard, unittest.TestCase):
+
+class TestSysConfig(EnvironRestorer, unittest.TestCase):
+
+    restore_environ = ['MACOSX_DEPLOYMENT_TARGET', 'PATH']
 
     def setUp(self):
         super(TestSysConfig, self).setUp()
@@ -245,8 +248,8 @@ class TestSysConfig(EnvironGuard, unittest.TestCase):
         # On Windows, the EXE needs to know where pythonXY.dll is at so we have
         # to add the directory to the path.
         if sys.platform == 'win32':
-            os.environ['Path'] = ';'.join((
-                os.path.dirname(sys.executable), os.environ['Path']))
+            os.environ['PATH'] = ';'.join((
+                os.path.dirname(sys.executable), os.environ['PATH']))
 
         # Issue 7880
         def get(python):
