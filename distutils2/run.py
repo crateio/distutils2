@@ -10,7 +10,9 @@ from distutils2 import logger
 from distutils2.dist import Distribution
 from distutils2.util import _is_archive_file, generate_setup_py
 from distutils2.command import get_command_class, STANDARD_COMMANDS
+from distutils2.install import install, install_local_project, remove
 from distutils2.database import get_distribution, get_distributions
+from distutils2.depgraph import generate_graph
 from distutils2.fancy_getopt import FancyGetopt
 from distutils2.errors import (PackagingArgError, PackagingError,
                               PackagingModuleError, PackagingClassError,
@@ -197,7 +199,7 @@ class action_help(object):
         def wrapper(*args, **kwargs):
             f_args = args[1]
             if '--help' in f_args or '-h' in f_args:
-                print(self.help_msg)
+                print self.help_msg
                 return
             return f(*args, **kwargs)
         return wrapper
@@ -217,7 +219,6 @@ def _generate(distpatcher, args, **kw):
 
 @action_help(graph_usage)
 def _graph(dispatcher, args, **kw):
-    from distutils2.depgraph import generate_graph
     name = args[1]
     dist = get_distribution(name, use_egg_info=True)
     if dist is None:
@@ -226,12 +227,11 @@ def _graph(dispatcher, args, **kw):
     else:
         dists = get_distributions(use_egg_info=True)
         graph = generate_graph(dists)
-        print(graph.repr_node(dist))
+        print graph.repr_node(dist)
 
 
 @action_help(install_usage)
 def _install(dispatcher, args, **kw):
-    from distutils2.install import install, install_local_project
     # first check if we are in a source directory
     if len(args) < 2:
         # are we inside a project dir?
@@ -279,18 +279,17 @@ def _metadata(dispatcher, args, **kw):
 
     for key in keys:
         if key in metadata:
-            print(metadata._convert_name(key) + ':')
+            print metadata._convert_name(key) + ':'
             value = metadata[key]
             if isinstance(value, list):
                 for v in value:
-                    print('   ', v)
+                    print '   ', v
             else:
-                print('   ', value.replace('\n', '\n    '))
+                print '   ', value.replace('\n', '\n    ')
 
 
 @action_help(remove_usage)
 def _remove(distpatcher, args, **kw):
-    from distutils2.install import remove
     opts = _parse_args(args[1:], 'y', [])
     if 'y' in opts:
         auto_confirm = True
@@ -316,14 +315,14 @@ def _run(dispatcher, args, **kw):
     commands = STANDARD_COMMANDS  # + extra commands
 
     if args == ['--list-commands']:
-        print('List of available commands:')
+        print 'List of available commands:'
         cmds = sorted(commands)
 
         for cmd in cmds:
             cls = dispatcher.cmdclass.get(cmd) or get_command_class(cmd)
             desc = getattr(cls, 'description',
                             '(no description available)')
-            print('  %s: %s' % (cmd, desc))
+            print '  %s: %s' % (cmd, desc)
         return
 
     while args:
@@ -361,7 +360,7 @@ def _list(dispatcher, args, **kw):
 
     number = 0
     for dist in results:
-        print('%r %s (from %r)' % (dist.name, dist.version, dist.path))
+        print '%r %s (from %r)' % (dist.name, dist.version, dist.path)
         number += 1
 
     if number == 0:
@@ -574,18 +573,18 @@ class Dispatcher(object):
         # late import because of mutual dependence between these modules
         from distutils2.command.cmd import Command
 
-        print('Usage: pysetup [options] action [action_options]')
-        print(u'')
+        print 'Usage: pysetup [options] action [action_options]'
+        print
         if global_options_:
             self.print_usage(self.parser)
-            print(u'')
+            print
 
         if display_options_:
             parser.set_option_table(display_options)
             parser.print_help(
                 "Information display options (just display " +
                 "information, ignore any commands)")
-            print(u'')
+            print
 
         for command in commands:
             if isinstance(command, type) and issubclass(command, Command):
@@ -599,15 +598,15 @@ class Dispatcher(object):
                 parser.set_option_table(cls.user_options)
 
             parser.print_help("Options for %r command:" % cls.__name__)
-            print(u'')
+            print
 
     def _show_command_help(self, command):
         if isinstance(command, basestring):
             command = get_command_class(command)
 
         desc = getattr(command, 'description', '(no description available)')
-        print('Description:', desc)
-        print(u'')
+        print 'Description:', desc
+        print
 
         if (hasattr(command, 'help_options') and
             isinstance(command.help_options, list)):
@@ -617,7 +616,7 @@ class Dispatcher(object):
             self.parser.set_option_table(command.user_options)
 
         self.parser.print_help("Options:")
-        print(u'')
+        print
 
     def _get_command_groups(self):
         """Helper function to retrieve all the command class names divided
@@ -644,7 +643,7 @@ class Dispatcher(object):
 
         self.print_command_list(std_commands, "Standard commands", max_length)
         if extra_commands:
-            print(u'')
+            print
             self.print_command_list(extra_commands, "Extra commands",
                                     max_length)
 
@@ -652,14 +651,14 @@ class Dispatcher(object):
         """Print a subset of the list of all commands -- used by
         'print_commands()'.
         """
-        print(header + ":")
+        print header + ":"
 
         for cmd in commands:
             cls = self.cmdclass.get(cmd) or get_command_class(cmd)
             description = getattr(cls, 'description',
                                   '(no description available)')
 
-            print("  %-*s  %s" % (max_length, cmd, description))
+            print "  %-*s  %s" % (max_length, cmd, description)
 
     def __call__(self):
         if self.action is None:

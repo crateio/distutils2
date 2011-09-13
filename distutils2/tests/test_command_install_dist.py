@@ -3,16 +3,16 @@
 import os
 import sys
 
-from sysconfig import (get_scheme_names, get_config_vars,
-                       _SCHEMES, get_config_var, get_path)
-
-_CONFIG_VARS = get_config_vars()
-
 from distutils2.command.install_dist import install_dist
 from distutils2.dist import Distribution
 from distutils2.errors import PackagingOptionError
 
 from distutils2.tests import unittest, support
+
+from distutils2._backport.sysconfig import (
+    get_scheme_names, get_config_vars, _SCHEMES, get_config_var, get_path)
+
+_CONFIG_VARS = get_config_vars()
 
 
 class InstallTestCase(support.TempdirManager,

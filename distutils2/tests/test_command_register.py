@@ -120,7 +120,7 @@ class RegisterTestCase(support.TempdirManager,
         # Password : 'password'
         # Save your login (y/N)? : 'y'
         inputs = Inputs('1', 'tarek', 'y')
-        register_module.input = inputs
+        register_module.raw_input = inputs
         cmd.ensure_finalized()
         cmd.run()
 
@@ -168,7 +168,7 @@ class RegisterTestCase(support.TempdirManager,
         # this test runs choice 2
         cmd = self._get_cmd()
         inputs = Inputs('2', 'tarek', 'tarek@ziade.org')
-        register_module.input = inputs
+        register_module.raw_input = inputs
         # let's run the command
         # FIXME does this send a real request? use a mock server
         cmd.ensure_finalized()
@@ -185,7 +185,7 @@ class RegisterTestCase(support.TempdirManager,
         # this test runs choice 3
         cmd = self._get_cmd()
         inputs = Inputs('3', 'tarek@ziade.org')
-        register_module.input = inputs
+        register_module.raw_input = inputs
         cmd.ensure_finalized()
         cmd.run()
 
@@ -208,7 +208,7 @@ class RegisterTestCase(support.TempdirManager,
         cmd.ensure_finalized()
         cmd.strict = True
         inputs = Inputs('1', 'tarek', 'y')
-        register_module.input = inputs
+        register_module.raw_input = inputs
         self.assertRaises(PackagingSetupError, cmd.run)
 
         # metadata is OK but long_description is broken
@@ -229,7 +229,7 @@ class RegisterTestCase(support.TempdirManager,
         cmd.ensure_finalized()
         cmd.strict = True
         inputs = Inputs('1', 'tarek', 'y')
-        register_module.input = inputs
+        register_module.raw_input = inputs
         cmd.ensure_finalized()
         cmd.run()
 
@@ -237,7 +237,7 @@ class RegisterTestCase(support.TempdirManager,
         cmd = self._get_cmd()
         cmd.ensure_finalized()
         inputs = Inputs('1', 'tarek', 'y')
-        register_module.input = inputs
+        register_module.raw_input = inputs
         cmd.ensure_finalized()
         cmd.run()
 

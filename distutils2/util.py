@@ -1,33 +1,33 @@
 """Miscellaneous utility functions."""
 
-import codecs
 import os
 import re
 import csv
 import sys
 import errno
+import codecs
 import shutil
 import string
-try:
-    from hashlib import md5
-except ImportError: #<2.5
-    from md5 import md5
 import tarfile
 import zipfile
 import posixpath
 import subprocess
-try:
-    from glob import iglob as std_iglob
-except ImportError:#<2.5
-    from glob import glob as std_iglob
 from fnmatch import fnmatchcase
 from inspect import getsource
 from ConfigParser import RawConfigParser
+try:
+    from glob import iglob as std_iglob
+except ImportError:
+    from glob import glob as std_iglob
+try:
+    import hashlib
+except ImportError:
+    from distutils2._backport import hashlib
 
 from distutils2 import logger
 from distutils2.errors import (PackagingPlatformError, PackagingFileError,
-                              PackagingByteCompileError, PackagingExecError,
-                              InstallationException, PackagingInternalError)
+                               PackagingByteCompileError, PackagingExecError,
+                               InstallationException, PackagingInternalError)
 from distutils2._backport import sysconfig
 
 _PLATFORM = None
@@ -1156,11 +1156,11 @@ def generate_setup_py():
 def ask(message, options):
     """Prompt the user with *message*; *options* contains allowed responses."""
     while True:
-        response = input(message)
+        response = raw_input(message)
         response = response.strip().lower()
         if response not in options:
-            print('invalid response:', repr(response))
-            print('choose one of', ', '.join(repr(o) for o in options))
+            print 'invalid response:', repr(response)
+            print 'choose one of', ', '.join(repr(o) for o in options)
         else:
             return response
 
@@ -1212,7 +1212,7 @@ def _write_record_file(record_path, installed_files):
             # do not put size and md5 hash, as in PEP-376
             writer.writerow((fpath, '', ''))
         else:
-            hash = md5()
+            hash = hashlib.md5()
             fp = open(fpath, 'rb')
             hash.update(fp.read())
             fp.close()

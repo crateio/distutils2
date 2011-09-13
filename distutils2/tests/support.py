@@ -326,9 +326,9 @@ if os.name in ('nt', 'ce'):
         except UnicodeEncodeError:
             pass
         else:
-            print('WARNING: The filename %r CAN be encoded by the filesystem encoding (%s). '
-                  'Unicode filename tests may not be effective'
-                  % (TESTFN_UNENCODABLE, TESTFN_ENCODING))
+            print ('WARNING: The filename %r CAN be encoded by the filesystem encoding (%s). '
+                   'Unicode filename tests may not be effective'
+                   % (TESTFN_UNENCODABLE, TESTFN_ENCODING))
             TESTFN_UNENCODABLE = None
 # Mac OS X denies unencodable filenames (invalid utf-8)
 elif sys.platform != 'darwin':
@@ -503,3 +503,8 @@ def unload(name):
     except KeyError:
         pass
 
+try:
+    from test.test_support import skip_unless_symlink
+except ImportError:
+    skip_unless_symlink = unittest.skip(
+        'requires test.test_support.skip_unless_symlink')

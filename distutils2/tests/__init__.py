@@ -16,6 +16,7 @@ Utility code is included in distutils2.tests.support.
 import os
 import sys
 import unittest2 as unittest
+from distutils2.tests.support import TESTFN
 
 # XXX move helpers to support, add tests for them, remove things that
 # duplicate test.support (or keep them for the backport; needs thinking)
@@ -129,4 +130,11 @@ def unload(name):
     try:
         del sys.modules[name]
     except KeyError:
+        pass
+
+
+def unlink(filename):
+    try:
+        os.unlink(filename)
+    except OSError:
         pass

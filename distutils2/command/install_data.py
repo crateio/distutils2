@@ -4,10 +4,10 @@
 
 import os, sys
 from shutil import Error
-from distutils2._backport.sysconfig import get_paths, format_value
 from distutils2 import logger
 from distutils2.util import convert_path
 from distutils2.command.cmd import Command
+from distutils2._backport.sysconfig import get_paths, format_value
 
 
 class install_data(Command):

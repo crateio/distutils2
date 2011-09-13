@@ -351,7 +351,5 @@ class BCPPCompiler(CCompiler) :
                 self.mkpath(os.path.dirname(output_file))
             try:
                 self.spawn(pp_args)
-            except PackagingExecError:
-                msg = sys.exc_info()[1]
-                print(msg)
-                raise CompileError(msg)
+            except PackagingExecError, exc:
+                raise CompileError(exc)

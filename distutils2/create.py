@@ -130,7 +130,7 @@ def ask_yn(question, default=None, helptext=None):
         if answer and answer[0].lower() in 'yn':
             return answer[0].lower()
 
-        print('\nERROR: You must select "Y" or "N".\n')
+        print '\nERROR: You must select "Y" or "N".\n'
 
 
 def ask(question, default=None, helptext=None, required=True,
@@ -154,19 +154,19 @@ def ask(question, default=None, helptext=None, required=True,
 
         line = sys.stdin.readline().strip()
         if line == '?':
-            print('=' * 70)
-            print(helptext)
-            print('=' * 70)
+            print '=' * 70
+            print helptext
+            print '=' * 70
             continue
         if default and not line:
             return default
         if not line and required:
-            print('*' * 70)
-            print('This value cannot be empty.')
-            print('===========================')
+            print '*' * 70
+            print 'This value cannot be empty.'
+            print '==========================='
             if helptext:
-                print(helptext)
-            print('*' * 70)
+                print helptext
+            print '*' * 70
             continue
         return line
 
@@ -273,9 +273,9 @@ class MainProgram(object):
     def _write_cfg(self):
         if os.path.exists(_FILENAME):
             if os.path.exists('%s.old' % _FILENAME):
-                print("ERROR: %(name)s.old backup exists, please check that "
-                      "current %(name)s is correct and remove %(name)s.old" %
-                      {'name': _FILENAME})
+                print ('ERROR: %(name)s.old backup exists, please check that '
+                       'current %(name)s is correct and remove %(name)s.old' %
+                       {'name': _FILENAME})
                 return
             shutil.move(_FILENAME, '%s.old' % _FILENAME)
 
@@ -324,7 +324,7 @@ class MainProgram(object):
         fp.close()
 
         os.chmod(_FILENAME, 00644)
-        print('Wrote "%s".' % _FILENAME)
+        print 'Wrote %r.' % _FILENAME
 
     def convert_py_to_cfg(self):
         """Generate a setup.cfg from an existing setup.py.
@@ -631,8 +631,8 @@ class MainProgram(object):
                         break
 
             if len(found_list) == 0:
-                print('ERROR: Could not find a matching license for "%s"' %
-                      license)
+                print ('ERROR: Could not find a matching license for "%s"' %
+                       license)
                 continue
 
             question = 'Matching licenses:\n\n'
@@ -653,8 +653,8 @@ class MainProgram(object):
             try:
                 index = found_list[int(choice) - 1]
             except ValueError:
-                print("ERROR: Invalid selection, type a number from the list "
-                      "above.")
+                print ('ERROR: Invalid selection, type a number from the list '
+                       'above.')
 
             classifiers.add(_CLASSIFIERS_LIST[index])
 
@@ -677,8 +677,8 @@ class MainProgram(object):
                     classifiers.add(key)
                     return
                 except (IndexError, ValueError):
-                    print("ERROR: Invalid selection, type a single digit "
-                          "number.")
+                    print ('ERROR: Invalid selection, type a single digit '
+                           'number.')
 
 
 def main():
