@@ -1,9 +1,11 @@
 Notes for developers
 ====================
 
-- Distutils2 runs on Python from 2.4 to 3.2 (3.x not implemented yet),
-  so make sure you don't use a syntax that doesn't work under
-  one of these Python versions.
+- Distutils2 runs on Python from 2.4 to 2.7 so make sure you don't use code
+  that doesn't work under one of these Python versions.
+
+- For 2.4, you need to run "python2.4 setup.py build" before you can run tests
+  or pysetup.
 
 - Always run tests.sh before you push a change. This implies
   that you have all Python versions installed from 2.4 to 2.7. Be sure to have 
