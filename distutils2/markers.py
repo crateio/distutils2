@@ -1,16 +1,12 @@
 """Parser for the environment markers micro-language defined in PEP 345."""
 
+import os
 import sys
 import platform
-import os
-
 from tokenize import generate_tokens, NAME, OP, STRING, ENDMARKER
 from StringIO import StringIO as BytesIO
-try:
-    python_implementation = platform.python_implementation()
-except AttributeError:
-    # FIXME import from compat
-    python_implementation = 'CPython'
+
+from distutils2.compat import python_implementation
 
 __all__ = ['interpret']
 
@@ -37,7 +33,8 @@ _VARS = {'sys.platform': sys.platform,
          'os.name': os.name,
          'platform.version': platform.version(),
          'platform.machine': platform.machine(),
-         'platform.python_implementation': python_implementation}
+         'platform.python_implementation': python_implementation(),
+        }
 
 
 class _Operation(object):

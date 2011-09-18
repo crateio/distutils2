@@ -4,6 +4,7 @@ This module provides individual classes or objects backported from
 Python 3.2, for internal use only.  Whole modules are in _backport.
 """
 
+import os
 import re
 import sys
 import codecs
@@ -178,3 +179,15 @@ except ImportError:
         def wrapped(func):
             return func
         return wrapped
+
+try:
+    from platform import python_implementation
+except ImportError:
+    def python_implementation():
+        if 'PyPy' in sys.version:
+            return 'PyPy'
+        if os.name == 'java':
+            return 'Jython'
+        if sys.version.startswith('IronPython'):
+            return 'IronPython'
+        return 'CPython'

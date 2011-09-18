@@ -2,6 +2,7 @@
 import os
 import sys
 import platform
+from distutils2.compat import python_implementation
 from distutils2.markers import interpret
 
 from distutils2.tests import unittest
@@ -17,10 +18,7 @@ class MarkersTestCase(LoggingCatcher,
         os_name = os.name
         platform_version = platform.version()
         platform_machine = platform.machine()
-        try:
-            platform_python_implementation = platform.python_implementation()
-        except AttributeError:  # FIXME import from compat
-            platform_python_implementation = 'CPython'
+        platform_python_implementation = python_implementation()
 
         self.assertTrue(interpret("sys.platform == '%s'" % sys_platform))
         self.assertTrue(interpret(
