@@ -4,8 +4,9 @@
 
 import os
 import sys
+from test.test_support import reap_children, reap_threads, run_unittest
+
 from distutils2.tests import unittest
-from distutils2.tests.support import reap_children, reap_threads, run_unittest
 
 
 @reap_threads

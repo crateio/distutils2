@@ -33,7 +33,9 @@ Existing tests should also be used as examples.
 """
 
 import os
+import re
 import sys
+import errno
 import codecs
 import shutil
 import logging
@@ -42,11 +44,6 @@ import subprocess
 import weakref
 import tempfile
 try:
-    import _thread, threading
-except ImportError:
-    _thread = None
-    threading = None
-try:
     import zlib
 except ImportError:
     zlib = None
@@ -54,9 +51,17 @@ except ImportError:
 from distutils2.dist import Distribution
 from distutils2.tests import unittest
 
-__all__ = ['LoggingCatcher', 'TempdirManager', 'EnvironRestorer',
-           'DummyCommand', 'unittest', 'create_distribution',
-           'skip_unless_symlink', 'requires_zlib']
+# define __all__ to make pydoc more useful
+__all__ = [
+    # TestCase mixins
+    'LoggingCatcher', 'TempdirManager', 'EnvironRestorer',
+    # mocks
+    'DummyCommand', 'TestDistribution',
+    # misc. functions and decorators
+    'fake_dec', 'create_distribution',
+    # imported from this module for backport purposes
+    'unittest', 'requires_zlib', 'skip_unless_symlink',
+]
 
 
 logger = logging.getLogger('distutils2')
@@ -297,7 +302,9 @@ try:
     from test.test_support import skip_unless_symlink
 except ImportError:
     skip_unless_symlink = unittest.skip(
-        'requires test.support.skip_unless_symlink')
+        'requires test.test_support.skip_unless_symlink')
+
+requires_zlib = unittest.skipUnless(zlib, 'requires zlib')
 
 
 def unlink(filename):
@@ -308,112 +315,17 @@ def unlink(filename):
         if error.errno not in (errno.ENOENT, errno.ENOTDIR):
             raise
 
-def _filter_suite(suite, pred):
-    """Recursively filter test cases in a suite based on a predicate."""
-    newtests = []
-    for test in suite._tests:
-        if isinstance(test, unittest.TestSuite):
-            _filter_suite(test, pred)
-            newtests.append(test)
-        else:
-            if pred(test):
-                newtests.append(test)
-    suite._tests = newtests
 
-class Error(Exception):
-    """Base class for regression test exceptions."""
+def strip_python_stderr(stderr):
+    """Strip the stderr of a Python process from potential debug output
+    emitted by the interpreter.
 
-class TestFailed(Error):
-    """Test failed."""
-
-
-verbose = True
-failfast = False
-
-def _run_suite(suite):
-    """Run tests from a unittest.TestSuite-derived class."""
-    if verbose:
-        runner = unittest.TextTestRunner(sys.stdout, verbosity=2,
-                                         failfast=failfast)
-    else:
-        runner = BasicTestRunner()
-
-    result = runner.run(suite)
-    if not result.wasSuccessful():
-        if len(result.errors) == 1 and not result.failures:
-            err = result.errors[0][1]
-        elif len(result.failures) == 1 and not result.errors:
-            err = result.failures[0][1]
-        else:
-            err = "multiple errors occurred"
-            if not verbose: err += "; run in verbose mode for details"
-        raise TestFailed(err)
-
-match_tests = None
-
-def run_unittest(*classes):
-    """Run tests from unittest.TestCase-derived classes."""
-    valid_types = (unittest.TestSuite, unittest.TestCase)
-    suite = unittest.TestSuite()
-    for cls in classes:
-        if isinstance(cls, basestring):
-            if cls in sys.modules:
-                suite.addTest(unittest.findTestCases(sys.modules[cls]))
-            else:
-                raise ValueError("str arguments must be keys in sys.modules")
-        elif isinstance(cls, valid_types):
-            suite.addTest(cls)
-        else:
-            suite.addTest(unittest.makeSuite(cls))
-    def case_pred(test):
-        if match_tests is None:
-            return True
-        for name in test.id().split("."):
-            if fnmatch.fnmatchcase(name, match_tests):
-                return True
-        return False
-    _filter_suite(suite, case_pred)
-    _run_suite(suite)
-
-
-def reap_threads(func):
-    """Use this function when threads are being used.  This will
-    ensure that the threads are cleaned up even when the test fails.
-    If threading is unavailable this function does nothing.
+    This will typically be run on the result of the communicate() method
+    of a subprocess.Popen object.
     """
-    if not _thread:
-        return func
+    stderr = re.sub(r"\[\d+ refs\]\r?\n?$", "", stderr).strip()
+    return stderr
 
-    @wraps(func)
-    def decorator(*args):
-        key = threading_setup()
-        try:
-            return func(*args)
-        finally:
-            threading_cleanup(*key)
-    return decorator
-
-def reap_children():
-    """Use this function at the end of test_main() whenever sub-processes
-    are started.  This will help ensure that no extra children (zombies)
-    stick around to hog resources and create problems when looking
-    for refleaks.
-    """
-
-    # Reap all our dead child processes so we don't leave zombies around.
-    # These hog resources and might be causing some of the buildbots to die.
-    if hasattr(os, 'waitpid'):
-        any_process = -1
-        while True:
-            try:
-                # This will raise an exception on Windows.  That's ok.
-                pid, status = os.waitpid(any_process, os.WNOHANG)
-                if pid == 0:
-                    break
-            except:
-                break
-
-requires_zlib = unittest.skipUnless(zlib, 'requires zlib')
 
 # Executing the interpreter in a subprocess
 def _assert_python(expected_success, *args, **env_vars):
@@ -435,28 +347,25 @@ def _assert_python(expected_success, *args, **env_vars):
         p.stdout.close()
         p.stderr.close()
     rc = p.returncode
-    err =  strip_python_stderr(err)
+    err = strip_python_stderr(err)
     if (rc and expected_success) or (not rc and not expected_success):
         raise AssertionError(
             "Process return code is %d, "
             "stderr follows:\n%s" % (rc, err.decode('ascii', 'ignore')))
     return rc, out, err
 
+
 def assert_python_ok(*args, **env_vars):
     """
     Assert that running the interpreter with `args` and optional environment
-    variables `env_vars` is ok and return a (return code, stdout, stderr) tuple.
+    variables `env_vars` is ok and return a (return code, stdout, stderr)
+    tuple.
     """
     return _assert_python(True, *args, **env_vars)
+
 
 def unload(name):
     try:
         del sys.modules[name]
     except KeyError:
         pass
-
-try:
-    from test.test_support import skip_unless_symlink
-except ImportError:
-    skip_unless_symlink = unittest.skip(
-        'requires test.test_support.skip_unless_symlink')

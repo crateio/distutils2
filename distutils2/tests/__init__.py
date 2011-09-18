@@ -22,6 +22,7 @@ from StringIO import StringIO
 here = os.path.dirname(__file__) or os.curdir
 verbose = 1
 
+
 def test_suite():
     suite = unittest.TestSuite()
     for fn in os.listdir(here):
