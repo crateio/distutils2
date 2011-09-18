@@ -127,7 +127,7 @@ class UnixCCompiler(CCompiler):
         executables['ranlib'] = ["ranlib"]
 
     # Needed for the filename generation methods provided by the base
-    # class, CCompiler.  NB. whoever instantiates/uses a particular
+    # class, CCompiler.  XXX whoever instantiates/uses a particular
     # UnixCCompiler instance should set 'shared_lib_ext' -- we set a
     # reasonable common default here, but it's not necessarily used on all
     # Unices!
@@ -165,8 +165,8 @@ class UnixCCompiler(CCompiler):
                 self.mkpath(os.path.dirname(output_file))
             try:
                 self.spawn(pp_args)
-            except PackagingExecError:
-                raise CompileError(sys.exc_info()[1])
+            except PackagingExecError, msg:
+                raise CompileError(msg)
 
     def _compile(self, obj, src, ext, cc_args, extra_postargs, pp_opts):
         compiler_so = self.compiler_so
@@ -175,8 +175,8 @@ class UnixCCompiler(CCompiler):
         try:
             self.spawn(compiler_so + cc_args + [src, '-o', obj] +
                        extra_postargs)
-        except PackagingExecError:
-            raise CompileError(sys.exc_info()[1])
+        except PackagingExecError, msg:
+            raise CompileError(msg)
 
     def create_static_lib(self, objects, output_libname,
                           output_dir=None, debug=False, target_lang=None):
@@ -199,8 +199,8 @@ class UnixCCompiler(CCompiler):
             if self.ranlib:
                 try:
                     self.spawn(self.ranlib + [output_filename])
-                except PackagingExecError:
-                    raise LibError(sys.exc_info()[1])
+                except PackagingExecError, msg:
+                    raise LibError(msg)
         else:
             logger.debug("skipping %s (up-to-date)", output_filename)
 
@@ -253,8 +253,8 @@ class UnixCCompiler(CCompiler):
                     linker = _darwin_compiler_fixup(linker, ld_args)
 
                 self.spawn(linker + ld_args)
-            except PackagingExecError:
-                raise LinkError(sys.exc_info()[1])
+            except PackagingExecError, msg:
+                raise LinkError(msg)
         else:
             logger.debug("skipping %s (up-to-date)", output_filename)
 

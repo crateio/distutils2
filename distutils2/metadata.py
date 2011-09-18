@@ -3,8 +3,8 @@
 Supports all metadata formats (1.0, 1.1, 1.2).
 """
 
-import codecs
 import re
+import codecs
 import logging
 
 from StringIO import StringIO
@@ -12,10 +12,10 @@ from email import message_from_file
 from distutils2 import logger
 from distutils2.markers import interpret
 from distutils2.version import (is_valid_predicate, is_valid_version,
-                               is_valid_versions)
+                                is_valid_versions)
 from distutils2.errors import (MetadataMissingError,
-                              MetadataConflictError,
-                              MetadataUnrecognizedVersionError)
+                               MetadataConflictError,
+                               MetadataUnrecognizedVersionError)
 
 try:
     # docutils is installed
@@ -311,8 +311,10 @@ class Metadata(object):
     def read(self, filepath):
         """Read the metadata values from a file path."""
         fp = codecs.open(filepath, 'r', encoding='utf-8')
-        self.read_file(fp)
-        fp.close()
+        try:
+            self.read_file(fp)
+        finally:
+            fp.close()
 
     def read_file(self, fileob):
         """Read the metadata values from a file object."""
@@ -335,8 +337,10 @@ class Metadata(object):
     def write(self, filepath):
         """Write the metadata fields to filepath."""
         fp = codecs.open(filepath, 'w', encoding='utf-8')
-        self.write_file(fp)
-        fp.close()
+        try:
+            self.write_file(fp)
+        finally:
+            fp.close()
 
     def write_file(self, fileobject):
         """Write the PKG-INFO format data to a file object."""

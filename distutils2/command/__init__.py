@@ -28,8 +28,11 @@ _COMMANDS = {
     'bdist_wininst': 'distutils2.command.bdist_wininst.bdist_wininst',
     'register': 'distutils2.command.register.register',
     'upload': 'distutils2.command.upload.upload',
-    'upload_docs': 'distutils2.command.upload_docs.upload_docs'}
+    'upload_docs': 'distutils2.command.upload_docs.upload_docs',
+}
 
+# XXX use OrderedDict to preserve the grouping (build-related, install-related,
+# distribution-related)
 STANDARD_COMMANDS = set(_COMMANDS)
 
 

@@ -3,7 +3,7 @@ import os
 import sys
 
 from distutils2.command.build import build
-from sysconfig import get_platform
+from distutils2._backport.sysconfig import get_platform
 from distutils2.tests import unittest, support
 
 

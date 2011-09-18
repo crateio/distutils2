@@ -161,16 +161,18 @@ class Crawler(BaseClient):
         Return a list of names.
         """
         index = self._open_url(self.index_url)
-        if '*' in name:
-            name.replace('*', '.*')
-        else:
-            name = "%s%s%s" % ('*.?', name, '*.?')
-        name = name.replace('*', '[^<]*')  # avoid matching end tag
-        projectname = re.compile('<a[^>]*>(%s)</a>' % name, re.I)
-        matching_projects = []
+        try:
+            if '*' in name:
+                name.replace('*', '.*')
+            else:
+                name = "%s%s%s" % ('*.?', name, '*.?')
+            name = name.replace('*', '[^<]*')  # avoid matching end tag
+            projectname = re.compile('<a[^>]*>(%s)</a>' % name, re.I)
+            matching_projects = []
 
-        index_content = index.read()
-        index.close()
+            index_content = index.read()
+        finally:
+            index.close()
 
         # FIXME should use bytes I/O and regexes instead of decoding
         index_content = index_content.decode()
@@ -236,7 +238,9 @@ class Crawler(BaseClient):
         self._mirrors_used.add(self.index_url)
         index_url = self._mirrors.pop()
         # XXX use urlparse for a real check of missing scheme part
-        if not index_url.startswith(("http://", "https://", "file://")):
+        if not (index_url.startswith("http://") or
+                index_url.startswith("https://") or
+                index_url.startswith("file://")):
             index_url = "http://%s" % index_url
 
         if not index_url.endswith("/simple"):
@@ -327,8 +331,7 @@ class Crawler(BaseClient):
                             try:
                                 infos = get_infos_from_url(link, project_name,
                                             is_external=self.index_url not in url)
-                            except CantParseArchiveName:
-                                e = sys.exc_info()[1]
+                            except CantParseArchiveName, e:
                                 if self.verbose:
                                     logger.warning(
                                         "version has not been parsed: %s", e)
@@ -410,7 +413,7 @@ class Crawler(BaseClient):
 
         # authentication stuff
         if scheme in ('http', 'https'):
-            auth, host = urlparse.splituser(netloc)
+            auth, host = urllib2.splituser(netloc)
         else:
             auth = None
 
@@ -432,21 +435,17 @@ class Crawler(BaseClient):
         request.add_header('User-Agent', USER_AGENT)
         try:
             fp = urllib2.urlopen(request)
-        except (ValueError, httplib.InvalidURL):
-            v = sys.exc_info()[1]
+        except (ValueError, httplib.InvalidURL), v:
             msg = ' '.join([str(arg) for arg in v.args])
             raise PackagingPyPIError('%s %s' % (url, msg))
-        except urllib2.HTTPError:
-            return sys.exc_info()[1]
-        except urllib2.URLError:
-            v = sys.exc_info()[1]
+        except urllib2.HTTPError, v:
+            return v
+        except urllib2.URLError, v:
             raise DownloadError("Download error for %s: %s" % (url, v.reason))
-        except httplib.BadStatusLine:
-            v = sys.exc_info()[1]
+        except httplib.BadStatusLine, v:
             raise DownloadError('%s returned a bad status line. '
                 'The server might be down, %s' % (url, v.line))
-        except httplib.HTTPException:
-            v = sys.exc_info()[1]
+        except httplib.HTTPException, v:
             raise DownloadError("Download error for %s: %s" % (url, v))
         except socket.timeout:
             raise DownloadError("The server timeouted")

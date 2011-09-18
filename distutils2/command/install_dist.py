@@ -295,9 +295,9 @@ class install_dist(Command):
 
         self.dump_dirs("post-expand_dirs()")
 
-        # Create directories in the home dir:
+        # Create directories under USERBASE
         if HAS_USER_SITE and self.user:
-            self.create_home_path()
+            self.create_user_dirs()
 
         # Pick the actual directory to install all modules to: either
         # install_purelib or install_platlib, depending on whether this
@@ -494,14 +494,12 @@ class install_dist(Command):
             attr = "install_" + name
             setattr(self, attr, change_root(self.root, getattr(self, attr)))
 
-    def create_home_path(self):
-        """Create directories under ~."""
-        if HAS_USER_SITE and not self.user:
-            return
+    def create_user_dirs(self):
+        """Create directories under USERBASE as needed."""
         home = convert_path(os.path.expanduser("~"))
         for name, path in self.config_vars.items():
             if path.startswith(home) and not os.path.isdir(path):
-                os.makedirs(path, 00700)
+                os.makedirs(path, 0700)
 
     # -- Command execution methods -------------------------------------
 

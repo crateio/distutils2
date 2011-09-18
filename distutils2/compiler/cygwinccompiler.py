@@ -156,14 +156,14 @@ class CygwinCCompiler(UnixCCompiler):
             # gcc needs '.res' and '.rc' compiled to object files !!!
             try:
                 self.spawn(["windres", "-i", src, "-o", obj])
-            except PackagingExecError:
-                raise CompileError(sys.exc_info()[1])
+            except PackagingExecError, msg:
+                raise CompileError(msg)
         else: # for other files use the C-compiler
             try:
                 self.spawn(self.compiler_so + cc_args + [src, '-o', obj] +
                            extra_postargs)
-            except PackagingExecError:
-                raise CompileError(sys.exc_info()[1])
+            except PackagingExecError, msg:
+                raise CompileError(msg)
 
     def link(self, target_desc, objects, output_filename, output_dir=None,
              libraries=None, library_dirs=None, runtime_library_dirs=None,
@@ -345,12 +345,13 @@ def check_config_h():
     fn = sysconfig.get_config_h_filename()
     try:
         config_h = open(fn)
-        if "__GNUC__" in config_h.read():
-            return CONFIG_H_OK, "'%s' mentions '__GNUC__'" % fn
-        else:
-            return CONFIG_H_NOTOK, "'%s' does not mention '__GNUC__'" % fn
-        config_h.close()
-    except IOError:
-        exc = sys.exc_info()[1]
+        try:
+            if "__GNUC__" in config_h.read():
+                return CONFIG_H_OK, "'%s' mentions '__GNUC__'" % fn
+            else:
+                return CONFIG_H_NOTOK, "'%s' does not mention '__GNUC__'" % fn
+        finally:
+            config_h.close()
+    except IOError, exc:
         return (CONFIG_H_UNCERTAIN,
                 "couldn't read '%s': %s" % (fn, exc.strerror))

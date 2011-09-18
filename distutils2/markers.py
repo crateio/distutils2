@@ -6,6 +6,11 @@ import os
 
 from tokenize import generate_tokens, NAME, OP, STRING, ENDMARKER
 from StringIO import StringIO as BytesIO
+try:
+    python_implementation = platform.python_implementation()
+except AttributeError:
+    # FIXME import from compat
+    python_implementation = 'CPython'
 
 __all__ = ['interpret']
 
@@ -24,10 +29,7 @@ _OPERATORS = {'==': lambda x, y: x == y,
 def _operate(operation, x, y):
     return _OPERATORS[operation](x, y)
 
-try:
-    python_implementation = platform.python_implementation()
-except AttributeError: #<2.6 - assume CPython?
-    python_implementation = 'CPython'
+
 # restricted set of variables
 _VARS = {'sys.platform': sys.platform,
          'python_version': sys.version[:3],

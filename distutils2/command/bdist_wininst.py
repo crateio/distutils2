@@ -6,11 +6,11 @@ import sys
 import os
 
 from shutil import rmtree
-from sysconfig import get_python_version
 from distutils2.command.cmd import Command
 from distutils2.errors import PackagingOptionError, PackagingPlatformError
 from distutils2 import logger
 from distutils2.util import get_platform
+from distutils2._backport.sysconfig import get_python_version
 
 
 class bdist_wininst(Command):
@@ -246,49 +246,56 @@ class bdist_wininst(Command):
 
         if bitmap:
             fp = open(bitmap, "rb")
-            bitmapdata = fp.read()
-            fp.close()
+            try:
+                bitmapdata = fp.read()
+            finally:
+                fp.close()
             bitmaplen = len(bitmapdata)
         else:
             bitmaplen = 0
 
         file = open(installer_name, "wb")
-        file.write(self.get_exe_bytes())
-        if bitmap:
-            file.write(bitmapdata)
+        try:
+            file.write(self.get_exe_bytes())
+            if bitmap:
+                file.write(bitmapdata)
 
-        # Convert cfgdata from unicode to ascii, mbcs encoded
-        if isinstance(cfgdata, unicode):
-            cfgdata = cfgdata.encode("mbcs")
+            # Convert cfgdata from unicode to ascii, mbcs encoded
+            if isinstance(cfgdata, unicode):
+                cfgdata = cfgdata.encode("mbcs")
 
-        # Append the pre-install script
-        cfgdata = cfgdata + "\0"
-        if self.pre_install_script:
-            fp = open(self.pre_install_script)
-            script_data = fp.read()
-            fp.close()
-            cfgdata = cfgdata + script_data + "\n\0"
-        else:
-            # empty pre-install script
+            # Append the pre-install script
             cfgdata = cfgdata + "\0"
-        file.write(cfgdata)
+            if self.pre_install_script:
+                fp = open(self.pre_install_script)
+                try:
+                    script_data = fp.read()
+                finally:
+                    fp.close()
+                cfgdata = cfgdata + script_data + "\n\0"
+            else:
+                # empty pre-install script
+                cfgdata = cfgdata + "\0"
+            file.write(cfgdata)
 
-        # The 'magic number' 0x1234567B is used to make sure that the
-        # binary layout of 'cfgdata' is what the wininst.exe binary
-        # expects.  If the layout changes, increment that number, make
-        # the corresponding changes to the wininst.exe sources, and
-        # recompile them.
-        header = struct.pack("<iii",
-                             0x1234567B,       # tag
-                             len(cfgdata),     # length
-                             bitmaplen,        # number of bytes in bitmap
-                             )
-        file.write(header)
-        file.close()
-
-        fp = open(arcname, "rb")
-        file.write(fp.read())
-        fp.close()
+            # The 'magic number' 0x1234567B is used to make sure that the
+            # binary layout of 'cfgdata' is what the wininst.exe binary
+            # expects.  If the layout changes, increment that number, make
+            # the corresponding changes to the wininst.exe sources, and
+            # recompile them.
+            header = struct.pack("<iii",
+                                 0x1234567B,       # tag
+                                 len(cfgdata),     # length
+                                 bitmaplen,        # number of bytes in bitmap
+                                 )
+            file.write(header)
+            fp = open(arcname, "rb")
+            try:
+                file.write(fp.read())
+            finally:
+                fp.close()
+        finally:
+            file.close()
 
     def get_installer_filename(self, fullname):
         # Factored out to allow overriding in subclasses
@@ -344,6 +351,8 @@ class bdist_wininst(Command):
 
         filename = os.path.join(directory, "wininst-%.1f%s.exe" % (bv, sfix))
         fp = open(filename, "rb")
-        content = fp.read()
-        fp.close()
+        try:
+            content = fp.read()
+        finally:
+            fp.close()
         return content

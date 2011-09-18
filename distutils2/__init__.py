@@ -1,4 +1,4 @@
-"""Support for distutils2, distribution and installation of Python projects.
+"""Support for packaging, distribution and installation of Python projects.
 
 Third-party tools can use parts of distutils2 as building blocks
 without causing the other modules to be imported:

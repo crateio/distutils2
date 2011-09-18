@@ -254,7 +254,8 @@ class TestSysConfig(EnvironRestorer, unittest.TestCase):
         # Issue 7880
         def get(python):
             cmd = [python, '-c',
-                   'import sysconfig; print sysconfig.get_platform()']
+                   'from distutils2._backport import sysconfig; '
+                   'print sysconfig.get_platform()']
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=os.environ)
             return p.communicate()
         real = os.path.realpath(sys.executable)

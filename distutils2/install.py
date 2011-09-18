@@ -13,21 +13,22 @@ import errno
 import shutil
 import logging
 import tempfile
-from sysconfig import get_config_var, get_path, is_python_build
 
 from distutils2 import logger
 from distutils2.dist import Distribution
 from distutils2.util import (_is_archive_file, ask, get_install_method,
-                            egginfo_to_distinfo, unpack_archive)
+                             egginfo_to_distinfo, unpack_archive)
 from distutils2.pypi import wrapper
 from distutils2.version import get_version_predicate
 from distutils2.database import get_distributions, get_distribution
 from distutils2.depgraph import generate_graph
 
 from distutils2.errors import (PackagingError, InstallationException,
-                              InstallationConflict, CCompilerError)
+                               InstallationConflict, CCompilerError)
 from distutils2.pypi.errors import ProjectNotFound, ReleaseNotFound
 from distutils2 import database
+from distutils2._backport.sysconfig import (get_config_var, get_path,
+                                            is_python_build)
 
 
 __all__ = ['install_dists', 'install_from_infos', 'get_infos', 'remove',
@@ -50,8 +51,7 @@ def _move_files(files, destination):
         # try to make the paths.
         try:
             os.makedirs(os.path.dirname(new))
-        except OSError:
-            e = sys.exc_info()[1]
+        except OSError, e:
             if e.errno != errno.EEXIST:
                 raise
         os.rename(old, new)
@@ -88,8 +88,8 @@ def _run_packaging_install(path):
         dist.run_command('install_dist')
         name = dist.metadata['Name']
         return database.get_distribution(name) is not None
-    except (IOError, os.error, PackagingError, CCompilerError):
-        raise ValueError("Failed to install, " + str(sys.exc_info()[1]))
+    except (IOError, os.error, PackagingError, CCompilerError), msg:
+        raise ValueError("Failed to install, " + str(msg))
 
 
 def _install_dist(dist, path):
@@ -160,9 +160,9 @@ def _run_install_from_dir(source_dir):
         try:
             func(source_dir)
             return True
-        except ValueError:
+        except ValueError, err:
             # failed to install
-            logger.info(str(sys.exc_info()[1]))
+            logger.info(str(err))
             return False
     finally:
         os.chdir(old_dir)
@@ -187,8 +187,8 @@ def install_dists(dists, path, paths=None):
         try:
             _install_dist(dist, path)
             installed_dists.append(dist)
-        except Exception:
-            logger.info('Failed: %s', sys.exc_info()[1])
+        except Exception, e:
+            logger.info('Failed: %s', e)
 
             # reverting
             for installed_dist in installed_dists:
@@ -396,8 +396,8 @@ def remove(project_name, paths=None, auto_confirm=True):
     def _move_file(source, target):
         try:
             os.rename(source, target)
-        except OSError:
-            return sys.exc_info()[1]
+        except OSError, err:
+            return err
         return None
 
     success = True
@@ -496,9 +496,11 @@ def install(project):
     # trying to write a file there
     try:
         testfile = tempfile.NamedTemporaryFile(suffix=project,
-                dir=purelib_path)
-        testfile.write('test')
-        testfile.close()
+                                               dir=purelib_path)
+        try:
+            testfile.write('test')
+        finally:
+            testfile.close()
     except OSError:
         # FIXME this should check the errno, or be removed altogether (race
         # condition: the directory permissions could be changed between here
@@ -523,8 +525,7 @@ def install(project):
         install_from_infos(install_path,
                            info['install'], info['remove'], info['conflict'])
 
-    except InstallationConflict:
-        e = sys.exc_info()[1]
+    except InstallationConflict, e:
         if logger.isEnabledFor(logging.INFO):
             projects = ('%r %s' % (p.name, p.version) for p in e.args[0])
             logger.info('%r conflicts with %s', project, ','.join(projects))

@@ -48,7 +48,7 @@ class install_scripts(Command):
                 if self.dry_run:
                     logger.info("changing mode of %s", file)
                 else:
-                    mode = (os.stat(file).st_mode | 00555) & 07777
+                    mode = (os.stat(file).st_mode | 0555) & 07777
                     logger.info("changing mode of %s to %o", file, mode)
                     os.chmod(file, mode)
 

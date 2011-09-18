@@ -2,14 +2,13 @@
 
 # Contributed by Richard Jones
 
-import sys
 import getpass
-import urlparse
 import urllib2
+import urlparse
 
 from distutils2 import logger
 from distutils2.util import (read_pypirc, generate_pypirc, DEFAULT_REPOSITORY,
-                            DEFAULT_REALM, get_pypirc_path, encode_multipart)
+                             DEFAULT_REALM, get_pypirc_path, encode_multipart)
 from distutils2.command.cmd import Command
 
 class register(Command):
@@ -246,13 +245,12 @@ Your selection [default 1]: ''')
         data = ''
         try:
             result = opener.open(req)
-        except urllib2.HTTPError:
-            e = sys.exc_info()[1]
+        except urllib2.HTTPError, e:
             if self.show_response:
                 data = e.fp.read()
             result = e.code, e.msg
-        except urllib2.URLError:
-            result = 500, str(sys.exc_info()[1])
+        except urllib2.URLError, e:
+            result = 500, str(e)
         else:
             if self.show_response:
                 data = result.read()

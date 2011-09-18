@@ -1,9 +1,5 @@
 """Build extension modules."""
 
-# FIXME Is this module limited to C extensions or do C++ extensions work too?
-# The docstring of this module said that C++ was not supported, but other
-# comments contradict that.
-
 import os
 import re
 import sys
@@ -20,7 +16,10 @@ from distutils2.compiler.extension import Extension
 from distutils2 import logger
 
 import site
-HAS_USER_SITE = True
+if sys.version_info[:2] >= (2, 6):
+    HAS_USER_SITE = True
+else:
+    HAS_USER_SITE = False
 
 if os.name == 'nt':
     from distutils2.compiler.msvccompiler import get_build_version
@@ -363,12 +362,11 @@ class build_ext(Command):
         for ext in self.extensions:
             try:
                 self.build_extension(ext)
-            except (CCompilerError, PackagingError, CompileError):
+            except (CCompilerError, PackagingError, CompileError), e:
                 if not ext.optional:
                     raise
                 logger.warning('%s: building extension %r failed: %s',
-                               self.get_command_name(), ext.name,
-                               sys.exc_info()[1])
+                               self.get_command_name(), ext.name, e)
 
     def build_extension(self, ext):
         sources = ext.sources
@@ -608,8 +606,7 @@ class build_ext(Command):
                 template = "python%d%d"
                 if self.debug:
                     template = template + '_d'
-                pythonlib = (template %
-                       (sys.hexversion >> 24, (sys.hexversion >> 16) & 0xff))
+                pythonlib = template % sys.version_info[:2]
                 # don't extend ext.libraries, it may be shared with other
                 # extensions, it is a reference to the original list
                 return ext.libraries + [pythonlib]
@@ -623,22 +620,19 @@ class build_ext(Command):
             # not at this time - AIM Apr01
             #if self.debug:
             #    template = template + '_d'
-            pythonlib = (template %
-                   (sys.hexversion >> 24, (sys.hexversion >> 16) & 0xff))
+            pythonlib = template % sys.version_info[:2]
             # don't extend ext.libraries, it may be shared with other
             # extensions, it is a reference to the original list
             return ext.libraries + [pythonlib]
         elif sys.platform[:6] == "cygwin":
             template = "python%d.%d"
-            pythonlib = (template %
-                   (sys.hexversion >> 24, (sys.hexversion >> 16) & 0xff))
+            pythonlib = template % sys.version_info[:2]
             # don't extend ext.libraries, it may be shared with other
             # extensions, it is a reference to the original list
             return ext.libraries + [pythonlib]
         elif sys.platform[:6] == "atheos":
             template = "python%d.%d"
-            pythonlib = (template %
-                   (sys.hexversion >> 24, (sys.hexversion >> 16) & 0xff))
+            pythonlib = template % sys.version_info[:2]
             # Get SHLIBS from Makefile
             extra = []
             for lib in sysconfig.get_config_var('SHLIBS').split():
@@ -656,8 +650,8 @@ class build_ext(Command):
 
         else:
             if sysconfig.get_config_var('Py_ENABLE_SHARED'):
-                pythonlib = 'python%s.%s' % (
-                    sys.hexversion >> 24, (sys.hexversion >> 16) & 0xff)
+                template = 'python%d.%d' + sys.abiflags
+                pythonlib = template % sys.version_info[:2]
                 return ext.libraries + [pythonlib]
             else:
                 return ext.libraries

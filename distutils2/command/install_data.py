@@ -2,7 +2,7 @@
 
 # Contributed by Bastian Kleineidam
 
-import os, sys
+import os
 from shutil import Error
 from distutils2 import logger
 from distutils2.util import convert_path
@@ -48,8 +48,7 @@ class install_data(Command):
             self.mkpath(dir_dest)
             try:
                 out = self.copy_file(_file[0], dir_dest)[0]
-            except Error:
-                e = sys.exc_info()[1]
+            except Error, e:
                 logger.warning('%s: %s', self.get_command_name(), e)
                 out = destination
 

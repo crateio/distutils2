@@ -388,12 +388,12 @@ class build_py(Command, Mixin2to3):
                 self.build_module(module, module_file, package)
 
     def byte_compile(self, files):
-        if hasattr(sys, 'dont_write_bytecode') and sys.dont_write_bytecode:
+        if getattr(sys, 'dont_write_bytecode', False):
             logger.warning('%s: byte-compiling is disabled, skipping.',
                            self.get_command_name())
             return
 
-        from distutils2.util import byte_compile
+        from distutils2.util import byte_compile  # FIXME use compileall
         prefix = self.build_lib
         if prefix[-1] != os.sep:
             prefix = prefix + os.sep

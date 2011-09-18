@@ -7,11 +7,12 @@ sys.prefix or sys.exec_prefix.
 import os
 
 from shutil import rmtree
-from sysconfig import get_python_version
 from distutils2.util import get_platform
 from distutils2.command.cmd import Command
 from distutils2.errors import PackagingPlatformError
 from distutils2 import logger
+from distutils2._backport.sysconfig import get_python_version
+
 
 class bdist_dumb(Command):
 
@@ -44,10 +45,9 @@ class bdist_dumb(Command):
 
     boolean_options = ['keep-temp', 'skip-build', 'relative']
 
-    default_format = { 'posix': 'gztar',
-                       'nt': 'zip',
-                       'os2': 'zip' }
-
+    default_format = {'posix': 'gztar',
+                      'nt': 'zip',
+                      'os2': 'zip'}
 
     def initialize_options(self):
         self.bdist_dir = None
@@ -69,8 +69,9 @@ class bdist_dumb(Command):
             try:
                 self.format = self.default_format[os.name]
             except KeyError:
-                raise PackagingPlatformError(("don't know how to create dumb built distributions " +
-                       "on platform %s") % os.name)
+                raise PackagingPlatformError(
+                    "don't know how to create dumb built distributions "
+                    "on platform %s" % os.name)
 
         self.set_undefined_options('bdist', 'dist_dir', 'plat_name')
 

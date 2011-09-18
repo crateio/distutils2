@@ -5,6 +5,7 @@ import shutil
 import textwrap
 from StringIO import StringIO
 from distutils2._backport import sysconfig
+from distutils2._backport.sysconfig import _CONFIG_VARS
 from distutils2.dist import Distribution
 from distutils2.errors import (UnknownFileError, CompileError,
                               PackagingPlatformError)
@@ -36,9 +37,10 @@ class BuildExtTestCase(support.TempdirManager,
         filename = _get_source_filename()
         if os.path.exists(filename):
             shutil.copy(filename, self.tmp_dir)
-        self.old_user_base = site.USER_BASE
-        site.USER_BASE = self.mkdtemp()
-        build_ext.USER_BASE = site.USER_BASE
+        if sys.version > "2.6":
+            self.old_user_base = site.USER_BASE
+            site.USER_BASE = self.mkdtemp()
+            build_ext.USER_BASE = site.USER_BASE
 
     def tearDown(self):
         # Get everything back to normal
@@ -122,7 +124,6 @@ class BuildExtTestCase(support.TempdirManager,
         old = sys.platform
 
         sys.platform = 'sunos'  # fooling finalize_options
-        from sysconfig import _CONFIG_VARS
 
         old_var = _CONFIG_VARS.get('Py_ENABLE_SHARED')
         _CONFIG_VARS['Py_ENABLE_SHARED'] = 1

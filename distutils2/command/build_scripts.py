@@ -130,9 +130,11 @@ class build_scripts(Command, Mixin2to3):
                             "from the script encoding (%s)" % (
                                 shebang, encoding))
                     outf = open(outfile, "wb")
-                    outf.write(shebang)
-                    outf.writelines(f.readlines())
-                    outf.close()
+                    try:
+                        outf.write(shebang)
+                        outf.writelines(f.readlines())
+                    finally:
+                        outf.close()
                 if f:
                     f.close()
             else:
@@ -146,7 +148,7 @@ class build_scripts(Command, Mixin2to3):
                     logger.info("changing mode of %s", file)
                 else:
                     oldmode = os.stat(file).st_mode & 07777
-                    newmode = (oldmode | 00555) & 07777
+                    newmode = (oldmode | 0555) & 07777
                     if newmode != oldmode:
                         logger.info("changing mode of %s from %o to %o",
                                  file, oldmode, newmode)

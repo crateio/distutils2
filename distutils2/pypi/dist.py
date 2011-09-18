@@ -10,7 +10,7 @@ distribution objects contain download-related information.
 import re
 try:
     import hashlib
-except ImportError: #<2.5
+except ImportError:
     from distutils2._backport import hashlib
 import tempfile
 import urllib
@@ -328,9 +328,11 @@ class DistInfo(IndexReference):
         expected_hashval = self.url['hashval']
         if None not in (expected_hashval, hashname):
             f = open(filename, 'rb')
-            hashval = hashlib.new(hashname)
-            hashval.update(f.read())
-            f.close()
+            try:
+                hashval = hashlib.new(hashname)
+                hashval.update(f.read())
+            finally:
+                f.close()
 
             if hashval.hexdigest() != expected_hashval:
                 raise HashDoesNotMatch("got %s instead of %s"

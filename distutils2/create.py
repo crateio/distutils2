@@ -18,30 +18,33 @@ be called as *pysetup create*.
 #  Ask for a description
 #  Detect scripts (not sure how.  #! outside of package?)
 
-import codecs
 import os
 import re
 import imp
 import sys
 import glob
+import codecs
 import shutil
-from distutils2._backport import sysconfig
-if 'any' not in dir(__builtins__):
-    from distutils2._backport import any
-try:
-    from hashlib import md5
-except ImportError: #<2.5
-    from md5 import md5
 from textwrap import dedent
-from distutils2.util import cmp_to_key, detect_encoding
 from ConfigParser import RawConfigParser
+from distutils2.util import cmp_to_key, detect_encoding
 # importing this with an underscore as it should be replaced by the
 # dict form or another structures for all purposes
 from distutils2._trove import all_classifiers as _CLASSIFIERS_LIST
 from distutils2.version import is_valid_version
+from distutils2._backport import sysconfig
+try:
+    any
+except NameError:
+    from distutils2._backport import any
+try:
+    from hashlib import md5
+except ImportError:
+    from distutils2._backport.hashlib import md5
+
 
 _FILENAME = 'setup.cfg'
-_DEFAULT_CFG = '.pypkgcreate'
+_DEFAULT_CFG = '.pypkgcreate'  # FIXME use a section in user .pydistutils.cfg
 
 _helptext = {
     'name': '''
@@ -117,11 +120,16 @@ def load_setup():
     been loaded before, because we are monkey patching its setup function with
     a particular one"""
     f = open("setup.py", "rb")
-    encoding, lines = detect_encoding(f.readline)
-    f.close()
+    try:
+        encoding, lines = detect_encoding(f.readline)
+    finally:
+        f.close()
     f = open("setup.py")
-    imp.load_module("setup", f, "setup.py", (".py", "r", imp.PY_SOURCE))
-    f.close()
+    try:
+        imp.load_module("setup", f, "setup.py", (".py", "r", imp.PY_SOURCE))
+    finally:
+        f.close()
+
 
 def ask_yn(question, default=None, helptext=None):
     question += ' (y/n)'
@@ -131,6 +139,10 @@ def ask_yn(question, default=None, helptext=None):
             return answer[0].lower()
 
         print '\nERROR: You must select "Y" or "N".\n'
+
+
+# XXX use util.ask
+# FIXME: if prompt ends with '?', don't add ':'
 
 
 def ask(question, default=None, helptext=None, required=True,
@@ -280,50 +292,52 @@ class MainProgram(object):
             shutil.move(_FILENAME, '%s.old' % _FILENAME)
 
         fp = codecs.open(_FILENAME, 'w', encoding='utf-8')
-        fp.write(u'[metadata]\n')
-        # TODO use metadata module instead of hard-coding field-specific
-        # behavior here
+        try:
+            fp.write(u'[metadata]\n')
+            # TODO use metadata module instead of hard-coding field-specific
+            # behavior here
 
-        # simple string entries
-        for name in ('name', 'version', 'summary', 'download_url'):
-            fp.write(u'%s = %s\n' % (name, self.data.get(name, 'UNKNOWN')))
+            # simple string entries
+            for name in ('name', 'version', 'summary', 'download_url'):
+                fp.write(u'%s = %s\n' % (name, self.data.get(name, 'UNKNOWN')))
 
-        # optional string entries
-        if 'keywords' in self.data and self.data['keywords']:
-            fp.write(u'keywords = %s\n' % ' '.join(self.data['keywords']))
-        for name in ('home_page', 'author', 'author_email',
-                     'maintainer', 'maintainer_email', 'description-file'):
-            if name in self.data and self.data[name]:
-                fp.write(u'%s = %s\n' % (name.decode('utf-8'),
-                    self.data[name].decode('utf-8')))
-        if 'description' in self.data:
-            fp.write(
-                u'description = %s\n'
-                % u'\n       |'.join(self.data['description'].split('\n')))
+            # optional string entries
+            if 'keywords' in self.data and self.data['keywords']:
+                fp.write(u'keywords = %s\n' % ' '.join(self.data['keywords']))
+            for name in ('home_page', 'author', 'author_email',
+                         'maintainer', 'maintainer_email', 'description-file'):
+                if name in self.data and self.data[name]:
+                    fp.write(u'%s = %s\n' % (name.decode('utf-8'),
+                                             self.data[name].decode('utf-8')))
+            if 'description' in self.data:
+                fp.write(
+                    u'description = %s\n'
+                    % u'\n       |'.join(self.data['description'].split('\n')))
 
-        # multiple use string entries
-        for name in ('platform', 'supported-platform', 'classifier',
-                     'requires-dist', 'provides-dist', 'obsoletes-dist',
-                     'requires-external'):
-            if not(name in self.data and self.data[name]):
-                continue
-            fp.write(u'%s = ' % name)
-            fp.write(u''.join('    %s\n' % val
-                             for val in self.data[name]).lstrip())
-        fp.write(u'\n[files]\n')
-        for name in ('packages', 'modules', 'scripts',
-                     'package_data', 'extra_files'):
-            if not(name in self.data and self.data[name]):
-                continue
-            fp.write(u'%s = %s\n'
-                     % (name, u'\n    '.join(self.data[name]).strip()))
-        fp.write(u'\nresources =\n')
-        for src, dest in self.data['resources']:
-            fp.write(u'    %s = %s\n' % (src, dest))
-        fp.write(u'\n')
-        fp.close()
+            # multiple use string entries
+            for name in ('platform', 'supported-platform', 'classifier',
+                         'requires-dist', 'provides-dist', 'obsoletes-dist',
+                         'requires-external'):
+                if not(name in self.data and self.data[name]):
+                    continue
+                fp.write(u'%s = ' % name)
+                fp.write(u''.join('    %s\n' % val
+                                 for val in self.data[name]).lstrip())
+            fp.write(u'\n[files]\n')
+            for name in ('packages', 'modules', 'scripts',
+                         'package_data', 'extra_files'):
+                if not(name in self.data and self.data[name]):
+                    continue
+                fp.write(u'%s = %s\n'
+                         % (name, u'\n    '.join(self.data[name]).strip()))
+            fp.write(u'\nresources =\n')
+            for src, dest in self.data['resources']:
+                fp.write(u'    %s = %s\n' % (src, dest))
+            fp.write(u'\n')
+        finally:
+            fp.close()
 
-        os.chmod(_FILENAME, 00644)
+        os.chmod(_FILENAME, 0644)
         print 'Wrote %r.' % _FILENAME
 
     def convert_py_to_cfg(self):
@@ -418,8 +432,10 @@ class MainProgram(object):
                 ref = ref.digest()
                 for readme in glob.glob('README*'):
                     fp = codecs.open(readme, encoding='utf-8')
-                    contents = fp.read()
-                    fp.close()
+                    try:
+                        contents = fp.read()
+                    finally:
+                        fp.close()
                     contents = re.sub('\s', '', contents.lower()).encode()
                     val = md5(contents).digest()
                     if val == ref:

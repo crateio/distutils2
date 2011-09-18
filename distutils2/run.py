@@ -15,8 +15,8 @@ from distutils2.database import get_distribution, get_distributions
 from distutils2.depgraph import generate_graph
 from distutils2.fancy_getopt import FancyGetopt
 from distutils2.errors import (PackagingArgError, PackagingError,
-                              PackagingModuleError, PackagingClassError,
-                              CCompilerError)
+                               PackagingModuleError, PackagingClassError,
+                               CCompilerError)
 
 
 command_re = re.compile(r'^[a-zA-Z]([a-zA-Z0-9_]*)$')
@@ -473,8 +473,8 @@ class Dispatcher(object):
         # it takes.
         try:
             cmd_class = get_command_class(command)
-        except PackagingModuleError:
-            raise PackagingArgError(sys.exc_info()[1])
+        except PackagingModuleError, msg:
+            raise PackagingArgError(msg)
 
         # XXX We want to push this in distutils2.command
         #
@@ -674,22 +674,21 @@ def main(args=None):
     old_level = logger.level
     old_handlers = list(logger.handlers)
     try:
-        dispatcher = Dispatcher(args)
-        if dispatcher.action is None:
-            return
-        return dispatcher()
-    except KeyboardInterrupt:
-        logger.info('interrupted')
-        return 1
-    except (IOError, os.error, PackagingError, CCompilerError):
-        logger.exception(sys.exc_info()[1])
-        return 1
-    except:
+        try:
+            dispatcher = Dispatcher(args)
+            if dispatcher.action is None:
+                return
+            return dispatcher()
+        except KeyboardInterrupt:
+            logger.info('interrupted')
+            return 1
+        except (IOError, os.error, PackagingError, CCompilerError), exc:
+            logger.exception(exc)
+            return 1
+    finally:
         logger.setLevel(old_level)
         logger.handlers[:] = old_handlers
-        raise
-    logger.setLevel(old_level)
-    logger.handlers[:] = old_handlers
+
 
 if __name__ == '__main__':
     sys.exit(main())

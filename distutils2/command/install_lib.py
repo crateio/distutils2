@@ -114,7 +114,7 @@ class install_lib(Command):
         return outfiles
 
     def byte_compile(self, files):
-        if hasattr(sys, 'dont_write_bytecode'):
+        if getattr(sys, 'dont_write_bytecode', False):
             # XXX do we want this?  because a Python runs without bytecode
             # doesn't mean that the *dists should not contain bytecode
             #--or does it?
@@ -122,7 +122,7 @@ class install_lib(Command):
                            self.get_command_name())
             return
 
-        from distutils2.util import byte_compile
+        from distutils2.util import byte_compile  # FIXME use compileall
 
         # Get the "--root" directory supplied to the "install_dist" command,
         # and use it as a prefix to strip off the purported filename

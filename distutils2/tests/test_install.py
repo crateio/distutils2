@@ -1,7 +1,6 @@
 """Tests for the distutils2.install module."""
 import os
 import logging
-from sysconfig import is_python_build
 from tempfile import mkstemp
 
 from distutils2 import install
@@ -9,6 +8,8 @@ from distutils2.pypi.xmlrpc import Client
 from distutils2.metadata import Metadata
 from distutils2.tests.support import (LoggingCatcher, TempdirManager, unittest,
                                      fake_dec)
+from distutils2._backport.sysconfig import is_python_build
+
 try:
     import threading
     from distutils2.tests.pypi_server import use_xmlrpc_server

@@ -234,8 +234,7 @@ def main():
             graph = generate_graph(dists)
         finally:
             sys.stderr = old
-    except Exception:
-        e = sys.exc_info()[1]
+    except Exception, e:
         tempout.seek(0)
         tempout = tempout.read()
         print 'Could not generate the graph'
@@ -259,8 +258,10 @@ def main():
             filename = 'depgraph.dot'
 
         f = open(filename, 'w')
-        graph_to_dot(graph, f, True)
-        f.close()
+        try:
+            graph_to_dot(graph, f, True)
+        finally:
+            f.close()
         tempout.seek(0)
         tempout = tempout.read()
         print tempout

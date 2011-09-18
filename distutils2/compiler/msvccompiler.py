@@ -12,7 +12,7 @@ import sys
 import os
 
 from distutils2.errors import (PackagingExecError, PackagingPlatformError,
-                              CompileError, LibError, LinkError)
+                               CompileError, LibError, LinkError)
 from distutils2.compiler.ccompiler import CCompiler
 from distutils2.compiler import gen_lib_options
 from distutils2 import logger
@@ -386,8 +386,8 @@ class MSVCCompiler(CCompiler):
                 try:
                     self.spawn([self.rc] + pp_opts +
                                [output_opt] + [input_opt])
-                except PackagingExecError:
-                    raise CompileError(sys.exc_info()[1])
+                except PackagingExecError, msg:
+                    raise CompileError(msg)
                 continue
             elif ext in self._mc_extensions:
 
@@ -415,8 +415,8 @@ class MSVCCompiler(CCompiler):
                     self.spawn([self.rc] +
                                 ["/fo" + obj] + [rc_file])
 
-                except PackagingExecError:
-                    raise CompileError(sys.exc_info()[1])
+                except PackagingExecError, msg:
+                    raise CompileError(msg)
                 continue
             else:
                 # how to handle this file?
@@ -429,8 +429,8 @@ class MSVCCompiler(CCompiler):
                 self.spawn([self.cc] + compile_opts + pp_opts +
                            [input_opt, output_opt] +
                            extra_postargs)
-            except PackagingExecError:
-                raise CompileError(sys.exc_info()[1])
+            except PackagingExecError, msg:
+                raise CompileError(msg)
 
         return objects
 
@@ -448,8 +448,8 @@ class MSVCCompiler(CCompiler):
                 pass                    # XXX what goes here?
             try:
                 self.spawn([self.lib] + lib_args)
-            except PackagingExecError:
-                raise LibError(sys.exc_info()[1])
+            except PackagingExecError, msg:
+                raise LibError(msg)
 
         else:
             logger.debug("skipping %s (up-to-date)", output_filename)
@@ -515,8 +515,8 @@ class MSVCCompiler(CCompiler):
             self.mkpath(os.path.dirname(output_filename))
             try:
                 self.spawn([self.linker] + ld_args)
-            except PackagingExecError:
-                raise LinkError(sys.exc_info()[1])
+            except PackagingExecError, msg:
+                raise LinkError(msg)
 
         else:
             logger.debug("skipping %s (up-to-date)", output_filename)

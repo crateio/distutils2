@@ -9,7 +9,7 @@ from shutil import rmtree
 from distutils2 import logger
 from distutils2.util import resolve_name, get_archive_formats
 from distutils2.errors import (PackagingPlatformError, PackagingOptionError,
-                              PackagingModuleError, PackagingFileError)
+                               PackagingModuleError, PackagingFileError)
 from distutils2.command import get_command_names
 from distutils2.command.cmd import Command
 from distutils2.manifest import Manifest
@@ -143,8 +143,8 @@ class sdist(Command):
                     continue
                 try:
                     builder = resolve_name(builder)
-                except ImportError:
-                    raise PackagingModuleError(sys.exc_info()[1])
+                except ImportError, e:
+                    raise PackagingModuleError(e)
 
                 builders.append(builder)
 
@@ -337,7 +337,7 @@ class sdist(Command):
         """
         return self.archive_files
 
-    def create_tree(self, base_dir, files, mode=00777, verbose=1,
+    def create_tree(self, base_dir, files, mode=0777, verbose=1,
                     dry_run=False):
         need_dir = set()
         for file in files:

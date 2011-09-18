@@ -180,8 +180,8 @@ def subst_vars(s, local_vars):
 
     try:
         return re.sub(r'\$([a-zA-Z_][a-zA-Z_0-9]*)', _subst, s)
-    except KeyError:
-        raise ValueError("invalid variable '$%s'" % sys.exc_info()[1])
+    except KeyError, e:
+        raise ValueError("invalid variable '$%s'" % e)
 
 
 # Needed by 'split_quoted()'
@@ -334,7 +334,7 @@ def byte_compile(py_files, optimize=0, force=False, prefix=None,
     """
     # nothing is done if sys.dont_write_bytecode is True
     # FIXME this should not raise an error
-    if hasattr(sys, 'dont_write_bytecode') and sys.dont_write_bytecode:
+    if getattr(sys, 'dont_write_bytecode', False):
         raise PackagingByteCompileError('byte-compiling is disabled.')
 
     # First, if the caller didn't force us into direct or indirect mode,
@@ -354,7 +354,7 @@ def byte_compile(py_files, optimize=0, force=False, prefix=None,
     # run it with the appropriate flags.
     if not direct:
         from tempfile import mkstemp
-        # XXX script_fd may leak, use something better than mkstemp
+        # XXX use something better than mkstemp
         script_fd, script_name = mkstemp(".py")
         os.close(script_fd)
         script_fd = None
@@ -365,33 +365,36 @@ def byte_compile(py_files, optimize=0, force=False, prefix=None,
             else:
                 script = codecs.open(script_name, "w", encoding='utf-8')
 
-            script.write("""\
+            try:
+                script.write("""\
 from distutils2.util import byte_compile
 files = [
 """)
 
-            # XXX would be nice to write absolute filenames, just for
-            # safety's sake (script should be more robust in the face of
-            # chdir'ing before running it).  But this requires abspath'ing
-            # 'prefix' as well, and that breaks the hack in build_lib's
-            # 'byte_compile()' method that carefully tacks on a trailing
-            # slash (os.sep really) to make sure the prefix here is "just
-            # right".  This whole prefix business is rather delicate -- the
-            # problem is that it's really a directory, but I'm treating it
-            # as a dumb string, so trailing slashes and so forth matter.
+                # XXX would be nice to write absolute filenames, just for
+                # safety's sake (script should be more robust in the face of
+                # chdir'ing before running it).  But this requires abspath'ing
+                # 'prefix' as well, and that breaks the hack in build_lib's
+                # 'byte_compile()' method that carefully tacks on a trailing
+                # slash (os.sep really) to make sure the prefix here is "just
+                # right".  This whole prefix business is rather delicate -- the
+                # problem is that it's really a directory, but I'm treating it
+                # as a dumb string, so trailing slashes and so forth matter.
 
-            #py_files = map(os.path.abspath, py_files)
-            #if prefix:
-            #    prefix = os.path.abspath(prefix)
+                #py_files = map(os.path.abspath, py_files)
+                #if prefix:
+                #    prefix = os.path.abspath(prefix)
 
-            script.write(",\n".join(map(repr, py_files)) + "]\n")
-            script.write("""
+                script.write(",\n".join(map(repr, py_files)) + "]\n")
+                script.write("""
 byte_compile(files, optimize=%r, force=%r,
              prefix=%r, base_dir=%r,
              verbose=%r, dry_run=False,
              direct=True)
 """ % (optimize, force, prefix, base_dir, verbose))
-        script.close()
+            finally:
+                script.close()
+
         cmd = [sys.executable, script_name]
         if optimize == 1:
             cmd.insert(1, "-O")
@@ -553,9 +556,11 @@ def write_file(filename, contents):
     *contents* is a sequence of strings without line terminators.
     """
     f = open(filename, "w")
-    for line in contents:
-        f.write(line + "\n")
-    f.close()
+    try:
+        for line in contents:
+            f.write(line + "\n")
+    finally:
+        f.close()
 
 def _is_package(path):
     return os.path.isdir(path) and os.path.isfile(
@@ -657,8 +662,8 @@ def resolve_name(name):
     for part in parts[1:]:
         try:
             ret = getattr(ret, part)
-        except AttributeError:
-            raise ImportError(sys.exc_info()[1])
+        except AttributeError, exc:
+            raise ImportError(exc)
 
     return ret
 
@@ -775,6 +780,7 @@ if sys.platform == 'darwin':
     _cfg_target = None
     _cfg_target_split = None
 
+
 def spawn(cmd, search_path=True, verbose=0, dry_run=False, env=None):
     """Run another program specified as a command list 'cmd' in a new process.
 
@@ -872,11 +878,12 @@ def generate_pypirc(username, password):
     """Create a default .pypirc file."""
     rc = get_pypirc_path()
     f = open(rc, 'w')
-    f.write(DEFAULT_PYPIRC % (username, password))
-    f.close()
-
     try:
-        os.chmod(rc, 00600)
+        f.write(DEFAULT_PYPIRC % (username, password))
+    finally:
+        f.close()
+    try:
+        os.chmod(rc, 0600)
     except OSError:
         # should do something better here
         pass
@@ -1084,8 +1091,10 @@ def cfg_to_args(path='setup.cfg'):
         raise PackagingFileError("file '%s' does not exist" %
                                  os.path.abspath(path))
     f = codecs.open(path, encoding='utf-8')
-    config.readfp(f)
-    f.close()
+    try:
+        config.readfp(f)
+    finally:
+        f.close()
 
     kwargs = {}
     for arg in D1_D2_SETUP_ARGS:
@@ -1108,8 +1117,10 @@ def cfg_to_args(path='setup.cfg'):
                     in_cfg_value = []
                     for filename in filenames:
                         fp = open(filename)
-                        in_cfg_value.append(fp.read())
-                        fp.close()
+                        try:
+                            in_cfg_value.append(fp.read())
+                        finally:
+                            fp.close()
                     in_cfg_value = '\n\n'.join(in_cfg_value)
             else:
                 continue
@@ -1147,8 +1158,10 @@ def generate_setup_py():
         raise PackagingFileError("a setup.py file already exists")
 
     fp = codecs.open("setup.py", "w", encoding='utf-8')
-    fp.write(_SETUP_TMPL % {'func': getsource(cfg_to_args)})
-    fp.close()
+    try:
+        fp.write(_SETUP_TMPL % {'func': getsource(cfg_to_args)})
+    finally:
+        fp.close()
 
 
 # Taken from the pip project
@@ -1168,26 +1181,29 @@ def ask(message, options):
 def _parse_record_file(record_file):
     distinfo, extra_metadata, installed = ({}, [], [])
     rfile = open(record_file, 'r')
-    for path in rfile:
-        path = path.strip()
-        if path.endswith('egg-info') and os.path.isfile(path):
-            distinfo_dir = path.replace('egg-info', 'dist-info')
-            metadata = path
-            egginfo = path
-        elif path.endswith('egg-info') and os.path.isdir(path):
-            distinfo_dir = path.replace('egg-info', 'dist-info')
-            egginfo = path
-            for metadata_file in os.listdir(path):
-                metadata_fpath = os.path.join(path, metadata_file)
-                if metadata_file == 'PKG-INFO':
-                    metadata = metadata_fpath
-                else:
-                    extra_metadata.append(metadata_fpath)
-        elif 'egg-info' in path and os.path.isfile(path):
-            # skip extra metadata files
-            continue
-        else:
-            installed.append(path)
+    try:
+        for path in rfile:
+            path = path.strip()
+            if path.endswith('egg-info') and os.path.isfile(path):
+                distinfo_dir = path.replace('egg-info', 'dist-info')
+                metadata = path
+                egginfo = path
+            elif path.endswith('egg-info') and os.path.isdir(path):
+                distinfo_dir = path.replace('egg-info', 'dist-info')
+                egginfo = path
+                for metadata_file in os.listdir(path):
+                    metadata_fpath = os.path.join(path, metadata_file)
+                    if metadata_file == 'PKG-INFO':
+                        metadata = metadata_fpath
+                    else:
+                        extra_metadata.append(metadata_fpath)
+            elif 'egg-info' in path and os.path.isfile(path):
+                # skip extra metadata files
+                continue
+            else:
+                installed.append(path)
+    finally:
+        rfile.close()
 
     distinfo['egginfo'] = egginfo
     distinfo['metadata'] = metadata
@@ -1204,25 +1220,29 @@ def _parse_record_file(record_file):
 
 def _write_record_file(record_path, installed_files):
     f = codecs.open(record_path, 'w', encoding='utf-8')
-    writer = csv.writer(f, delimiter=',', lineterminator=os.linesep,
-                        quotechar='"')
+    try:
+        writer = csv.writer(f, delimiter=',', lineterminator=os.linesep,
+                            quotechar='"')
 
-    for fpath in installed_files:
-        if fpath.endswith('.pyc') or fpath.endswith('.pyo'):
-            # do not put size and md5 hash, as in PEP-376
-            writer.writerow((fpath, '', ''))
-        else:
-            hash = hashlib.md5()
-            fp = open(fpath, 'rb')
-            hash.update(fp.read())
-            fp.close()
-            md5sum = hash.hexdigest()
-            size = os.path.getsize(fpath)
-            writer.writerow((fpath, md5sum, size))
+        for fpath in installed_files:
+            if fpath.endswith('.pyc') or fpath.endswith('.pyo'):
+                # do not put size and md5 hash, as in PEP-376
+                writer.writerow((fpath, '', ''))
+            else:
+                hash = hashlib.md5()
+                fp = open(fpath, 'rb')
+                try:
+                    hash.update(fp.read())
+                finally:
+                    fp.close()
+                md5sum = hash.hexdigest()
+                size = os.path.getsize(fpath)
+                writer.writerow((fpath, md5sum, size))
 
-    # add the RECORD file itself
-    writer.writerow((record_path, '', ''))
-    f.close()
+        # add the RECORD file itself
+        writer.writerow((record_path, '', ''))
+    finally:
+        f.close()
     return record_path
 
 
@@ -1258,8 +1278,10 @@ def egginfo_to_distinfo(record_file, installer=_DEFAULT_INSTALLER,
     installer_path = distinfo['installer_path']
     logger.info('creating %s', installer_path)
     f = open(installer_path, 'w')
-    f.write(installer)
-    f.close()
+    try:
+        f.write(installer)
+    finally:
+        f.close()
 
     if requested:
         requested_path = distinfo['requested_path']
@@ -1301,13 +1323,15 @@ def _has_distutils_text(setup_py):
 
 def _has_text(setup_py, installer):
     installer_pattern = re.compile('import %s|from %s' % (
-        installer[0], installer[1]))
+        installer[0], installer[0]))
     setup = codecs.open(setup_py, 'r', encoding='utf-8')
-    for line in setup:
-        if re.search(installer_pattern, line):
-            logger.debug("Found %s text in setup.py.", installer)
-            return True
-    setup.close()
+    try:
+        for line in setup:
+            if re.search(installer_pattern, line):
+                logger.debug("Found %s text in setup.py.", installer)
+                return True
+    finally:
+        setup.close()
     logger.debug("No %s text found in setup.py.", installer)
     return False
 
@@ -1315,8 +1339,10 @@ def _has_text(setup_py, installer):
 def _has_required_metadata(setup_cfg):
     config = RawConfigParser()
     f = codecs.open(setup_cfg, 'r', encoding='utf8')
-    config.readfp(f)
-    f.close()
+    try:
+        config.readfp(f)
+    finally:
+        f.close()
     return (config.has_section('metadata') and
             'name' in config.options('metadata') and
             'version' in config.options('metadata'))
@@ -1377,7 +1403,7 @@ def is_distutils(path):
                                       _has_distutils_text(setup_py))
 
 
-def is_distutils2(path):
+def is_packaging(path):
     """Check if the project is based on distutils2
 
     :param path: path to source directory containing a setup.cfg file.
@@ -1398,7 +1424,7 @@ def get_install_method(path):
 
     Returns a string representing the best install method to use.
     """
-    if is_distutils2(path):
+    if is_packaging(path):
         return "distutils2"
     elif is_setuptools(path):
         return "setuptools"
@@ -1419,8 +1445,8 @@ def copy_tree(src, dst, preserve_mode=True, preserve_times=True,
               "cannot copy tree '%s': not a directory" % src)
     try:
         names = os.listdir(src)
-    except os.error:
-        errstr = sys.exc_info()[1][1]
+    except os.error, e:
+        errstr = e[1]
         if dry_run:
             names = []
         else:
@@ -1465,7 +1491,7 @@ _path_created = set()
 # I don't use os.makedirs because a) it's new to Python 1.5.2, and
 # b) it blows up if the directory already exists (I want to silently
 # succeed in that case).
-def _mkpath(name, mode=00777, verbose=True, dry_run=False):
+def _mkpath(name, mode=0777, verbose=True, dry_run=False):
     # Detect a common bug -- name is None
     if not isinstance(name, basestring):
         raise PackagingInternalError(
@@ -1506,8 +1532,7 @@ def _mkpath(name, mode=00777, verbose=True, dry_run=False):
         if not dry_run:
             try:
                 os.mkdir(head, mode)
-            except OSError:
-                exc = sys.exc_info()[1]
+            except OSError, exc:
                 if not (exc.errno == errno.EEXIST and os.path.isdir(head)):
                     raise PackagingFileError(
                           "could not create '%s': %s" % (head, exc.args[-1]))

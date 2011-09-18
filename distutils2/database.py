@@ -1,15 +1,16 @@
 """PEP 376 implementation."""
 
-from StringIO import StringIO
 import os
 import re
 import csv
 import sys
 import zipimport
+from StringIO import StringIO
 try:
     from hashlib import md5
-except ImportError: #<2.5
-    from md5 import md5
+except ImportError:
+    from distutils2._backport.hashlib import md5
+
 from distutils2 import logger
 from distutils2.errors import PackagingError
 from distutils2.version import suggest_normalized_version, VersionPredicate
@@ -162,26 +163,30 @@ class Distribution(object):
     def _get_records(self, local=False):
         results = []
         record = self.get_distinfo_file('RECORD')
-        record_reader = csv.reader(record, delimiter=',',
-                                   lineterminator='\n')
-        for row in record_reader:
-            missing = [None for i in range(len(row), 3)]
-            path, checksum, size = row + missing
-            if local:
-                path = path.replace('/', os.sep)
-                path = os.path.join(sys.prefix, path)
-            results.append((path, checksum, size))
-        record.close()
+        try:
+            record_reader = csv.reader(record, delimiter=',',
+                                       lineterminator='\n')
+            for row in record_reader:
+                missing = [None for i in range(len(row), 3)]
+                path, checksum, size = row + missing
+                if local:
+                    path = path.replace('/', os.sep)
+                    path = os.path.join(sys.prefix, path)
+                results.append((path, checksum, size))
+        finally:
+            record.close()
         return results
 
     def get_resource_path(self, relative_path):
         resources_file = self.get_distinfo_file('RESOURCES')
-        resources_reader = csv.reader(resources_file, delimiter=',',
-                                       lineterminator='\n')
-        for relative, destination in resources_reader:
-            if relative == relative_path:
-                return destination
-        resources_file.close()
+        try:
+            resources_reader = csv.reader(resources_file, delimiter=',',
+                                          lineterminator='\n')
+            for relative, destination in resources_reader:
+                if relative == relative_path:
+                    return destination
+        finally:
+            resources_file.close()
         raise KeyError(
             'no resource file with relative path %r is installed' %
             relative_path)
@@ -331,8 +336,10 @@ class EggInfoDistribution(object):
                 try:
                     req_path = os.path.join(path, 'EGG-INFO', 'requires.txt')
                     fp = open(req_path, 'r')
-                    requires = fp.read()
-                    fp.close()
+                    try:
+                        requires = fp.read()
+                    finally:
+                        fp.close()
                 except IOError:
                     requires = None
             else:
@@ -353,8 +360,10 @@ class EggInfoDistribution(object):
                 path = os.path.join(path, 'PKG-INFO')
                 try:
                     fp = open(os.path.join(path, 'requires.txt'), 'r')
-                    requires = fp.read()
-                    fp.close()
+                    try:
+                        requires = fp.read()
+                    finally:
+                        fp.close()
                 except IOError:
                     requires = None
             self.metadata = Metadata(path=path)
@@ -417,8 +426,10 @@ class EggInfoDistribution(object):
 
         def _md5(path):
             f = open(path, 'rb')
-            content = f.read()
-            f.close()
+            try:
+                content = f.read()
+            finally:
+                f.close()
             return md5(content).hexdigest()
 
         def _size(path):

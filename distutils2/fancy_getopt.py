@@ -237,8 +237,8 @@ class FancyGetopt(object):
 
         try:
             opts, args = getopt.getopt(args, short_opts, self.long_opts)
-        except getopt.error:
-            raise PackagingArgError(sys.exc_info()[1])
+        except getopt.error, msg:
+            raise PackagingArgError(msg)
 
         for opt, val in opts:
             if len(opt) == 2 and opt[0] == '-':   # it's a short option
@@ -368,7 +368,7 @@ class FancyGetopt(object):
         if file is None:
             file = sys.stdout
         for line in self.generate_help(header):
-            file.write(line + u"\n")
+            file.write(line + "\n")
 
 
 def fancy_getopt(options, negative_opt, object, args):

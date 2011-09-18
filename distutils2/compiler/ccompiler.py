@@ -8,7 +8,7 @@ import os
 from shutil import move
 from distutils2 import logger
 from distutils2.util import split_quoted, execute, newer_group, spawn
-from distutils2.errors import (CompileError, LinkError, UnknownFileError)
+from distutils2.errors import CompileError, LinkError, UnknownFileError
 from distutils2.compiler import gen_preprocess_options
 
 
@@ -728,14 +728,16 @@ class CCompiler(object):
             library_dirs = []
         fd, fname = tempfile.mkstemp(".c", funcname, text=True)
         f = os.fdopen(fd, "w")
-        for incl in includes:
-            f.write("""#include "%s"\n""" % incl)
-        f.write("""\
+        try:
+            for incl in includes:
+                f.write("""#include "%s"\n""" % incl)
+            f.write("""\
 main (int argc, char **argv) {
     %s();
 }
 """ % funcname)
-        f.close()
+        finally:
+            f.close()
         try:
             objects = self.compile([fname], include_dirs=include_dirs)
         except CompileError:
@@ -852,7 +854,7 @@ main (int argc, char **argv) {
             return
         return move(src, dst)
 
-    def mkpath(self, name, mode=00777):
+    def mkpath(self, name, mode=0777):
         name = os.path.normpath(name)
         if os.path.isdir(name) or name == '':
             return

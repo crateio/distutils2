@@ -13,7 +13,7 @@ from distutils2.errors import IrrationalVersionError
 from distutils2.version import get_version_predicate
 from distutils2.pypi.base import BaseClient
 from distutils2.pypi.errors import (ProjectNotFound, InvalidSearchField,
-                                   ReleaseNotFound)
+                                    ReleaseNotFound)
 from distutils2.pypi.dist import ReleaseInfo
 
 __all__ = ['Client', 'DEFAULT_XMLRPC_INDEX_URL']
@@ -171,8 +171,7 @@ class Client(BaseClient):
                 project.add_release(release=ReleaseInfo(p['name'],
                     p['version'], metadata={'summary': p['summary']},
                     index=self._index))
-            except IrrationalVersionError:
-                e = sys.exc_info()[1]
+            except IrrationalVersionError, e:
                 logger.warning("Irrational version error found: %s", e)
         return [self._projects[p['name'].lower()] for p in projects]
 

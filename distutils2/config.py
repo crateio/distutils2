@@ -1,8 +1,8 @@
 """Utilities to find and read config files used by distutils2."""
 
-import codecs
 import os
 import sys
+import codecs
 import logging
 
 from shlex import split
@@ -11,7 +11,7 @@ from distutils2 import logger
 from distutils2.errors import PackagingOptionError
 from distutils2.compiler.extension import Extension
 from distutils2.util import (check_environ, iglob, resolve_name, strtobool,
-                            split_multiline)
+                             split_multiline)
 from distutils2.compiler import set_compiler
 from distutils2.command import set_command
 from distutils2.markers import interpret
@@ -142,9 +142,9 @@ class Config(object):
                     for line in setup_hooks:
                         try:
                             hook = resolve_name(line)
-                        except ImportError:
+                        except ImportError, e:
                             logger.warning('cannot find setup hook: %s',
-                                           sys.exc_info()[1].args[0])
+                                           e.args[0])
                         else:
                             self.setup_hooks.append(hook)
                     self.run_hooks(content)
@@ -178,8 +178,10 @@ class Config(object):
                     for filename in filenames:
                         # will raise if file not found
                         description_file = open(filename)
-                        value.append(description_file.read().strip())
-                        description_file.close()
+                        try:
+                            value.append(description_file.read().strip())
+                        finally:
+                            description_file.close()
                         # add filename as a required file
                         if filename not in metadata.requires_files:
                             metadata.requires_files.append(filename)
@@ -290,8 +292,10 @@ class Config(object):
         for filename in filenames:
             logger.debug("  reading %s", filename)
             f = codecs.open(filename, 'r', encoding='utf-8')
-            parser.readfp(f)
-            f.close()
+            try:
+                parser.readfp(f)
+            finally:
+                f.close()
 
             if os.path.split(filename)[-1] == 'setup.cfg':
                 self._read_setup_cfg(parser, filename)
@@ -348,8 +352,8 @@ class Config(object):
                         setattr(self.dist, opt, strtobool(val))
                     else:
                         setattr(self.dist, opt, val)
-                except ValueError:
-                    raise PackagingOptionError(sys.exc_info()[1])
+                except ValueError, msg:
+                    raise PackagingOptionError(msg)
 
     def _load_compilers(self, compilers):
         compilers = split_multiline(compilers)

@@ -12,9 +12,9 @@ from distutils2.tests.support import (TempdirManager, LoggingCatcher,
                                      fake_dec)
 
 try:
-    import _thread
+    import thread as _thread
     from distutils2.tests.pypi_server import (use_pypi_server, PyPIServer,
-                                             PYPI_DEFAULT_STATIC_PATH)
+                                              PYPI_DEFAULT_STATIC_PATH)
 except ImportError:
     _thread = None
     use_pypi_server = fake_dec

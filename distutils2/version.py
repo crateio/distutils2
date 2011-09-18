@@ -182,7 +182,6 @@ class NormalizedVersion(object):
         return "%s('%s')" % (self.__class__.__name__, self)
 
     def _cannot_compare(self, other):
-        import pdb; pdb.set_trace()
         raise TypeError("cannot compare %s and %s"
                 % (type(self).__name__, type(other).__name__))
 

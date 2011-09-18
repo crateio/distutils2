@@ -8,7 +8,7 @@ import os
 import re
 try:
     import hashlib
-except ImportError: #<2.5
+except ImportError:
     from distutils2._backport import hashlib
 
 from distutils2.command.cmd import Command
@@ -32,7 +32,7 @@ class install_distinfo(Command):
         ('no-record', None,
          "do not generate a RECORD file"),
         ('no-resources', None,
-         "do not generate a RESSOURCES list installed file")
+         "do not generate a RESSOURCES list installed file"),
     ]
 
     boolean_options = ['requested', 'no-record', 'no-resources']

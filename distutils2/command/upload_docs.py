@@ -1,6 +1,6 @@
 """Upload HTML documentation to a project index."""
 
-import os, sys
+import os
 import base64
 import socket
 import zipfile
@@ -11,7 +11,7 @@ from StringIO import StringIO
 
 from distutils2 import logger
 from distutils2.util import (read_pypirc, DEFAULT_REPOSITORY, DEFAULT_REALM,
-                            encode_multipart)
+                             encode_multipart)
 from distutils2.errors import PackagingFileError
 from distutils2.command.cmd import Command
 
@@ -20,13 +20,15 @@ def zip_dir(directory):
     """Compresses recursively contents of directory into a BytesIO object"""
     destination = StringIO()
     zip_file = zipfile.ZipFile(destination, "w")
-    for root, dirs, files in os.walk(directory):
-        for name in files:
-            full = os.path.join(root, name)
-            relative = root[len(directory):].lstrip(os.path.sep)
-            dest = os.path.join(relative, name)
-            zip_file.write(full, dest)
-    zip_file.close()
+    try:
+        for root, dirs, files in os.walk(directory):
+            for name in files:
+                full = os.path.join(root, name)
+                relative = root[len(directory):].lstrip(os.path.sep)
+                dest = os.path.join(relative, name)
+                zip_file.write(full, dest)
+    finally:
+        zip_file.close()
     return destination
 
 
@@ -88,7 +90,8 @@ class upload_docs(Command):
         content_type, body = encode_multipart(fields, files)
 
         credentials = self.username + ':' + self.password
-        auth = "Basic " + base64.encodebytes(credentials.encode()).strip()
+        # FIXME should use explicit encoding
+        auth = "Basic " + base64.encodestring(credentials.encode()).strip()
 
         logger.info("Submitting documentation to %s", self.repository)
 
@@ -110,8 +113,8 @@ class upload_docs(Command):
             conn.endheaders()
             conn.send(body)
 
-        except socket.error:
-            logger.error(sys.exc_info()[1])
+        except socket.error, e:
+            logger.error(e)
             return
 
         r = conn.getresponse()

@@ -31,8 +31,8 @@ def switch_index_if_fails(func, wrapper):
             try:
                 response = method(*args, **kwargs)
                 retry = False
-            except Exception:
-                exception = sys.exc_info()[1]
+            except Exception, e:
+                exception = e
             if not retry:
                 break
         if retry and exception:

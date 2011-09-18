@@ -58,7 +58,7 @@ class bdist(Command):
     # This is of course very simplistic.  The various UNIX family operating
     # systems have their specific formats, but they are out of scope for us;
     # bdist_dumb is, well, dumb; it's more a building block for other
-    # distutils2 tools than a real end-user binary format.
+    # packaging tools than a real end-user binary format.
     default_format = {'posix': 'gztar',
                       'nt': 'zip',
                       'os2': 'zip'}
@@ -75,9 +75,8 @@ class bdist(Command):
                       'wininst': ('bdist_wininst',
                                   "Windows executable installer"),
                       'zip':   ('bdist_dumb', "ZIP file"),
-                      'msi':   ('bdist_msi',  "Microsoft Installer")
-                      }
-
+                      'msi':   ('bdist_msi',  "Microsoft Installer"),
+                     }
 
     def initialize_options(self):
         self.bdist_base = None
@@ -109,8 +108,9 @@ class bdist(Command):
             try:
                 self.formats = [self.default_format[os.name]]
             except KeyError:
-                raise PackagingPlatformError("don't know how to create built distributions " + \
-                      "on platform %s" % os.name)
+                raise PackagingPlatformError(
+                    "don't know how to create built distributions "
+                    "on platform %s" % os.name)
 
         if self.dist_dir is None:
             self.dist_dir = "dist"

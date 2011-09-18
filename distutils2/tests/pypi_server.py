@@ -30,19 +30,21 @@ implementations (static HTTP and XMLRPC over HTTP).
 """
 
 import os
-import queue
+import Queue
 import select
 import threading
-import socketserver
+import SocketServer
+from BaseHTTPServer import HTTPServer
+from SimpleHTTPServer import SimpleHTTPRequestHandler
+from SimpleXMLRPCServer import SimpleXMLRPCServer
+
+from distutils2.tests import unittest
+
 try:
     from functools import wraps
 except ImportError:
     from distutils2._backport.functools import wraps
 
-from http.server import HTTPServer, SimpleHTTPRequestHandler
-from xmlrpc.server import SimpleXMLRPCServer
-
-from distutils2.tests import unittest
 
 PYPI_DEFAULT_STATIC_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), 'pypiserver')
@@ -117,7 +119,7 @@ class PyPIServer(threading.Thread):
             self.server = HTTPServer(('127.0.0.1', 0), PyPIRequestHandler)
             self.server.RequestHandlerClass.pypi_server = self
 
-            self.request_queue = queue.Queue()
+            self.request_queue = Queue.Queue()
             self._requests = []
             self.default_response_status = 404
             self.default_response_headers = [('Content-type', 'text/plain')]
@@ -154,7 +156,7 @@ class PyPIServer(threading.Thread):
     def stop(self):
         """self shutdown is not supported for python < 2.6"""
         self._run = False
-        if self.is_alive():
+        if self.isAlive():
             self.join()
         self.server.server_close()
 
@@ -171,7 +173,7 @@ class PyPIServer(threading.Thread):
         while True:
             try:
                 self._requests.append(self.request_queue.get_nowait())
-            except queue.Empty:
+            except Queue.Empty:
                 break
         return self._requests
 
@@ -275,7 +277,7 @@ class PyPIRequestHandler(SimpleHTTPRequestHandler):
 class PyPIXMLRPCServer(SimpleXMLRPCServer):
     def server_bind(self):
         """Override server_bind to store the server name."""
-        socketserver.TCPServer.server_bind(self)
+        SocketServer.TCPServer.server_bind(self)
         host, port = self.socket.getsockname()[:2]
         self.server_port = port
 

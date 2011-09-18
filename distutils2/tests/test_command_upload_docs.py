@@ -18,7 +18,7 @@ try:
     from distutils2.tests.pypi_server import PyPIServerTestCase
 except ImportError:
     threading = None
-    PyPIServerTestCase = object
+    PyPIServerTestCase = unittest.TestCase
 
 
 PYPIRC = """\
@@ -32,8 +32,7 @@ password = long_island
 """
 
 
-class UploadDocsTestCase(unittest.TestCase,
-                         support.TempdirManager,
+class UploadDocsTestCase(support.TempdirManager,
                          support.EnvironRestorer,
                          support.LoggingCatcher,
                          PyPIServerTestCase):

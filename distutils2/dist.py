@@ -1,21 +1,21 @@
-"""Class representing the distribution being built/installed/etc."""
+"""Class representing the project being built/installed/etc."""
 
 import os
 import re
-import sys
 
-from distutils2.errors import (PackagingOptionError, PackagingArgError,
-                              PackagingModuleError, PackagingClassError)
-from distutils2.fancy_getopt import FancyGetopt
-from distutils2.util import strtobool, resolve_name
 from distutils2 import logger
-from distutils2.metadata import Metadata
+from distutils2.util import strtobool, resolve_name
+from distutils2.errors import (PackagingOptionError, PackagingArgError,
+                               PackagingModuleError, PackagingClassError)
 from distutils2.config import Config
 from distutils2.command import get_command_class, STANDARD_COMMANDS
+from distutils2.command.cmd import Command
+from distutils2.metadata import Metadata
+from distutils2.fancy_getopt import FancyGetopt
 
 # Regex to define acceptable Packaging command names.  This is not *quite*
-# the same as a Python NAME -- I don't allow leading underscores.  The fact
-# that they're very similar is no coincidence; the default naming scheme is
+# the same as a Python name -- leading underscores are not allowed.  The fact
+# that they're very similar is no coincidence: the default naming scheme is
 # to look for a Python module named after the command.
 command_re = re.compile(r'^[a-zA-Z]([a-zA-Z0-9_]*)$')
 
@@ -33,17 +33,11 @@ def gen_usage(script_name):
 
 
 class Distribution(object):
-    """The core of the Packaging.  Most of the work hiding behind 'setup'
-    is really done within a Distribution instance, which farms the work out
-    to the Packaging commands specified on the command line.
+    """Class used to represent a project and work with it.
 
-    Setup scripts will almost never instantiate Distribution directly,
-    unless the 'setup()' function is totally inadequate to their needs.
-    However, it is conceivable that a setup script might wish to subclass
-    Distribution for some specialized purpose, and then pass the subclass
-    to 'setup()' as the 'distclass' keyword argument.  If so, it is
-    necessary to respect the expectations that 'setup' has of Distribution.
-    See the code for 'setup()', in run.py, for details.
+    Most of the work hiding behind 'pysetup run' is really done within a
+    Distribution instance, which farms the work out to the commands
+    specified on the command line.
     """
 
     # 'global_options' describes the command-line options that may be
@@ -64,8 +58,8 @@ class Distribution(object):
     common_usage = """\
 Common commands: (see '--help-commands' for more)
 
-  pysetup run build      will build the package underneath 'build/'
-  pysetup run install    will install the package
+  pysetup run build      will build the project underneath 'build/'
+  pysetup run install    will install the project
 """
 
     # options that are not propagated to the commands
@@ -373,7 +367,7 @@ Common commands: (see '--help-commands' for more)
                             commands=self.commands)
             return
 
-        return 1
+        return True
 
     def _get_toplevel_options(self):
         """Return the non-display options recognized at the top level.
@@ -403,8 +397,8 @@ Common commands: (see '--help-commands' for more)
         # it takes.
         try:
             cmd_class = get_command_class(command)
-        except PackagingModuleError:
-            raise PackagingArgError(sys.exc_info()[1])
+        except PackagingModuleError, msg:
+            raise PackagingArgError(msg)
 
         # XXX We want to push this in distutils2.command
         #
@@ -501,9 +495,6 @@ Common commands: (see '--help-commands' for more)
         lists per-command help for every command name or command class
         in 'commands'.
         """
-        # late import because of mutual dependence between these modules
-        from distutils2.command.cmd import Command
-
         if global_options:
             if display_options:
                 options = self._get_toplevel_options()
@@ -629,7 +620,7 @@ Common commands: (see '--help-commands' for more)
         """
         cmd_obj = self.command_obj.get(command)
         if not cmd_obj and create:
-            logger.debug("Distribution.get_command_obj(): " \
+            logger.debug("Distribution.get_command_obj(): "
                          "creating %r command object", command)
 
             cls = get_command_class(command)
@@ -685,8 +676,8 @@ Common commands: (see '--help-commands' for more)
                     raise PackagingOptionError(
                         "error in %s: command %r has no such option %r" %
                         (source, command_name, option))
-            except ValueError:
-                raise PackagingOptionError(sys.exc_info()[1])
+            except ValueError, msg:
+                raise PackagingOptionError(msg)
 
     def get_reinitialized_command(self, command, reinit_subcommands=False):
         """Reinitializes a command to the state it was in when first
@@ -707,7 +698,6 @@ Common commands: (see '--help-commands' for more)
 
         Returns the reinitialized command object.
         """
-        from distutils2.command.cmd import Command
         if not isinstance(command, Command):
             command_name = command
             command = self.get_command_obj(command_name)
@@ -716,6 +706,7 @@ Common commands: (see '--help-commands' for more)
 
         if not command.finalized:
             return command
+
         command.initialize_options()
         self.have_run[command_name] = 0
         command.finalized = False
@@ -780,8 +771,8 @@ Common commands: (see '--help-commands' for more)
             if isinstance(hook, basestring):
                 try:
                     hook_obj = resolve_name(hook)
-                except ImportError:
-                    raise PackagingModuleError(sys.exc_info()[1])
+                except ImportError, e:
+                    raise PackagingModuleError(e)
             else:
                 hook_obj = hook
 

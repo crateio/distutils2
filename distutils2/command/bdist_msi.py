@@ -8,7 +8,7 @@ import os
 import msilib
 
 
-from sysconfig import get_python_version
+from distutils2._backport.sysconfig import get_python_version
 from shutil import rmtree
 from distutils2.command.cmd import Command
 from distutils2.version import NormalizedVersion
@@ -391,19 +391,23 @@ class bdist_msi(Command):
         if self.pre_install_script:
             scriptfn = os.path.join(self.bdist_dir, "preinstall.bat")
             f = open(scriptfn, "w")
-            # The batch file will be executed with [PYTHON], so that %1
-            # is the path to the Python interpreter; %0 will be the path
-            # of the batch file.
-            # rem ="""
-            # %1 %0
-            # exit
-            # """
-            # <actual script>
-            f.write('rem ="""\n%1 %0\nexit\n"""\n')
-            fp = open(self.pre_install_script)
-            f.write(fp.read())
-            fp.close()
-            f.close()
+            try:
+                # The batch file will be executed with [PYTHON], so that %1
+                # is the path to the Python interpreter; %0 will be the path
+                # of the batch file.
+                # rem ="""
+                # %1 %0
+                # exit
+                # """
+                # <actual script>
+                f.write('rem ="""\n%1 %0\nexit\n"""\n')
+                fp = open(self.pre_install_script)
+                try:
+                    f.write(fp.read())
+                finally:
+                    fp.close()
+            finally:
+                f.close()
             add_data(self.db, "Binary",
                      [("PreInstall", msilib.Binary(scriptfn)),
                      ])

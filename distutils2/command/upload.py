@@ -1,6 +1,6 @@
 """Upload a distribution to a project index."""
 
-import os, sys
+import os
 import socket
 import logging
 import platform
@@ -16,7 +16,7 @@ from urllib2 import urlopen, Request
 from distutils2 import logger
 from distutils2.errors import PackagingOptionError
 from distutils2.util import (spawn, read_pypirc, DEFAULT_REPOSITORY,
-                            DEFAULT_REALM, encode_multipart)
+                             DEFAULT_REALM, encode_multipart)
 from distutils2.command.cmd import Command
 
 
@@ -105,8 +105,10 @@ class upload(Command):
         # Fill in the data - send all the metadata in case we need to
         # register a new release
         f = open(filename, 'rb')
-        content = f.read()
-        f.close()
+        try:
+            content = f.read()
+        finally:
+            f.close()
 
         data = self.distribution.metadata.todict()
 
@@ -123,8 +125,10 @@ class upload(Command):
 
         if self.sign:
             fp = open(filename + '.asc')
-            sig = fp.read()
-            fp.close()
+            try:
+                sig = fp.read()
+            finally:
+                fp.close()
             data['gpg_signature'] = [
                 (os.path.basename(filename) + ".asc", sig)]
 
@@ -156,11 +160,10 @@ class upload(Command):
             result = urlopen(request)
             status = result.code
             reason = result.msg
-        except socket.error:
-            logger.error(sys.exc_info()[1])
+        except socket.error, e:
+            logger.error(e)
             return
-        except HTTPError:
-            e = sys.exc_info()[1]
+        except HTTPError, e:
             status = e.code
             reason = e.msg
 

@@ -5,6 +5,7 @@ import re
 from shutil import copyfile, move
 from distutils2 import util
 from distutils2 import logger
+from distutils2.util import make_archive
 from distutils2.errors import PackagingOptionError
 
 
@@ -403,9 +404,9 @@ class Command(object):
 
     def make_archive(self, base_name, format, root_dir=None, base_dir=None,
                      owner=None, group=None):
-        return util.make_archive(base_name, format, root_dir,
-                                 base_dir, dry_run=self.dry_run,
-                                 owner=owner, group=group)
+        return make_archive(base_name, format, root_dir,
+                            base_dir, dry_run=self.dry_run,
+                            owner=owner, group=group)
 
     def make_file(self, infiles, outfile, func, args,
                   exec_msg=None, skip_msg=None, level=1):
