@@ -7,17 +7,21 @@ import codecs
 from distutils import sysconfig
 from distutils.core import setup, Extension
 from distutils.ccompiler import new_compiler
-try:
-    from configparser import RawConfigParser
-except ImportError: #<3.0
-    from ConfigParser import RawConfigParser
+from ConfigParser import RawConfigParser
+
+
+def split_multiline(value):
+    return [element for element in (line.strip() for line in value.split('\n'))
+            if element]
+
+def split_elements(value):
+    return [v.strip() for v in value.split(',')]
+
+def split_files(value):
+    return [str(v) for v in split_multiline(value)]
+
 
 def cfg_to_args(path='setup.cfg'):
-    from distutils2.util import split_multiline
-    def split_elements(value):
-        return [ v.strip() for v in value.split(',') ]
-    def split_files(value):
-        return [ str(v) for v in split_multiline(value) ]
     opts_to_args =  {
         'metadata': (
             ('name', 'name', None),
