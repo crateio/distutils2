@@ -8,20 +8,20 @@ distribution objects contain download-related information.
 """
 
 import re
-try:
-    import hashlib
-except ImportError:
-    from distutils2._backport import hashlib
 import tempfile
 import urllib
 import urlparse
 from distutils2.errors import IrrationalVersionError
 from distutils2.version import (suggest_normalized_version, NormalizedVersion,
-                               get_version_predicate)
+                                get_version_predicate)
 from distutils2.metadata import Metadata
 from distutils2.pypi.errors import (HashDoesNotMatch, UnsupportedHashName,
-                                   CantParseArchiveName)
-from distutils2.util import unpack_archive
+                                    CantParseArchiveName)
+from distutils2._backport.shutil import unpack_archive
+try:
+    import hashlib
+except ImportError:
+    from distutils2._backport import hashlib
 
 
 __all__ = ['ReleaseInfo', 'DistInfo', 'ReleasesList', 'get_infos_from_url']

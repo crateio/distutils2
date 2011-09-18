@@ -27,16 +27,17 @@ import codecs
 import shutil
 from textwrap import dedent
 from ConfigParser import RawConfigParser
-from distutils2.util import cmp_to_key, detect_encoding
+
 # importing this with an underscore as it should be replaced by the
 # dict form or another structures for all purposes
 from distutils2._trove import all_classifiers as _CLASSIFIERS_LIST
+from distutils2.compat import detect_encoding
 from distutils2.version import is_valid_version
 from distutils2._backport import sysconfig
 try:
     any
 except NameError:
-    from distutils2._backport import any
+    from distutils2.compat import any
 try:
     from hashlib import md5
 except ImportError:
@@ -367,8 +368,9 @@ class MainProgram(object):
                       ('description', 'summary'),
                       ('long_description', 'description'),
                       ('url', 'home_page'),
-                      ('platforms', 'platform'),
-                      # backport only for 2.5+
+                      ('platforms', 'platform'))
+            if sys.version >= '2.5':
+                labels += (
                       ('provides', 'provides-dist'),
                       ('obsoletes', 'obsoletes-dist'),
                       ('requires', 'requires-dist'))
@@ -388,21 +390,9 @@ class MainProgram(object):
                     dist.data_files = [('', dist.data_files)]
                 # add tokens in the destination paths
                 vars = {'distribution.name': data['name']}
-                path_tokens = list(sysconfig.get_paths(vars=vars).items())
-
-                # TODO replace this with a key function
-                def length_comparison(x, y):
-                    len_x = len(x[1])
-                    len_y = len(y[1])
-                    if len_x == len_y:
-                        return 0
-                    elif len_x < len_y:
-                        return -1
-                    else:
-                        return 1
-
+                path_tokens = sysconfig.get_paths(vars=vars).items()
                 # sort tokens to use the longest one first
-                path_tokens.sort(key=cmp_to_key(length_comparison))
+                path_tokens = sorted(path_tokens, key=lambda x: len(x[1]))
                 for dest, srcs in (dist.data_files or []):
                     dest = os.path.join(sys.prefix, dest)
                     dest = dest.replace(os.path.sep, '/')

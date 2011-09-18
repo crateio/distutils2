@@ -4,15 +4,15 @@ import os
 import re
 import sys
 from StringIO import StringIO
-from shutil import rmtree
 
 from distutils2 import logger
-from distutils2.util import resolve_name, get_archive_formats
+from distutils2.util import resolve_name
 from distutils2.errors import (PackagingPlatformError, PackagingOptionError,
                                PackagingModuleError, PackagingFileError)
 from distutils2.command import get_command_names
 from distutils2.command.cmd import Command
 from distutils2.manifest import Manifest
+from distutils2._backport.shutil import get_archive_formats, rmtree
 
 
 def show_formats():

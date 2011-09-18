@@ -8,8 +8,6 @@ import errno
 import codecs
 import shutil
 import string
-import tarfile
-import zipfile
 import posixpath
 import subprocess
 from fnmatch import fnmatchcase
@@ -29,6 +27,30 @@ from distutils2.errors import (PackagingPlatformError, PackagingFileError,
                                PackagingByteCompileError, PackagingExecError,
                                InstallationException, PackagingInternalError)
 from distutils2._backport import sysconfig
+
+__all__ = [
+    # file dependencies
+    'newer', 'newer_group',
+    # helpers for commands (dry-run system)
+    'execute', 'write_file',
+    # spawning programs
+    'find_executable', 'spawn',
+    # path manipulation
+    'convert_path', 'change_root',
+    # 2to3 conversion
+    'Mixin2to3', 'run_2to3',
+    # packaging compatibility helpers
+    'cfg_to_args', 'generate_setup_py',
+    'egginfo_to_distinfo',
+    'get_install_method',
+    # misc
+    'ask', 'check_environ', 'encode_multipart', 'resolve_name',
+    # querying for information  TODO move to sysconfig
+    'get_compiler_versions', 'get_platform', 'set_platform',
+    # configuration  TODO move to packaging.config
+    'get_pypirc_path', 'read_pypirc', 'generate_pypirc',
+    'strtobool', 'split_multiline',
+]
 
 _PLATFORM = None
 _DEFAULT_INSTALLER = 'distutils2'
@@ -159,31 +181,6 @@ def check_environ():
     _environ_checked = True
 
 
-def subst_vars(s, local_vars):
-    """Perform shell/Perl-style variable substitution on 'string'.
-
-    Every occurrence of '$' followed by a name is considered a variable, and
-    variable is substituted by the value found in the 'local_vars'
-    dictionary, or in 'os.environ' if it's not in 'local_vars'.
-    'os.environ' is first checked/augmented to guarantee that it contains
-    certain values: see 'check_environ()'.  Raise ValueError for any
-    variables not found in either 'local_vars' or 'os.environ'.
-    """
-    check_environ()
-
-    def _subst(match, local_vars=local_vars):
-        var_name = match.group(1)
-        if var_name in local_vars:
-            return str(local_vars[var_name])
-        else:
-            return os.environ[var_name]
-
-    try:
-        return re.sub(r'\$([a-zA-Z_][a-zA-Z_0-9]*)', _subst, s)
-    except KeyError, e:
-        raise ValueError("invalid variable '$%s'" % e)
-
-
 # Needed by 'split_quoted()'
 _wordchars_re = _squote_re = _dquote_re = None
 
@@ -194,6 +191,8 @@ def _init_regex():
     _squote_re = re.compile(r"'(?:[^'\\]|\\.)*'")
     _dquote_re = re.compile(r'"(?:[^"\\]|\\.)*"')
 
+
+# TODO replace with shlex.split after testing
 
 def split_quoted(s):
     """Split a string up according to Unix shell-like rules for quotes and
@@ -446,15 +445,6 @@ byte_compile(files, optimize=%r, force=%r,
                               file, cfile_base)
 
 
-def rfc822_escape(header):
-    """Return a form of *header* suitable for inclusion in an RFC 822-header.
-
-    This function ensures there are 8 spaces after each newline.
-    """
-    lines = header.split('\n')
-    sep = '\n' + 8 * ' '
-    return sep.join(lines)
-
 _RE_VERSION = re.compile('(\d+\.\d+(\.\d+)*)')
 _MAC_OS_X_LD_VERSION = re.compile('^@\(#\)PROGRAM:ld  '
                                   'PROJECT:ld64-((\d+)(\.\d+)*)')
@@ -554,6 +544,10 @@ def write_file(filename, contents):
     """Create *filename* and write *contents* to it.
 
     *contents* is a sequence of strings without line terminators.
+
+    This functions is not intended to replace the usual with open + write
+    idiom in all cases, only with Command.execute, which runs depending on
+    the dry_run argument and also logs its arguments).
     """
     f = open(filename, "w")
     try:
@@ -575,6 +569,7 @@ def _is_archive_file(name):
 
 
 def _under(path, root):
+    # XXX use os.path
     path = path.split(os.sep)
     root = root.split(os.sep)
     if len(root) > len(path):
@@ -676,105 +671,6 @@ def splitext(path):
         base = base[:-4]
     return base, ext
 
-
-def unzip_file(filename, location, flatten=True):
-    """Unzip the file *filename* into the *location* directory."""
-    if not os.path.exists(location):
-        os.makedirs(location)
-    zipfp = open(filename, 'rb')
-
-    zip = zipfile.ZipFile(zipfp)
-    leading = has_leading_dir(zip.namelist()) and flatten
-    for name in zip.namelist():
-        data = zip.read(name)
-        fn = name
-        if leading:
-            fn = split_leading_dir(name)[1]
-        fn = os.path.join(location, fn)
-        dir = os.path.dirname(fn)
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-        if fn.endswith('/') or fn.endswith('\\'):
-            # A directory
-            if not os.path.exists(fn):
-                os.makedirs(fn)
-        else:
-            fp = open(fn, 'wb')
-            fp.write(data)
-            fp.close()
-    zipfp.close()
-
-
-def untar_file(filename, location):
-    """Untar the file *filename* into the *location* directory."""
-    if not os.path.exists(location):
-        os.makedirs(location)
-    if filename.lower().endswith('.gz') or filename.lower().endswith('.tgz'):
-        mode = 'r:gz'
-    elif (filename.lower().endswith('.bz2')
-          or filename.lower().endswith('.tbz')):
-        mode = 'r:bz2'
-    elif filename.lower().endswith('.tar'):
-        mode = 'r'
-    else:
-        mode = 'r:*'
-
-    tar = tarfile.open(filename, mode)
-    leading = has_leading_dir(member.name for member in tar.getmembers())
-    for member in tar.getmembers():
-        fn = member.name
-        if leading:
-            fn = split_leading_dir(fn)[1]
-        path = os.path.join(location, fn)
-        if member.isdir():
-            if not os.path.exists(path):
-                os.makedirs(path)
-        else:
-            try:
-                fp = tar.extractfile(member)
-            except (KeyError, AttributeError):
-                # Some corrupt tar files seem to produce this
-                # (specifically bad symlinks)
-                continue
-            try:
-                if not os.path.exists(os.path.dirname(path)):
-                    os.makedirs(os.path.dirname(path))
-                    destfp = open(path, 'wb')
-                    shutil.copyfileobj(fp, destfp)
-                    destfp.close()
-            except:
-                fp.close()
-                raise
-            fp.close()
-
-def has_leading_dir(paths):
-    """Return true if all the paths have the same leading path name.
-
-    In other words, check that everything is in one subdirectory in an
-    archive.
-    """
-    common_prefix = None
-    for path in paths:
-        prefix, rest = split_leading_dir(path)
-        if not prefix:
-            return False
-        elif common_prefix is None:
-            common_prefix = prefix
-        elif prefix != common_prefix:
-            return False
-    return True
-
-
-def split_leading_dir(path):
-    path = str(path)
-    path = path.lstrip('/').lstrip('\\')
-    if '/' in path and (('\\' in path and path.find('/') < path.find('\\'))
-                        or '\\' not in path):
-        return path.split('/', 1)
-    elif '\\' in path:
-        return path.split('\\', 1)
-    else:
-        return path, ''
 
 if sys.platform == 'darwin':
     _cfg_target = None
@@ -1563,11 +1459,12 @@ def encode_multipart(fields, files, boundary=None):
     for key, values in fields:
         # handle multiple entries for the same name
         if not isinstance(values, (tuple, list)):
-            values=[values]
+            values = [values]
 
         for value in values:
             l.extend((
                 '--' + boundary,
+                # XXX should encode to match packaging but it causes bugs
                 ('Content-Disposition: form-data; name="%s"' % key), '', value))
 
     for key, filename, value in files:
@@ -1584,561 +1481,3 @@ def encode_multipart(fields, files, boundary=None):
     body = '\r\n'.join(l)
     content_type = 'multipart/form-data; boundary=' + boundary
     return content_type, body
-
-# shutil stuff
-
-try:
-    import bz2
-    _BZ2_SUPPORTED = True
-except ImportError:
-    _BZ2_SUPPORTED = False
-
-try:
-    from pwd import getpwnam
-except ImportError:
-    getpwnam = None
-
-try:
-    from grp import getgrnam
-except ImportError:
-    getgrnam = None
-
-def _get_gid(name):
-    """Returns a gid, given a group name."""
-    if getgrnam is None or name is None:
-        return None
-    try:
-        result = getgrnam(name)
-    except KeyError:
-        result = None
-    if result is not None:
-        return result[2]
-    return None
-
-def _get_uid(name):
-    """Returns an uid, given a user name."""
-    if getpwnam is None or name is None:
-        return None
-    try:
-        result = getpwnam(name)
-    except KeyError:
-        result = None
-    if result is not None:
-        return result[2]
-    return None
-
-def _make_tarball(base_name, base_dir, compress="gzip", verbose=0, dry_run=0,
-                  owner=None, group=None, logger=None):
-    """Create a (possibly compressed) tar file from all the files under
-    'base_dir'.
-
-    'compress' must be "gzip" (the default), "bzip2", or None.
-
-    'owner' and 'group' can be used to define an owner and a group for the
-    archive that is being built. If not provided, the current owner and group
-    will be used.
-
-    The output tar file will be named 'base_name' +  ".tar", possibly plus
-    the appropriate compression extension (".gz", or ".bz2").
-
-    Returns the output filename.
-    """
-    tar_compression = {'gzip': 'gz', None: ''}
-    compress_ext = {'gzip': '.gz'}
-
-    if _BZ2_SUPPORTED:
-        tar_compression['bzip2'] = 'bz2'
-        compress_ext['bzip2'] = '.bz2'
-
-    # flags for compression program, each element of list will be an argument
-    if compress is not None and compress not in compress_ext.keys():
-        raise ValueError("bad value for 'compress', or compression format not "
-                         "supported : %s" % compress)
-
-    archive_name = base_name + '.tar' + compress_ext.get(compress, '')
-    archive_dir = os.path.dirname(archive_name)
-
-    if not os.path.exists(archive_dir):
-        if logger is not None:
-            logger.info("creating %s" % archive_dir)
-        if not dry_run:
-            os.makedirs(archive_dir)
-
-    # creating the tarball
-    if logger is not None:
-        logger.info('Creating tar archive')
-
-    uid = _get_uid(owner)
-    gid = _get_gid(group)
-
-    def _set_uid_gid(tarinfo):
-        if gid is not None:
-            tarinfo.gid = gid
-            tarinfo.gname = group
-        if uid is not None:
-            tarinfo.uid = uid
-            tarinfo.uname = owner
-        return tarinfo
-
-    if not dry_run:
-        tar = tarfile.open(archive_name, 'w|%s' % tar_compression[compress])
-        try:
-            #tar.add(base_dir, filter=_set_uid_gid)
-            tar.add(base_dir)
-        finally:
-            tar.close()
-
-    return archive_name
-
-def _call_external_zip(base_dir, zip_filename, verbose=False, dry_run=False):
-    # XXX see if we want to keep an external call here
-    if verbose:
-        zipoptions = "-r"
-    else:
-        zipoptions = "-rq"
-    from distutils.errors import DistutilsExecError
-    from distutils.spawn import spawn
-    try:
-        spawn(["zip", zipoptions, zip_filename, base_dir], dry_run=dry_run)
-    except DistutilsExecError:
-        # XXX really should distinguish between "couldn't find
-        # external 'zip' command" and "zip failed".
-        raise ExecError("unable to create zip file '%s': "
-            "could neither import the 'zipfile' module nor "
-            "find a standalone zip utility") % zip_filename
-
-def _make_zipfile(base_name, base_dir, verbose=0, dry_run=0, logger=None):
-    """Create a zip file from all the files under 'base_dir'.
-
-    The output zip file will be named 'base_name' + ".zip".  Uses either the
-    "zipfile" Python module (if available) or the InfoZIP "zip" utility
-    (if installed and found on the default search path).  If neither tool is
-    available, raises ExecError.  Returns the name of the output zip
-    file.
-    """
-    zip_filename = base_name + ".zip"
-    archive_dir = os.path.dirname(base_name)
-
-    if not os.path.exists(archive_dir):
-        if logger is not None:
-            logger.info("creating %s", archive_dir)
-        if not dry_run:
-            os.makedirs(archive_dir)
-
-    # If zipfile module is not available, try spawning an external 'zip'
-    # command.
-    try:
-        import zipfile
-    except ImportError:
-        zipfile = None
-
-    if zipfile is None:
-        _call_external_zip(base_dir, zip_filename, verbose, dry_run)
-    else:
-        if logger is not None:
-            logger.info("creating '%s' and adding '%s' to it",
-                        zip_filename, base_dir)
-
-        if not dry_run:
-            zip = zipfile.ZipFile(zip_filename, "w",
-                                  compression=zipfile.ZIP_DEFLATED)
-
-            for dirpath, dirnames, filenames in os.walk(base_dir):
-                for name in filenames:
-                    path = os.path.normpath(os.path.join(dirpath, name))
-                    if os.path.isfile(path):
-                        zip.write(path, path)
-                        if logger is not None:
-                            logger.info("adding '%s'", path)
-            zip.close()
-
-    return zip_filename
-
-_ARCHIVE_FORMATS = {
-    'gztar': (_make_tarball, [('compress', 'gzip')], "gzip'ed tar-file"),
-    'bztar': (_make_tarball, [('compress', 'bzip2')], "bzip2'ed tar-file"),
-    'tar':   (_make_tarball, [('compress', None)], "uncompressed tar file"),
-    'zip':   (_make_zipfile, [],"ZIP file")
-    }
-
-if _BZ2_SUPPORTED:
-    _ARCHIVE_FORMATS['bztar'] = (_make_tarball, [('compress', 'bzip2')],
-                                "bzip2'ed tar-file")
-
-def get_archive_formats():
-    """Returns a list of supported formats for archiving and unarchiving.
-
-    Each element of the returned sequence is a tuple (name, description)
-    """
-    formats = [(name, registry[2]) for name, registry in
-               _ARCHIVE_FORMATS.items()]
-    formats.sort()
-    return formats
-
-def register_archive_format(name, function, extra_args=None, description=''):
-    """Registers an archive format.
-
-    name is the name of the format. function is the callable that will be
-    used to create archives. If provided, extra_args is a sequence of
-    (name, value) tuples that will be passed as arguments to the callable.
-    description can be provided to describe the format, and will be returned
-    by the get_archive_formats() function.
-    """
-    if extra_args is None:
-        extra_args = []
-    if not isinstance(function, collections.Callable):
-        raise TypeError('The %s object is not callable' % function)
-    if not isinstance(extra_args, (tuple, list)):
-        raise TypeError('extra_args needs to be a sequence')
-    for element in extra_args:
-        if not isinstance(element, (tuple, list)) or len(element) !=2 :
-            raise TypeError('extra_args elements are : (arg_name, value)')
-
-    _ARCHIVE_FORMATS[name] = (function, extra_args, description)
-
-def unregister_archive_format(name):
-    del _ARCHIVE_FORMATS[name]
-
-def make_archive(base_name, format, root_dir=None, base_dir=None, verbose=0,
-                 dry_run=0, owner=None, group=None, logger=None):
-    """Create an archive file (eg. zip or tar).
-
-    'base_name' is the name of the file to create, minus any format-specific
-    extension; 'format' is the archive format: one of "zip", "tar", "bztar"
-    or "gztar".
-
-    'root_dir' is a directory that will be the root directory of the
-    archive; ie. we typically chdir into 'root_dir' before creating the
-    archive.  'base_dir' is the directory where we start archiving from;
-    ie. 'base_dir' will be the common prefix of all files and
-    directories in the archive.  'root_dir' and 'base_dir' both default
-    to the current directory.  Returns the name of the archive file.
-
-    'owner' and 'group' are used when creating a tar archive. By default,
-    uses the current owner and group.
-    """
-    save_cwd = os.getcwd()
-    base_name = fsencode(base_name)
-    if root_dir is not None:
-        if logger is not None:
-            logger.debug("changing into '%s'", root_dir)
-        base_name = os.path.abspath(base_name)
-        if not dry_run:
-            os.chdir(root_dir)
-
-    if base_dir is None:
-        base_dir = os.curdir
-
-    kwargs = {'dry_run': dry_run, 'logger': logger}
-
-    try:
-        format_info = _ARCHIVE_FORMATS[format]
-    except KeyError:
-        raise ValueError("unknown archive format '%s'" % format)
-
-    func = format_info[0]
-    for arg, val in format_info[1]:
-        kwargs[arg] = val
-
-    if format != 'zip':
-        kwargs['owner'] = owner
-        kwargs['group'] = group
-
-    try:
-        filename = func(base_name, base_dir, **kwargs)
-    finally:
-        if root_dir is not None:
-            if logger is not None:
-                logger.debug("changing back to '%s'", save_cwd)
-            os.chdir(save_cwd)
-
-    return filename
-
-
-def get_unpack_formats():
-    """Returns a list of supported formats for unpacking.
-
-    Each element of the returned sequence is a tuple
-    (name, extensions, description)
-    """
-    formats = [(name, info[0], info[3]) for name, info in
-               _UNPACK_FORMATS.items()]
-    formats.sort()
-    return formats
-
-def _check_unpack_options(extensions, function, extra_args):
-    """Checks what gets registered as an unpacker."""
-    # first make sure no other unpacker is registered for this extension
-    existing_extensions = {}
-    for name, info in _UNPACK_FORMATS.items():
-        for ext in info[0]:
-            existing_extensions[ext] = name
-
-    for extension in extensions:
-        if extension in existing_extensions:
-            msg = '%s is already registered for "%s"'
-            raise RegistryError(msg % (extension,
-                                       existing_extensions[extension]))
-
-    if not isinstance(function, collections.Callable):
-        raise TypeError('The registered function must be a callable')
-
-
-def register_unpack_format(name, extensions, function, extra_args=None,
-                           description=''):
-    """Registers an unpack format.
-
-    `name` is the name of the format. `extensions` is a list of extensions
-    corresponding to the format.
-
-    `function` is the callable that will be
-    used to unpack archives. The callable will receive archives to unpack.
-    If it's unable to handle an archive, it needs to raise a ReadError
-    exception.
-
-    If provided, `extra_args` is a sequence of
-    (name, value) tuples that will be passed as arguments to the callable.
-    description can be provided to describe the format, and will be returned
-    by the get_unpack_formats() function.
-    """
-    if extra_args is None:
-        extra_args = []
-    _check_unpack_options(extensions, function, extra_args)
-    _UNPACK_FORMATS[name] = extensions, function, extra_args, description
-
-def unregister_unpack_format(name):
-    """Removes the pack format from the registery."""
-    del _UNPACK_FORMATS[name]
-
-def _ensure_directory(path):
-    """Ensure that the parent directory of `path` exists"""
-    dirname = os.path.dirname(path)
-    if not os.path.isdir(dirname):
-        os.makedirs(dirname)
-
-def _unpack_zipfile(filename, extract_dir):
-    """Unpack zip `filename` to `extract_dir`
-    """
-    try:
-        import zipfile
-    except ImportError:
-        raise ReadError('zlib not supported, cannot unpack this archive.')
-
-    if not zipfile.is_zipfile(filename):
-        raise ReadError("%s is not a zip file" % filename)
-
-    zip = zipfile.ZipFile(filename)
-    try:
-        for info in zip.infolist():
-            name = info.filename
-
-            # don't extract absolute paths or ones with .. in them
-            if name.startswith('/') or '..' in name:
-                continue
-
-            target = os.path.join(extract_dir, *name.split('/'))
-            if not target:
-                continue
-
-            _ensure_directory(target)
-            if not name.endswith('/'):
-                # file
-                data = zip.read(info.filename)
-                f = open(target,'wb')
-                try:
-                    f.write(data)
-                finally:
-                    f.close()
-                    del data
-    finally:
-        zip.close()
-
-def _unpack_tarfile(filename, extract_dir):
-    """Unpack tar/tar.gz/tar.bz2 `filename` to `extract_dir`
-    """
-    try:
-        tarobj = tarfile.open(filename)
-    except tarfile.TarError:
-        raise ReadError(
-            "%s is not a compressed or uncompressed tar file" % filename)
-    try:
-        tarobj.extractall(extract_dir)
-    finally:
-        tarobj.close()
-
-_UNPACK_FORMATS = {
-    'gztar': (['.tar.gz', '.tgz'], _unpack_tarfile, [], "gzip'ed tar-file"),
-    'tar':   (['.tar'], _unpack_tarfile, [], "uncompressed tar file"),
-    'zip':   (['.zip'], _unpack_zipfile, [], "ZIP file")
-    }
-
-if _BZ2_SUPPORTED:
-    _UNPACK_FORMATS['bztar'] = (['.bz2'], _unpack_tarfile, [],
-                                "bzip2'ed tar-file")
-
-def _find_unpack_format(filename):
-    for name, info in _UNPACK_FORMATS.items():
-        for extension in info[0]:
-            if filename.endswith(extension):
-                return name
-    return None
-
-def unpack_archive(filename, extract_dir=None, format=None):
-    """Unpack an archive.
-
-    `filename` is the name of the archive.
-
-    `extract_dir` is the name of the target directory, where the archive
-    is unpacked. If not provided, the current working directory is used.
-
-    `format` is the archive format: one of "zip", "tar", or "gztar". Or any
-    other registered format. If not provided, unpack_archive will use the
-    filename extension and see if an unpacker was registered for that
-    extension.
-
-    In case none is found, a ValueError is raised.
-    """
-    if extract_dir is None:
-        extract_dir = os.getcwd()
-
-    if format is not None:
-        try:
-            format_info = _UNPACK_FORMATS[format]
-        except KeyError:
-            raise ValueError("Unknown unpack format '%s'" % format)
-
-        func = format_info[1]
-        func(filename, extract_dir, **dict(format_info[2]))
-    else:
-        # we need to look at the registered unpackers supported extensions
-        format = _find_unpack_format(filename)
-        if format is None:
-            raise ReadError("Unknown archive format '%s'" % filename)
-
-        func = _UNPACK_FORMATS[format][1]
-        kwargs = dict(_UNPACK_FORMATS[format][2])
-        func(filename, extract_dir, **kwargs)
-
-# tokenize stuff
-
-cookie_re = re.compile("coding[:=]\s*([-\w.]+)")
-
-def _get_normal_name(orig_enc):
-    """Imitates get_normal_name in tokenizer.c."""
-    # Only care about the first 12 characters.
-    enc = orig_enc[:12].lower().replace("_", "-")
-    if enc == "utf-8" or enc.startswith("utf-8-"):
-        return "utf-8"
-    if enc in ("latin-1", "iso-8859-1", "iso-latin-1") or \
-       enc.startswith(("latin-1-", "iso-8859-1-", "iso-latin-1-")):
-        return "iso-8859-1"
-    return orig_enc
-
-def detect_encoding(readline):
-    """
-    The detect_encoding() function is used to detect the encoding that should
-    be used to decode a Python source file.  It requires one argment, readline,
-    in the same way as the tokenize() generator.
-
-    It will call readline a maximum of twice, and return the encoding used
-    (as a string) and a list of any lines (left as bytes) it has read in.
-
-    It detects the encoding from the presence of a utf-8 bom or an encoding
-    cookie as specified in pep-0263.  If both a bom and a cookie are present,
-    but disagree, a SyntaxError will be raised.  If the encoding cookie is an
-    invalid charset, raise a SyntaxError.  Note that if a utf-8 bom is found,
-    'utf-8-sig' is returned.
-
-    If no encoding is specified, then the default of 'utf-8' will be returned.
-    """
-    bom_found = False
-    encoding = None
-    default = 'utf-8'
-    def read_or_stop():
-        try:
-            return readline()
-        except StopIteration:
-            return ''
-
-    def find_cookie(line):
-        try:
-            line_string = line.decode('ascii')
-        except UnicodeDecodeError:
-            return None
-
-        matches = cookie_re.findall(line_string)
-        if not matches:
-            return None
-        encoding = _get_normal_name(matches[0])
-        try:
-            codec = codecs.lookup(encoding)
-        except LookupError:
-            # This behaviour mimics the Python interpreter
-            raise SyntaxError("unknown encoding: " + encoding)
-
-        if bom_found:
-            if codec.name != 'utf-8':
-                # This behaviour mimics the Python interpreter
-                raise SyntaxError('encoding problem: utf-8')
-            encoding += '-sig'
-        return encoding
-
-    first = read_or_stop()
-    if first.startswith(codecs.BOM_UTF8):
-        bom_found = True
-        first = first[3:]
-        default = 'utf-8-sig'
-    if not first:
-        return default, []
-
-    encoding = find_cookie(first)
-    if encoding:
-        return encoding, [first]
-
-    second = read_or_stop()
-    if not second:
-        return default, [first]
-
-    encoding = find_cookie(second)
-    if encoding:
-        return encoding, [first, second]
-
-    return default, [first, second]
-
-# functools stuff
-
-def cmp_to_key(mycmp):
-    """Convert a cmp= function into a key= function"""
-    class K(object):
-        __slots__ = ['obj']
-        def __init__(self, obj):
-            self.obj = obj
-        def __lt__(self, other):
-            return mycmp(self.obj, other.obj) < 0
-        def __gt__(self, other):
-            return mycmp(self.obj, other.obj) > 0
-        def __eq__(self, other):
-            return mycmp(self.obj, other.obj) == 0
-        def __le__(self, other):
-            return mycmp(self.obj, other.obj) <= 0
-        def __ge__(self, other):
-            return mycmp(self.obj, other.obj) >= 0
-        def __ne__(self, other):
-            return mycmp(self.obj, other.obj) != 0
-        __hash__ = None
-    return K
-
-# os stuff
-
-def fsencode(filename):
-    """
-    Encode filename to the filesystem encoding with 'surrogateescape' error
-    handler, return bytes unchanged. On Windows, use 'strict' error handler if
-    the file system encoding is 'mbcs' (which is the default encoding).
-    """
-    if isinstance(filename, str):
-        return filename
-    elif isinstance(filename, unicode):
-        return filename.encode(sys.getfilesystemencoding())
-    else:
-        raise TypeError("expect bytes or str, not %s" % type(filename).__name__)

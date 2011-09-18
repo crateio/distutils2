@@ -384,7 +384,7 @@ def reap_threads(func):
     if not _thread:
         return func
 
-    @functools.wraps(func)
+    @wraps(func)
     def decorator(*args):
         key = threading_setup()
         try:

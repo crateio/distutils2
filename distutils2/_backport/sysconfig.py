@@ -338,8 +338,10 @@ def _init_posix(vars):
     config_h = get_config_h_filename()
     try:
         f = open(config_h)
-        parse_config_h(f, vars)
-        f.close()
+        try:
+            parse_config_h(f, vars)
+        finally:
+            f.close()
     except IOError, e:
         msg = "invalid Python installation: unable to open %s" % config_h
         if hasattr(e, "strerror"):
@@ -730,13 +732,13 @@ def get_platform():
                 # On OSX the machine type returned by uname is always the
                 # 32-bit variant, even if the executable architecture is
                 # the 64-bit variant
-                if sys.maxsize >= 2**32:
+                if sys.maxint >= 2**32:
                     machine = 'x86_64'
 
             elif machine in ('PowerPC', 'Power_Macintosh'):
                 # Pick a sane name for the PPC architecture.
                 # See 'i386' case
-                if sys.maxsize >= 2**32:
+                if sys.maxint >= 2**32:
                     machine = 'ppc64'
                 else:
                     machine = 'ppc'
@@ -751,18 +753,18 @@ def get_python_version():
 def _print_dict(title, data):
     for index, (key, value) in enumerate(sorted(data.items())):
         if index == 0:
-            print('%s: ' % (title))
-        print('\t%s = "%s"' % (key, value))
+            print '%s: ' % (title)
+        print '\t%s = "%s"' % (key, value)
 
 
 def _main():
     """Display all information sysconfig detains."""
-    print('Platform: "%s"' % get_platform())
-    print('Python version: "%s"' % get_python_version())
-    print('Current installation scheme: "%s"' % _get_default_scheme())
-    print(u'')
+    print 'Platform: "%s"' % get_platform()
+    print 'Python version: "%s"' % get_python_version()
+    print 'Current installation scheme: "%s"' % _get_default_scheme()
+    print
     _print_dict('Paths', get_paths())
-    print(u'')
+    print
     _print_dict('Variables', get_config_vars())
 
 

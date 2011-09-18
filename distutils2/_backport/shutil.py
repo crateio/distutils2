@@ -32,7 +32,7 @@ __all__ = ["copyfileobj", "copyfile", "copymode", "copystat", "copy", "copy2",
            "ExecError", "make_archive", "get_archive_formats",
            "register_archive_format", "unregister_archive_format",
            "get_unpack_formats", "register_unpack_format",
-           "unregister_unpack_format", "unpack_archive"]
+           "unregister_unpack_format", "unpack_archive", "ignore_patterns"]
 
 class Error(EnvironmentError):
     pass
@@ -202,8 +202,11 @@ def copytree(src, dst, symlinks=False, ignore=None, copy_function=copy2,
     else:
         ignored_names = set()
 
-    if not os.path.exists(dst):
+    try:
         os.makedirs(dst)
+    except OSError, e:
+        if e.errno != errno.EEXIST:
+            raise
 
     errors = []
     for name in names:
@@ -317,6 +320,12 @@ def move(src, dst):
     """
     real_dst = dst
     if os.path.isdir(dst):
+        if _samefile(src, dst):
+            # We might be on a case insensitive filesystem,
+            # perform the rename anyway.
+            os.rename(src, dst)
+            return
+
         real_dst = os.path.join(dst, _basename(src))
         if os.path.exists(real_dst):
             raise Error("Destination path '%s' already exists" % real_dst)
@@ -408,7 +417,7 @@ def _make_tarball(base_name, base_dir, compress="gzip", verbose=0, dry_run=0,
     from distutils2._backport import tarfile
 
     if logger is not None:
-        logger.info('creating tar archive')
+        logger.info('Creating tar archive')
 
     uid = _get_uid(owner)
     gid = _get_gid(group)
@@ -696,6 +705,7 @@ def _unpack_zipfile(filename, extract_dir):
 def _unpack_tarfile(filename, extract_dir):
     """Unpack tar/tar.gz/tar.bz2 `filename` to `extract_dir`
     """
+    # late import because of circular dependency
     from distutils2._backport import tarfile
     try:
         tarobj = tarfile.open(filename)
@@ -742,16 +752,14 @@ def unpack_archive(filename, extract_dir=None, format=None):
     if extract_dir is None:
         extract_dir = os.getcwd()
 
-    func = None
-
     if format is not None:
         try:
             format_info = _UNPACK_FORMATS[format]
         except KeyError:
             raise ValueError("Unknown unpack format '%s'" % format)
 
-        func = format_info[0]
-        func(filename, extract_dir, **dict(format_info[1]))
+        func = format_info[1]
+        func(filename, extract_dir, **dict(format_info[2]))
     else:
         # we need to look at the registered unpackers supported extensions
         format = _find_unpack_format(filename)
@@ -761,8 +769,3 @@ def unpack_archive(filename, extract_dir=None, format=None):
         func = _UNPACK_FORMATS[format][1]
         kwargs = dict(_UNPACK_FORMATS[format][2])
         func(filename, extract_dir, **kwargs)
-
-    if func is None:
-        raise ValueError('Unknown archive format: %s' % filename)
-
-    return extract_dir

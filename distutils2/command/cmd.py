@@ -2,11 +2,10 @@
 
 import os
 import re
-from shutil import copyfile, move
 from distutils2 import util
 from distutils2 import logger
-from distutils2.util import make_archive
 from distutils2.errors import PackagingOptionError
+from distutils2._backport.shutil import copyfile, move, make_archive
 
 
 class Command(object):

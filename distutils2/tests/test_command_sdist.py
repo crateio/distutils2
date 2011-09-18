@@ -20,8 +20,9 @@ from distutils2.command.sdist import show_formats
 from distutils2.dist import Distribution
 from distutils2.tests import unittest
 from distutils2.errors import PackagingOptionError
-from distutils2.util import find_executable, get_archive_formats
+from distutils2.util import find_executable
 from distutils2.tests import support
+from distutils2._backport.shutil import get_archive_formats
 
 
 MANIFEST = """\

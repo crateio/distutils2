@@ -15,11 +15,8 @@ import urlparse
 import os
 
 from fnmatch import translate
-try:
-    from functools import wraps
-except ImportError:
-    from distutils2._backport.functools import wraps
 from distutils2 import logger
+from distutils2.compat import wraps
 from distutils2.metadata import Metadata
 from distutils2.version import get_version_predicate
 from distutils2 import __version__ as distutils2_version

@@ -1,8 +1,4 @@
-"""Things that will land in the Python 3.3 std lib but which we must drag along
- us for now to support 2.x."""
+"""Modules copied from the Python 3.2 standard library.
 
-def any(seq):
-    for elem in seq:
-        if elem:
-            return True
-    return False
+Individual classes and objects like the any function are in compat.
+"""

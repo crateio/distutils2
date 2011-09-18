@@ -1,5 +1,3 @@
-"""Tests for sysconfig."""
-
 import os
 import sys
 import subprocess
@@ -10,29 +8,21 @@ from StringIO import StringIO
 
 from distutils2._backport import sysconfig
 from distutils2._backport.sysconfig import (
-        _expand_globals, _expand_vars, _get_default_scheme, _subst_vars,
-        get_config_var, get_config_vars, get_path, get_paths, get_platform,
-        get_scheme_names, _main, _SCHEMES)
+    get_paths, get_platform, get_config_vars, get_path, get_path_names,
+    _SCHEMES, _get_default_scheme, _expand_vars, get_scheme_names,
+    get_config_var, _main)
 
 from distutils2.tests import unittest
-from distutils2.tests.support import EnvironRestorer
+from distutils2.tests.support import skip_unless_symlink
+
 from test.test_support import TESTFN, unlink
 
-try:
-    from test.test_support import skip_unless_symlink
-except ImportError:
-    skip_unless_symlink = unittest.skip(
-        'requires test.test_support.skip_unless_symlink')
 
-
-class TestSysConfig(EnvironRestorer, unittest.TestCase):
-
-    restore_environ = ['MACOSX_DEPLOYMENT_TARGET', 'PATH']
+class TestSysConfig(unittest.TestCase):
 
     def setUp(self):
         super(TestSysConfig, self).setUp()
         self.sys_path = sys.path[:]
-        self.makefile = None
         # patching os.uname
         if hasattr(os, 'uname'):
             self.uname = os.uname
@@ -45,17 +35,21 @@ class TestSysConfig(EnvironRestorer, unittest.TestCase):
         self.name = os.name
         self.platform = sys.platform
         self.version = sys.version
-        self.maxint = sys.maxint
         self.sep = os.sep
         self.join = os.path.join
         self.isabs = os.path.isabs
         self.splitdrive = os.path.splitdrive
         self._config_vars = copy(sysconfig._CONFIG_VARS)
+        self._added_envvars = []
+        self._changed_envvars = []
+        for var in ('MACOSX_DEPLOYMENT_TARGET', 'PATH'):
+            if var in os.environ:
+                self._changed_envvars.append((var, os.environ[var]))
+            else:
+                self._added_envvars.append(var)
 
     def tearDown(self):
         sys.path[:] = self.sys_path
-        if self.makefile is not None:
-            os.unlink(self.makefile)
         self._cleanup_testfn()
         if self.uname is not None:
             os.uname = self.uname
@@ -64,12 +58,16 @@ class TestSysConfig(EnvironRestorer, unittest.TestCase):
         os.name = self.name
         sys.platform = self.platform
         sys.version = self.version
-        sys.maxint = self.maxint
         os.sep = self.sep
         os.path.join = self.join
         os.path.isabs = self.isabs
         os.path.splitdrive = self.splitdrive
         sysconfig._CONFIG_VARS = copy(self._config_vars)
+        for var, value in self._changed_envvars:
+            os.environ[var] = value
+        for var in self._added_envvars:
+            os.environ.pop(var, None)
+
         super(TestSysConfig, self).tearDown()
 
     def _set_uname(self, uname):
@@ -85,19 +83,8 @@ class TestSysConfig(EnvironRestorer, unittest.TestCase):
         elif os.path.isdir(path):
             shutil.rmtree(path)
 
-    # TODO use a static list or remove the test
-    #def test_get_path_names(self):
-    #    self.assertEqual(get_path_names(), sysconfig._SCHEME_KEYS)
-
-    def test_nested_var_substitution(self):
-        # Assert that the {curly brace token} expansion pattern will replace
-        # only the inner {something} on nested expressions like {py{something}} on
-        # the first pass.
-
-        # We have no plans to make use of this, but it keeps the option open for
-        # the future, at the cost only of disallowing { itself as a piece of a
-        # substitution key (which would be weird).
-        self.assertEqual(_subst_vars('{py{version}}', {'version': '31'}), '{py31}')
+    def test_get_path_names(self):
+        self.assertEqual(get_path_names(), _SCHEMES.options('posix_prefix'))
 
     def test_get_paths(self):
         scheme = get_paths()
@@ -108,10 +95,10 @@ class TestSysConfig(EnvironRestorer, unittest.TestCase):
         self.assertEqual(scheme, wanted)
 
     def test_get_path(self):
-        # xxx make real tests here
+        # XXX make real tests here
         for scheme in _SCHEMES.sections():
             for name, _ in _SCHEMES.items(scheme):
-                get_path(name, scheme)
+                res = get_path(name, scheme)
 
     def test_get_config_vars(self):
         cvars = get_config_vars()
@@ -146,37 +133,43 @@ class TestSysConfig(EnvironRestorer, unittest.TestCase):
                        '\n[GCC 4.0.1 (Apple Computer, Inc. build 5341)]')
         sys.platform = 'darwin'
         self._set_uname(('Darwin', 'macziade', '8.11.1',
-                        ('Darwin Kernel Version 8.11.1: '
-                         'Wed Oct 10 18:23:28 PDT 2007; '
-                         'root:xnu-792.25.20~1/RELEASE_I386'), 'PowerPC'))
-        os.environ['MACOSX_DEPLOYMENT_TARGET'] = '10.3'
+                   ('Darwin Kernel Version 8.11.1: '
+                    'Wed Oct 10 18:23:28 PDT 2007; '
+                    'root:xnu-792.25.20~1/RELEASE_I386'), 'PowerPC'))
+        get_config_vars()['MACOSX_DEPLOYMENT_TARGET'] = '10.3'
 
         get_config_vars()['CFLAGS'] = ('-fno-strict-aliasing -DNDEBUG -g '
                                        '-fwrapv -O3 -Wall -Wstrict-prototypes')
 
-        sys.maxint = 2147483647
-        self.assertEqual(get_platform(), 'macosx-10.3-ppc')
-        sys.maxint = 9223372036854775807
-        self.assertEqual(get_platform(), 'macosx-10.3-ppc64')
-
+        maxint = sys.maxint
+        try:
+            sys.maxint = 2147483647
+            self.assertEqual(get_platform(), 'macosx-10.3-ppc')
+            sys.maxint = 9223372036854775807
+            self.assertEqual(get_platform(), 'macosx-10.3-ppc64')
+        finally:
+            sys.maxint = maxint
 
         self._set_uname(('Darwin', 'macziade', '8.11.1',
-                         ('Darwin Kernel Version 8.11.1: '
-                          'Wed Oct 10 18:23:28 PDT 2007; '
-                          'root:xnu-792.25.20~1/RELEASE_I386'), 'i386'))
+                   ('Darwin Kernel Version 8.11.1: '
+                    'Wed Oct 10 18:23:28 PDT 2007; '
+                    'root:xnu-792.25.20~1/RELEASE_I386'), 'i386'))
         get_config_vars()['MACOSX_DEPLOYMENT_TARGET'] = '10.3'
-        os.environ['MACOSX_DEPLOYMENT_TARGET'] = '10.3'
+        get_config_vars()['MACOSX_DEPLOYMENT_TARGET'] = '10.3'
 
         get_config_vars()['CFLAGS'] = ('-fno-strict-aliasing -DNDEBUG -g '
                                        '-fwrapv -O3 -Wall -Wstrict-prototypes')
-
-        sys.maxint = 2147483647
-        self.assertEqual(get_platform(), 'macosx-10.3-i386')
-        sys.maxint = 9223372036854775807
-        self.assertEqual(get_platform(), 'macosx-10.3-x86_64')
+        maxint = sys.maxint
+        try:
+            sys.maxint = 2147483647
+            self.assertEqual(get_platform(), 'macosx-10.3-i386')
+            sys.maxint = 9223372036854775807
+            self.assertEqual(get_platform(), 'macosx-10.3-x86_64')
+        finally:
+            sys.maxint = maxint
 
         # macbook with fat binaries (fat, universal or fat64)
-        os.environ['MACOSX_DEPLOYMENT_TARGET'] = '10.4'
+        get_config_vars()['MACOSX_DEPLOYMENT_TARGET'] = '10.4'
         get_config_vars()['CFLAGS'] = ('-arch ppc -arch i386 -isysroot '
                                        '/Developer/SDKs/MacOSX10.4u.sdk  '
                                        '-fno-strict-aliasing -fno-common '
@@ -214,9 +207,9 @@ class TestSysConfig(EnvironRestorer, unittest.TestCase):
             get_config_vars()['CFLAGS'] = ('-arch %s -isysroot '
                                            '/Developer/SDKs/MacOSX10.4u.sdk  '
                                            '-fno-strict-aliasing -fno-common '
-                                           '-dynamic -DNDEBUG -g -O3'%(arch,))
+                                           '-dynamic -DNDEBUG -g -O3' % arch)
 
-            self.assertEqual(get_platform(), 'macosx-10.4-%s'%(arch,))
+            self.assertEqual(get_platform(), 'macosx-10.4-%s' % arch)
 
         # linux debian sarge
         os.name = 'posix'
@@ -233,10 +226,6 @@ class TestSysConfig(EnvironRestorer, unittest.TestCase):
     def test_get_config_h_filename(self):
         config_h = sysconfig.get_config_h_filename()
         self.assertTrue(os.path.isfile(config_h), config_h)
-
-    def test_get_makefile_filename(self):
-        makefile = sysconfig.get_makefile_filename()
-        self.assertTrue(os.path.isfile(makefile), makefile)
 
     def test_get_scheme_names(self):
         wanted = ('nt', 'nt_user', 'os2', 'os2_home', 'osx_framework_user',
@@ -268,14 +257,14 @@ class TestSysConfig(EnvironRestorer, unittest.TestCase):
 
     @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_user_similar(self):
-        # Issue 8759 : make sure the posix scheme for the users
+        # Issue #8759: make sure the posix scheme for the users
         # is similar to the global posix_prefix one
         base = get_config_var('base')
         user = get_config_var('userbase')
         for name in ('stdlib', 'platstdlib', 'purelib', 'platlib'):
             global_path = get_path(name, 'posix_prefix')
             user_path = get_path(name, 'posix_user')
-            self.assertEqual(user_path, global_path.replace(base, user))
+            self.assertEqual(user_path, global_path.replace(base, user, 1))
 
     def test_main(self):
         # just making sure _main() runs and returns things in the stdout
@@ -291,25 +280,96 @@ class TestSysConfig(EnvironRestorer, unittest.TestCase):
 
         self.assertIn(ldflags, ldshared)
 
-    def test_expand_globals(self):
-        config = RawConfigParser()
-        config.add_section('globals')
-        config.set('globals', 'foo', 'ok')
-        config.add_section('posix')
-        config.set('posix', 'config', '/etc')
-        config.set('posix', 'more', '{config}/ok')
+    @unittest.skipUnless(sys.platform == "darwin", "test only relevant on MacOSX")
+    def test_platform_in_subprocess(self):
+        my_platform = sysconfig.get_platform()
 
-        _expand_globals(config)
+        # Test without MACOSX_DEPLOYMENT_TARGET in the environment
 
-        self.assertEqual(config.get('posix', 'foo'), 'ok')
-        self.assertEqual(config.get('posix', 'more'), '/etc/ok')
+        env = os.environ.copy()
+        if 'MACOSX_DEPLOYMENT_TARGET' in env:
+            del env['MACOSX_DEPLOYMENT_TARGET']
 
-        # we might not have globals after all
-        # extending again (==no more globals section)
-        _expand_globals(config)
+        devnull_fp = open('/dev/null', 'w')
+        try:
+            p = subprocess.Popen([
+                    sys.executable, '-c',
+                    'from distutils2._backport import sysconfig; '
+                    'print sysconfig.get_platform()',
+                ],
+                stdout=subprocess.PIPE,
+                stderr=devnull_fp,
+                env=env)
+        finally:
+            fp.close()
+        test_platform = p.communicate()[0].strip()
+        test_platform = test_platform.decode('utf-8')
+        status = p.wait()
+
+        self.assertEqual(status, 0)
+        self.assertEqual(my_platform, test_platform)
+
+        # Test with MACOSX_DEPLOYMENT_TARGET in the environment, and
+        # using a value that is unlikely to be the default one.
+        env = os.environ.copy()
+        env['MACOSX_DEPLOYMENT_TARGET'] = '10.1'
+
+        dev_null = open('/dev/null')
+        try:
+            p = subprocess.Popen([
+                    sys.executable, '-c',
+                    'from distutils2._backport import sysconfig; '
+                    'print sysconfig.get_platform()',
+                ],
+                stdout=subprocess.PIPE,
+                stderr=dev_null,
+                env=env)
+            test_platform = p.communicate()[0].strip()
+            test_platform = test_platform.decode('utf-8')
+            status = p.wait()
+
+            self.assertEqual(status, 0)
+            self.assertEqual(my_platform, test_platform)
+        finally:
+            dev_null.close()
+
+
+class MakefileTests(unittest.TestCase):
+
+    @unittest.skipIf(sys.platform.startswith('win'),
+                     'Test is not Windows compatible')
+    def test_get_makefile_filename(self):
+        makefile = sysconfig.get_makefile_filename()
+        self.assertTrue(os.path.isfile(makefile), makefile)
+
+    def test_parse_makefile(self):
+        self.addCleanup(unlink, TESTFN)
+        makefile = open(TESTFN, "w")
+        try:
+            print >> makefile, "var1=a$(VAR2)"
+            print >> makefile, "VAR2=b$(var3)"
+            print >> makefile, "var3=42"
+            print >> makefile, "var4=$/invalid"
+            print >> makefile, "var5=dollar$$5"
+        finally:
+            makefile.close()
+        vars = sysconfig._parse_makefile(TESTFN)
+        self.assertEqual(vars, {
+            'var1': 'ab42',
+            'VAR2': 'b42',
+            'var3': 42,
+            'var4': '$/invalid',
+            'var5': 'dollar$5',
+        })
+
 
 def test_suite():
-    return unittest.makeSuite(TestSysConfig)
+    suite = unittest.TestSuite()
+    load = unittest.defaultTestLoader.loadTestsFromTestCase
+    suite.addTest(load(TestSysConfig))
+    suite.addTest(load(MakefileTests))
+    return suite
+
 
 if __name__ == '__main__':
     unittest.main(defaultTest='test_suite')

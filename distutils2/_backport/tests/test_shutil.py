@@ -1,12 +1,13 @@
 import os
 import sys
-import tempfile
 import stat
 import tarfile
+import tempfile
 from os.path import splitdrive
 from StringIO import StringIO
 
 from distutils.spawn import find_executable, spawn
+from distutils2.compat import wraps
 from distutils2._backport import shutil
 from distutils2._backport.shutil import (
     _make_tarball, _make_zipfile, make_archive, unpack_archive,
@@ -16,6 +17,7 @@ from distutils2._backport.shutil import (
 
 from distutils2.tests import unittest, support
 from test.test_support import TESTFN
+
 
 try:
     import bz2
@@ -42,6 +44,21 @@ try:
     ZIP_SUPPORT = True
 except ImportError:
     ZIP_SUPPORT = find_executable('zip')
+
+def _fake_rename(*args, **kwargs):
+    # Pretend the destination path is on a different filesystem.
+    raise OSError()
+
+def mock_rename(func):
+    @wraps(func)
+    def wrap(*args, **kwargs):
+        try:
+            builtin_rename = os.rename
+            os.rename = _fake_rename
+            return func(*args, **kwargs)
+        finally:
+            os.rename = builtin_rename
+    return wrap
 
 class TestShutil(unittest.TestCase):
 
@@ -266,27 +283,45 @@ class TestShutil(unittest.TestCase):
             shutil.rmtree(src_dir)
             shutil.rmtree(os.path.dirname(dst_dir))
 
-    @support.skip_unless_symlink
+    @unittest.skipUnless(hasattr(os, 'link'), 'requires os.link')
     def test_dont_copy_file_onto_link_to_itself(self):
+        # Temporarily disable test on Windows.
+        if os.name == 'nt':
+            return
         # bug 851123.
         os.mkdir(TESTFN)
         src = os.path.join(TESTFN, 'cheese')
         dst = os.path.join(TESTFN, 'shop')
         try:
             f = open(src, 'w')
-            f.write('cheddar')
-            f.close()
+            try:
+                f.write('cheddar')
+            finally:
+                f.close()
 
-            if hasattr(os, "link"):
-                os.link(src, dst)
-                self.assertRaises(shutil.Error, shutil.copyfile, src, dst)
-                f = open(src, 'r')
-                try:
-                    self.assertEqual(f.read(), 'cheddar')
-                finally:
-                    f.close()
-                os.remove(dst)
+            os.link(src, dst)
+            self.assertRaises(shutil.Error, shutil.copyfile, src, dst)
+            f = open(src, 'r')
+            try:
+                self.assertEqual(f.read(), 'cheddar')
+            finally:
+                f.close()
+            os.remove(dst)
+        finally:
+            shutil.rmtree(TESTFN, ignore_errors=True)
 
+    @support.skip_unless_symlink
+    def test_dont_copy_file_onto_symlink_to_itself(self):
+        # bug 851123.
+        os.mkdir(TESTFN)
+        src = os.path.join(TESTFN, 'cheese')
+        dst = os.path.join(TESTFN, 'shop')
+        try:
+            f = open(src, 'w')
+            try:
+                f.write('cheddar')
+            finally:
+                f.close()
             # Using `src` here would mean we end up with a symlink pointing
             # to TESTFN/TESTFN/cheese, while it should point at
             # TESTFN/cheese.
@@ -299,10 +334,7 @@ class TestShutil(unittest.TestCase):
                 f.close()
             os.remove(dst)
         finally:
-            try:
-                shutil.rmtree(TESTFN)
-            except OSError:
-                pass
+            shutil.rmtree(TESTFN, ignore_errors=True)
 
     @support.skip_unless_symlink
     def test_rmtree_on_symlink(self):
@@ -329,26 +361,26 @@ class TestShutil(unittest.TestCase):
             finally:
                 os.remove(TESTFN)
 
-    @unittest.skipUnless(hasattr(os, 'mkfifo'), 'requires os.mkfifo')
-    def test_copytree_named_pipe(self):
-        os.mkdir(TESTFN)
-        try:
-            subdir = os.path.join(TESTFN, "subdir")
-            os.mkdir(subdir)
-            pipe = os.path.join(subdir, "mypipe")
-            os.mkfifo(pipe)
+        @support.skip_unless_symlink
+        def test_copytree_named_pipe(self):
+            os.mkdir(TESTFN)
             try:
-                shutil.copytree(TESTFN, TESTFN2)
-            except shutil.Error, e:
-                errors = e.args[0]
-                self.assertEqual(len(errors), 1)
-                src, dst, error_msg = errors[0]
-                self.assertEqual("`%s` is a named pipe" % pipe, error_msg)
-            else:
-                self.fail("shutil.Error should have been raised")
-        finally:
-            shutil.rmtree(TESTFN, ignore_errors=True)
-            shutil.rmtree(TESTFN2, ignore_errors=True)
+                subdir = os.path.join(TESTFN, "subdir")
+                os.mkdir(subdir)
+                pipe = os.path.join(subdir, "mypipe")
+                os.mkfifo(pipe)
+                try:
+                    shutil.copytree(TESTFN, TESTFN2)
+                except shutil.Error, e:
+                    errors = e.args[0]
+                    self.assertEqual(len(errors), 1)
+                    src, dst, error_msg = errors[0]
+                    self.assertEqual("`%s` is a named pipe" % pipe, error_msg)
+                else:
+                    self.fail("shutil.Error should have been raised")
+            finally:
+                shutil.rmtree(TESTFN, ignore_errors=True)
+                shutil.rmtree(TESTFN2, ignore_errors=True)
 
     def test_copytree_special_func(self):
 
@@ -363,7 +395,7 @@ class TestShutil(unittest.TestCase):
             copied.append((src, dst))
 
         shutil.copytree(src_dir, dst_dir, copy_function=_copy)
-        self.assertEquals(len(copied), 2)
+        self.assertEqual(len(copied), 2)
 
     @support.skip_unless_symlink
     def test_copytree_dangling_symlinks(self):
@@ -386,6 +418,41 @@ class TestShutil(unittest.TestCase):
         shutil.copytree(src_dir, dst_dir, symlinks=True)
         self.assertIn('test.txt', os.listdir(dst_dir))
 
+    def _copy_file(self, method):
+        fname = 'test.txt'
+        tmpdir = self.mkdtemp()
+        self.write_file([tmpdir, fname])
+        file1 = os.path.join(tmpdir, fname)
+        tmpdir2 = self.mkdtemp()
+        method(file1, tmpdir2)
+        file2 = os.path.join(tmpdir2, fname)
+        return (file1, file2)
+
+    @unittest.skipUnless(hasattr(os, 'chmod'), 'requires os.chmod')
+    def test_copy(self):
+        # Ensure that the copied file exists and has the same mode bits.
+        file1, file2 = self._copy_file(shutil.copy)
+        self.assertTrue(os.path.exists(file2))
+        self.assertEqual(os.stat(file1).st_mode, os.stat(file2).st_mode)
+
+    @unittest.skipUnless(hasattr(os, 'chmod'), 'requires os.chmod')
+    @unittest.skipUnless(hasattr(os, 'utime'), 'requires os.utime')
+    def test_copy2(self):
+        # Ensure that the copied file exists and has the same mode and
+        # modification time bits.
+        file1, file2 = self._copy_file(shutil.copy2)
+        self.assertTrue(os.path.exists(file2))
+        file1_stat = os.stat(file1)
+        file2_stat = os.stat(file2)
+        self.assertEqual(file1_stat.st_mode, file2_stat.st_mode)
+        for attr in 'st_atime', 'st_mtime':
+            # The modification times may be truncated in the new file.
+            self.assertLessEqual(getattr(file1_stat, attr),
+                                 getattr(file2_stat, attr) + 1)
+        if hasattr(os, 'chflags') and hasattr(file1_stat, 'st_flags'):
+            self.assertEqual(getattr(file1_stat, 'st_flags'),
+                             getattr(file2_stat, 'st_flags'))
+
     @unittest.skipUnless(zlib, "requires zlib")
     def test_make_tarball(self):
         # creating something to tar
@@ -396,6 +463,8 @@ class TestShutil(unittest.TestCase):
         self.write_file([tmpdir, 'sub', 'file3'], 'xxx')
 
         tmpdir2 = self.mkdtemp()
+        # force shutil to create the directory
+        os.rmdir(tmpdir2)
         unittest.skipUnless(splitdrive(tmpdir)[0] == splitdrive(tmpdir2)[0],
                             "source and target should be on same drive")
 
@@ -481,7 +550,7 @@ class TestShutil(unittest.TestCase):
 
         self.assertTrue(os.path.exists(tarball2))
         # let's compare both tarballs
-        self.assertEquals(self._tarinfo(tarball), self._tarinfo(tarball2))
+        self.assertEqual(self._tarinfo(tarball), self._tarinfo(tarball2))
 
         # trying an uncompressed one
         base_name = os.path.join(tmpdir2, 'archive')
@@ -514,6 +583,8 @@ class TestShutil(unittest.TestCase):
         self.write_file([tmpdir, 'file2'], 'xxx')
 
         tmpdir2 = self.mkdtemp()
+        # force shutil to create the directory
+        os.rmdir(tmpdir2)
         base_name = os.path.join(tmpdir2, 'archive')
         _make_zipfile(base_name, tmpdir)
 
@@ -576,8 +647,8 @@ class TestShutil(unittest.TestCase):
         archive = tarfile.open(archive_name)
         try:
             for member in archive.getmembers():
-                self.assertEquals(member.uid, 0)
-                self.assertEquals(member.gid, 0)
+                self.assertEqual(member.uid, 0)
+                self.assertEqual(member.gid, 0)
         finally:
             archive.close()
 
@@ -592,7 +663,7 @@ class TestShutil(unittest.TestCase):
                 make_archive('xxx', 'xxx', root_dir=self.mkdtemp())
             except Exception:
                 pass
-            self.assertEquals(os.getcwd(), current_dir)
+            self.assertEqual(os.getcwd(), current_dir)
         finally:
             unregister_archive_format('xxx')
 
@@ -639,16 +710,24 @@ class TestShutil(unittest.TestCase):
             # let's try to unpack it now
             unpack_archive(filename, tmpdir2)
             diff = self._compare_dirs(tmpdir, tmpdir2)
-            self.assertEquals(diff, [])
+            self.assertEqual(diff, [])
+
+            # and again, this time with the format specified
+            tmpdir3 = self.mkdtemp()
+            unpack_archive(filename, tmpdir3, format=format)
+            diff = self._compare_dirs(tmpdir, tmpdir3)
+            self.assertEqual(diff, [])
+        self.assertRaises(shutil.ReadError, unpack_archive, TESTFN)
+        self.assertRaises(ValueError, unpack_archive, TESTFN, format='xxx')
 
     def test_unpack_registery(self):
 
         formats = get_unpack_formats()
 
         def _boo(filename, extract_dir, extra):
-            self.assertEquals(extra, 1)
-            self.assertEquals(filename, 'stuff.boo')
-            self.assertEquals(extract_dir, 'xx')
+            self.assertEqual(extra, 1)
+            self.assertEqual(filename, 'stuff.boo')
+            self.assertEqual(extract_dir, 'xx')
 
         register_unpack_format('Boo', ['.boo', '.b2'], _boo, [('extra', 1)])
         unpack_archive('stuff.boo', 'xx')
@@ -665,7 +744,7 @@ class TestShutil(unittest.TestCase):
 
         # let's leave a clean state
         unregister_unpack_format('Boo2')
-        self.assertEquals(get_unpack_formats(), formats)
+        self.assertEqual(get_unpack_formats(), formats)
 
 
 class TestMove(unittest.TestCase):
@@ -676,15 +755,6 @@ class TestMove(unittest.TestCase):
         self.dst_dir = tempfile.mkdtemp()
         self.src_file = os.path.join(self.src_dir, filename)
         self.dst_file = os.path.join(self.dst_dir, filename)
-        # Try to create a dir in the current directory, hoping that it is
-        # not located on the same filesystem as the system tmp dir.
-        try:
-            self.dir_other_fs = tempfile.mkdtemp(
-                dir=os.path.dirname(__file__))
-            self.file_other_fs = os.path.join(self.dir_other_fs,
-                filename)
-        except OSError:
-            self.dir_other_fs = None
         f = open(self.src_file, "wb")
         try:
             f.write("spam")
@@ -692,7 +762,7 @@ class TestMove(unittest.TestCase):
             f.close()
 
     def tearDown(self):
-        for d in (self.src_dir, self.dst_dir, self.dir_other_fs):
+        for d in (self.src_dir, self.dst_dir):
             try:
                 if d:
                     shutil.rmtree(d)
@@ -729,21 +799,15 @@ class TestMove(unittest.TestCase):
         # Move a file inside an existing dir on the same filesystem.
         self._check_move_file(self.src_file, self.dst_dir, self.dst_file)
 
+    @mock_rename
     def test_move_file_other_fs(self):
         # Move a file to an existing dir on another filesystem.
-        if not self.dir_other_fs:
-            # skip
-            return
-        self._check_move_file(self.src_file, self.file_other_fs,
-            self.file_other_fs)
+        self.test_move_file()
 
+    @mock_rename
     def test_move_file_to_dir_other_fs(self):
         # Move a file to another location on another filesystem.
-        if not self.dir_other_fs:
-            # skip
-            return
-        self._check_move_file(self.src_file, self.dir_other_fs,
-            self.file_other_fs)
+        self.test_move_file_to_dir()
 
     def test_move_dir(self):
         # Move a dir to another location on the same filesystem.
@@ -756,32 +820,20 @@ class TestMove(unittest.TestCase):
             except:
                 pass
 
+    @mock_rename
     def test_move_dir_other_fs(self):
         # Move a dir to another location on another filesystem.
-        if not self.dir_other_fs:
-            # skip
-            return
-        dst_dir = tempfile.mktemp(dir=self.dir_other_fs)
-        try:
-            self._check_move_dir(self.src_dir, dst_dir, dst_dir)
-        finally:
-            try:
-                shutil.rmtree(dst_dir)
-            except:
-                pass
+        self.test_move_dir()
 
     def test_move_dir_to_dir(self):
         # Move a dir inside an existing dir on the same filesystem.
         self._check_move_dir(self.src_dir, self.dst_dir,
             os.path.join(self.dst_dir, os.path.basename(self.src_dir)))
 
+    @mock_rename
     def test_move_dir_to_dir_other_fs(self):
         # Move a dir inside an existing dir on another filesystem.
-        if not self.dir_other_fs:
-            # skip
-            return
-        self._check_move_dir(self.src_dir, self.dir_other_fs,
-            os.path.join(self.dir_other_fs, os.path.basename(self.src_dir)))
+        self.test_move_dir_to_dir()
 
     def test_existing_file_inside_dest_dir(self):
         # A file with the same name inside the destination dir already exists.
@@ -931,6 +983,23 @@ class TestCopyFile(unittest.TestCase):
         self.assertFalse(destfile._raised)
         self.assertTrue(srcfile._exited_with[0] is None)
         self.assertTrue(srcfile._raised)
+
+    def test_move_dir_caseinsensitive(self):
+        # Renames a folder to the same name
+        # but a different case.
+
+        self.src_dir = tempfile.mkdtemp()
+        dst_dir = os.path.join(
+                os.path.dirname(self.src_dir),
+                os.path.basename(self.src_dir).upper())
+        self.assertNotEqual(self.src_dir, dst_dir)
+
+        try:
+            shutil.move(self.src_dir, dst_dir)
+            self.assertTrue(os.path.isdir(dst_dir))
+        finally:
+            if os.path.exists(dst_dir):
+                os.rmdir(dst_dir)
 
 
 def test_suite():

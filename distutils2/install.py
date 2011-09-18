@@ -17,7 +17,7 @@ import tempfile
 from distutils2 import logger
 from distutils2.dist import Distribution
 from distutils2.util import (_is_archive_file, ask, get_install_method,
-                             egginfo_to_distinfo, unpack_archive)
+                             egginfo_to_distinfo)
 from distutils2.pypi import wrapper
 from distutils2.version import get_version_predicate
 from distutils2.database import get_distributions, get_distribution
@@ -27,6 +27,7 @@ from distutils2.errors import (PackagingError, InstallationException,
                                InstallationConflict, CCompilerError)
 from distutils2.pypi.errors import ProjectNotFound, ReleaseNotFound
 from distutils2 import database
+from distutils2._backport.shutil import unpack_archive
 from distutils2._backport.sysconfig import (get_config_var, get_path,
                                             is_python_build)
 
