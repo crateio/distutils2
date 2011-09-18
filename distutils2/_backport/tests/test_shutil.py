@@ -14,7 +14,8 @@ from distutils2._backport.shutil import (
     register_unpack_format, unregister_unpack_format, get_unpack_formats,
     Error, RegistryError)
 
-from distutils2.tests import unittest, support, TESTFN
+from distutils2.tests import unittest, support
+from test.test_support import TESTFN
 
 try:
     import bz2

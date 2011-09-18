@@ -1,7 +1,7 @@
 """Tests for distutils2.metadata."""
-import codecs
 import os
 import sys
+import codecs
 import logging
 from StringIO import StringIO
 
@@ -19,8 +19,10 @@ class MetadataTestCase(LoggingCatcher,
     def test_instantiation(self):
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
         f = codecs.open(PKG_INFO, 'r', encoding='utf-8')
-        contents = f.read()
-        f.close()
+        try:
+            contents = f.read()
+        finally:
+            f.close()
 
         fp = StringIO(contents)
 
@@ -61,8 +63,10 @@ class MetadataTestCase(LoggingCatcher,
         # see if we can be platform-aware
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
         f = codecs.open(PKG_INFO, 'r', encoding='utf-8')
-        content = f.read() % sys.platform
-        f.close()
+        try:
+            content = f.read() % sys.platform
+        finally:
+            f.close()
         metadata = Metadata(platform_dependent=True)
 
         metadata.read_file(StringIO(content))
@@ -74,24 +78,27 @@ class MetadataTestCase(LoggingCatcher,
 
         # test with context
         context = {'sys.platform': 'okook'}
-        metadata = Metadata(platform_dependent=True,
-                                        execution_context=context)
+        metadata = Metadata(platform_dependent=True, execution_context=context)
         metadata.read_file(StringIO(content))
         self.assertEqual(metadata['Requires-Dist'], ['foo'])
 
     def test_description(self):
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
         f = codecs.open(PKG_INFO, 'r', encoding='utf-8')
-        content = f.read() % sys.platform
-        f.close()
+        try:
+            content = f.read() % sys.platform
+        finally:
+            f.close()
         metadata = Metadata()
         metadata.read_file(StringIO(content))
 
         # see if we can read the description now
         DESC = os.path.join(os.path.dirname(__file__), 'LONG_DESC.txt')
         f = open(DESC)
-        wanted = f.read()
-        f.close()
+        try:
+            wanted = f.read()
+        finally:
+            f.close()
         self.assertEqual(wanted, metadata['Description'])
 
         # save the file somewhere and make sure we can read it back
@@ -104,8 +111,10 @@ class MetadataTestCase(LoggingCatcher,
     def test_mapping_api(self):
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
         f = codecs.open(PKG_INFO, 'r', encoding='utf-8')
-        content = f.read() % sys.platform
-        f.close()
+        try:
+            content = f.read() % sys.platform
+        finally:
+            f.close()
         metadata = Metadata(fileobj=StringIO(content))
         self.assertIn('Version', metadata.keys())
         self.assertIn('0.5', metadata.values())
@@ -138,16 +147,20 @@ class MetadataTestCase(LoggingCatcher,
         PKG_INFO = os.path.join(os.path.dirname(__file__),
                                 'SETUPTOOLS-PKG-INFO')
         f = codecs.open(PKG_INFO, 'r', encoding='utf-8')
-        content = f.read()
-        f.close()
+        try:
+            content = f.read()
+        finally:
+            f.close()
         metadata.read_file(StringIO(content))
         self.assertEqual(metadata['Metadata-Version'], '1.0')
 
         PKG_INFO = os.path.join(os.path.dirname(__file__),
                                 'SETUPTOOLS-PKG-INFO2')
         f = codecs.open(PKG_INFO, 'r', encoding='utf-8')
-        content = f.read()
-        f.close()
+        try:
+            content = f.read()
+        finally:
+            f.close()
 
         metadata.read_file(StringIO(content))
         self.assertEqual(metadata['Metadata-Version'], '1.1')

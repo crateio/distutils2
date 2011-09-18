@@ -1,7 +1,7 @@
 """Tests for distutils2.dist."""
-import codecs
 import os
 import sys
+import codecs
 import logging
 import textwrap
 from distutils2._backport import sysconfig
@@ -16,7 +16,7 @@ from distutils2.errors import PackagingModuleError, PackagingOptionError
 from distutils2.tests import captured_stdout
 from distutils2.tests import support, unittest
 from distutils2.tests.support import create_distribution
-from distutils2.tests.support import unload, TESTFN
+from distutils2.tests.support import unload
 
 
 class test_dist(Command):
@@ -50,17 +50,23 @@ class DistributionTestCase(support.TempdirManager,
         sys.argv[:] = self.argv[1]
         super(DistributionTestCase, self).tearDown()
 
+    @unittest.skip('needs to be updated')
     def test_debug_mode(self):
-        self.addCleanup(os.unlink, TESTFN)
-        f = open(TESTFN, "w")
-        f.write("[global]\n")
-        f.write("command_packages = foo.bar, splat")
-        f.close()
+        tmpdir = self.mkdtemp()
+        setupcfg = os.path.join(tmpdir, 'setup.cfg')
+        f = open(setupcfg, "w")
+        try:
+            f.write("[global]\n")
+            f.write("command_packages = foo.bar, splat")
+        finally:
+            f.close()
 
-        files = [TESTFN]
+        files = [setupcfg]
         sys.argv.append("build")
         __, stdout = captured_stdout(create_distribution, files)
         self.assertEqual(stdout, '')
+        # XXX debug mode does not exist anymore, test logging levels in this
+        # test instead
         distutils2.dist.DEBUG = True
         try:
             __, stdout = captured_stdout(create_distribution, files)
@@ -145,7 +151,6 @@ class DistributionTestCase(support.TempdirManager,
         self.assertIn('owner', dist.get_option_dict('sdist'))
 
     def test_finalize_options(self):
-
         attrs = {'keywords': 'one,two',
                  'platform': 'one,two'}
 
@@ -165,8 +170,10 @@ class DistributionTestCase(support.TempdirManager,
             user_filename = os.path.join(temp_home, "pydistutils.cfg")
 
         f = open(user_filename, 'w')
-        f.write('[distutils2]\n')
-        f.close()
+        try:
+            f.write('[distutils2]\n')
+        finally:
+            f.close()
 
         def _expander(path):
             return temp_home
@@ -180,10 +187,8 @@ class DistributionTestCase(support.TempdirManager,
             d = distutils2.dist.Distribution(attrs={'script_args':
                                                    ['--no-user-cfg']})
             files = d.find_config_files()
-        except:
+        finally:
             os.path.expanduser = old_expander
-            raise
-        os.path.expanduser = old_expander
 
         # make sure --no-user-cfg disables the user cfg file
         self.assertEqual((len(all_files) - 1), len(files))

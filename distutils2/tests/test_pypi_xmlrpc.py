@@ -90,9 +90,10 @@ class TestXMLRPCClient(unittest.TestCase):
         self.assertEqual(['Foo'], release.metadata['requires_external'])
         self.assertEqual(['FooFoo'], release.metadata['obsoletes_dist'])
 
-#Compatibility Python pre-2.6
+
 TestXMLRPCClient = unittest.skipIf(threading is None, "Needs threading")(
         TestXMLRPCClient)
+
 
 def test_suite():
     suite = unittest.TestSuite()

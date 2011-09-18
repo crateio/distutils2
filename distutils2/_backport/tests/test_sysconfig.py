@@ -14,7 +14,7 @@ from distutils2._backport.sysconfig import (
         get_config_var, get_config_vars, get_path, get_paths, get_platform,
         get_scheme_names, _main, _SCHEMES)
 
-from distutils2.tests import unittest, TESTFN, unlink
+from distutils2.tests import unittest
 from distutils2.tests.support import EnvironRestorer
 from test.test_support import TESTFN, unlink
 

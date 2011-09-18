@@ -2,7 +2,7 @@
 import os
 
 from distutils2.compiler import (get_default_compiler, customize_compiler,
-                                gen_lib_options)
+                                 gen_lib_options)
 from distutils2.tests import unittest, support
 
 

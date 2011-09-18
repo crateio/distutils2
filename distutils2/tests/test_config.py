@@ -1,3 +1,4 @@
+# encoding: utf-8
 """Tests for distutils2.config."""
 import os
 import sys
@@ -20,7 +21,7 @@ name = RestingParrot
 version = 0.6.4
 author = Carl Meyer
 author_email = carl@oddbird.net
-maintainer = \xc3ric Araujo
+maintainer = Éric Araujo
 maintainer_email = merwok@netwok.org
 summary = A sample project demonstrating distutils2
 description-file = %(description-file)s
@@ -441,9 +442,10 @@ class ConfigTestCase(support.TempdirManager,
         cmd.get_file_list()
         cmd.make_distribution()
         fp = open('MANIFEST')
-        content = fp.read()
-        fp.close()
-        self.assertIn('README\nREADME2\n', content)
+        try:
+            self.assertIn('README\nREADME2\n', fp.read())
+        finally:
+            fp.close()
 
     def test_sub_commands(self):
         self.write_setup()

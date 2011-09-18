@@ -38,8 +38,10 @@ class ManifestTestCase(support.TempdirManager,
         tmpdir = self.mkdtemp()
         MANIFEST = os.path.join(tmpdir, 'MANIFEST.in')
         f = open(MANIFEST, 'w')
-        f.write(_MANIFEST)
-        f.close()
+        try:
+            f.write(_MANIFEST)
+        finally:
+            f.close()
 
         manifest = Manifest()
         manifest.read_template(MANIFEST)
@@ -53,8 +55,10 @@ class ManifestTestCase(support.TempdirManager,
 
         # manifest also accepts file-like objects
         f = open(MANIFEST)
-        manifest.read_template(f)
-        f.close()
+        try:
+            manifest.read_template(f)
+        finally:
+            f.close()
 
         # the manifest should have been read and 3 warnings issued
         # (we didn't provide the files)

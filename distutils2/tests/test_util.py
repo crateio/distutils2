@@ -15,10 +15,10 @@ from distutils2.errors import (
 from distutils2 import util
 from distutils2.dist import Distribution
 from distutils2.util import (
-    convert_path, change_root, split_quoted, strtobool, rfc822_escape,
+    convert_path, change_root, split_quoted, strtobool, rfc822_escape, run_2to3,
     get_compiler_versions, _MAC_OS_X_LD_VERSION, byte_compile, find_packages,
     spawn, get_pypirc_path, generate_pypirc, read_pypirc, resolve_name, iglob,
-    RICH_GLOB, egginfo_to_distinfo, is_setuptools, is_distutils, is_distutils2,
+    RICH_GLOB, egginfo_to_distinfo, is_setuptools, is_distutils, is_packaging,
     get_install_method, cfg_to_args, encode_multipart)
 
 
@@ -381,7 +381,7 @@ class UtilTestCase(support.EnvironRestorer,
 
         res = find_packages([root], ['pkg1.pkg2'])
         self.assertEqual(set(res), set(['pkg1', 'pkg5', 'pkg1.pkg3',
-                                         'pkg1.pkg3.pkg6']))
+                                        'pkg1.pkg3.pkg6']))
 
     def test_resolve_name(self):
         self.assertIs(str, resolve_name('__builtin__.str'))
@@ -423,7 +423,6 @@ class UtilTestCase(support.EnvironRestorer,
         file_handle.write(content)
         file_handle.flush()
         file_handle.seek(0)
-        from distutils2.util import run_2to3
         run_2to3([file_name])
         new_content = "".join(file_handle.read())
         file_handle.close()
@@ -439,7 +438,6 @@ class UtilTestCase(support.EnvironRestorer,
         file_handle.write(content)
         file_handle.flush()
         file_handle.seek(0)
-        from distutils2.util import run_2to3
         run_2to3([file_name], doctests_only=True)
         new_content = "".join(file_handle.readlines())
         file_handle.close()
@@ -457,24 +455,24 @@ class UtilTestCase(support.EnvironRestorer,
         if os.name == 'posix':
             exe = os.path.join(tmpdir, 'foo.sh')
             self.write_file(exe, '#!/bin/sh\nexit 1')
-            os.chmod(exe, 00777)
+            os.chmod(exe, 0777)
         else:
             exe = os.path.join(tmpdir, 'foo.bat')
             self.write_file(exe, 'exit 1')
 
-        os.chmod(exe, 00777)
+        os.chmod(exe, 0777)
         self.assertRaises(PackagingExecError, spawn, [exe])
 
         # now something that works
         if os.name == 'posix':
             exe = os.path.join(tmpdir, 'foo.sh')
             self.write_file(exe, '#!/bin/sh\nexit 0')
-            os.chmod(exe, 00777)
+            os.chmod(exe, 0777)
         else:
             exe = os.path.join(tmpdir, 'foo.bat')
             self.write_file(exe, 'exit 0')
 
-        os.chmod(exe, 00777)
+        os.chmod(exe, 0777)
         spawn([exe])  # should work without any error
 
     def test_server_registration(self):
@@ -507,8 +505,10 @@ class UtilTestCase(support.EnvironRestorer,
         generate_pypirc('tarek', 'xxx')
         self.assertTrue(os.path.exists(rc))
         f = open(rc)
-        content = f.read()
-        f.close()
+        try:
+            content = f.read()
+        finally:
+            f.close()
         self.assertEqual(content, WANTED)
 
     def test_cfg_to_args(self):
@@ -795,16 +795,20 @@ class EggInfoToDistInfoTestCase(support.TempdirManager,
         for f in files:
             path = os.path.join(tempdir, f)
             _f = open(path, 'w')
-            _f.write(f)
-            _f.close()
+            try:
+                _f.write(f)
+            finally:
+                _f.close()
             file_paths.append(path)
 
         record_file = open(record_file_path, 'w')
-        for fpath in file_paths:
-            record_file.write(fpath + '\n')
-        for dpath in dir_paths:
-            record_file.write(dpath + '\n')
-        record_file.close()
+        try:
+            for fpath in file_paths:
+                record_file.write(fpath + '\n')
+            for dpath in dir_paths:
+                record_file.write(dpath + '\n')
+        finally:
+            record_file.close()
         return (tempdir, record_file_path)
 
 
@@ -819,7 +823,7 @@ class PackagingLibChecks(support.TempdirManager,
     def test_empty_package_is_not_based_on_anything(self):
         self.assertFalse(is_setuptools(self._empty_dir))
         self.assertFalse(is_distutils(self._empty_dir))
-        self.assertFalse(is_distutils2(self._empty_dir))
+        self.assertFalse(is_packaging(self._empty_dir))
 
     def test_setup_py_importing_setuptools_is_setuptools_based(self):
         self.assertTrue(is_setuptools(self._setuptools_setup_py_pkg()))
@@ -846,13 +850,13 @@ class PackagingLibChecks(support.TempdirManager,
         self.assertFalse(is_distutils(self._random_setup_py_pkg()))
 
     def test_setup_cfg_with_no_metadata_section_is_not_distutils2_based(self):
-        self.assertFalse(is_distutils2(self._setup_cfg_with_no_metadata_pkg()))
+        self.assertFalse(is_packaging(self._setup_cfg_with_no_metadata_pkg()))
 
-    def test_setup_cfg_with_valid_metadata_section_is_distutils2_based(self):
-        self.assertTrue(is_distutils2(self._valid_setup_cfg_pkg()))
+    def test_setup_cfg_with_valid_metadata_section_is_packaging_based(self):
+        self.assertTrue(is_packaging(self._valid_setup_cfg_pkg()))
 
     def test_setup_cfg_and_invalid_setup_cfg_is_not_distutils2_based(self):
-        self.assertFalse(is_distutils2(self._invalid_setup_cfg_pkg()))
+        self.assertFalse(is_packaging(self._invalid_setup_cfg_pkg()))
 
     def test_get_install_method_with_setuptools_pkg(self):
         path = self._setuptools_setup_py_pkg()
@@ -908,13 +912,13 @@ class PackagingLibChecks(support.TempdirManager,
         expected = ['setup.py file found.', 'PKG-INFO file found.']
         self.assertEqual(expected, self.get_logs(logging.DEBUG))
 
-    def test_is_distutils2_logs_setup_cfg_found(self):
-        is_distutils2(self._valid_setup_cfg_pkg())
+    def test_is_packaging_logs_setup_cfg_found(self):
+        is_packaging(self._valid_setup_cfg_pkg())
         expected = ['setup.cfg file found.']
         self.assertEqual(expected, self.get_logs(logging.DEBUG))
 
-    def test_is_distutils2_logs_setup_cfg_not_found(self):
-        is_distutils2(self._empty_dir)
+    def test_is_packaging_logs_setup_cfg_not_found(self):
+        is_packaging(self._empty_dir)
         expected = ['No setup.cfg file found.']
         self.assertEqual(expected, self.get_logs(logging.DEBUG))
 

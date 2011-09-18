@@ -7,12 +7,10 @@ from StringIO import StringIO
 
 from distutils2 import install
 from distutils2.tests import unittest, support
-from distutils2.tests.support import TESTFN
 from distutils2.run import main
 
 # setup script that uses __file__
 setup_using___file__ = """\
-
 __file__
 
 from distutils2.run import setup
@@ -20,7 +18,6 @@ setup()
 """
 
 setup_prints_cwd = """\
-
 import os
 print os.getcwd()
 
@@ -29,34 +26,20 @@ setup()
 """
 
 
-class CoreTestCase(support.TempdirManager, support.LoggingCatcher,
-                   unittest.TestCase):
+class RunTestCase(support.TempdirManager,
+                  support.LoggingCatcher,
+                  unittest.TestCase):
 
     def setUp(self):
-        super(CoreTestCase, self).setUp()
+        super(RunTestCase, self).setUp()
         self.old_stdout = sys.stdout
-        self.cleanup_testfn()
         self.old_argv = sys.argv, sys.argv[:]
 
     def tearDown(self):
         sys.stdout = self.old_stdout
-        self.cleanup_testfn()
         sys.argv = self.old_argv[0]
         sys.argv[:] = self.old_argv[1]
-        super(CoreTestCase, self).tearDown()
-
-    def cleanup_testfn(self):
-        path = TESTFN
-        if os.path.isfile(path):
-            os.remove(path)
-        elif os.path.isdir(path):
-            shutil.rmtree(path)
-
-    def write_setup(self, text, path=TESTFN):
-        fp = open(path, "w")
-        fp.write(text)
-        fp.close()
-        return path
+        super(RunTestCase, self).tearDown()
 
     # TODO restore the tests removed six months ago and port them to pysetup
 
@@ -80,7 +63,7 @@ class CoreTestCase(support.TempdirManager, support.LoggingCatcher,
 
 
 def test_suite():
-    return unittest.makeSuite(CoreTestCase)
+    return unittest.makeSuite(RunTestCase)
 
 if __name__ == "__main__":
     unittest.main(defaultTest="test_suite")

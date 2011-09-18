@@ -1,3 +1,4 @@
+# encoding: utf-8
 """Tests for distutils2.command.register."""
 import os
 import getpass
@@ -129,8 +130,10 @@ class RegisterTestCase(support.TempdirManager,
 
         # with the content similar to WANTED_PYPIRC
         fp = open(self.rc)
-        content = fp.read()
-        fp.close()
+        try:
+            content = fp.read()
+        finally:
+            fp.close()
         self.assertEqual(content, WANTED_PYPIRC)
 
         # now let's make sure the .pypirc file generated
@@ -213,7 +216,7 @@ class RegisterTestCase(support.TempdirManager,
 
         # metadata is OK but long_description is broken
         metadata = {'home_page': 'xxx', 'author': 'xxx',
-                    'author_email': '\xc3x\xc3x\xc3',
+                    'author_email': 'éxéxé',
                     'name': 'xxx', 'version': 'xxx',
                     'description': 'title\n==\n\ntext'}
 

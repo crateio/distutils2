@@ -9,7 +9,7 @@ from distutils2.pypi.simple import Crawler
 
 from distutils2.tests import unittest
 from distutils2.tests.support import (TempdirManager, LoggingCatcher,
-                                     fake_dec)
+                                      fake_dec)
 
 try:
     import thread as _thread
@@ -43,8 +43,8 @@ class SimpleCrawlerTestCase(TempdirManager,
         url = 'http://127.0.0.1:0/nonesuch/test_simple'
         try:
             v = crawler._open_url(url)
-        except Exception:
-            self.assertIn(url, str(sys.exc_info()[1]))
+        except Exception, v:
+            self.assertIn(url, str(v))
         else:
             v.close()
             self.assertIsInstance(v, urllib2.HTTPError)
@@ -57,8 +57,8 @@ class SimpleCrawlerTestCase(TempdirManager,
                'inquant.contentmirror.plone/trunk')
         try:
             v = crawler._open_url(url)
-        except Exception:
-            self.assertIn(url, str(sys.exc_info()[1]))
+        except Exception, v:
+            self.assertIn(url, str(v))
         else:
             v.close()
             self.assertIsInstance(v, urllib2.HTTPError)
@@ -70,22 +70,23 @@ class SimpleCrawlerTestCase(TempdirManager,
         urllib2.urlopen = _urlopen
         url = 'http://example.org'
         try:
-            v = crawler._open_url(url)
-        except:
+            try:
+                v = crawler._open_url(url)
+            except Exception, v:
+                self.assertIn('line', str(v))
+            else:
+                v.close()
+                # TODO use self.assertRaises
+                raise AssertionError('Should have raise here!')
+        finally:
             urllib2.urlopen = old_urlopen
-            self.assertIn('line', str(sys.exc_info()[1]))
-        else:
-            v.close()
-            # TODO use self.assertRaises
-            raise AssertionError('Should have raise here!')
-        urllib2.urlopen = old_urlopen
 
         # issue 20
         url = 'http://http://svn.pythonpaste.org/Paste/wphp/trunk'
         try:
             crawler._open_url(url)
-        except Exception:
-            self.assertIn('nonnumeric port', str(sys.exc_info()[1]))
+        except Exception, v:
+            self.assertIn('nonnumeric port', str(v))
 
         # issue #160
         url = server.full_address
@@ -246,12 +247,9 @@ class SimpleCrawlerTestCase(TempdirManager,
 
             # this should not raise a timeout
             self.assertEqual(4, len(crawler.get_releases("foo")))
-        except:
+        finally:
             mirror.stop()
             server.stop()
-            raise
-        mirror.stop()
-        server.stop()
 
     def test_simple_link_matcher(self):
         # Test that the simple link matcher finds the right links"""

@@ -50,34 +50,27 @@ class UploadDocsTestCase(support.TempdirManager,
 
     def test_default_uploaddir(self):
         sandbox = self.mkdtemp()
-        previous = os.getcwd()
         os.chdir(sandbox)
-        try:
-            os.mkdir("build")
-            self.prepare_sample_dir("build")
-            self.cmd.ensure_finalized()
-            self.assertEqual(self.cmd.upload_dir, os.path.join("build", "docs"))
-        finally:
-            os.chdir(previous)
+        os.mkdir("build")
+        self.prepare_sample_dir("build")
+        self.cmd.ensure_finalized()
+        self.assertEqual(self.cmd.upload_dir, os.path.join("build", "docs"))
 
     def test_default_uploaddir_looks_for_doc_also(self):
         sandbox = self.mkdtemp()
-        previous = os.getcwd()
         os.chdir(sandbox)
-        try:
-            os.mkdir("build")
-            self.prepare_sample_dir("build")
-            os.rename(os.path.join("build", "docs"), os.path.join("build", "doc"))
-            self.cmd.ensure_finalized()
-            self.assertEqual(self.cmd.upload_dir, os.path.join("build", "doc"))
-        finally:
-            os.chdir(previous)
+        os.mkdir("build")
+        self.prepare_sample_dir("build")
+        os.rename(os.path.join("build", "docs"), os.path.join("build", "doc"))
+        self.cmd.ensure_finalized()
+        self.assertEqual(self.cmd.upload_dir, os.path.join("build", "doc"))
 
     def prepare_sample_dir(self, sample_dir=None):
         if sample_dir is None:
             sample_dir = self.mkdtemp()
         os.mkdir(os.path.join(sample_dir, "docs"))
-        self.write_file(os.path.join(sample_dir, "docs", "index.html"), "Ce mortel ennui")
+        self.write_file(os.path.join(sample_dir, "docs", "index.html"),
+                        "Ce mortel ennui")
         self.write_file(os.path.join(sample_dir, "index.html"), "Oh la la")
         return sample_dir
 
@@ -106,9 +99,8 @@ class UploadDocsTestCase(support.TempdirManager,
         self.assertTrue(handler.headers['content-type']
             .startswith('multipart/form-data;'))
 
-        action, name, version, content =\
-            request_data.split("----------------GHSKFJDLGDS7543FJKLFHRE75642756743254".encode())[1:5]
-
+        action, name, version, content = request_data.split(
+            '----------------GHSKFJDLGDS7543FJKLFHRE75642756743254')[1:5]
 
         # check that we picked the right chunks
         self.assertIn('name=":action"', action)
@@ -125,8 +117,9 @@ class UploadDocsTestCase(support.TempdirManager,
     @unittest.skipIf(_ssl is None, 'Needs SSL support')
     def test_https_connection(self):
         self.https_called = False
-
-        orig_https = upload_docs_mod.httplib.HTTPSConnection
+        self.addCleanup(
+            setattr, upload_docs_mod.httplib, 'HTTPSConnection',
+            upload_docs_mod.httplib.HTTPSConnection)
 
         def https_conn_wrapper(*args):
             self.https_called = True
@@ -134,16 +127,14 @@ class UploadDocsTestCase(support.TempdirManager,
             return upload_docs_mod.httplib.HTTPConnection(*args)
 
         upload_docs_mod.httplib.HTTPSConnection = https_conn_wrapper
-        try:
-            self.prepare_command()
-            self.cmd.run()
-            self.assertFalse(self.https_called)
 
-            self.cmd.repository = self.cmd.repository.replace("http", "https")
-            self.cmd.run()
-            self.assertTrue(self.https_called)
-        finally:
-            upload_docs_mod.httplib.HTTPSConnection = orig_https
+        self.prepare_command()
+        self.cmd.run()
+        self.assertFalse(self.https_called)
+
+        self.cmd.repository = self.cmd.repository.replace("http", "https")
+        self.cmd.run()
+        self.assertTrue(self.https_called)
 
     def test_handling_response(self):
         self.pypi.default_response_status = '403 Forbidden'
@@ -152,7 +143,8 @@ class UploadDocsTestCase(support.TempdirManager,
         self.assertIn('Upload failed (403): Forbidden', self.get_logs()[-1])
 
         self.pypi.default_response_status = '301 Moved Permanently'
-        self.pypi.default_response_headers.append(("Location", "brand_new_location"))
+        self.pypi.default_response_headers.append(
+            ("Location", "brand_new_location"))
         self.cmd.run()
         self.assertIn('brand_new_location', self.get_logs()[-1])
 
@@ -182,7 +174,10 @@ class UploadDocsTestCase(support.TempdirManager,
         self.assertTrue(record, "should report the response")
         self.assertIn(self.pypi.default_response_data, record)
 
-UploadDocsTestCase = unittest.skipIf(threading is None, "Needs threading")(UploadDocsTestCase)
+UploadDocsTestCase = unittest.skipIf(threading is None, "Needs threading")(
+    UploadDocsTestCase)
+
+
 def test_suite():
     return unittest.makeSuite(UploadDocsTestCase)
 

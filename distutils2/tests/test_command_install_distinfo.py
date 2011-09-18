@@ -58,14 +58,16 @@ class InstallDistinfoTestCase(support.TempdirManager,
         self.checkLists(os.listdir(dist_info),
                         ['METADATA', 'RECORD', 'REQUESTED', 'INSTALLER'])
         fp = open(os.path.join(dist_info, 'INSTALLER'))
-        content = fp.read()
-        fp.close()
-        self.assertEqual(content, 'distutils')
+        try:
+            self.assertEqual(fp.read(), 'distutils')
+        finally:
+            fp.close()
 
         fp = open(os.path.join(dist_info, 'REQUESTED'))
-        content = fp.read()
-        fp.close()
-        self.assertEqual(content, '')
+        try:
+            self.assertEqual(fp.read(), '')
+        finally:
+            fp.close()
 
         meta_path = os.path.join(dist_info, 'METADATA')
         self.assertTrue(Metadata(path=meta_path).check())
@@ -89,9 +91,10 @@ class InstallDistinfoTestCase(support.TempdirManager,
 
         dist_info = os.path.join(install_dir, 'foo-1.0.dist-info')
         fp = open(os.path.join(dist_info, 'INSTALLER'))
-        content = fp.read()
-        fp.close()
-        self.assertEqual(content, 'bacon-python')
+        try:
+            self.assertEqual(fp.read(), 'bacon-python')
+        finally:
+            fp.close()
 
     def test_requested(self):
         pkg_dir, dist = self.create_dist(name='foo',
@@ -172,25 +175,29 @@ class InstallDistinfoTestCase(support.TempdirManager,
 
         expected = []
         for f in install.get_outputs():
-            if (f.endswith('.pyc',) or f.endswith('.pyo') or f == os.path.join(
+            if (f.endswith('.pyc') or f.endswith('.pyo') or f == os.path.join(
                 install_dir, 'foo-1.0.dist-info', 'RECORD')):
                 expected.append([f, '', ''])
             else:
                 size = os.path.getsize(f)
                 md5 = hashlib.md5()
                 fp = open(f, 'rb')
-                md5.update(fp.read())
-                fp.close()
+                try:
+                    md5.update(fp.read())
+                finally:
+                    fp.close()
                 hash = md5.hexdigest()
                 expected.append([f, hash, str(size)])
 
         parsed = []
         f = open(os.path.join(dist_info, 'RECORD'), 'r')
-        reader = csv.reader(f, delimiter=',',
-                               lineterminator=os.linesep,
-                               quotechar='"')
-        parsed = list(reader)
-        f.close()
+        try:
+            reader = csv.reader(f, delimiter=',',
+                                   lineterminator=os.linesep,
+                                   quotechar='"')
+            parsed = list(reader)
+        finally:
+            f.close()
 
         self.maxDiff = None
         self.checkLists(parsed, expected)

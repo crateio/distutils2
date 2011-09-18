@@ -4,8 +4,8 @@ import re
 import sys
 from StringIO import StringIO
 
-import distutils2.database
 from distutils2 import depgraph
+from distutils2.database import get_distribution, enable_cache, disable_cache
 
 from distutils2.tests import unittest, support
 from distutils2.tests.support import requires_zlib
@@ -31,13 +31,13 @@ class DepGraphTestCase(support.LoggingCatcher,
         path = os.path.abspath(path)
         sys.path.insert(0, path)
         self.addCleanup(sys.path.remove, path)
-        self.addCleanup(distutils2.database.enable_cache)
-        distutils2.database.disable_cache()
+        self.addCleanup(enable_cache)
+        disable_cache()
 
     def test_generate_graph(self):
         dists = []
         for name in self.DISTROS_DIST:
-            dist = distutils2.database.get_distribution(name)
+            dist = get_distribution(name)
             self.assertNotEqual(dist, None)
             dists.append(dist)
 
@@ -62,7 +62,7 @@ class DepGraphTestCase(support.LoggingCatcher,
     def test_generate_graph_egg(self):
         dists = []
         for name in self.DISTROS_DIST + self.DISTROS_EGG:
-            dist = distutils2.database.get_distribution(name, use_egg_info=True)
+            dist = get_distribution(name, use_egg_info=True)
             self.assertNotEqual(dist, None)
             dists.append(dist)
 
@@ -105,7 +105,7 @@ class DepGraphTestCase(support.LoggingCatcher,
     def test_dependent_dists(self):
         dists = []
         for name in self.DISTROS_DIST:
-            dist = distutils2.database.get_distribution(name)
+            dist = get_distribution(name)
             self.assertNotEqual(dist, None)
             dists.append(dist)
 
@@ -124,7 +124,7 @@ class DepGraphTestCase(support.LoggingCatcher,
     def test_dependent_dists_egg(self):
         dists = []
         for name in self.DISTROS_DIST + self.DISTROS_EGG:
-            dist = distutils2.database.get_distribution(name, use_egg_info=True)
+            dist = get_distribution(name, use_egg_info=True)
             self.assertNotEqual(dist, None)
             dists.append(dist)
 
@@ -159,7 +159,7 @@ class DepGraphTestCase(support.LoggingCatcher,
 
         dists = []
         for name in self.DISTROS_DIST + self.DISTROS_EGG:
-            dist = distutils2.database.get_distribution(name, use_egg_info=True)
+            dist = get_distribution(name, use_egg_info=True)
             self.assertNotEqual(dist, None)
             dists.append(dist)
 
@@ -190,7 +190,7 @@ class DepGraphTestCase(support.LoggingCatcher,
 
         dists = []
         for name in self.DISTROS_DIST + self.DISTROS_EGG:
-            dist = distutils2.database.get_distribution(name, use_egg_info=True)
+            dist = get_distribution(name, use_egg_info=True)
             self.assertNotEqual(dist, None)
             dists.append(dist)
 
@@ -251,7 +251,7 @@ class DepGraphTestCase(support.LoggingCatcher,
 
         dists = []
         for name in self.DISTROS_DIST + self.DISTROS_EGG + self.BAD_EGGS:
-            dist = distutils2.database.get_distribution(name, use_egg_info=True)
+            dist = get_distribution(name, use_egg_info=True)
             self.assertNotEqual(dist, None)
             dists.append(dist)
 
@@ -274,7 +274,7 @@ class DepGraphTestCase(support.LoggingCatcher,
     def test_repr(self):
         dists = []
         for name in self.DISTROS_DIST + self.DISTROS_EGG + self.BAD_EGGS:
-            dist = distutils2.database.get_distribution(name, use_egg_info=True)
+            dist = get_distribution(name, use_egg_info=True)
             self.assertNotEqual(dist, None)
             dists.append(dist)
 

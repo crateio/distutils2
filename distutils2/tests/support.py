@@ -1,5 +1,8 @@
 """Support code for distutils2 test cases.
 
+*This module should not be considered public: its content and API may
+change in incompatible ways.*
+
 A few helper classes are provided: LoggingCatcher, TempdirManager and
 EnvironRestorer. They are written to be used as mixins::
 
@@ -7,6 +10,7 @@ EnvironRestorer. They are written to be used as mixins::
     from distutils2.tests.support import LoggingCatcher
 
     class SomeTestCase(LoggingCatcher, unittest.TestCase):
+        ...
 
 If you need to define a setUp method on your test class, you have to
 call the mixin class' setUp method or it won't work (same thing for
@@ -14,7 +18,7 @@ tearDown):
 
         def setUp(self):
             super(SomeTestCase, self).setUp()
-            ... # other setup code
+            ...  # other setup code
 
 Also provided is a DummyCommand class, useful to mock commands in the
 tests of another command that needs them, a create_distribution function
@@ -25,15 +29,16 @@ tests of another command that needs them, a create_distribution function
 and a skip_unless_symlink decorator.
 
 Each class or function has a docstring to explain its purpose and usage.
+Existing tests should also be used as examples.
 """
 
-import codecs
 import os
+import sys
+import codecs
 import shutil
 import logging
 import logging.handlers
 import subprocess
-import sys
 import weakref
 import tempfile
 try:
@@ -172,8 +177,10 @@ class TempdirManager(object):
         if isinstance(path, (list, tuple)):
             path = os.path.join(*path)
         f = codecs.open(path, 'w', encoding=encoding)
-        f.write(content)
-        f.close()
+        try:
+            f.write(content)
+        finally:
+            f.close()
 
     def create_dist(self, **kw):
         """Create a stub distribution object and files.
@@ -244,6 +251,8 @@ class DummyCommand(object):
     Useful for mocking one dependency command in the tests for another
     command, see e.g. the dummy build command in test_build_scripts.
     """
+    # XXX does not work with dist.get_reinitialized_command, which typechecks
+    # and wants a finalized attribute
 
     def __init__(self, **kwargs):
         for kw, val in kwargs.items():
@@ -284,74 +293,17 @@ def fake_dec(*args, **kw):
     return _wrap
 
 
-#try:
-#    from test.support import skip_unless_symlink
-#except ImportError:
-#    skip_unless_symlink = unittest.skip(
-#        'requires test.support.skip_unless_symlink')
+try:
+    from test.test_support import skip_unless_symlink
+except ImportError:
+    skip_unless_symlink = unittest.skip(
+        'requires test.support.skip_unless_symlink')
 
-if os.name == 'java':
-    # Jython disallows @ in module names
-    TESTFN = '$test'
-else:
-    TESTFN = '@test'
-
-# Disambiguate TESTFN for parallel testing, while letting it remain a valid
-# module name.
-TESTFN = "%s_%s_tmp" % (TESTFN, os.getpid())
-
-
-# TESTFN_UNICODE is a non-ascii filename
-TESTFN_UNICODE = TESTFN + "-\xe0\xf2\u0258\u0141\u011f"
-if sys.platform == 'darwin':
-    # In Mac OS X's VFS API file names are, by definition, canonically
-    # decomposed Unicode, encoded using UTF-8. See QA1173:
-    # http://developer.apple.com/mac/library/qa/qa2001/qa1173.html
-    import unicodedata
-    TESTFN_UNICODE = unicodedata.normalize('NFD', TESTFN_UNICODE)
-TESTFN_ENCODING = sys.getfilesystemencoding()
-
-# TESTFN_UNENCODABLE is a filename (str type) that should *not* be able to be
-# encoded by the filesystem encoding (in strict mode). It can be None if we
-# cannot generate such filename.
-TESTFN_UNENCODABLE = None
-if os.name in ('nt', 'ce'):
-    # skip win32s (0) or Windows 9x/ME (1)
-    if sys.getwindowsversion().platform >= 2:
-        # Different kinds of characters from various languages to minimize the
-        # probability that the whole name is encodable to MBCS (issue #9819)
-        TESTFN_UNENCODABLE = TESTFN + "-\u5171\u0141\u2661\u0363\uDC80"
-        try:
-            TESTFN_UNENCODABLE.encode(TESTFN_ENCODING)
-        except UnicodeEncodeError:
-            pass
-        else:
-            print ('WARNING: The filename %r CAN be encoded by the filesystem encoding (%s). '
-                   'Unicode filename tests may not be effective'
-                   % (TESTFN_UNENCODABLE, TESTFN_ENCODING))
-            TESTFN_UNENCODABLE = None
-# Mac OS X denies unencodable filenames (invalid utf-8)
-elif sys.platform != 'darwin':
-    try:
-        # ascii and utf-8 cannot encode the byte 0xff
-        '\xff'.decode(TESTFN_ENCODING)
-    except UnicodeDecodeError:
-        # 0xff will be encoded using the surrogate character u+DCFF
-        try:
-            TESTFN_UNENCODABLE = TESTFN \
-                + '-\xff'.decode(TESTFN_ENCODING, 'surrogateescape')
-        except LookupError:
-            pass
-    else:
-        # File system encoding (eg. ISO-8859-* encodings) can encode
-        # the byte 0xff. Skip some unicode filename tests.
-        pass
 
 def unlink(filename):
     try:
         os.unlink(filename)
-    except OSError:
-        error = sys.exc_info()[1]
+    except OSError, error:
         # The filename need not exist.
         if error.errno not in (errno.ENOENT, errno.ENOTDIR):
             raise

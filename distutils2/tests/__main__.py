@@ -1,4 +1,4 @@
-"""Packaging test suite runner."""
+"""Distutils2 test suite runner."""
 
 # Ripped from importlib tests, thanks Brett!
 

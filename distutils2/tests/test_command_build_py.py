@@ -61,7 +61,7 @@ class BuildPyTestCase(support.TempdirManager,
         self.assertIn("__init__.py", files)
         self.assertIn("README.txt", files)
         # XXX even with -O, distutils writes pyc, not pyo; bug?
-        if hasattr(sys , 'dont_write_bytecode'):
+        if getattr(sys , 'dont_write_bytecode', False):
             self.assertNotIn("__init__.pyc", files)
         else:
             self.assertIn("__init__.pyc", files)
@@ -81,6 +81,7 @@ class BuildPyTestCase(support.TempdirManager,
 
         os.chdir(sources)
         old_stdout = sys.stdout
+        #sys.stdout = StringIO.StringIO()
 
         try:
             dist = Distribution({"packages": ["pkg"],

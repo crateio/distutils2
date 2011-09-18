@@ -43,12 +43,9 @@ class InstallTestCase(support.TempdirManager,
             cmd = install_dist(dist)
             cmd.home = destination
             cmd.ensure_finalized()
-        except:
+        finally:
             _SCHEMES.set('posix_prefix', 'platinclude', old_posix_prefix)
             _SCHEMES.set('posix_home', 'platinclude', old_posix_home)
-            raise
-        _SCHEMES.set('posix_prefix', 'platinclude', old_posix_prefix)
-        _SCHEMES.set('posix_home', 'platinclude', old_posix_home)
 
         self.assertEqual(cmd.install_base, destination)
         self.assertEqual(cmd.install_platbase, destination)
@@ -88,17 +85,13 @@ class InstallTestCase(support.TempdirManager,
         self.old_expand = os.path.expanduser
         os.path.expanduser = _expanduser
 
-        def cleanup():
-            _CONFIG_VARS['userbase'] = self.old_user_base
-            _SCHEMES.set(scheme, 'purelib', self.old_user_site)
-            os.path.expanduser = self.old_expand
         try:
             # this is the actual test
             self._test_user_site()
-        except:
-            cleanup()
-            raise
-        cleanup()
+        finally:
+            _CONFIG_VARS['userbase'] = self.old_user_base
+            _SCHEMES.set(scheme, 'purelib', self.old_user_site)
+            os.path.expanduser = self.old_expand
 
     def _test_user_site(self):
         schemes = get_scheme_names()

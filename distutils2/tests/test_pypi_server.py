@@ -1,17 +1,17 @@
 """Tests for distutils2.command.bdist."""
-import sys
-
 import urllib2
 
 try:
     import threading
-    from distutils2.tests.pypi_server import PyPIServer, PYPI_DEFAULT_STATIC_PATH
+    from distutils2.tests.pypi_server import (
+        PyPIServer, PYPI_DEFAULT_STATIC_PATH)
 except ImportError:
     threading = None
     PyPIServer = None
     PYPI_DEFAULT_STATIC_PATH = None
 
 from distutils2.tests import unittest
+
 
 class PyPIServerTest(unittest.TestCase):
 
@@ -34,12 +34,11 @@ class PyPIServerTest(unittest.TestCase):
             handler, request_data = server.requests[-1]
             self.assertIn(data, request_data)
             self.assertIn("x-test-header", handler.headers)
-            self.assertEqual(handler.headers["x-test-header"], "Mister Iceberg")
+            self.assertEqual(handler.headers["x-test-header"],
+                             "Mister Iceberg")
 
-        except:
+        finally:
             server.stop()
-            raise
-        server.stop()
 
     def test_serve_static_content(self):
         # PYPI Mocked server can serve static content from disk.
@@ -51,11 +50,12 @@ class PyPIServerTest(unittest.TestCase):
             url = server.full_address + url_path
             request = urllib2.Request(url)
             response = urllib2.urlopen(request)
-            fp = open(PYPI_DEFAULT_STATIC_PATH + "/test_pypi_server"
-                    + url_path)
-            content = fp.read()
-            fp.close()
-            return response.read().decode() == content
+            file = open(PYPI_DEFAULT_STATIC_PATH + "/test_pypi_server"
+                      + url_path)
+            try:
+                return response.read().decode() == file.read()
+            finally:
+                file.close()
 
         server = PyPIServer(static_uri_paths=["simple", "external"],
             static_filesystem_paths=["test_pypi_server"])
@@ -66,22 +66,23 @@ class PyPIServerTest(unittest.TestCase):
             request = urllib2.Request(url)
             try:
                 urllib2.urlopen(request)
-            except urllib2.HTTPError:
-                self.assertEqual(sys.exc_info()[1].code, 404)
+            except urllib2.HTTPError, e:
+                self.assertEqual(e.code, 404)
 
             # now try serving a content that do exists
             self.assertTrue(uses_local_files_for(server, "/simple/index.html"))
 
             # and another one in another root path
-            self.assertTrue(uses_local_files_for(server, "/external/index.html"))
+            self.assertTrue(uses_local_files_for(server,
+                                                 "/external/index.html"))
 
-        except:
+        finally:
             server.stop()
-            raise
-        server.stop()
+
 
 PyPIServerTest = unittest.skipIf(threading is None, "Needs threading")(
         PyPIServerTest)
+
 
 def test_suite():
     return unittest.makeSuite(PyPIServerTest)

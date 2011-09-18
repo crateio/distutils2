@@ -7,7 +7,7 @@ from distutils2 import install
 from distutils2.pypi.xmlrpc import Client
 from distutils2.metadata import Metadata
 from distutils2.tests.support import (LoggingCatcher, TempdirManager, unittest,
-                                     fake_dec)
+                                      fake_dec)
 from distutils2._backport.sysconfig import is_python_build
 
 try:

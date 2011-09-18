@@ -1,11 +1,12 @@
+# encoding: utf-8
 """Tests for distutils2.create."""
-from StringIO import StringIO
-import codecs
 import os
 import sys
+import codecs
+from StringIO import StringIO
 from textwrap import dedent
-from distutils2._backport import sysconfig
 from distutils2.create import MainProgram, ask_yn, ask, main
+from distutils2._backport import sysconfig
 
 from distutils2.tests import support, unittest
 
@@ -40,13 +41,13 @@ class CreateTestCase(support.TempdirManager,
         super(CreateTestCase, self).tearDown()
 
     def test_ask_yn(self):
-        sys.stdin.write(u'y\n')
+        sys.stdin.write('y\n')
         sys.stdin.seek(0)
         self.assertEqual('y', ask_yn('is this a test'))
 
     def test_ask(self):
-        sys.stdin.write(u'a\n')
-        sys.stdin.write(u'b\n')
+        sys.stdin.write('a\n')
+        sys.stdin.write('b\n')
         sys.stdin.seek(0)
         self.assertEqual('a', ask('is this a test'))
         self.assertEqual('b', ask(str(list(range(0, 70))), default='c',
@@ -54,7 +55,7 @@ class CreateTestCase(support.TempdirManager,
 
     def test_set_multi(self):
         mainprogram = MainProgram()
-        sys.stdin.write(u'aaaaa\n')
+        sys.stdin.write('aaaaa\n')
         sys.stdin.seek(0)
         mainprogram.data['author'] = []
         mainprogram._set_multi('_set_multi test', 'author')
@@ -109,7 +110,7 @@ class CreateTestCase(support.TempdirManager,
               version='0.2',
               description='Python bindings for the Xfoil engine',
               long_description=long_description,
-              maintainer='Andr\xc3 Espaze',
+              maintainer='André Espaze',
               maintainer_email='andre.espaze@logilab.fr',
               url='http://www.python-science.org/project/pyxfoil',
               license='GPLv2',
@@ -136,10 +137,12 @@ class CreateTestCase(support.TempdirManager,
         sys.stdin.seek(0)
         main()
 
-        fp = codecs.open(os.path.join(self.wdir, 'setup.cfg'),
-                encoding='utf-8')
-        contents = fp.read()
-        fp.close()
+        path = os.path.join(self.wdir, 'setup.cfg')
+        fp = codecs.open(path, encoding='utf-8')
+        try:
+            contents = fp.read()
+        finally:
+            fp.close()
 
         self.assertEqual(contents, dedent(u"""\
             [metadata]
@@ -148,7 +151,7 @@ class CreateTestCase(support.TempdirManager,
             summary = Python bindings for the Xfoil engine
             download_url = UNKNOWN
             home_page = http://www.python-science.org/project/pyxfoil
-            maintainer = Andr\xc3 Espaze
+            maintainer = André Espaze
             maintainer_email = andre.espaze@logilab.fr
             description = My super Death-scription
                    |barbar is now on the public domain,
@@ -185,14 +188,16 @@ class CreateTestCase(support.TempdirManager,
         # coding: utf-8
         from distutils.core import setup
         fp = open('README.txt')
-        long_description = fp.read()
-        fp.close()
+        try:
+            long_description = fp.read()
+        finally:
+            fp.close()
 
         setup(name='pyxfoil',
               version='0.2',
               description='Python bindings for the Xfoil engine',
               long_description=long_description,
-              maintainer='Andr\xc3 Espaze',
+              maintainer='André Espaze',
               maintainer_email='andre.espaze@logilab.fr',
               url='http://www.python-science.org/project/pyxfoil',
               license='GPLv2',
@@ -210,13 +215,17 @@ My super Death-scription
 barbar is now in the public domain,
 ho, baby!
                         '''))
-        sys.stdin.write(u'y\n')
+        sys.stdin.write('y\n')
         sys.stdin.seek(0)
         # FIXME Out of memory error.
         main()
-        fp = codecs.open(os.path.join(self.wdir, 'setup.cfg'), encoding='utf-8')
-        contents = fp.read()
-        fp.close()
+
+        path = os.path.join(self.wdir, 'setup.cfg')
+        fp = codecs.open(path, encoding='utf-8')
+        try:
+            contents = fp.read()
+        finally:
+            fp.close()
 
         self.assertEqual(contents, dedent(u"""\
             [metadata]
@@ -225,7 +234,7 @@ ho, baby!
             summary = Python bindings for the Xfoil engine
             download_url = UNKNOWN
             home_page = http://www.python-science.org/project/pyxfoil
-            maintainer = Andr\xc3 Espaze
+            maintainer = André Espaze
             maintainer_email = andre.espaze@logilab.fr
             description-file = README.txt
 

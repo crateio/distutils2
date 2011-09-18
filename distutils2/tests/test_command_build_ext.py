@@ -8,7 +8,7 @@ from distutils2._backport import sysconfig
 from distutils2._backport.sysconfig import _CONFIG_VARS
 from distutils2.dist import Distribution
 from distutils2.errors import (UnknownFileError, CompileError,
-                              PackagingPlatformError)
+                               PackagingPlatformError)
 from distutils2.command.build_ext import build_ext
 from distutils2.compiler.extension import Extension
 from distutils2.tests.support import assert_python_ok
@@ -30,8 +30,6 @@ class BuildExtTestCase(support.TempdirManager,
                        support.LoggingCatcher,
                        unittest.TestCase):
     def setUp(self):
-        # Create a simple test environment
-        # Note that we're making changes to sys.path
         super(BuildExtTestCase, self).setUp()
         self.tmp_dir = self.mkdtemp()
         filename = _get_source_filename()
@@ -40,13 +38,10 @@ class BuildExtTestCase(support.TempdirManager,
         if sys.version > "2.6":
             self.old_user_base = site.USER_BASE
             site.USER_BASE = self.mkdtemp()
-            build_ext.USER_BASE = site.USER_BASE
 
     def tearDown(self):
-        # Get everything back to normal
         if sys.version > "2.6":
             site.USER_BASE = self.old_user_base
-            build_ext.USER_BASE = self.old_user_base
 
         super(BuildExtTestCase, self).tearDown()
 
@@ -94,10 +89,8 @@ class BuildExtTestCase(support.TempdirManager,
         try:
             cmd.ensure_finalized()
             cmd.run()
-        except:
+        finally:
             sys.stdout = old_stdout
-            raise
-        sys.stdout = old_stdout
 
         code = """if 1:
             import sys
@@ -127,18 +120,14 @@ class BuildExtTestCase(support.TempdirManager,
 
         old_var = _CONFIG_VARS.get('Py_ENABLE_SHARED')
         _CONFIG_VARS['Py_ENABLE_SHARED'] = 1
-        def cleanup():
+        try:
+            cmd.ensure_finalized()
+        finally:
             sys.platform = old
             if old_var is None:
                 del _CONFIG_VARS['Py_ENABLE_SHARED']
             else:
                 _CONFIG_VARS['Py_ENABLE_SHARED'] = old_var
-        try:
-            cmd.ensure_finalized()
-        except:
-            cleanup()
-            raise
-        cleanup()
 
         # make sure we get some library dirs under solaris
         self.assertGreater(len(cmd.library_dirs), 0)
@@ -415,7 +404,8 @@ class BuildExtTestCase(support.TempdirManager,
         deptarget_c = os.path.join(self.tmp_dir, 'deptargetmodule.c')
 
         fp = open(deptarget_c, 'w')
-        fp.write(textwrap.dedent('''\
+        try:
+            fp.write(textwrap.dedent('''\
                 #include <AvailabilityMacros.h>
 
                 int dummy;
@@ -426,7 +416,8 @@ class BuildExtTestCase(support.TempdirManager,
                 #endif
 
             ''' % operator))
-        fp.close()
+        finally:
+            fp.close()
 
         # get the deployment target that the interpreter was built with
         target = sysconfig.get_config_var('MACOSX_DEPLOYMENT_TARGET')

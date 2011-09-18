@@ -15,16 +15,20 @@ class Mixin2to3TestCase(support.TempdirManager,
         code = "print 'test'"
 
         fp = self.mktempfile()
-        fp.write(code)
-        fp.close()
+        try:
+            fp.write(code)
+        finally:
+            fp.close()
 
         mixin2to3 = Mixin2to3()
         mixin2to3._run_2to3([fp.name])
         expected = "print('test')"
 
         fp = open(fp.name)
-        converted = fp.read()
-        fp.close()
+        try:
+            converted = fp.read()
+        finally:
+            fp.close()
 
         self.assertEqual(expected, converted)
 
@@ -41,8 +45,10 @@ class Mixin2to3TestCase(support.TempdirManager,
             """''')
 
         fp = self.mktempfile()
-        fp.write(doctest)
-        fp.close()
+        try:
+            fp.write(doctest)
+        finally:
+            fp.close()
 
         mixin2to3 = Mixin2to3()
         mixin2to3._run_2to3([fp.name])
@@ -56,8 +62,10 @@ class Mixin2to3TestCase(support.TempdirManager,
             """\n''')
 
         fp = open(fp.name)
-        converted = fp.read()
-        fp.close()
+        try:
+            converted = fp.read()
+        finally:
+            fp.close()
 
         self.assertEqual(expected, converted)
 
@@ -67,8 +75,10 @@ class Mixin2to3TestCase(support.TempdirManager,
         code = 'type(x) is not T'
 
         fp = self.mktempfile()
-        fp.write(code)
-        fp.close()
+        try:
+            fp.write(code)
+        finally:
+            fp.close()
 
         mixin2to3 = Mixin2to3()
         mixin2to3._run_2to3(files=[fp.name], doctests=[fp.name],
@@ -77,8 +87,10 @@ class Mixin2to3TestCase(support.TempdirManager,
         expected = 'not isinstance(x, T)'
 
         fp = open(fp.name)
-        converted = fp.read()
-        fp.close()
+        try:
+            converted = fp.read()
+        finally:
+            fp.close()
 
         self.assertEqual(expected, converted)
 

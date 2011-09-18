@@ -7,13 +7,6 @@ from distutils2.command.install_lib import install_lib
 from distutils2.compiler.extension import Extension
 from distutils2.errors import PackagingOptionError
 
-try:
-    no_bytecode = sys.dont_write_bytecode
-    bytecode_support = True
-except AttributeError:
-    no_bytecode = False
-    bytecode_support = False
-
 
 class InstallLibTestCase(support.TempdirManager,
                          support.LoggingCatcher,
@@ -40,7 +33,8 @@ class InstallLibTestCase(support.TempdirManager,
         cmd.finalize_options()
         self.assertEqual(cmd.optimize, 2)
 
-    @unittest.skipIf(no_bytecode, 'byte-compile not supported')
+    @unittest.skipIf(getattr(sys, 'dont_write_bytecode', False),
+                     'byte-compile disabled')
     def test_byte_compile(self):
         pkg_dir, dist = self.create_dist()
         cmd = install_lib(dist)
@@ -89,7 +83,7 @@ class InstallLibTestCase(support.TempdirManager,
         # get_input should return 2 elements
         self.assertEqual(len(cmd.get_inputs()), 2)
 
-    @unittest.skipUnless(bytecode_support,
+    @unittest.skipUnless(hasattr(sys, 'dont_write_bytecode'),
                          'sys.dont_write_bytecode not supported')
     def test_dont_write_bytecode(self):
         # makes sure byte_compile is not used

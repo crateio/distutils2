@@ -2,9 +2,10 @@
 
 import os
 import sys
-from distutils2._backport import sysconfig
 from distutils2.dist import Distribution
 from distutils2.command.build_scripts import build_scripts
+from distutils2._backport import sysconfig
+
 from distutils2.tests import unittest, support
 
 
@@ -71,8 +72,10 @@ class BuildScriptsTestCase(support.TempdirManager,
 
     def write_script(self, dir, name, text):
         f = open(os.path.join(dir, name), "w")
-        f.write(text)
-        f.close()
+        try:
+            f.write(text)
+        finally:
+            f.close()
 
     def test_version_int(self):
         source = self.mkdtemp()
@@ -94,12 +97,9 @@ class BuildScriptsTestCase(support.TempdirManager,
         sysconfig._CONFIG_VARS['VERSION'] = 4
         try:
             cmd.run()
-        except:
+        finally:
             if old is not None:
                 sysconfig._CONFIG_VARS['VERSION'] = old
-            raise
-        if old is not None:
-            sysconfig._CONFIG_VARS['VERSION'] = old
 
         built = os.listdir(target)
         for name in expected:

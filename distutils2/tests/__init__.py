@@ -6,17 +6,15 @@ distutils2.tests package.  Each test module has a name starting with
 to return an initialized unittest.TestSuite instance.
 
 Utility code is included in distutils2.tests.support.
-"""
 
-# Put this text back for the backport
-#Always import unittest from this module, it will be the right version
-#(standard library unittest for 3.2 and higher, third-party unittest2
-#elease for older versions).
+Always import unittest from this module, it will be the right version
+standard library for packaging tests and unittest2 for distutils2 tests.
+"""
 
 import os
 import sys
 import unittest2 as unittest
-from distutils2.tests.support import TESTFN
+from StringIO import StringIO
 
 # XXX move helpers to support, add tests for them, remove things that
 # duplicate test.support (or keep them for the backport; needs thinking)
@@ -115,7 +113,6 @@ def reap_children():
 
 
 def captured_stdout(func, *args, **kw):
-    from StringIO import StringIO
     orig_stdout = getattr(sys, 'stdout')
     setattr(sys, 'stdout', StringIO())
     try:
@@ -130,11 +127,4 @@ def unload(name):
     try:
         del sys.modules[name]
     except KeyError:
-        pass
-
-
-def unlink(filename):
-    try:
-        os.unlink(filename)
-    except OSError:
         pass

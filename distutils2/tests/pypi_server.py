@@ -225,14 +225,18 @@ class PyPIRequestHandler(SimpleHTTPRequestHandler):
                         relative_path += "index.html"
 
                     if relative_path.endswith('.tar.gz'):
-                        fp = open(fs_path + relative_path, 'br')
-                        data = fp.read()
-                        fp.close()
+                        file = open(fs_path + relative_path, 'rb')
+                        try:
+                            data = file.read()
+                        finally:
+                            file.close()
                         headers = [('Content-type', 'application/x-gtar')]
                     else:
-                        fp = open(fs_path + relative_path)
-                        data = fp.read().encode()
-                        fp.close()
+                        file = open(fs_path + relative_path)
+                        try:
+                            data = file.read().encode()
+                        finally:
+                            file.close()
                         headers = [('Content-type', 'text/html')]
 
                     headers.append(('Content-Length', len(data)))
@@ -268,8 +272,8 @@ class PyPIRequestHandler(SimpleHTTPRequestHandler):
             self.send_header(header, value)
         self.end_headers()
 
-        if type(data) is str:
-            data = data.encode()
+        if isinstance(data, unicode):
+            data = data.encode('utf-8')
 
         self.wfile.write(data)
 
