@@ -175,24 +175,26 @@ class InstallTestCase(support.TempdirManager,
     def test_old_record(self):
         # test pre-PEP 376 --record option (outside dist-info dir)
         install_dir = self.mkdtemp()
-        pkgdir, dist = self.create_dist()
+        project_dir, dist = self.create_dist(scripts=['hello'])
+        os.chdir(project_dir)
+        self.write_file('hello', "print 'o hai'")
 
-        dist = Distribution()
         cmd = install_dist(dist)
         dist.command_obj['install_dist'] = cmd
         cmd.root = install_dir
-        cmd.record = os.path.join(pkgdir, 'filelist')
+        cmd.record = os.path.join(project_dir, 'filelist')
         cmd.ensure_finalized()
         cmd.run()
 
-        # let's check the record file was created with four
-        # lines, one for each .dist-info entry: METADATA,
-        # INSTALLER, REQUSTED, RECORD
         f = open(cmd.record)
-        lines = f.readlines()
-        f.close()
-        self.assertEqual(len(lines), 4)
+        try:
+            content = f.read()
+        finally:
+            f.close()
 
+        found = [os.path.basename(line) for line in content.splitlines()]
+        expected = ['hello', 'METADATA', 'INSTALLER', 'REQUESTED', 'RECORD']
+        self.assertEqual(found, expected)
 
         # XXX test that fancy_getopt is okay with options named
         # record and no-record but unrelated
