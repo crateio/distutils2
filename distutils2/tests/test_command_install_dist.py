@@ -229,7 +229,7 @@ class InstallTestCase(support.TempdirManager,
         cmd.ensure_finalized()
         cmd.run()
 
-        f =open(cmd.record)
+        f = open(cmd.record)
         try:
             content = f.read()
         finally:
