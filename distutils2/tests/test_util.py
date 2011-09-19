@@ -842,13 +842,13 @@ class PackagingLibChecks(support.TempdirManager,
     def test_setup_py_not_importing_distutils_is_not_distutils_based(self):
         self.assertFalse(is_distutils(self._random_setup_py_pkg()))
 
-    def test_setup_cfg_with_no_metadata_section_is_not_distutils2_based(self):
+    def test_setup_cfg_with_no_metadata_section_is_not_packaging_based(self):
         self.assertFalse(is_packaging(self._setup_cfg_with_no_metadata_pkg()))
 
     def test_setup_cfg_with_valid_metadata_section_is_packaging_based(self):
         self.assertTrue(is_packaging(self._valid_setup_cfg_pkg()))
 
-    def test_setup_cfg_and_invalid_setup_cfg_is_not_distutils2_based(self):
+    def test_setup_cfg_and_invalid_setup_cfg_is_not_packaging_based(self):
         self.assertFalse(is_packaging(self._invalid_setup_cfg_pkg()))
 
     def test_get_install_method_with_setuptools_pkg(self):
@@ -859,7 +859,7 @@ class PackagingLibChecks(support.TempdirManager,
         path = self._distutils_pkg_info()
         self.assertEqual("distutils", get_install_method(path))
 
-    def test_get_install_method_with_distutils2_pkg(self):
+    def test_get_install_method_with_packaging_pkg(self):
         path = self._valid_setup_cfg_pkg()
         self.assertEqual("distutils2", get_install_method(path))
 
@@ -923,7 +923,7 @@ class PackagingLibChecks(support.TempdirManager,
         self.write_file([directory, 'setup.py'],
                 "from distutils.core import setup")
 
-    def _write_distutils2_setup_cfg(self, directory):
+    def _write_packaging_setup_cfg(self, directory):
         self.write_file([directory, 'setup.cfg'],
                         ("[metadata]\n"
                          "name = mypackage\n"
@@ -941,7 +941,7 @@ class PackagingLibChecks(support.TempdirManager,
 
     def _valid_setup_cfg_pkg(self):
         tmp = self.mkdtemp()
-        self._write_distutils2_setup_cfg(tmp)
+        self._write_packaging_setup_cfg(tmp)
         return tmp
 
     def _setuptools_egg_info_pkg(self):
