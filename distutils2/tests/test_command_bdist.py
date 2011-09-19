@@ -1,30 +1,12 @@
 """Tests for distutils.command.bdist."""
-
-from distutils2 import util
+import os
 from distutils2.command.bdist import bdist, show_formats
-
 from distutils2.tests import unittest, support, captured_stdout
 
 
 class BuildTestCase(support.TempdirManager,
                     support.LoggingCatcher,
                     unittest.TestCase):
-
-    def _mock_get_platform(self):
-        self._get_platform_called = True
-        return self._get_platform()
-
-    def setUp(self):
-        super(BuildTestCase, self).setUp()
-
-        # mock util.get_platform
-        self._get_platform_called = False
-        self._get_platform = util.get_platform
-        util.get_platform = self._mock_get_platform
-
-    def tearDown(self):
-        super(BuildTestCase, self).tearDown()
-        util.get_platform = self._get_platform
 
     def test_formats(self):
         # let's create a command and make sure
@@ -43,19 +25,21 @@ class BuildTestCase(support.TempdirManager,
         self.assertEqual(found, formats)
 
     def test_skip_build(self):
-        dist = self.create_dist()[1]
-        cmd = bdist(dist)
-        cmd.skip_build = False
-        cmd.formats = ['zip']
-        cmd.ensure_finalized()
-        self.assertFalse(self._get_platform_called)
-
+        # bug #10946: bdist --skip-build should trickle down to subcommands
         dist = self.create_dist()[1]
         cmd = bdist(dist)
         cmd.skip_build = True
-        cmd.formats = ['zip']
         cmd.ensure_finalized()
-        self.assertTrue(self._get_platform_called)
+        dist.command_obj['bdist'] = cmd
+
+        names = ['bdist_dumb', 'bdist_wininst']
+        if os.name == 'nt':
+            names.append('bdist_msi')
+
+        for name in names:
+            subcmd = cmd.get_finalized_command(name)
+            self.assertTrue(subcmd.skip_build,
+                            '%s should take --skip-build from bdist' % name)
 
     def test_show_formats(self):
         __, stdout = captured_stdout(show_formats)
