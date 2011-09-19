@@ -267,11 +267,11 @@ class MetadataTestCase(LoggingCatcher,
         self.assertNotIn('Obsoletes', metadata)
 
         metadata['Classifier'] = ['ok']
-        self.assertEqual(metadata['Metadata-Version'], '1.2')
+        self.assertEqual(metadata['Metadata-Version'], '1.1')
 
         metadata = Metadata()
         metadata['Download-URL'] = 'ok'
-        self.assertEqual(metadata['Metadata-Version'], '1.2')
+        self.assertEqual(metadata['Metadata-Version'], '1.1')
 
         metadata = Metadata()
         metadata['Obsoletes'] = 'ok'

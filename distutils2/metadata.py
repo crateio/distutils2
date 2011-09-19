@@ -62,7 +62,8 @@ _314_FIELDS = ('Metadata-Version', 'Name', 'Version', 'Platform',
                'License', 'Classifier', 'Download-URL', 'Obsoletes',
                'Provides', 'Requires')
 
-_314_MARKERS = ('Obsoletes', 'Provides', 'Requires')
+_314_MARKERS = ('Obsoletes', 'Provides', 'Requires', 'Classifier',
+                'Download-URL')
 
 _345_FIELDS = ('Metadata-Version', 'Name', 'Version', 'Platform',
                'Supported-Platform', 'Summary', 'Description',
@@ -558,6 +559,7 @@ class Metadata(object):
         return data
 
     # Mapping API
+    # TODO could add iter* variants
 
     def keys(self):
         return list(_version2fieldlist(self['Metadata-Version']))
@@ -567,7 +569,7 @@ class Metadata(object):
             yield key
 
     def values(self):
-        return [self[key] for key in list(self.keys())]
+        return [self[key] for key in self.keys()]
 
     def items(self):
-        return [(key, self[key]) for key in list(self.keys())]
+        return [(key, self[key]) for key in self.keys()]
