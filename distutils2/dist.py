@@ -42,7 +42,7 @@ class Distribution(object):
 
     # 'global_options' describes the command-line options that may be
     # supplied to the setup script prior to any actual commands.
-    # Eg. "pysetup -n" or "pysetup --dry-run" both take advantage of
+    # Eg. "pysetup run -n" or "pysetup run --dry-run" both take advantage of
     # these global options.  This list should be kept to a bare minimum,
     # since every global option is also valid as a command option -- and we
     # don't want to pollute the commands with too many options that they
@@ -66,47 +66,6 @@ Common commands: (see '--help-commands' for more)
     display_options = [
         ('help-commands', None,
          "list all available commands"),
-        # XXX this is obsoleted by the pysetup metadata action
-        ('name', None,
-         "print package name"),
-        ('version', 'V',
-         "print package version"),
-        ('fullname', None,
-         "print <package name>-<version>"),
-        ('author', None,
-         "print the author's name"),
-        ('author-email', None,
-         "print the author's email address"),
-        ('maintainer', None,
-         "print the maintainer's name"),
-        ('maintainer-email', None,
-         "print the maintainer's email address"),
-        ('contact', None,
-         "print the maintainer's name if known, else the author's"),
-        ('contact-email', None,
-         "print the maintainer's email address if known, else the author's"),
-        ('url', None,
-         "print the URL for this package"),
-        ('license', None,
-         "print the license of the package"),
-        ('licence', None,
-         "alias for --license"),
-        ('description', None,
-         "print the package description"),
-        ('long-description', None,
-         "print the long package description"),
-        ('platforms', None,
-         "print the list of platforms"),
-        ('classifier', None,
-         "print the list of classifiers"),
-        ('keywords', None,
-         "print the list of keywords"),
-        ('provides', None,
-         "print the list of packages/modules provided"),
-        ('requires', None,
-         "print the list of packages/modules required"),
-        ('obsoletes', None,
-         "print the list of packages/modules made obsolete"),
         ('use-2to3', None,
          "use 2to3 to make source python 3.x compatible"),
         ('convert-2to3-doctests', None,
@@ -342,7 +301,6 @@ Common commands: (see '--help-commands' for more)
         self.commands = []
         parser = FancyGetopt(toplevel_options + self.display_options)
         parser.set_negative_aliases(self.negative_opt)
-        parser.set_aliases({'licence': 'license'})
         args = parser.getopt(args=self.script_args, object=self)
         option_order = parser.get_option_order()
 
@@ -491,7 +449,7 @@ Common commands: (see '--help-commands' for more)
 
         If 'global_options' is true, lists the global options:
         --dry-run, etc.  If 'display_options' is true, lists
-        the "display-only" options: --name, --version, etc.  Finally,
+        the "display-only" options: --help-commands.  Finally,
         lists per-command help for every command name or command class
         in 'commands'.
         """
@@ -528,9 +486,8 @@ Common commands: (see '--help-commands' for more)
 
     def handle_display_options(self, option_order):
         """If there were any non-global "display-only" options
-        (--help-commands or the metadata display options) on the command
-        line, display the requested info and return true; else return
-        false.
+        (--help-commands) on the command line, display the requested info and
+        return true; else return false.
         """
         # User just wants a list of commands -- we'll print it out and stop
         # processing now (ie. if they ran "setup --help-commands foo bar",
@@ -539,7 +496,7 @@ Common commands: (see '--help-commands' for more)
             self.print_commands()
             print
             print gen_usage(self.script_name)
-            return 1
+            return True
 
         # If user supplied any of the "display metadata" options, then
         # display that metadata in the order in which the user supplied the
@@ -627,14 +584,14 @@ Common commands: (see '--help-commands' for more)
             cmd_obj = self.command_obj[command] = cls(self)
             self.have_run[command] = 0
 
-            # Set any options that were supplied in config files
-            # or on the command line.  (NB. support for error
-            # reporting is lame here: any errors aren't reported
-            # until 'finalize_options()' is called, which means
-            # we won't report the source of the error.)
+            # Set any options that were supplied in config files or on the
+            # command line.  (XXX support for error reporting is suboptimal
+            # here: errors aren't reported until finalize_options is called,
+            # which means we won't report the source of the error.)
             options = self.command_options.get(command)
             if options:
                 self._set_command_options(cmd_obj, options)
+
         return cmd_obj
 
     def _set_command_options(self, command_obj, option_dict=None):

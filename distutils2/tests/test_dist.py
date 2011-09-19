@@ -108,17 +108,17 @@ class DistributionTestCase(support.TempdirManager,
         Distribution(attrs={'author': 'xxx',
                             'name': 'xxx',
                             'version': '1.2',
-                            'url': 'xxxx',
+                            'home_page': 'xxxx',
                             'badoptname': 'xxx'})
         logs = self.get_logs(logging.WARNING)
-        self.assertEqual(1, len(logs))
+        self.assertEqual(len(logs), 1)
         self.assertIn('unknown argument', logs[0])
 
     def test_bad_version(self):
         Distribution(attrs={'author': 'xxx',
                             'name': 'xxx',
                             'version': 'xxx',
-                            'url': 'xxxx'})
+                            'home_page': 'xxxx'})
         logs = self.get_logs(logging.WARNING)
         self.assertEqual(1, len(logs))
         self.assertIn('not a valid version', logs[0])
@@ -126,13 +126,12 @@ class DistributionTestCase(support.TempdirManager,
     def test_empty_options(self):
         # an empty options dictionary should not stay in the
         # list of attributes
-        Distribution(attrs={'author': 'xxx',
-                            'name': 'xxx',
-                            'version': '1.2',
-                            'url': 'xxxx',
-                            'options': {}})
+        dist = Distribution(attrs={'author': 'xxx', 'name': 'xxx',
+                                   'version': '1.2', 'home_page': 'xxxx',
+                                   'options': {}})
 
         self.assertEqual([], self.get_logs(logging.WARNING))
+        self.assertNotIn('options', dir(dist))
 
     def test_non_empty_options(self):
         # TODO: how to actually use options is not documented except
@@ -145,7 +144,7 @@ class DistributionTestCase(support.TempdirManager,
         dist = Distribution(attrs={'author': 'xxx',
                                    'name': 'xxx',
                                    'version': 'xxx',
-                                   'url': 'xxxx',
+                                   'home_page': 'xxxx',
                                    'options': {'sdist': {'owner': 'root'}}})
 
         self.assertIn('owner', dist.get_option_dict('sdist'))
