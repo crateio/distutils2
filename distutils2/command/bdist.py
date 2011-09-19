@@ -64,13 +64,12 @@ class bdist(Command):
                       'os2': 'zip'}
 
     # Establish the preferred order (for the --help-formats option).
-    format_commands = ['gztar', 'bztar', 'ztar', 'tar',
+    format_commands = ['gztar', 'bztar', 'tar',
                        'wininst', 'zip', 'msi']
 
     # And the real information.
     format_command = {'gztar': ('bdist_dumb', "gzip'ed tar file"),
                       'bztar': ('bdist_dumb', "bzip2'ed tar file"),
-                      'ztar':  ('bdist_dumb', "compressed tar file"),
                       'tar':   ('bdist_dumb', "tar file"),
                       'wininst': ('bdist_wininst',
                                   "Windows executable installer"),

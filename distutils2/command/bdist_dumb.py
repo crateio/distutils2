@@ -5,8 +5,8 @@ sys.prefix or sys.exec_prefix.
 """
 
 import os
-
 from shutil import rmtree
+
 from distutils2.util import get_platform
 from distutils2.command.cmd import Command
 from distutils2.errors import PackagingPlatformError
@@ -24,7 +24,7 @@ class bdist_dumb(Command):
                      "platform name to embed in generated filenames "
                      "(default: %s)" % get_platform()),
                     ('format=', 'f',
-                     "archive format to create (tar, ztar, gztar, zip)"),
+                     "archive format to create (tar, gztar, bztar, zip)"),
                     ('keep-temp', 'k',
                      "keep the pseudo-installation tree around after " +
                      "creating the distribution archive"),
