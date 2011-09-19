@@ -10,7 +10,6 @@ import os
 import sys
 import stat
 import errno
-import shutil
 import logging
 import tempfile
 
@@ -27,7 +26,7 @@ from distutils2.errors import (PackagingError, InstallationException,
                                InstallationConflict, CCompilerError)
 from distutils2.pypi.errors import ProjectNotFound, ReleaseNotFound
 from distutils2 import database
-from distutils2._backport.shutil import unpack_archive
+from distutils2._backport import shutil
 from distutils2._backport.sysconfig import (get_config_var, get_path,
                                             is_python_build)
 
@@ -126,7 +125,7 @@ def install_local_project(path):
         logger.info('Installing from archive: %r', path)
         _unpacked_dir = tempfile.mkdtemp()
         try:
-            unpack_archive(path, _unpacked_dir)
+            shutil.unpack_archive(path, _unpacked_dir)
             return _run_install_from_archive(_unpacked_dir)
         finally:
             shutil.rmtree(_unpacked_dir)

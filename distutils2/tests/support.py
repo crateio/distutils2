@@ -351,6 +351,7 @@ def fixup_build_ext(cmd):
         if runshared is None:
             cmd.library_dirs = ['.']
         else:
+            # FIXME no partition in 2.4
             name, equals, value = runshared.partition('=')
             cmd.library_dirs = value.split(os.pathsep)
 
