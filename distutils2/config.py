@@ -17,6 +17,19 @@ from distutils2.command import set_command
 from distutils2.markers import interpret
 
 
+def _check_name(name, packages):
+    if '.' not in name:
+        return
+    parts = name.split('.')
+    modname = parts[-1]
+    parent = '.'.join(parts[:-1])
+    if parent not in packages:
+        # we could log a warning instead of raising, but what's the use
+        # of letting people build modules they can't import?
+        raise PackagingOptionError(
+            'parent package for extension %r not found' % name)
+
+
 def _pop_values(values_dct, key):
     """Remove values from the dictionary and convert them as a list"""
     vals_str = values_dct.pop(key, '')
@@ -265,8 +278,10 @@ class Config(object):
                     raise PackagingOptionError(
                         'extension name should be given as [extension: name], '
                         'not as key')
+                name = labels[1].strip()
+                _check_name(name, self.dist.packages)
                 ext_modules.append(Extension(
-                    labels[1].strip(),
+                    name,
                     _pop_values(values_dct, 'sources'),
                     _pop_values(values_dct, 'include_dirs'),
                     _pop_values(values_dct, 'define_macros'),
