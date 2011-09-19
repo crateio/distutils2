@@ -157,25 +157,23 @@ class Crawler(BaseClient):
 
         Return a list of names.
         """
+        if u'*' in name:
+            name.replace(u'*', u'.*')
+        else:
+            name = u"%s%s%s" % (u'*.?', name, u'*.?')
+        name = name.replace(u'*', u'[^<]*')  # avoid matching end tag
+        pattern = (u'<a[^>]*>(%s)</a>' % name).encode('utf-8')
+        projectname = re.compile(pattern, re.I)
+        matching_projects = []
+
         index = self._open_url(self.index_url)
         try:
-            if '*' in name:
-                name.replace('*', '.*')
-            else:
-                name = "%s%s%s" % ('*.?', name, '*.?')
-            name = name.replace('*', '[^<]*')  # avoid matching end tag
-            projectname = re.compile('<a[^>]*>(%s)</a>' % name, re.I)
-            matching_projects = []
-
             index_content = index.read()
         finally:
             index.close()
 
-        # FIXME should use bytes I/O and regexes instead of decoding
-        index_content = index_content.decode()
-
         for match in projectname.finditer(index_content):
-            project_name = match.group(1)
+            project_name = match.group(1).decode('utf-8')
             matching_projects.append(self._get_project(project_name))
         return matching_projects
 
