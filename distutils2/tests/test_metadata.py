@@ -1,20 +1,39 @@
+# encoding: utf-8
 """Tests for distutils2.metadata."""
 import os
 import sys
 import codecs
 import logging
+from textwrap import dedent
 from StringIO import StringIO
 
 from distutils2.errors import (MetadataConflictError, MetadataMissingError,
-                              MetadataUnrecognizedVersionError)
+                               MetadataUnrecognizedVersionError)
 from distutils2.metadata import Metadata, PKG_INFO_PREFERRED_VERSION
 
 from distutils2.tests import unittest
-from distutils2.tests.support import LoggingCatcher
+from distutils2.tests.support import (LoggingCatcher, TempdirManager,
+                                      EnvironRestorer)
 
 
 class MetadataTestCase(LoggingCatcher,
+                       TempdirManager,
+                       EnvironRestorer,
                        unittest.TestCase):
+
+    maxDiff = None
+    restore_environ = ['HOME']
+
+    def setUp(self):
+        super(MetadataTestCase, self).setUp()
+        self.argv = sys.argv, sys.argv[:]
+
+    def tearDown(self):
+        sys.argv = self.argv[0]
+        sys.argv[:] = self.argv[1]
+        super(MetadataTestCase, self).tearDown()
+
+    ####  Test various methods of the Metadata class
 
     def test_instantiation(self):
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
@@ -48,17 +67,6 @@ class MetadataTestCase(LoggingCatcher,
         self.assertRaises(TypeError, Metadata,
                           PKG_INFO, mapping=m, fileobj=fp)
 
-    def test_metadata_read_write(self):
-        PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
-        metadata = Metadata(PKG_INFO)
-        out = StringIO()
-        metadata.write_file(out)
-        out.seek(0)
-        res = Metadata()
-        res.read_file(out)
-        for k in metadata:
-            self.assertEqual(metadata[k], res[k])
-
     def test_metadata_markers(self):
         # see if we can be platform-aware
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
@@ -82,32 +90,6 @@ class MetadataTestCase(LoggingCatcher,
         metadata.read_file(StringIO(content))
         self.assertEqual(metadata['Requires-Dist'], ['foo'])
 
-    def test_description(self):
-        PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
-        f = codecs.open(PKG_INFO, 'r', encoding='utf-8')
-        try:
-            content = f.read() % sys.platform
-        finally:
-            f.close()
-        metadata = Metadata()
-        metadata.read_file(StringIO(content))
-
-        # see if we can read the description now
-        DESC = os.path.join(os.path.dirname(__file__), 'LONG_DESC.txt')
-        f = open(DESC)
-        try:
-            wanted = f.read()
-        finally:
-            f.close()
-        self.assertEqual(wanted, metadata['Description'])
-
-        # save the file somewhere and make sure we can read it back
-        out = StringIO()
-        metadata.write_file(out)
-        out.seek(0)
-        metadata.read_file(out)
-        self.assertEqual(wanted, metadata['Description'])
-
     def test_mapping_api(self):
         PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
         f = codecs.open(PKG_INFO, 'r', encoding='utf-8')
@@ -125,80 +107,90 @@ class MetadataTestCase(LoggingCatcher,
         metadata.update([('version', '0.7')])
         self.assertEqual(metadata['Version'], '0.7')
 
-        self.assertEqual(list(metadata), list(metadata.keys()))
+        # make sure update method checks values like the set method does
+        metadata.update({'version': '1--2'})
+        self.assertEqual(len(self.get_logs()), 1)
 
-    def test_versions(self):
-        metadata = Metadata()
-        metadata['Obsoletes'] = 'ok'
-        self.assertEqual(metadata['Metadata-Version'], '1.1')
+        self.assertEqual(list(metadata), metadata.keys())
 
-        del metadata['Obsoletes']
-        metadata['Obsoletes-Dist'] = 'ok'
-        self.assertEqual(metadata['Metadata-Version'], '1.2')
+    def test_read_metadata(self):
+        fields = {'name': 'project',
+                  'version': '1.0',
+                  'description': 'desc',
+                  'summary': 'xxx',
+                  'download_url': 'http://example.com',
+                  'keywords': ['one', 'two'],
+                  'requires_dist': ['foo']}
 
-        self.assertRaises(MetadataConflictError, metadata.set,
-                          'Obsoletes', 'ok')
+        metadata = Metadata(mapping=fields)
+        PKG_INFO = StringIO()
+        metadata.write_file(PKG_INFO)
+        PKG_INFO.seek(0)
 
-        del metadata['Obsoletes']
-        del metadata['Obsoletes-Dist']
-        metadata['Version'] = '1'
-        self.assertEqual(metadata['Metadata-Version'], '1.0')
+        metadata = Metadata(fileobj=PKG_INFO)
 
-        PKG_INFO = os.path.join(os.path.dirname(__file__),
-                                'SETUPTOOLS-PKG-INFO')
-        f = codecs.open(PKG_INFO, 'r', encoding='utf-8')
+        self.assertEqual(metadata['name'], 'project')
+        self.assertEqual(metadata['version'], '1.0')
+        self.assertEqual(metadata['summary'], 'xxx')
+        self.assertEqual(metadata['download_url'], 'http://example.com')
+        self.assertEqual(metadata['keywords'], ['one', 'two'])
+        self.assertEqual(metadata['platform'], [])
+        self.assertEqual(metadata['obsoletes'], [])
+        self.assertEqual(metadata['requires-dist'], ['foo'])
+
+    def test_write_metadata(self):
+        # check support of non-ASCII values
+        tmp_dir = self.mkdtemp()
+        my_file = os.path.join(tmp_dir, 'f')
+
+        metadata = Metadata(mapping={'author': u'Mister Café',
+                                     'name': u'my.project',
+                                     'author': u'Café Junior',
+                                     'summary': u'Café torréfié',
+                                     'description': u'Héhéhé',
+                                     'keywords': [u'café', u'coffee']})
+        metadata.write(my_file)
+
+        # the file should use UTF-8
+        metadata2 = Metadata()
+        fp = codecs.open(my_file, encoding='utf-8')
         try:
-            content = f.read()
+            metadata2.read_file(fp)
         finally:
-            f.close()
-        metadata.read_file(StringIO(content))
-        self.assertEqual(metadata['Metadata-Version'], '1.0')
+            fp.close()
 
-        PKG_INFO = os.path.join(os.path.dirname(__file__),
-                                'SETUPTOOLS-PKG-INFO2')
-        f = codecs.open(PKG_INFO, 'r', encoding='utf-8')
+        # XXX when keywords are not defined, metadata will have
+        # 'Keywords': [] but metadata2 will have 'Keywords': ['']
+        # because of a value.split(',') in Metadata.get
+        self.assertEqual(metadata.items(), metadata2.items())
+
+        # ASCII also works, it's a subset of UTF-8
+        metadata = Metadata(mapping={'author': u'Mister Cafe',
+                                     'name': u'my.project',
+                                     'author': u'Cafe Junior',
+                                     'summary': u'Cafe torrefie',
+                                     'description': u'Hehehe'})
+        metadata.write(my_file)
+
+        metadata2 = Metadata()
+        fp = codecs.open(my_file, encoding='utf-8')
         try:
-            content = f.read()
+            metadata2.read_file(fp)
         finally:
-            f.close()
+            fp.close()
 
-        metadata.read_file(StringIO(content))
-        self.assertEqual(metadata['Metadata-Version'], '1.1')
+    def test_metadata_read_write(self):
+        PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
+        metadata = Metadata(PKG_INFO)
+        out = StringIO()
+        metadata.write_file(out)
 
-        # Update the _fields dict directly to prevent 'Metadata-Version'
-        # from being updated by the _set_best_version() method.
-        metadata._fields['Metadata-Version'] = '1.618'
-        self.assertRaises(MetadataUnrecognizedVersionError, metadata.keys)
+        out.seek(0)
+        res = Metadata()
+        res.read_file(out)
+        self.assertEqual(metadata.values(), res.values())
 
-    def test_warnings(self):
-        metadata = Metadata()
-
-        # these should raise a warning
-        values = (('Requires-Dist', 'Funky (Groovie)'),
-                  ('Requires-Python', '1-4'))
-
-        for name, value in values:
-            metadata.set(name, value)
-
-        # we should have a certain amount of warnings
-        self.assertEqual(len(self.get_logs()), 2)
-
-    def test_multiple_predicates(self):
-        metadata = Metadata()
-
-        # see for "3" instead of "3.0"  ???
-        # its seems like the MINOR VERSION can be omitted
-        metadata['Requires-Python'] = '>=2.6, <3.0'
-        metadata['Requires-Dist'] = ['Foo (>=2.6, <3.0)']
-
-        self.assertEqual([], self.get_logs(logging.WARNING))
-
-    def test_project_url(self):
-        metadata = Metadata()
-        metadata['Project-URL'] = [('one', 'http://ok')]
-        self.assertEqual(metadata['Project-URL'],
-                          [('one', 'http://ok')])
-        self.assertEqual(metadata['Metadata-Version'], '1.2')
+    ####  Test checks
 
     def test_check_version(self):
         metadata = Metadata()
@@ -261,38 +253,221 @@ class MetadataTestCase(LoggingCatcher,
         metadata['Requires-dist'] = ['Foo (a)']
         metadata['Obsoletes-dist'] = ['Foo (a)']
         metadata['Provides-dist'] = ['Foo (a)']
-        if metadata.docutils_support:
-            missing, warnings = metadata.check()
-            self.assertEqual(len(warnings), 4)
-            metadata.docutils_support = False
         missing, warnings = metadata.check()
         self.assertEqual(len(warnings), 4)
 
-    def test_best_choice(self):
-        metadata = Metadata()
-        metadata['Version'] = '1.0'
+    ####  Test fields and metadata versions
+
+    def test_metadata_versions(self):
+        metadata = Metadata(mapping={'name': 'project', 'version': '1.0'})
         self.assertEqual(metadata['Metadata-Version'],
                          PKG_INFO_PREFERRED_VERSION)
+        self.assertNotIn('Provides', metadata)
+        self.assertNotIn('Requires', metadata)
+        self.assertNotIn('Obsoletes', metadata)
+
         metadata['Classifier'] = ['ok']
         self.assertEqual(metadata['Metadata-Version'], '1.2')
 
-    def test_project_urls(self):
-        # project-url is a bit specific, make sure we write it
-        # properly in PKG-INFO
         metadata = Metadata()
-        metadata['Version'] = '1.0'
-        metadata['Project-Url'] = [('one', 'http://ok')]
-        self.assertEqual(metadata['Project-Url'], [('one', 'http://ok')])
-        file_ = StringIO()
-        metadata.write_file(file_)
-        file_.seek(0)
-        res = file_.read().split('\n')
-        self.assertIn('Project-URL: one,http://ok', res)
+        metadata['Download-URL'] = 'ok'
+        self.assertEqual(metadata['Metadata-Version'], '1.2')
 
-        file_.seek(0)
         metadata = Metadata()
-        metadata.read_file(file_)
+        metadata['Obsoletes'] = 'ok'
+        self.assertEqual(metadata['Metadata-Version'], '1.1')
+
+        del metadata['Obsoletes']
+        metadata['Obsoletes-Dist'] = 'ok'
+        self.assertEqual(metadata['Metadata-Version'], '1.2')
+
+        self.assertRaises(MetadataConflictError, metadata.set,
+                          'Obsoletes', 'ok')
+
+        del metadata['Obsoletes']
+        del metadata['Obsoletes-Dist']
+        metadata['Version'] = '1'
+        self.assertEqual(metadata['Metadata-Version'], '1.0')
+
+        # make sure the _best_version function works okay with
+        # non-conflicting fields from 1.1 and 1.2 (i.e. we want only the
+        # requires/requires-dist and co. pairs to cause a conflict, not all
+        # fields in _314_MARKERS)
+        metadata = Metadata()
+        metadata['Requires-Python'] = '3'
+        metadata['Classifier'] = ['Programming language :: Python :: 3']
+        self.assertEqual(metadata['Metadata-Version'], '1.2')
+
+        PKG_INFO = os.path.join(os.path.dirname(__file__),
+                                'SETUPTOOLS-PKG-INFO')
+        metadata = Metadata(PKG_INFO)
+        self.assertEqual(metadata['Metadata-Version'], '1.0')
+
+        PKG_INFO = os.path.join(os.path.dirname(__file__),
+                                'SETUPTOOLS-PKG-INFO2')
+        metadata = Metadata(PKG_INFO)
+        self.assertEqual(metadata['Metadata-Version'], '1.1')
+
+        # Update the _fields dict directly to prevent 'Metadata-Version'
+        # from being updated by the _set_best_version() method.
+        metadata._fields['Metadata-Version'] = '1.618'
+        self.assertRaises(MetadataUnrecognizedVersionError, metadata.keys)
+
+    def test_version(self):
+        Metadata(mapping={'author': 'xxx',
+                          'name': 'xxx',
+                          'version': 'xxx',
+                          'home_page': 'xxxx'})
+        logs = self.get_logs(logging.WARNING)
+        self.assertEqual(1, len(logs))
+        self.assertIn('not a valid version', logs[0])
+
+    def test_description(self):
+        PKG_INFO = os.path.join(os.path.dirname(__file__), 'PKG-INFO')
+        f = codecs.open(PKG_INFO, 'r', encoding='utf-8')
+        try:
+            content = f.read() % sys.platform
+        finally:
+            f.close()
+        metadata = Metadata()
+        metadata.read_file(StringIO(content))
+
+        # see if we can read the description now
+        DESC = os.path.join(os.path.dirname(__file__), 'LONG_DESC.txt')
+        f = open(DESC)
+        try:
+            wanted = f.read()
+        finally:
+            f.close()
+        self.assertEqual(wanted, metadata['Description'])
+
+        # save the file somewhere and make sure we can read it back
+        out = StringIO()
+        metadata.write_file(out)
+        out.seek(0)
+
+        out.seek(0)
+        metadata = Metadata()
+        metadata.read_file(out)
+        self.assertEqual(wanted, metadata['Description'])
+
+    def test_description_folding(self):
+        # make sure the indentation is preserved
+        out = StringIO()
+        desc = dedent("""\
+        example::
+              We start here
+            and continue here
+          and end here.
+        """)
+
+        metadata = Metadata()
+        metadata['description'] = desc
+        metadata.write_file(out)
+
+        folded_desc = desc.replace('\n', '\n' + (7 * ' ') + '|')
+        self.assertIn(folded_desc, out.getvalue())
+
+    def test_project_url(self):
+        metadata = Metadata()
+        metadata['Project-URL'] = [('one', 'http://ok')]
+        self.assertEqual(metadata['Project-URL'], [('one', 'http://ok')])
+        self.assertEqual(metadata['Metadata-Version'], '1.2')
+
+        # make sure this particular field is handled properly when written
+        fp = StringIO()
+        metadata.write_file(fp)
+        self.assertIn('Project-URL: one,http://ok', fp.getvalue().split('\n'))
+
+        fp.seek(0)
+        metadata = Metadata()
+        metadata.read_file(fp)
         self.assertEqual(metadata['Project-Url'], [('one', 'http://ok')])
+
+    # TODO copy tests for v1.1 requires, obsoletes and provides from distutils
+    # (they're useless but we support them so we should test them anyway)
+
+    def test_provides_dist(self):
+        fields = {'name': 'project',
+                  'version': '1.0',
+                  'provides_dist': ['project', 'my.project']}
+        metadata = Metadata(mapping=fields)
+        self.assertEqual(metadata['Provides-Dist'],
+                         ['project', 'my.project'])
+        self.assertEqual(metadata['Metadata-Version'], '1.2', metadata)
+        self.assertNotIn('Requires', metadata)
+        self.assertNotIn('Obsoletes', metadata)
+
+    @unittest.skip('needs to be implemented')
+    def test_provides_illegal(self):
+        # TODO check the versions (like distutils does for old provides field)
+        self.assertRaises(ValueError, Metadata,
+                          mapping={'name': 'project',
+                                   'version': '1.0',
+                                   'provides_dist': ['my.pkg (splat)']})
+
+    def test_requires_dist(self):
+        fields = {'name': 'project',
+                  'version': '1.0',
+                  'requires_dist': ['other', 'another (==1.0)']}
+        metadata = Metadata(mapping=fields)
+        self.assertEqual(metadata['Requires-Dist'],
+                         ['other', 'another (==1.0)'])
+        self.assertEqual(metadata['Metadata-Version'], '1.2')
+        self.assertNotIn('Provides', metadata)
+        self.assertEqual(metadata['Requires-Dist'],
+                         ['other', 'another (==1.0)'])
+        self.assertNotIn('Obsoletes', metadata)
+
+        # make sure write_file uses one RFC 822 header per item
+        fp = StringIO()
+        metadata.write_file(fp)
+        lines = fp.getvalue().split('\n')
+        self.assertIn('Requires-Dist: other', lines)
+        self.assertIn('Requires-Dist: another (==1.0)', lines)
+
+        # test warnings for invalid version predicates
+        # XXX this would cause no warnings if we used update (or the mapping
+        # argument of the constructor), see comment in Metadata.update
+        metadata = Metadata()
+        metadata['Requires-Dist'] = 'Funky (Groovie)'
+        metadata['Requires-Python'] = '1-4'
+        self.assertEqual(len(self.get_logs()), 2)
+
+        # test multiple version predicates
+        metadata = Metadata()
+
+        # XXX check PEP and see if 3 == 3.0
+        metadata['Requires-Python'] = '>=2.6, <3.0'
+        metadata['Requires-Dist'] = ['Foo (>=2.6, <3.0)']
+        self.assertEqual([], self.get_logs(logging.WARNING))
+
+    @unittest.skip('needs to be implemented')
+    def test_requires_illegal(self):
+        self.assertRaises(ValueError, Metadata,
+                          mapping={'name': 'project',
+                                   'version': '1.0',
+                                   'requires': ['my.pkg (splat)']})
+
+    def test_obsoletes_dist(self):
+        fields = {'name': 'project',
+                  'version': '1.0',
+                  'obsoletes_dist': ['other', 'another (<1.0)']}
+        metadata = Metadata(mapping=fields)
+        self.assertEqual(metadata['Obsoletes-Dist'],
+                         ['other', 'another (<1.0)'])
+        self.assertEqual(metadata['Metadata-Version'], '1.2')
+        self.assertNotIn('Provides', metadata)
+        self.assertNotIn('Requires', metadata)
+        self.assertEqual(metadata['Obsoletes-Dist'],
+                         ['other', 'another (<1.0)'])
+
+    @unittest.skip('needs to be implemented')
+    def test_obsoletes_illegal(self):
+        self.assertRaises(ValueError, Metadata,
+                          mapping={'name': 'project',
+                                   'version': '1.0',
+                                   'obsoletes': ['my.pkg (splat)']})
 
 
 def test_suite():

@@ -371,11 +371,20 @@ class Metadata(object):
         Keys that don't match a metadata field or that have an empty value are
         dropped.
         """
+        # XXX the code should just use self.set, which does tbe same checks and
+        # conversions already, but that would break packaging.pypi: it uses the
+        # update method, which does not call _set_best_version (which set
+        # does), and thus allows having a Metadata object (as long as you don't
+        # modify or write it) with extra fields from PyPI that are not fields
+        # defined in Metadata PEPs.  to solve it, the best_version system
+        # should be reworked so that it's called only for writing, or in a new
+        # strict mode, or with a new, more lax Metadata subclass in p7g.pypi
         def _set(key, value):
             if key in _ATTR2FIELD and value:
                 self.set(self._convert_name(key), value)
 
-        if other is None:
+        if not other:
+            # other is None or empty container
             pass
         elif hasattr(other, 'keys'):
             for k in other.keys():
@@ -385,7 +394,8 @@ class Metadata(object):
                 _set(k, v)
 
         if kwargs:
-            self.update(kwargs)
+            for k, v in kwargs.items():
+                _set(k, v)
 
     def set(self, name, value):
         """Control then set a metadata field."""
@@ -550,7 +560,7 @@ class Metadata(object):
     # Mapping API
 
     def keys(self):
-        return _version2fieldlist(self['Metadata-Version'])
+        return list(_version2fieldlist(self['Metadata-Version']))
 
     def __iter__(self):
         for key in self.keys():
