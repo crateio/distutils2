@@ -1,9 +1,8 @@
 """Create an executable installer for Windows."""
 
-# FIXME synchronize bytes/str use with same file in distutils
-
 import sys
 import os
+import codecs
 
 from shutil import rmtree
 
@@ -271,9 +270,12 @@ class bdist_wininst(Command):
             # Append the pre-install script
             cfgdata = cfgdata + "\0"
             if self.pre_install_script:
-                fp = open(self.pre_install_script)
+                # We need to normalize newlines, so we open in text mode and
+                # convert back to bytes. "latin-1" simply avoids any possible
+                # failures.
+                fp = codecs.open(self.pre_install_script, encoding="latin-1")
                 try:
-                    script_data = fp.read()
+                    script_data = fp.read().encode("latin-1")
                 finally:
                     fp.close()
                 cfgdata = cfgdata + script_data + "\n\0"
