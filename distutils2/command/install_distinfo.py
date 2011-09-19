@@ -32,7 +32,7 @@ class install_distinfo(Command):
         ('no-record', None,
          "do not generate a RECORD file"),
         ('no-resources', None,
-         "do not generate a RESSOURCES list installed file"),
+         "do not generate a RESOURCES file"),
     ]
 
     boolean_options = ['requested', 'no-record', 'no-resources']
@@ -45,6 +45,7 @@ class install_distinfo(Command):
         self.requested = None
         self.no_record = None
         self.no_resources = None
+        self.outfiles = []
 
     def finalize_options(self):
         self.set_undefined_options('install_dist',
@@ -54,7 +55,7 @@ class install_distinfo(Command):
                                    ('install_dir', 'distinfo_dir'))
 
         if self.installer is None:
-            # FIXME distutils or distutils2?
+            # FIXME distutils or packaging or distutils2?
             # + document default in the option help text above and in install
             self.installer = 'distutils'
         if self.requested is None:
@@ -69,7 +70,6 @@ class install_distinfo(Command):
         basename = metadata.get_fullname(filesafe=True) + ".dist-info"
 
         self.distinfo_dir = os.path.join(self.distinfo_dir, basename)
-        self.outputs = []
 
     def run(self):
         # FIXME dry-run should be used at a finer level, so that people get
@@ -89,20 +89,20 @@ class install_distinfo(Command):
             metadata_path = os.path.join(self.distinfo_dir, 'METADATA')
             logger.info('creating %s', metadata_path)
             self.distribution.metadata.write(metadata_path)
-            self.outputs.append(metadata_path)
+            self.outfiles.append(metadata_path)
 
             installer_path = os.path.join(self.distinfo_dir, 'INSTALLER')
             logger.info('creating %s', installer_path)
             f = open(installer_path, 'w')
             f.write(self.installer)
             f.close()
-            self.outputs.append(installer_path)
+            self.outfiles.append(installer_path)
 
             if self.requested:
                 requested_path = os.path.join(self.distinfo_dir, 'REQUESTED')
                 logger.info('creating %s', requested_path)
                 open(requested_path, 'wb').close()
-                self.outputs.append(requested_path)
+                self.outfiles.append(requested_path)
 
 
             if not self.no_resources:
@@ -119,7 +119,7 @@ class install_distinfo(Command):
                         writer.writerow(tuple)
 
                     f.close()
-                    self.outputs.append(resources_path)
+                    self.outfiles.append(resources_path)
 
             if not self.no_record:
                 record_path = os.path.join(self.distinfo_dir, 'RECORD')
@@ -146,7 +146,7 @@ class install_distinfo(Command):
 
                 # add the RECORD file itself
                 writer.writerow((record_path, '', ''))
-                self.outputs.append(record_path)
+                self.outfiles.append(record_path)
 
     def get_outputs(self):
-        return self.outputs
+        return self.outfiles
