@@ -21,12 +21,12 @@ tearDown):
             ...  # other setup code
 
 Also provided is a DummyCommand class, useful to mock commands in the
-tests of another command that needs them, a create_distribution function
-and a skip_unless_symlink decorator.
+tests of another command that needs them, for example to fake
+compilation in build_ext (this requires that the mock build_ext command
+be injected into the distribution object's command_obj dictionary).
 
-Also provided is a DummyCommand class, useful to mock commands in the
-tests of another command that needs them, a create_distribution function
-and a skip_unless_symlink decorator.
+For tests that need to compile an extension module, use the
+copy_xxmodule_c and fixup_build_ext functions.
 
 Each class or function has a docstring to explain its purpose and usage.
 Existing tests should also be used as examples.
@@ -50,6 +50,7 @@ except ImportError:
 
 from distutils2.dist import Distribution
 from distutils2.tests import unittest
+from distutils2._backport import sysconfig
 
 # define __all__ to make pydoc more useful
 __all__ = [
@@ -58,7 +59,7 @@ __all__ = [
     # mocks
     'DummyCommand', 'TestDistribution',
     # misc. functions and decorators
-    'fake_dec', 'create_distribution',
+    'fake_dec', 'create_distribution', 'copy_xxmodule_c', 'fixup_build_ext',
     # imported from this module for backport purposes
     'unittest', 'requires_zlib', 'skip_unless_symlink',
 ]
@@ -298,11 +299,68 @@ def fake_dec(*args, **kw):
     return _wrap
 
 
+def copy_xxmodule_c(directory):
+    """Helper for tests that need the xxmodule.c source file.
+
+    Example use:
+
+        def test_compile(self):
+            copy_xxmodule_c(self.tmpdir)
+            self.assertIn('xxmodule.c', os.listdir(self.tmpdir))
+
+    If the source file can be found, it will be copied to *directory*.  If not,
+    the test will be skipped.  Errors during copy are not caught.
+    """
+    filename = _get_xxmodule_path()
+    if filename is None:
+        raise unittest.SkipTest('cannot find xxmodule.c (test must run in '
+                                'the python build dir)')
+    shutil.copy(filename, directory)
+
+
+def _get_xxmodule_path():
+    path = os.path.join(os.path.dirname(__file__), 'xxmodule.c')
+    if os.path.exists(path):
+        return path
+
+
+def fixup_build_ext(cmd):
+    """Function needed to make build_ext tests pass.
+
+    When Python was built with --enable-shared on Unix, -L. is not enough to
+    find libpython<blah>.so, because regrtest runs in a tempdir, not in the
+    source directory where the .so lives.
+
+    When Python was built with in debug mode on Windows, build_ext commands
+    need their debug attribute set, and it is not done automatically for
+    some reason.
+
+    This function handles both of these things.  Example use:
+
+        cmd = build_ext(dist)
+        support.fixup_build_ext(cmd)
+        cmd.ensure_finalized()
+    """
+    if os.name == 'nt':
+        cmd.debug = sys.executable.endswith('_d.exe')
+    elif sysconfig.get_config_var('Py_ENABLE_SHARED'):
+        # To further add to the shared builds fun on Unix, we can't just add
+        # library_dirs to the Extension() instance because that doesn't get
+        # plumbed through to the final compiler command.
+        runshared = sysconfig.get_config_var('RUNSHARED')
+        if runshared is None:
+            cmd.library_dirs = ['.']
+        else:
+            name, equals, value = runshared.partition('=')
+            cmd.library_dirs = value.split(os.pathsep)
+
+
 try:
     from test.test_support import skip_unless_symlink
 except ImportError:
     skip_unless_symlink = unittest.skip(
         'requires test.test_support.skip_unless_symlink')
+
 
 requires_zlib = unittest.skipUnless(zlib, 'requires zlib')
 
