@@ -51,9 +51,9 @@ def get_command_class(name):
     """Return the registered command"""
     try:
         cls = _COMMANDS[name]
-        if isinstance(cls, basestring):
-            cls = resolve_name(cls)
-            _COMMANDS[name] = cls
-        return cls
     except KeyError:
         raise PackagingModuleError("Invalid command %s" % name)
+    if isinstance(cls, str):
+        cls = resolve_name(cls)
+        _COMMANDS[name] = cls
+    return cls
