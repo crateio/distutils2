@@ -1,5 +1,5 @@
 """Subpackage containing all standard commands."""
-
+import os
 from distutils2.errors import PackagingModuleError
 from distutils2.util import resolve_name
 
@@ -30,6 +30,10 @@ _COMMANDS = {
     'upload': 'distutils2.command.upload.upload',
     'upload_docs': 'distutils2.command.upload_docs.upload_docs',
 }
+
+# XXX this is crappy
+if os.name == 'nt':
+    _COMMANDS['bdist_msi'] = 'distutils2.command.bdist_msi.bdist_msi'
 
 # XXX use OrderedDict to preserve the grouping (build-related, install-related,
 # distribution-related)
