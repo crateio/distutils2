@@ -2,18 +2,17 @@
 
 # Forked from the former install_egg_info command by Josip Djolonga
 
-import codecs
-import csv
 import os
-import re
+import csv
+import codecs
+from shutil import rmtree
 try:
     import hashlib
 except ImportError:
     from distutils2._backport import hashlib
 
-from distutils2.command.cmd import Command
 from distutils2 import logger
-from shutil import rmtree
+from distutils2.command.cmd import Command
 
 
 class install_distinfo(Command):
@@ -72,81 +71,90 @@ class install_distinfo(Command):
         self.distinfo_dir = os.path.join(self.distinfo_dir, basename)
 
     def run(self):
-        # FIXME dry-run should be used at a finer level, so that people get
-        # useful logging output and can have an idea of what the command would
-        # have done
-        if not self.dry_run:
-            target = self.distinfo_dir
+        target = self.distinfo_dir
 
-            if os.path.isdir(target) and not os.path.islink(target):
+        if os.path.isdir(target) and not os.path.islink(target):
+            if not self.dry_run:
                 rmtree(target)
-            elif os.path.exists(target):
-                self.execute(os.unlink, (self.distinfo_dir,),
-                             "removing " + target)
+        elif os.path.exists(target):
+            self.execute(os.unlink, (self.distinfo_dir,),
+                         "removing " + target)
 
-            self.execute(os.makedirs, (target,), "creating " + target)
+        self.execute(os.makedirs, (target,), "creating " + target)
 
-            metadata_path = os.path.join(self.distinfo_dir, 'METADATA')
-            logger.info('creating %s', metadata_path)
-            self.distribution.metadata.write(metadata_path)
-            self.outfiles.append(metadata_path)
+        metadata_path = os.path.join(self.distinfo_dir, 'METADATA')
+        self.execute(self.distribution.metadata.write, (metadata_path,),
+                     "creating " + metadata_path)
+        self.outfiles.append(metadata_path)
 
-            installer_path = os.path.join(self.distinfo_dir, 'INSTALLER')
-            logger.info('creating %s', installer_path)
+        installer_path = os.path.join(self.distinfo_dir, 'INSTALLER')
+        logger.info('creating %s', installer_path)
+        if not self.dry_run:
             f = open(installer_path, 'w')
-            f.write(self.installer)
-            f.close()
-            self.outfiles.append(installer_path)
+            try:
+                f.write(self.installer)
+            finally:
+                f.close()
+        self.outfiles.append(installer_path)
 
-            if self.requested:
-                requested_path = os.path.join(self.distinfo_dir, 'REQUESTED')
-                logger.info('creating %s', requested_path)
+        if self.requested:
+            requested_path = os.path.join(self.distinfo_dir, 'REQUESTED')
+            logger.info('creating %s', requested_path)
+            if not self.dry_run:
                 open(requested_path, 'wb').close()
-                self.outfiles.append(requested_path)
+            self.outfiles.append(requested_path)
 
-
-            if not self.no_resources:
-                install_data = self.get_finalized_command('install_data')
-                if install_data.get_resources_out() != []:
-                    resources_path = os.path.join(self.distinfo_dir,
-                                                  'RESOURCES')
-                    logger.info('creating %s', resources_path)
+        if not self.no_resources:
+            install_data = self.get_finalized_command('install_data')
+            if install_data.get_resources_out() != []:
+                resources_path = os.path.join(self.distinfo_dir,
+                                              'RESOURCES')
+                logger.info('creating %s', resources_path)
+                if not self.dry_run:
                     f = open(resources_path, 'wb')
+                    try:
+                        writer = csv.writer(f, delimiter=',',
+                                            lineterminator='\n',
+                                            quotechar='"')
+                        for row in install_data.get_resources_out():
+                            writer.writerow(row)
+                    finally:
+                        f.close()
+
+                self.outfiles.append(resources_path)
+
+        if not self.no_record:
+            record_path = os.path.join(self.distinfo_dir, 'RECORD')
+            logger.info('creating %s', record_path)
+            if not self.dry_run:
+                f = codecs.open(record_path, 'w', encoding='utf-8')
+                try:
                     writer = csv.writer(f, delimiter=',',
                                         lineterminator='\n',
                                         quotechar='"')
-                    for tuple in install_data.get_resources_out():
-                        writer.writerow(tuple)
 
+                    install = self.get_finalized_command('install_dist')
+
+                    for fpath in install.get_outputs():
+                        if fpath.endswith('.pyc') or fpath.endswith('.pyo'):
+                            # do not put size and md5 hash, as in PEP-376
+                            writer.writerow((fpath, '', ''))
+                        else:
+                            size = os.path.getsize(fpath)
+                            fp = open(fpath, 'rb')
+                            try:
+                                hash = hashlib.md5()
+                                hash.update(fp.read())
+                            finally:
+                                fp.close()
+                            md5sum = hash.hexdigest()
+                            writer.writerow((fpath, md5sum, size))
+
+                    # add the RECORD file itself
+                    writer.writerow((record_path, '', ''))
+                finally:
                     f.close()
-                    self.outfiles.append(resources_path)
-
-            if not self.no_record:
-                record_path = os.path.join(self.distinfo_dir, 'RECORD')
-                logger.info('creating %s', record_path)
-                f = codecs.open(record_path, 'w', encoding='utf-8')
-                writer = csv.writer(f, delimiter=',',
-                                        lineterminator='\n',
-                                        quotechar='"')
-
-                install = self.get_finalized_command('install_dist')
-
-                for fpath in install.get_outputs():
-                    if fpath.endswith('.pyc') or fpath.endswith('.pyo'):
-                        # do not put size and md5 hash, as in PEP-376
-                        writer.writerow((fpath, '', ''))
-                    else:
-                        size = os.path.getsize(fpath)
-                        fp = open(fpath, 'rb')
-                        hash = hashlib.md5()
-                        hash.update(fp.read())
-                        fp.close()
-                        md5sum = hash.hexdigest()
-                        writer.writerow((fpath, md5sum, size))
-
-                # add the RECORD file itself
-                writer.writerow((record_path, '', ''))
-                self.outfiles.append(record_path)
+            self.outfiles.append(record_path)
 
     def get_outputs(self):
         return self.outfiles
