@@ -1218,8 +1218,8 @@ def _has_distutils_text(setup_py):
 
 
 def _has_text(setup_py, installer):
-    installer_pattern = re.compile('import %s|from %s' % (
-        installer[0], installer[0]))
+    installer_pattern = re.compile('import %s|from %s' %
+                                   (installer, installer))
     setup = codecs.open(setup_py, 'r', encoding='utf-8')
     try:
         for line in setup:
