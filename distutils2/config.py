@@ -231,10 +231,11 @@ class Config(object):
                 self.dist.scripts = [self.dist.scripts]
 
             self.dist.package_data = {}
-            for data in files.get('package_data', []):
-                data = data.split('=')
+            for line in files.get('package_data', []):
+                data = line.split('=')
                 if len(data) != 2:
-                    continue  # XXX error should never pass silently
+                    raise ValueError('invalid line for package_data: %s '
+                                     '(misses "=")' % line)
                 key, value = data
                 globs = self.dist.package_data.setdefault(key.strip(), [])
                 globs.extend([v.strip() for v in value.split(',')])
