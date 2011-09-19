@@ -446,8 +446,8 @@ def _call_external_zip(base_dir, zip_filename, verbose=False, dry_run=False):
         zipoptions = "-r"
     else:
         zipoptions = "-rq"
-    from distutils2.errors import DistutilsExecError
-    from distutils2.spawn import spawn
+    from distutils.errors import DistutilsExecError
+    from distutils.spawn import spawn
     try:
         spawn(["zip", zipoptions, zip_filename, base_dir], dry_run=dry_run)
     except DistutilsExecError:
