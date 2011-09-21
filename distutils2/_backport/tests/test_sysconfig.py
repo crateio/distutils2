@@ -301,7 +301,7 @@ class TestSysConfig(unittest.TestCase):
                 stderr=devnull_fp,
                 env=env)
         finally:
-            fp.close()
+            devnull_fp.close()
         test_platform = p.communicate()[0].strip()
         test_platform = test_platform.decode('utf-8')
         status = p.wait()

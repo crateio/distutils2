@@ -70,7 +70,7 @@ class DistributionTestCase(support.TempdirManager,
             __, stdout = captured_stdout(create_distribution, files)
             self.assertEqual(stdout, '')
         finally:
-            packaging.dist.DEBUG = False
+            distutils2.dist.DEBUG = False
 
     def test_bad_attr(self):
         Distribution(attrs={'author': 'xxx',
