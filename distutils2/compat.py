@@ -74,6 +74,7 @@ except NameError:
 
 _cookie_re = re.compile("coding[:=]\s*([-\w.]+)")
 
+
 def _get_normal_name(orig_enc):
     """Imitates get_normal_name in tokenizer.c."""
     # Only care about the first 12 characters.
@@ -84,6 +85,7 @@ def _get_normal_name(orig_enc):
        enc.startswith(("latin-1-", "iso-8859-1-", "iso-latin-1-")):
         return "iso-8859-1"
     return orig_enc
+
 
 def detect_encoding(readline):
     """
@@ -105,6 +107,7 @@ def detect_encoding(readline):
     bom_found = False
     encoding = None
     default = 'utf-8'
+
     def read_or_stop():
         try:
             return readline()
@@ -168,7 +171,8 @@ def fsencode(filename):
     elif isinstance(filename, unicode):
         return filename.encode(sys.getfilesystemencoding())
     else:
-        raise TypeError("expect bytes or str, not %s" % type(filename).__name__)
+        raise TypeError("expect bytes or str, not %s" %
+                        type(filename).__name__)
 
 
 try:
