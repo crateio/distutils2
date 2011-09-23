@@ -161,11 +161,6 @@ def detect_encoding(readline):
 
 
 def fsencode(filename):
-    """
-    Encode filename to the filesystem encoding with 'surrogateescape' error
-    handler, return bytes unchanged. On Windows, use 'strict' error handler if
-    the file system encoding is 'mbcs' (which is the default encoding).
-    """
     if isinstance(filename, str):
         return filename
     elif isinstance(filename, unicode):
