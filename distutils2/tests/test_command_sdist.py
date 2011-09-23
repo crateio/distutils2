@@ -1,7 +1,6 @@
 """Tests for distutils2.command.sdist."""
 import os
 import zipfile
-import tarfile
 import logging
 
 from distutils2.tests.support import requires_zlib
@@ -22,6 +21,7 @@ from distutils2.tests import unittest
 from distutils2.errors import PackagingOptionError
 from distutils2.util import find_executable
 from distutils2.tests import support
+from distutils2._backport import tarfile
 from distutils2._backport.shutil import get_archive_formats
 
 

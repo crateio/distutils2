@@ -1,14 +1,13 @@
 import os
 import sys
 import stat
-import tarfile
 import tempfile
 from os.path import splitdrive
 from StringIO import StringIO
 
 from distutils.spawn import find_executable, spawn
 from distutils2.compat import wraps
-from distutils2._backport import shutil
+from distutils2._backport import shutil, tarfile
 from distutils2._backport.shutil import (
     _make_tarball, _make_zipfile, make_archive, unpack_archive,
     register_archive_format, unregister_archive_format, get_archive_formats,
