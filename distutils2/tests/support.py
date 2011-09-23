@@ -313,8 +313,7 @@ def copy_xxmodule_c(directory):
     """
     filename = _get_xxmodule_path()
     if filename is None:
-        raise unittest.SkipTest('cannot find xxmodule.c (test must run in '
-                                'the python build dir)')
+        raise unittest.SkipTest('cannot find xxmodule.c')
     shutil.copy(filename, directory)
 
 
