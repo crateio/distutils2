@@ -6,7 +6,7 @@ Index), using its XML-RPC API (see documentation of the reference
 implementation at http://wiki.python.org/moin/PyPiXmlRpc).
 """
 
-import xmlrpclib, sys
+import xmlrpclib
 
 from distutils2 import logger
 from distutils2.errors import IrrationalVersionError
