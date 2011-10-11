@@ -244,6 +244,21 @@ class RegisterTestCase(support.TempdirManager,
         cmd.ensure_finalized()
         cmd.run()
 
+        # and finally a Unicode test (bug #12114)
+        metadata = {'home_page': u'xxx', 'author': u'\u00c9ric',
+                    'author_email': u'xxx', 'name': u'xxx',
+                    'version': u'xxx',
+                    'summary': u'Something about esszet \u00df',
+                    'description': u'More things about esszet \u00df'}
+
+        cmd = self._get_cmd(metadata)
+        cmd.ensure_finalized()
+        cmd.strict = True
+        inputs = Inputs('1', 'tarek', 'y')
+        register_module.raw_input = inputs
+        cmd.ensure_finalized()
+        cmd.run()
+
     def test_register_pep345(self):
         cmd = self._get_cmd({})
         cmd.ensure_finalized()

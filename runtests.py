@@ -95,6 +95,7 @@ def coverage_report(opts):
 
 def test_main():
     opts, args = parse_opts()
+    # FIXME when we run with --quiet, we still want to see errors and failures
     verbose = not opts.quiet
     ret = 0
 
