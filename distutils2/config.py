@@ -237,8 +237,7 @@ class Config(object):
                     raise ValueError('invalid line for package_data: %s '
                                      '(misses "=")' % line)
                 key, value = data
-                globs = self.dist.package_data.setdefault(key.strip(), [])
-                globs.extend([v.strip() for v in value.split(',')])
+                self.dist.package_data[key.strip()] = value.strip()
 
             self.dist.data_files = []
             for data in files.get('data_files', []):
