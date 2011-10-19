@@ -43,9 +43,11 @@ def _pop_values(values_dct, key):
             continue
         fields.append(tmp_vals[0])
     # Get bash options like `gcc -print-file-name=libgcc.a` XXX bash options?
-    vals = split(' '.join(fields))
+    # kludge around shlex not supporting unicode
+    vals = u' '.join(fields).encode('utf-8')
+    vals = split(vals)
     if vals:
-        return vals
+        return [val.decode('utf-8') for val in vals]
 
 
 def _rel_path(base, path):
