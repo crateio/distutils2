@@ -650,8 +650,11 @@ class MSVCCompiler(CCompiler) :
             # runtimes are not in WinSxS folder, but in Python's own
             # folder), the runtimes do not need to be in every folder
             # with .pyd's.
-            with open(manifest_file) as manifest_f:
+            manifest_f = open(manifest_file)
+            try:
                 manifest_buf = manifest_f.read()
+            finally:
+                manifest_f.close()
             pattern = re.compile(
                 r"""<assemblyIdentity.*?name=("|')Microsoft\."""\
                 r"""VC\d{2}\.CRT("|').*?(/>|</assemblyIdentity>)""",
@@ -659,8 +662,11 @@ class MSVCCompiler(CCompiler) :
             manifest_buf = re.sub(pattern, "", manifest_buf)
             pattern = "<dependentAssembly>\s*</dependentAssembly>"
             manifest_buf = re.sub(pattern, "", manifest_buf)
-            with open(manifest_file, 'w') as manifest_f:
+            manifest_f = open(manifest_file, 'w')
+            try:
                 manifest_f.write(manifest_buf)
+            finally:
+                manifest_f.close()
         except IOError:
             pass
 
