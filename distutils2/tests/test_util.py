@@ -4,11 +4,10 @@ import sys
 import time
 import logging
 import tempfile
+import textwrap
 import subprocess
 from StringIO import StringIO
 
-from distutils2.tests import support, unittest
-from distutils2.tests.test_config import SETUP_CFG
 from distutils2.errors import (
     PackagingPlatformError, PackagingByteCompileError, PackagingFileError,
     PackagingExecError, InstallationException)
@@ -19,7 +18,11 @@ from distutils2.util import (
     get_compiler_versions, _MAC_OS_X_LD_VERSION, byte_compile, find_packages,
     spawn, get_pypirc_path, generate_pypirc, read_pypirc, resolve_name, iglob,
     RICH_GLOB, egginfo_to_distinfo, is_setuptools, is_distutils, is_packaging,
-    get_install_method, cfg_to_args, encode_multipart)
+    get_install_method, cfg_to_args, generate_setup_py, encode_multipart)
+
+from distutils2.tests import support, unittest
+from distutils2.tests.test_config import SETUP_CFG
+from distutils2.tests.support import assert_python_ok, assert_python_failure
 
 
 PYPIRC = """\
@@ -536,6 +539,26 @@ class UtilTestCase(support.EnvironRestorer,
         self.assertEqual(args['scripts'], dist.scripts)
         self.assertEqual(args['py_modules'], dist.py_modules)
 
+    def test_generate_setup_py(self):
+        # undo subprocess.Popen monkey-patching before using assert_python_*
+        subprocess.Popen = self.old_popen
+        os.chdir(self.mkdtemp())
+        self.write_file('setup.cfg', textwrap.dedent("""\
+            [metadata]
+            name = SPAM
+            classifier = Programming Language :: Python
+            """))
+        generate_setup_py()
+        self.assertTrue(os.path.exists('setup.py'), 'setup.py not created')
+        rc, out, err = assert_python_ok('setup.py', '--name')
+        self.assertEqual(out, 'SPAM\n')
+        self.assertEqual(err, '')
+
+        # a generated setup.py should complain if no setup.cfg is present
+        os.unlink('setup.cfg')
+        rc, out, err = assert_python_failure('setup.py', '--name')
+        self.assertIn('setup.cfg', err)
+
     def test_encode_multipart(self):
         fields = [('username', 'wok'), ('password', 'secret')]
         files = [('picture', 'wok.png', 'PNG89')]
@@ -587,7 +610,6 @@ class GlobTestCase(GlobTestCaseBase):
         super(GlobTestCase, self).tearDown()
 
     def assertGlobMatch(self, glob, spec):
-        """"""
         tempdir = self.build_files_tree(spec)
         expected = self.clean_tree(spec)
         os.chdir(tempdir)

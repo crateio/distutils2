@@ -422,6 +422,15 @@ def assert_python_ok(*args, **env_vars):
     return _assert_python(True, *args, **env_vars)
 
 
+def assert_python_failure(*args, **env_vars):
+    """
+    Assert that running the interpreter with `args` and optional environment
+    variables `env_vars` fails and return a (return code, stdout, stderr)
+    tuple.
+    """
+    return _assert_python(False, *args, **env_vars)
+
+
 def unload(name):
     try:
         del sys.modules[name]
