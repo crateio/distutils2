@@ -148,6 +148,7 @@ CONTRIBUTORS.txt for full names.  Bug numbers refer to http://bugs.python.org/.
 - #13170: Revert one of Jeremy's changes to config to fix a bug, kludge around
   shlex not supporting unicode in 2.x, fix wrong shutil import [david, éric]
 - #13205: Fix and improve generated setup scripts [david, éric]
+- #11751: Improve test coverage for manifest [justin]
 
 
 1.0a3 - 2010-10-08

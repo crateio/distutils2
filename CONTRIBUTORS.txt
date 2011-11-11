@@ -46,6 +46,7 @@ Thanks to:
 - Alain Leufroy
 - Martin von Löwis
 - Hugo Lopes Tavares
+- Justin Love
 - Simon Mathieu
 - Carl Meyer
 - Alexis Métaireau
