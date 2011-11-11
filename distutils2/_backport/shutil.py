@@ -202,12 +202,7 @@ def copytree(src, dst, symlinks=False, ignore=None, copy_function=copy2,
     else:
         ignored_names = set()
 
-    try:
-        os.makedirs(dst)
-    except OSError, e:
-        if e.errno != errno.EEXIST:
-            raise
-
+    os.makedirs(dst)
     errors = []
     for name in names:
         if name in ignored_names:
