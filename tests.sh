@@ -5,7 +5,7 @@ python2.4 -Wd runtests.py -q
 if [ $? -ne 0 ];then
     echo Failed, re-running
     python2.4 -Wd runtests.py
-    exit 1
+    exit $?
 else
     echo Success
 fi
@@ -15,7 +15,7 @@ python2.5 -Wd runtests.py -q
 if [ $? -ne 0 ];then
     echo Failed, re-running
     python2.5 -Wd runtests.py
-    exit 1
+    exit $?
 else
     echo Success
 fi
@@ -25,7 +25,7 @@ python2.6 -Wd runtests.py -q
 if [ $? -ne 0 ];then
     echo Failed, re-running
     python2.6 -Wd runtests.py
-    exit 1
+    exit $?
 else
     echo Success
 fi
@@ -35,14 +35,14 @@ python2.7 -Wd -bb -3 runtests.py -q
 if [ $? -ne 0 ];then
     echo Failed, re-running
     python2.7 -Wd -bb -3 runtests.py
-    exit 1
+    exit $?
 else
     echo Success
 fi
 
 if [ $? -ne 0 ];then
     echo Failed
-    exit 1
+    exit $?
 else
     echo "Good job, commit now! (or add tests)"
 fi
