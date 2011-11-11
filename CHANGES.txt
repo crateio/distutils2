@@ -1,16 +1,154 @@
-=======
-CHANGES
-=======
+====================
+Distutils2 Changelog
+====================
 
-1.0a4 - ?
----------
+This file should list all changes made to the user-visible behavior and the
+public API, all important internal changes to help developers merge changes with
+their clones, and all changes that have a bug report.  Contributors' first names
+(and last name initial when needed) are given for each item; see
+CONTRIBUTORS.txt for full names.  Bug numbers refer to http://bugs.python.org/.
 
-- The setup runner supports more options:
-- XXX fill changes done in commands + compilers [tarek]
-- Issue #10409: Fixed the Licence selector in mkcfg [tarek]
-- Issue #9558: Fix build_ext with VS 8.0 [éric]
-- Issue #6007: Add disclaimer about MinGW compatibility in docs [éric]
-- Renamed DistributionMetadata to Metadata [ccomb]
+
+1.0a4 - 2011-12-??
+------------------
+
+- Remove type check for commands in favor of minimal duck type check [tarek]
+- Add setup_hook, run between setup.cfg parsing and any other action [tarek]
+- Allow configuring command classes in setup.cfg [tarek]
+- Add description-file to setup.cfg [tarek]
+- Make Manifest.read_template accept file objects [tarek]
+- Replace MANIFEST.in with extra_files field in setup.cfg for sdist [tarek]
+- Abandon converter idea for d1-d2 migration [tarek]
+- Make 'include' default action for extra_files lines [tarek]
+- Rename py_modules to modules in setup.cfg [tarek]
+- Add detection of files in mkcfg [tarek]
+- Remove core module [tarek]
+- Remove log module, use standard logging with 'distutils2' logger name [tarek]
+- Allow configuring sub-commands in setup.cfg [tarek]
+- Add manifest_builders field [tarek]
+- Move useful functions from compiler.ccompiler to compiler [tarek]
+- Compiler classes should now define a description attribute [tarek]
+- Compiler classes are now loaded with their fully qualified names [tarek]
+- Allow registering extra compiler classes in setup.cfg [tarek]
+- The EMX compiler is gone [tarek]
+- Standard command classes are now registered with set_commands;
+  command_packages is gone [tarek]
+- Move extension module to compiler.extension [tarek]
+- The compiler_type attribute of compiler classes is now name [tarek]
+- Document the setup.cfg file format in a specification that can be used by
+  non-Python developers [tarek, éric, julien j]
+- #10409: Fixed the License selector in mkcfg [tarek]
+- #9558: Fix build_ext with VS 8.0 [éric]
+- #6007: Add disclaimer about MinGW compatibility in docs [éric]
+- #11038: Add strict parameter to metadata.check, use it in check command [gaël]
+- Support multiple files in description-file [gaël]
+- Simplify and rename package_dir to packages_root: only one root directory for
+  all packages and modules is allowed [tarek]
+- Add util.generate_setup_py to create a setup.py script compatible with
+  distutils that takes information from a setup.cfg [julien m]
+- README or README.txt and test/test*.py are no longer included in sdists
+  [godefroid]
+- Move PEP 345 markers interpreter from metadata to markers [tarek]
+- #11057: Fix two NameErrors [éric]
+- Add install.remove, the uninstall feature [gaël]
+- Reuse info from existing setup.py when creating a setup.cfg with mkcfg [alain]
+- Add support for extension modules in setup.cfg [andré]
+- Arguments that specify the target directory for install-related functions in
+  install don't have default values anymore [yannick]
+- Add paths argument to install.install* functions to allow working outside of
+  sys.path [tarek]
+- Metadata.check and check command now want an author field, even if maintainer
+  is supplied [godefroid]
+- Renamed DistributionMetadata to Metadata [chistophe]
+- Make --help-commands work again [éric]
+- Fix index.dist.DistInfo.unpack to really use the path given as argument
+  [kelsey]
+- Introduce the resources system, a major overhaul of data_files installation
+  that supports putting files in various directories compliant with OS policies
+  and pain-free use of these files by Python code [boris, pierre-yves]
+- New util.iglob function supporting more patterns than stdlib glob
+  [pierre-yves]
+- Add 'pysetup create' to prompt the user and create a setup.cfg file with the
+  answers [tarek]
+- Convert and import the code into the CPython 3.3 repository [tarek, arc,
+  vinay, elson, walker, michael, kelsey, jason, alexis, éric, victor]; in the
+  distutils2 backport, change some names to match the CPython repo: exception
+  names start with "Packaging", there is a util.is_packaging function, etc.
+- Add bdist_wininst helpers compiled with Visual Studio 10 [jason]
+- 'pysetup install' now accepts a patch to a directory or to an archive in
+  addition to a PyPI project name [kelsey]
+- Rename mkcfg to create [éric]
+- Add function to convert an egg-info file or directory to dist-info [kelsey]
+- Add functions to detect if a project uses distutils, setuptools or packaging
+  [kelsey, hugo]
+- Config fields that support environment markers (PEP 345) can now check
+  'platform.python_implementation' [alexis]
+- Use True and False instead of 0 and 1 (compatible change that makes the intent
+  of the code clearer) [éric]
+- Rename 'pysetup list' the action used to look for installed projects [alexis]
+- Add 'pysetup search' to look for projects on an index/catalog [alexis]
+- Rename packaging.index back to packaging.pypi [kelsey]
+- Clean up logging setup, improve tests.support.LoggingCatcher [éric]
+- Replace warnings by logging, remove display_warning argument of
+  Metadata.__init__, kill warn/announce/debug_print methods [éric]
+- Improve EnvironGuard and rename it EnvironRestorer [éric]
+- Move PEP 376 implementation from pkgutil to packaging.database [éric]
+- Add version attribute to database.*Distribution classes [éric]
+- #10419, #6011: Make sure build_scripts can handle non-ASCII path for the
+  Python interpreter used in shebangs [victor]
+- #12112, #12320, #9561: Use UTF-8 to read or write setup.cfg, setup.py and
+  METADATA files instead of the default, locale-dependent encoding [victor]
+- #12114: Fix potential deadlock or zombification in util._find_exe_version
+  [victor]
+- Use / as path separator in setup.cfg created by 'pysetup create' even on
+  Windows [tarek]
+- Use / as path separator in RECORD file even on Windows [tarek]
+- #6459: Fix the import symbol in extension modules [tarek]
+- #10126: Fix for python built in shared mode on Unix [tarek]
+- #10359: ';' after function definition is invalid in ISO C [éric]
+- Remove the resources submodule, move its functions into resources [tarek]
+- Update the docs and move them to the CPython repository [kelsey, elson,
+  guillermoo, éric]
+- Add 'pysetup generate-setup' to expose util.generate_setup_py [tarek]
+- #11092: Make sdist always include setup.cfg [éric]
+- #12246: Don’t try to install something when running from an uninstalled Python
+  built in its checkout [tschepang, éric]
+- Add packaging.util.split_multiline [julien m, erik]
+- #11595: Fix assorted bugs in packaging.util.cfg_to_args [erik, éric]
+- #12240: Allow multiple setup hooks [erik, éric]
+- #11637: Fix support for importing setup hooks from the project directory
+  [vinay, éric]
+- #9516: Revise deployment target processing for OS X [ned]
+- #12169, #10510: Factor out code used by various commands to make HTTP POST
+  requests, and make sure it uses CRLF [john, éric]
+- #12504: Close file handles in a timely manner in database; this fixes a bug
+  with the remove (uninstall) feature on Windows [thomas]
+- #11409, #12222: Let all pysetup actions return a meaningful 0 or 1 exit code
+  [kelsey, éric]
+- Add filesafe argument to Metadata.get_fullname and Distribution.get_fullname
+  [jeremy]
+- Change distutils2's setup.py script to get info from the setup.cfg [jeremy]
+- Add support for building OpenSSL on Windows (for _backports.hashlib) [jeremy]
+- Print all fields when calling 'pysetup metadata' without options, remove --all
+  option for metadata and list actions [éric]
+- Remove display options (--name, etc.) from the Distribution class; this has
+  the side effect that 'url' is no longer accepted as key in the attrs argument
+  of the class' constructor, it needs to be 'home-page' to be recognized as
+  valid metadata field [éric]
+- #10946: Make bdist_dumb, bdist_wininst and bdist_msi respect a --skip-build
+  option given to bdist [éric]
+- The right-hand part in [extension: foo] (in a setup.cfg) is now used as the
+  name of the extension module [éric]
+- #8933: METADATA files will now correctly report Metadata-Version: 1.1 instead
+  of 1.0 if a Classifier or Download-URL field is present [filip, éric]
+- Create a branch for a Python 3 version of distutils2 [éric]
+- #10359: Make C code in one test comply with ISO C [hallvard]
+- #11254: Fix byte-compilation to comply with PEP 3147 on Python 3.2+ [éric]
+- #13114: Add tests for Unicode handling in check and register [éric]
+- #13170: Revert one of Jeremy's changes to config to fix a bug [éric]
+- #13170: Kludge around shlex not supporting unicode in 2.x [éric]
+- #13205: Fix and improve generated setup scripts [david, éric]
+
 
 1.0a3 - 2010-10-08
 ------------------
@@ -19,8 +157,8 @@ CHANGES
 - Fixed the installation when using easy_install and Pip by switching
   setup.py to distutils1 [holger/tarek]
 - Added missing c/h files in the MANIFEST so they are always present
-  no matter which Python version was used to build it. [holger/tarek]
-- Added the new setup runner that uses only setup.cfg
+  no matter which Python version was used to build it [holger/tarek]
+- Added pysetup, the new setup runner that uses only setup.cfg
 - Renamed mkpkg to mkcfg [tarek]
 - Renamed install_tools to install [alexis]
 
@@ -44,7 +182,7 @@ CHANGES
 - Remove PyPIRCCommand, move its helper code into util [tarek]
 - Remove Mac OS 9 support [éric]
 - Start adding docstrings to interface methods [jeremy]
-- Move documentation from the stdlib [ali, éric]
+- Copy documentation from the stdlib [ali, éric]
 - Lots of bug fixes, cleanups, tests [everyone]
 
 

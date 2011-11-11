@@ -1,44 +1,69 @@
-============
-Contributors
-============
+=======================
+Distutils2 Contributors
+=======================
 
-Distutils2 is a project that was started and that is maintained by
-Tarek Ziadé, and many people are contributing to the project.
+The Distutils2 project was started by Tarek Ziadé and is currently
+maintained by Éric Araujo.  Many people have contributed to the project.
 
-If you did, please add your name below in alphabetical order!
+If you're making a patch, please add your name below in alphabetical order,
+and welcome into the Fellowship of the Packaging!
 
 Thanks to:
 
 - Rajiv Abraham
 - Ali Afshar
-- Éric Araujo
+- David Barnett
 - Pior Bastida
 - Anthony Baxter
-- Titus Brown
+- Erik Bray
+- C. Titus Brown
 - Nicolas Cadou
+- Godefroid Chapelle
+- Christophe Combelles
+- Jason R. Coombs
+- Pierre-Yves David
+- Ned Deily
 - Konrad Delong
 - Josip Djolonga
+- John Edmonds
+- André Espaze
+- Boris Feld
 - Andrew Francis
+- Hallvard B Furuseth
 - Yannick Gingras
+- Filip Gruszczyński
+- guillermoo
+- Walker Hale IV
 - Alexandre Hamelin
 - Kelsey Hightower
+- Thomas Holmes
 - Christian Hudon
+- Julien Jehannet
 - Jeremy Kloth
 - Amos Latteier
 - Mathieu Leduc-Hamel
+- Tshepang Lekhonkhobe
+- Alain Leufroy
 - Martin von Löwis
+- Hugo Lopes Tavares
 - Simon Mathieu
 - Carl Meyer
 - Alexis Métaireau
+- Julien Miotte
 - Zubin Mithra
 - Derek McTavish Mounce
 - Michael Mulich
 - Louis Munro
+- Gaël Pasgrimaud
 - George Peristerakis
 - Mathieu Perreault
 - Sean Reifschneider
 - Antoine Reversat
+- Arc Riley
+- Elson Rodriguez
 - Luis Rojas
 - Erik Rose
 - Brian Rosner
+- Vinay Sajip
+- Victor Stinner
 - Alexandre Vassalotti
