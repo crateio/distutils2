@@ -1,9 +1,20 @@
-Notes for developers
+====================
+Notes for Developers
 ====================
 
-- Distutils2 runs on Python from 2.4 to 2.7 so make sure you don't use code
+- Distutils2 has been merged into the CPython repository under the module name
+  "packaging", for release with Python 3.3.  The Distutils2 repository is used
+  to maintain the backport released on PyPI for older Python versions.  It is
+  recommended to work in the CPython repository if possible, but you but you
+  can make patches for the Distutils2 repository if you prefer.
+
+  Repo: http://hg.python.org/cpython (default branch)
+  More info: http://wiki.python.org/moin/Distutils/Contributing
+
+- Distutils2 runs on Python from 2.4 to 2.7, so make sure you don't use code
   that doesn't work under one of these Python versions.  There is also a
-  version compatible with 3.1-3.3 in the "python3" branch.
+  version compatible with 3.1-3.3 in the "python3" branch.  When merging
+  default into python3, please use modern 3.x idioms.
 
 - For 2.4, you need to run "python2.4 setup.py build" before you can try out
   pysetup or run tests (unless you use the runtests.py script which will call
@@ -12,3 +23,9 @@ Notes for developers
 - Always run tests.sh before you commit a change.  This implies that you have
   all Python versions installed from 2.4 to 2.7.  Be sure to also have docutils
   installed on all Python versions to avoid skipping tests.
+
+- To merge with the Python 3 version, update to the python3 branch, merge and
+  run tests.sh to test with Python 3.1, 3.2 and 3.3 (you'll need to build the
+  last one from source).  If you can't test, let someone else do the merge.
+
+- Don't forget to update CONTRIBUTORS.txt and CHANGES.txt.
