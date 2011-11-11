@@ -86,7 +86,11 @@ class SimpleCrawlerTestCase(TempdirManager,
         try:
             crawler._open_url(url)
         except Exception, v:
-            self.assertIn('nonnumeric port', str(v))
+            if sys.version_info[:3] < (2, 7, 3):
+                wanted = 'nonnumeric port'
+            else:
+                wanted = 'Download error'
+            self.assertIn(wanted, str(v))
 
         # issue #160
         url = server.full_address
