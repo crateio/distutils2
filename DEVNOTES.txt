@@ -12,20 +12,22 @@ Notes for Developers
   More info: http://wiki.python.org/moin/Distutils/Contributing
 
 - Distutils2 runs on Python from 2.4 to 2.7, so make sure you don't use code
-  that doesn't work under one of these Python versions.  There is also a
-  version compatible with 3.1-3.3 in the "python3" branch.  When merging
-  default into python3, please use modern 3.x idioms.
+  that doesn't work under one of these Python versions.  The version in the
+  "python3" branch is compatible with all version from 3.1 to 3.3.
+
+- When merging default into python3, don't keep maximum compatibility with
+  Python 2 but use idiomatic 3.x code, as long as it's compatible with all 3.x
+  versions.  For difficult conversions like encoding handling with I/O, you can
+  have a look or use a diff tool with the same file in distutils or packaging
+  from Python 3.3.  If you can't run tests, let someone else do the merge.
 
 - For 2.4, you need to run "python2.4 setup.py build" before you can try out
   pysetup or run tests (unless you use the runtests.py script which will call
   "setup.py build" automatically).
 
 - Always run tests.sh before you commit a change.  This implies that you have
-  all Python versions installed from 2.4 to 2.7.  Be sure to also have docutils
-  installed on all Python versions to avoid skipping tests.
-
-- To merge with the Python 3 version, update to the python3 branch, merge and
-  run tests.sh to test with Python 3.1, 3.2 and 3.3 (you'll need to build the
-  last one from source).  If you can't test, let someone else do the merge.
+  all Python versions installed from 2.4 to 2.7, as well as 3.1-.3.3 if you
+  merge into the python3 branch.  Be sure to also have docutils installed on all
+  Python versions to avoid skipping tests.
 
 - Don't forget to update CONTRIBUTORS.txt and CHANGES.txt.
