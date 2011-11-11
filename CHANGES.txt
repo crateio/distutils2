@@ -145,8 +145,8 @@ CONTRIBUTORS.txt for full names.  Bug numbers refer to http://bugs.python.org/.
 - #10359: Make C code in one test comply with ISO C [hallvard]
 - #11254: Fix byte-compilation to comply with PEP 3147 on Python 3.2+ [éric]
 - #13114: Add tests for Unicode handling in check and register [éric]
-- #13170: Revert one of Jeremy's changes to config to fix a bug [éric]
-- #13170: Kludge around shlex not supporting unicode in 2.x [éric]
+- #13170: Revert one of Jeremy's changes to config to fix a bug, kludge around
+  shlex not supporting unicode in 2.x, fix wrong shutil import [david, éric]
 - #13205: Fix and improve generated setup scripts [david, éric]
 
 
