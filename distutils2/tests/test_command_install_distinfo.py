@@ -1,4 +1,7 @@
-"""Tests for ``distutils2.command.install_distinfo``. """
+"""Tests for ``distutils2.command.install_distinfo``.
+
+Writing of the RESOURCES file is tested in test_command_install_data.
+"""
 
 import os
 import csv
