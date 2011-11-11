@@ -5,7 +5,8 @@ from distutils2.command.clean import clean
 from distutils2.tests import unittest, support
 
 
-class cleanTestCase(support.TempdirManager, support.LoggingCatcher,
+class CleanTestCase(support.TempdirManager,
+                    support.LoggingCatcher,
                     unittest.TestCase):
 
     def test_simple_run(self):
@@ -23,7 +24,7 @@ class cleanTestCase(support.TempdirManager, support.LoggingCatcher,
             if name == 'build_base':
                 continue
             for f in ('one', 'two', 'three'):
-                self.write_file(os.path.join(path, f))
+                self.write_file((path, f))
 
         # let's run the command
         cmd.all = True
@@ -36,13 +37,11 @@ class cleanTestCase(support.TempdirManager, support.LoggingCatcher,
                              '%r was not removed' % path)
 
         # let's run the command again (should spit warnings but succeed)
-        cmd.all = True
-        cmd.ensure_finalized()
         cmd.run()
 
 
 def test_suite():
-    return unittest.makeSuite(cleanTestCase)
+    return unittest.makeSuite(CleanTestCase)
 
 if __name__ == "__main__":
     unittest.main(defaultTest="test_suite")

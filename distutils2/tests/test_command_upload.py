@@ -44,6 +44,7 @@ repository:http://another.pypi/
 """
 
 
+#@skip if no threading, see end of file
 class UploadTestCase(support.TempdirManager, support.EnvironRestorer,
                      support.LoggingCatcher, PyPIServerTestCase):
 
@@ -129,7 +130,7 @@ class UploadTestCase(support.TempdirManager, support.EnvironRestorer,
         dist_files = [(command, pyversion, filename)]
         docs_path = os.path.join(self.tmp_dir, "build", "docs")
         os.makedirs(docs_path)
-        self.write_file(os.path.join(docs_path, "index.html"), "yellow")
+        self.write_file((docs_path, "index.html"), "yellow")
         self.write_file(self.rc, PYPIRC)
 
         # let's run it

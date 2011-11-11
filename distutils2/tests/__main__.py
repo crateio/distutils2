@@ -3,7 +3,6 @@
 # Ripped from importlib tests, thanks Brett!
 
 import os
-import sys
 from test.test_support import reap_children, reap_threads, run_unittest
 
 from distutils2.tests import unittest

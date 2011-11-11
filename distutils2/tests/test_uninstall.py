@@ -1,6 +1,5 @@
 """Tests for the distutils2.uninstall module."""
 import os
-import sys
 import logging
 import distutils2.util
 
@@ -31,16 +30,12 @@ class UninstallTestCase(support.TempdirManager,
 
     def setUp(self):
         super(UninstallTestCase, self).setUp()
-        self.addCleanup(setattr, sys, 'stdout', sys.stdout)
-        self.addCleanup(setattr, sys, 'stderr', sys.stderr)
-        self.addCleanup(os.chdir, os.getcwd())
         self.addCleanup(enable_cache)
         self.root_dir = self.mkdtemp()
         self.cwd = os.getcwd()
         disable_cache()
 
     def tearDown(self):
-        os.chdir(self.cwd)
         distutils2.util._path_created.clear()
         super(UninstallTestCase, self).tearDown()
 
@@ -61,8 +56,7 @@ class UninstallTestCase(support.TempdirManager,
         kw['pkg'] = pkg
 
         pkg_dir = os.path.join(project_dir, pkg)
-        os.mkdir(pkg_dir)
-        os.mkdir(os.path.join(pkg_dir, 'sub'))
+        os.makedirs(os.path.join(pkg_dir, 'sub'))
 
         self.write_file((project_dir, 'setup.cfg'), SETUP_CFG % kw)
         self.write_file((pkg_dir, '__init__.py'), '#')

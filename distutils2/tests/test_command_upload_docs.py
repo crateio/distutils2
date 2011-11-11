@@ -32,6 +32,7 @@ password = long_island
 """
 
 
+#@skip if no threading, see end of file
 class UploadDocsTestCase(support.TempdirManager,
                          support.EnvironRestorer,
                          support.LoggingCatcher,
@@ -69,9 +70,8 @@ class UploadDocsTestCase(support.TempdirManager,
         if sample_dir is None:
             sample_dir = self.mkdtemp()
         os.mkdir(os.path.join(sample_dir, "docs"))
-        self.write_file(os.path.join(sample_dir, "docs", "index.html"),
-                        "Ce mortel ennui")
-        self.write_file(os.path.join(sample_dir, "index.html"), "Oh la la")
+        self.write_file((sample_dir, "docs", "index.html"), "Ce mortel ennui")
+        self.write_file((sample_dir, "index.html"), "Oh la la")
         return sample_dir
 
     def test_zip_dir(self):
