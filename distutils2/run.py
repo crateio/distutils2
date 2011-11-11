@@ -368,7 +368,7 @@ actions = [
     ('list', 'List installed projects', _list),
     ('graph', 'Display a graph', _graph),
     ('create', 'Create a project', _create),
-    ('generate-setup', 'Generate a backward-comptatible setup.py', _generate),
+    ('generate-setup', 'Generate a backward-compatible setup.py', _generate),
 ]
 
 
@@ -500,7 +500,7 @@ class Dispatcher(object):
             for help_option, short, desc, func in cmd_class.help_options:
                 if hasattr(opts, help_option.replace('-', '_')):
                     help_option_found = True
-                    if hasattr(func, '__call__'):
+                    if callable(func):
                         func()
                     else:
                         raise PackagingClassError(

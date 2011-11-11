@@ -409,13 +409,12 @@ Common commands: (see '--help-commands' for more)
             for help_option, short, desc, func in cmd_class.help_options:
                 if hasattr(opts, help_option.replace('-', '_')):
                     help_option_found = True
-                    if hasattr(func, '__call__'):
-                        func()
-                    else:
+                    if not callable(func):
                         raise PackagingClassError(
                             "invalid help function %r for help option %r: "
                             "must be a callable object (function, etc.)"
                             % (func, help_option))
+                    func()
 
             if help_option_found:
                 return
@@ -733,7 +732,7 @@ Common commands: (see '--help-commands' for more)
             else:
                 hook_obj = hook
 
-            if not hasattr(hook_obj, '__call__'):
+            if not callable(hook_obj):
                 raise PackagingOptionError('hook %r is not callable' % hook)
 
             logger.info('running %s %s for command %s',
