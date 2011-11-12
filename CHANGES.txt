@@ -153,6 +153,7 @@ CONTRIBUTORS.txt for full names.  Bug numbers refer to http://bugs.python.org/.
   [éric]
 - The signature of tests.support.LoggingCatcher.get_logs changed, see
   docstring [éric]
+- Rename get_reinitialized_command back to reinitialize_command [éric]
 
 
 1.0a3 - 2010-10-08

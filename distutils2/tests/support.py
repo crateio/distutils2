@@ -262,7 +262,7 @@ class DummyCommand(object):
     Useful for mocking one dependency command in the tests for another
     command, see e.g. the dummy build command in test_build_scripts.
     """
-    # XXX does not work with dist.get_reinitialized_command, which typechecks
+    # XXX does not work with dist.reinitialize_command, which typechecks
     # and wants a finalized attribute
 
     def __init__(self, **kwargs):
