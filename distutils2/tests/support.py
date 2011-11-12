@@ -49,6 +49,9 @@ except ImportError:
     zlib = None
 
 from distutils2.dist import Distribution
+from distutils2.util import resolve_name
+from distutils2.command import set_command, _COMMANDS
+
 from distutils2.tests import unittest
 from distutils2._backport import sysconfig
 
@@ -59,7 +62,8 @@ __all__ = [
     # mocks
     'DummyCommand', 'TestDistribution',
     # misc. functions and decorators
-    'fake_dec', 'create_distribution', 'copy_xxmodule_c', 'fixup_build_ext',
+    'fake_dec', 'create_distribution', 'use_command',
+    'copy_xxmodule_c', 'fixup_build_ext',
     # imported from this module for backport purposes
     'unittest', 'requires_zlib', 'skip_2to3_optimize', 'skip_unless_symlink',
 ]
@@ -289,6 +293,15 @@ def create_distribution(configfiles=()):
     d.parse_config_files()
     d.parse_command_line()
     return d
+
+
+def use_command(testcase, fullname):
+    """Register command at *fullname* for the duration of a test."""
+    set_command(fullname)
+    # XXX maybe set_command should return the class object
+    name = resolve_name(fullname).get_command_name()
+    # XXX maybe we need a public API to remove commands
+    testcase.addCleanup(_COMMANDS.__delitem__, name)
 
 
 def fake_dec(*args, **kw):

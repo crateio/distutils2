@@ -6,27 +6,32 @@ import textwrap
 import distutils2.dist
 
 from distutils2.dist import Distribution
-from distutils2.command import set_command
 from distutils2.command.cmd import Command
 from distutils2.errors import PackagingModuleError, PackagingOptionError
 from distutils2.tests import captured_stdout
 from distutils2.tests import support, unittest
-from distutils2.tests.support import create_distribution
+from distutils2.tests.support import create_distribution, use_command
 from distutils2.tests.support import unload
 
 
 class test_dist(Command):
-    """Sample distutils2 extension command."""
+    """Custom command used for testing."""
 
     user_options = [
-        ("sample-option=", "S", "help text"),
+        ('sample-option=', 'S',
+         "help text"),
         ]
 
     def initialize_options(self):
         self.sample_option = None
+        self._record = []
 
     def finalize_options(self):
-        pass
+        if self.sample_option is None:
+            self.sample_option = 'default value'
+
+    def run(self):
+        self._record.append('test_dist has run')
 
 
 class DistributionTestCase(support.TempdirManager,
@@ -38,6 +43,8 @@ class DistributionTestCase(support.TempdirManager,
 
     def setUp(self):
         super(DistributionTestCase, self).setUp()
+        # XXX this is ugly, we should fix the functions to accept args
+        # (defaulting to sys.argv)
         self.argv = sys.argv, sys.argv[:]
         del sys.argv[1:]
 
@@ -181,7 +188,8 @@ class DistributionTestCase(support.TempdirManager,
         self.write_file((temp_home, "config2.cfg"),
                         '[test_dist]\npre-hook.b = type')
 
-        set_command('distutils2.tests.test_dist.test_dist')
+        use_command(self, 'distutils2.tests.test_dist.test_dist')
+
         dist = create_distribution(config_files)
         cmd = dist.get_command_obj("test_dist")
         self.assertEqual(cmd.pre_hook, {"a": 'type', "b": 'type'})
@@ -209,7 +217,7 @@ class DistributionTestCase(support.TempdirManager,
                 record.append('post-%s' % cmd.get_command_name())
             '''))
 
-        set_command('distutils2.tests.test_dist.test_dist')
+        use_command(self, 'distutils2.tests.test_dist.test_dist')
         d = create_distribution([config_file])
         cmd = d.get_command_obj("test_dist")
 
@@ -236,7 +244,7 @@ class DistributionTestCase(support.TempdirManager,
             [test_dist]
             pre-hook.test = nonexistent.dotted.name'''))
 
-        set_command('distutils2.tests.test_dist.test_dist')
+        use_command(self, 'distutils2.tests.test_dist.test_dist')
         d = create_distribution([config_file])
         cmd = d.get_command_obj("test_dist")
         cmd.ensure_finalized()
@@ -251,7 +259,7 @@ class DistributionTestCase(support.TempdirManager,
             [test_dist]
             pre-hook.test = distutils2.tests.test_dist.__doc__'''))
 
-        set_command('distutils2.tests.test_dist.test_dist')
+        use_command(self, 'distutils2.tests.test_dist.test_dist')
         d = create_distribution([config_file])
         cmd = d.get_command_obj("test_dist")
         cmd.ensure_finalized()
