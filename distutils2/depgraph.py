@@ -224,6 +224,7 @@ def dependent_dists(dists, dist):
 
 
 def main():
+    # XXX move to run._graph
     from distutils2.database import get_distributions
     tempout = StringIO()
     try:
@@ -270,7 +271,3 @@ def main():
     else:
         print 'Supported option: -d [filename]'
         sys.exit(1)
-
-
-if __name__ == '__main__':
-    main()

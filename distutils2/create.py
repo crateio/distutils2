@@ -698,7 +698,3 @@ def main():
     # program.write_setup_script()
     # distutils2.util.cfg_to_args()
     program()
-
-
-if __name__ == '__main__':
-    main()

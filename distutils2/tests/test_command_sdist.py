@@ -2,8 +2,6 @@
 import os
 import zipfile
 
-from distutils2.tests.support import requires_zlib
-
 try:
     import grp
     import pwd
@@ -12,16 +10,16 @@ except ImportError:
     UID_GID_SUPPORT = False
 
 from os.path import join
-from distutils2.tests import captured_stdout
-from distutils2.command.sdist import sdist
-from distutils2.command.sdist import show_formats
 from distutils2.dist import Distribution
-from distutils2.tests import unittest
-from distutils2.errors import PackagingOptionError
 from distutils2.util import find_executable
-from distutils2.tests import support
+from distutils2.errors import PackagingOptionError
+from distutils2.command.sdist import sdist, show_formats
 from distutils2._backport import tarfile
 from distutils2._backport.shutil import get_archive_formats
+
+from distutils2.tests import support, unittest
+from distutils2.tests import captured_stdout
+from distutils2.tests.support import requires_zlib
 
 
 MANIFEST = """\
@@ -88,7 +86,6 @@ class SDistTestCase(support.TempdirManager,
 
         # creating VCS directories with some files in them
         os.mkdir(join(self.tmp_dir, 'somecode', '.svn'))
-
         self.write_file((self.tmp_dir, 'somecode', '.svn', 'ok.py'), 'xxx')
 
         os.mkdir(join(self.tmp_dir, 'somecode', '.hg'))
@@ -146,7 +143,7 @@ class SDistTestCase(support.TempdirManager,
 
         # now trying a tar then a gztar
         cmd.formats = ['tar', 'gztar']
-
+        cmd.finalized = False
         cmd.ensure_finalized()
         cmd.run()
 
@@ -274,6 +271,21 @@ class SDistTestCase(support.TempdirManager,
         self.assertRaises(PackagingOptionError, cmd.finalize_options)
 
     @requires_zlib
+    def test_template(self):
+        dist, cmd = self.get_cmd()
+        dist.extra_files = ['include yeah']
+        cmd.ensure_finalized()
+        self.write_file((self.tmp_dir, 'yeah'), 'xxx')
+        cmd.run()
+        f = open(cmd.manifest)
+        try:
+            content = f.read()
+        finally:
+            f.close()
+
+        self.assertIn('yeah', content)
+
+    @requires_zlib
     @unittest.skipUnless(UID_GID_SUPPORT, "requires grp and pwd support")
     @unittest.skipIf(find_executable('tar') is None or
                      find_executable('gzip') is None,
@@ -393,21 +405,6 @@ class SDistTestCase(support.TempdirManager,
             f.close()
 
         self.assertEqual(manifest, ['README.manual'])
-
-    @requires_zlib
-    def test_template(self):
-        dist, cmd = self.get_cmd()
-        dist.extra_files = ['include yeah']
-        cmd.ensure_finalized()
-        self.write_file((self.tmp_dir, 'yeah'), 'xxx')
-        cmd.run()
-        f = open(cmd.manifest)
-        try:
-            content = f.read()
-        finally:
-            f.close()
-
-        self.assertIn('yeah', content)
 
     @requires_zlib
     def test_manifest_builder(self):

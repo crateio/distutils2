@@ -1,6 +1,7 @@
 """Tests for distutils.command.bdist_dumb."""
 
 import os
+import zipfile
 import distutils2.util
 
 from distutils2.dist import Distribution
@@ -49,15 +50,23 @@ class BuildDumbTestCase(support.TempdirManager,
 
         # see what we have
         dist_created = os.listdir(os.path.join(pkg_dir, 'dist'))
-        base = "%s.%s" % (dist.get_fullname(), cmd.plat_name)
+        base = "%s.%s.zip" % (dist.get_fullname(), cmd.plat_name)
         if os.name == 'os2':
             base = base.replace(':', '-')
 
-        wanted = ['%s.zip' % base]
-        self.assertEqual(dist_created, wanted)
+        self.assertEqual(dist_created, [base])
 
         # now let's check what we have in the zip file
-        # XXX to be done
+        fp = zipfile.ZipFile(os.path.join('dist', base))
+        try:
+            contents = fp.namelist()
+        finally:
+            fp.close()
+
+        contents = sorted(os.path.basename(fn) for fn in contents)
+        wanted = ['foo.py', 'foo.pyc',
+                  'METADATA', 'INSTALLER', 'REQUESTED', 'RECORD']
+        self.assertEqual(contents, sorted(wanted))
 
     def test_finalize_options(self):
         pkg_dir, dist = self.create_dist()
