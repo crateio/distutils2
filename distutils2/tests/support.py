@@ -69,11 +69,11 @@ logger = logging.getLogger('distutils2')
 logger2to3 = logging.getLogger('RefactoringTool')
 
 
-class _TestHandler(logging.handlers.BufferingHandler):
+class _TestHandler(logging.handlers.BufferingHandler, object):
     # stolen and adapted from test.support
 
     def __init__(self):
-        logging.handlers.BufferingHandler.__init__(self, 0)
+        super(_TestHandler, self).__init__(0)
         self.setLevel(logging.DEBUG)
 
     def shouldFlush(self):

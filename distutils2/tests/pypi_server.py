@@ -33,14 +33,12 @@ import os
 import Queue
 import select
 import threading
-import SocketServer
 from BaseHTTPServer import HTTPServer
 from SimpleHTTPServer import SimpleHTTPRequestHandler
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 
 from distutils2.tests import unittest
 from distutils2.compat import wraps
-
 
 
 PYPI_DEFAULT_STATIC_PATH = os.path.join(
@@ -105,7 +103,7 @@ class PyPIServer(threading.Thread):
         """
         # we want to launch the server in a new dedicated thread, to not freeze
         # tests.
-        threading.Thread.__init__(self)
+        super(PyPIServer, self).__init__()
         self._run = True
         self._serve_xmlrpc = serve_xmlrpc
         if static_filesystem_paths is None:
@@ -275,10 +273,10 @@ class PyPIRequestHandler(SimpleHTTPRequestHandler):
         self.wfile.write(data)
 
 
-class PyPIXMLRPCServer(SimpleXMLRPCServer):
+class PyPIXMLRPCServer(SimpleXMLRPCServer, object):
     def server_bind(self):
         """Override server_bind to store the server name."""
-        SocketServer.TCPServer.server_bind(self)
+        super(PyPIXMLRPCServer, self).server_bind()
         host, port = self.socket.getsockname()[:2]
         self.server_port = port
 
@@ -379,12 +377,13 @@ class MockDist(object):
             'requires_python': self.requires_python,
             'classifiers': [],
             'name': self.name,
-            'licence': self.licence,
+            'licence': self.licence,  # XXX licence or license?
             'summary': self.summary,
             'home_page': self.homepage,
             'stable_version': self.stable_version,
-            'provides_dist': self.provides_dist or "%s (%s)" % (self.name,
-                                                              self.version),
+            # FIXME doesn't that reproduce the bug from 6527d3106e9f?
+            'provides_dist': (self.provides_dist or
+                             "%s (%s)" % (self.name, self.version)),
             'requires': self.requires,
             'cheesecake_installability_id': self.cheesecake_installability_id,
         }

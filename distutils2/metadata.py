@@ -24,13 +24,14 @@ try:
     from docutils import frontend
     from docutils import nodes
 
-    class SilentReporter(Reporter):
+    class SilentReporter(Reporter, object):
 
         def __init__(self, source, report_level, halt_level, stream=None,
                      debug=0, encoding='ascii', error_handler='replace'):
             self.messages = []
-            Reporter.__init__(self, source, report_level, halt_level, stream,
-                              debug, encoding, error_handler)
+            super(SilentReporter, self).__init__(
+                source, report_level, halt_level, stream,
+                debug, encoding, error_handler)
 
         def system_message(self, level, message, *children, **kwargs):
             self.messages.append((level, message, children, kwargs))
@@ -184,6 +185,7 @@ _UNICODEFIELDS = ('Author', 'Maintainer', 'Summary', 'Description')
 _MISSING = object()
 
 _FILESAFE = re.compile('[^A-Za-z0-9.]+')
+
 
 class Metadata(object):
     """The metadata of a release.
