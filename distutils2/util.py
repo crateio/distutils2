@@ -638,7 +638,7 @@ def resolve_name(name):
     This functions supports packages and attributes without depth limitation:
     ``package.package.module.class.class.function.attr`` is valid input.
     However, looking up builtins is not directly supported: use
-    ``builtins.name``.
+    ``__builtin__.name``.
 
     Raises ImportError if importing the module fails or if one requested
     attribute is not found.
