@@ -1,7 +1,6 @@
 """Tests for distutils2.command.sdist."""
 import os
 import zipfile
-import logging
 
 from distutils2.tests.support import requires_zlib
 
@@ -226,12 +225,14 @@ class SDistTestCase(support.TempdirManager,
         # testing the `check-metadata` option
         dist, cmd = self.get_cmd(metadata={'name': 'xxx', 'version': 'xxx'})
 
-        # this should raise some warnings
-        # with the check subcommand
+        # this should cause the check subcommand to log two warnings:
+        # version is invalid, home-page and author are missing
         cmd.ensure_finalized()
         cmd.run()
-        warnings = self.get_logs(logging.WARN)
-        self.assertEqual(len(warnings), 4)
+        warnings = self.get_logs()
+        check_warnings = [msg for msg in warnings if
+                          not msg.startswith('sdist:')]
+        self.assertEqual(len(check_warnings), 2, warnings)
 
         # trying with a complete set of metadata
         self.loghandler.flush()
@@ -239,13 +240,10 @@ class SDistTestCase(support.TempdirManager,
         cmd.ensure_finalized()
         cmd.metadata_check = False
         cmd.run()
-        warnings = self.get_logs(logging.WARN)
-        # removing manifest generated warnings
-        warnings = [warn for warn in warnings if
-                    not warn.endswith('-- skipping')]
-        # the remaining warnings are about the use of the default file list and
-        # the absence of setup.cfg
+        warnings = self.get_logs()
         self.assertEqual(len(warnings), 2)
+        self.assertIn('using default file list', warnings[0])
+        self.assertIn("'setup.cfg' file not found", warnings[1])
 
     def test_show_formats(self):
         __, stdout = captured_stdout(show_formats)
@@ -257,7 +255,6 @@ class SDistTestCase(support.TempdirManager,
         self.assertEqual(len(output), num_formats)
 
     def test_finalize_options(self):
-
         dist, cmd = self.get_cmd()
         cmd.finalize_options()
 

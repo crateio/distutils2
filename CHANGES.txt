@@ -151,6 +151,8 @@ CONTRIBUTORS.txt for full names.  Bug numbers refer to http://bugs.python.org/.
 - #11751: Improve test coverage for manifest [justin]
 - Byte compilation is now isolated from the calling Python -B or -O options
   [éric]
+- The signature of tests.support.LoggingCatcher.get_logs changed, see
+  docstring [éric]
 
 
 1.0a3 - 2010-10-08

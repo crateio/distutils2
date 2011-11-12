@@ -1,8 +1,6 @@
 """Tests for distutils2.dist."""
 import os
 import sys
-import codecs
-import logging
 import textwrap
 
 import distutils2.dist
@@ -78,7 +76,7 @@ class DistributionTestCase(support.TempdirManager,
                             'version': '1.2',
                             'home_page': 'xxxx',
                             'badoptname': 'xxx'})
-        logs = self.get_logs(logging.WARNING)
+        logs = self.get_logs()
         self.assertEqual(len(logs), 1)
         self.assertIn('unknown argument', logs[0])
 
@@ -89,7 +87,7 @@ class DistributionTestCase(support.TempdirManager,
                                    'version': '1.2', 'home_page': 'xxxx',
                                    'options': {}})
 
-        self.assertEqual([], self.get_logs(logging.WARNING))
+        self.assertEqual(self.get_logs(), [])
         self.assertNotIn('options', dir(dist))
 
     def test_non_empty_options(self):
