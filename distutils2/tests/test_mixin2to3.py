@@ -10,6 +10,7 @@ class Mixin2to3TestCase(support.TempdirManager,
                         unittest.TestCase):
 
     @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
+    @support.skip_2to3_optimize
     def test_convert_code_only(self):
         # used to check if code gets converted properly.
         code = "print 'test'"

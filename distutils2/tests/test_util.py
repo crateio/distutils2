@@ -9,7 +9,7 @@ import subprocess
 from StringIO import StringIO
 
 from distutils2.errors import (
-    PackagingPlatformError, PackagingByteCompileError, PackagingFileError,
+    PackagingPlatformError, PackagingFileError,
     PackagingExecError, InstallationException)
 from distutils2 import util
 from distutils2.dist import Distribution
@@ -137,15 +137,8 @@ class UtilTestCase(support.EnvironRestorer,
             self._uname = None
         os.uname = self._get_uname
 
-        # patching POpen
-        self.old_find_executable = util.find_executable
-        util.find_executable = self._find_executable
-        self._exes = {}
-        self.old_popen = subprocess.Popen
-        self.old_stdout = sys.stdout
-        self.old_stderr = sys.stderr
-        FakePopen.test_class = self
-        subprocess.Popen = FakePopen
+    def _get_uname(self):
+        return self._uname
 
     def tearDown(self):
         # getting back the environment
@@ -160,17 +153,24 @@ class UtilTestCase(support.EnvironRestorer,
             os.uname = self.uname
         else:
             del os.uname
-        util.find_executable = self.old_find_executable
-        subprocess.Popen = self.old_popen
-        sys.old_stdout = self.old_stdout
-        sys.old_stderr = self.old_stderr
         super(UtilTestCase, self).tearDown()
 
-    def _set_uname(self, uname):
-        self._uname = uname
+    def mock_popen(self):
+        self.old_find_executable = util.find_executable
+        util.find_executable = self._find_executable
+        self._exes = {}
+        self.old_popen = subprocess.Popen
+        self.old_stdout = sys.stdout
+        self.old_stderr = sys.stderr
+        FakePopen.test_class = self
+        subprocess.Popen = FakePopen
+        self.addCleanup(self.unmock_popen)
 
-    def _get_uname(self):
-        return self._uname
+    def unmock_popen(self):
+        util.find_executable = self.old_find_executable
+        subprocess.Popen = self.old_popen
+        sys.stdout = self.old_stdout
+        sys.stderr = self.old_stderr
 
     def test_convert_path(self):
         # linux/mac
@@ -282,6 +282,7 @@ class UtilTestCase(support.EnvironRestorer,
         return None
 
     def test_get_compiler_versions(self):
+        self.mock_popen()
         # get_versions calls distutils.spawn.find_executable on
         # 'gcc', 'ld' and 'dllwrap'
         self.assertEqual(get_compiler_versions(), (None, None, None))
@@ -324,15 +325,12 @@ class UtilTestCase(support.EnvironRestorer,
 
     @unittest.skipUnless(hasattr(sys, 'dont_write_bytecode'),
                          'sys.dont_write_bytecode not supported')
-    def test_dont_write_bytecode(self):
-        # makes sure byte_compile raise a PackagingError
-        # if sys.dont_write_bytecode is True
-        old_dont_write_bytecode = sys.dont_write_bytecode
+    def test_byte_compile_under_B(self):
+        # make sure byte compilation works under -B (dont_write_bytecode)
+        self.addCleanup(setattr, sys, 'dont_write_bytecode',
+                        sys.dont_write_bytecode)
         sys.dont_write_bytecode = True
-        try:
-            self.assertRaises(PackagingByteCompileError, byte_compile, [])
-        finally:
-            sys.dont_write_bytecode = old_dont_write_bytecode
+        byte_compile([])
 
     def test_newer(self):
         self.assertRaises(PackagingFileError, util.newer, 'xxx', 'xxx')
@@ -420,6 +418,7 @@ class UtilTestCase(support.EnvironRestorer,
         self.assertRaises(ImportError, resolve_name, 'a.b.c.Spam')
 
     @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
+    @support.skip_2to3_optimize
     def test_run_2to3_on_code(self):
         content = "print 'test'"
         converted_content = "print('test')"
@@ -434,6 +433,7 @@ class UtilTestCase(support.EnvironRestorer,
         self.assertEqual(new_content, converted_content)
 
     @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
+    @support.skip_2to3_optimize
     def test_run_2to3_on_doctests(self):
         # to check if text files containing doctests only get converted.
         content = ">>> print 'test'\ntest\n"
@@ -451,8 +451,6 @@ class UtilTestCase(support.EnvironRestorer,
     @unittest.skipUnless(os.name in ('nt', 'posix'),
                          'runs only under posix or nt')
     def test_spawn(self):
-        # no patching of Popen here
-        subprocess.Popen = self.old_popen
         tmpdir = self.mkdtemp()
 
         # creating something executable
@@ -549,8 +547,6 @@ class UtilTestCase(support.EnvironRestorer,
         self.assertEqual(args['py_modules'], dist.py_modules)
 
     def test_generate_setup_py(self):
-        # undo subprocess.Popen monkey-patching before using assert_python_*
-        subprocess.Popen = self.old_popen
         os.chdir(self.mkdtemp())
         self.write_file('setup.cfg', textwrap.dedent("""\
             [metadata]

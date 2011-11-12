@@ -54,17 +54,12 @@ class BuildPyTestCase(support.TempdirManager,
         # This makes sure the list of outputs includes byte-compiled
         # files for Python modules but not for package data files
         # (there shouldn't *be* byte-code files for those!).
-        #
         self.assertEqual(len(cmd.get_outputs()), 3)
         pkgdest = os.path.join(destination, "pkg")
         files = os.listdir(pkgdest)
         self.assertIn("__init__.py", files)
         self.assertIn("README.txt", files)
-        # XXX even with -O, distutils writes pyc, not pyo; bug?
-        if getattr(sys , 'dont_write_bytecode', False):
-            self.assertNotIn("__init__.pyc", files)
-        else:
-            self.assertIn("__init__.pyc", files)
+        self.assertIn("__init__.pyc", files)
 
     def test_empty_package_dir(self):
         # See SF 1668596/1720897.
@@ -99,23 +94,44 @@ class BuildPyTestCase(support.TempdirManager,
             os.chdir(cwd)
             sys.stdout = old_stdout
 
-    @unittest.skipUnless(hasattr(sys, 'dont_write_bytecode'),
-                         'sys.dont_write_bytecode not supported')
-    def test_dont_write_bytecode(self):
-        # makes sure byte_compile is not used
-        pkg_dir, dist = self.create_dist()
+    def test_byte_compile(self):
+        project_dir, dist = self.create_dist(py_modules=['boiledeggs'])
+        os.chdir(project_dir)
+        self.write_file('boiledeggs.py', 'import antigravity')
+        cmd = build_py(dist)
+        cmd.compile = True
+        cmd.build_lib = 'here'
+        cmd.finalize_options()
+        cmd.run()
+
+        found = os.listdir(cmd.build_lib)
+        self.assertEqual(sorted(found), ['boiledeggs.py', 'boiledeggs.pyc'])
+
+    def test_byte_compile_optimized(self):
+        project_dir, dist = self.create_dist(py_modules=['boiledeggs'])
+        os.chdir(project_dir)
+        self.write_file('boiledeggs.py', 'import antigravity')
         cmd = build_py(dist)
         cmd.compile = True
         cmd.optimize = 1
+        cmd.build_lib = 'here'
+        cmd.finalize_options()
+        cmd.run()
 
-        old_dont_write_bytecode = sys.dont_write_bytecode
+        found = os.listdir(cmd.build_lib)
+        self.assertEqual(sorted(found),
+                         ['boiledeggs.py', 'boiledeggs.pyc', 'boiledeggs.pyo'])
+
+    @unittest.skipUnless(hasattr(sys, 'dont_write_bytecode'),
+                         'sys.dont_write_bytecode not supported')
+    def test_byte_compile_under_B(self):
+        # make sure byte compilation works under -B (dont_write_bytecode)
+        self.addCleanup(setattr, sys, 'dont_write_bytecode',
+                        sys.dont_write_bytecode)
         sys.dont_write_bytecode = True
-        try:
-            cmd.byte_compile([])
-        finally:
-            sys.dont_write_bytecode = old_dont_write_bytecode
+        self.test_byte_compile()
+        self.test_byte_compile_optimized()
 
-        self.assertIn('byte-compiling is disabled', self.get_logs()[0])
 
 def test_suite():
     return unittest.makeSuite(BuildPyTestCase)

@@ -1,6 +1,6 @@
 """Tests for distutils2.command.install_data."""
-import sys
 import os
+import sys
 
 from distutils2.tests import unittest, support
 from distutils2.command.install_lib import install_lib
@@ -16,7 +16,7 @@ class InstallLibTestCase(support.TempdirManager,
     restore_environ = ['PYTHONPATH']
 
     def test_finalize_options(self):
-        pkg_dir, dist = self.create_dist()
+        dist = self.create_dist()[1]
         cmd = install_lib(dist)
 
         cmd.finalize_options()
@@ -33,71 +33,73 @@ class InstallLibTestCase(support.TempdirManager,
         cmd.finalize_options()
         self.assertEqual(cmd.optimize, 2)
 
-    @unittest.skipIf(getattr(sys, 'dont_write_bytecode', False),
-                     'byte-compile disabled')
     def test_byte_compile(self):
-        pkg_dir, dist = self.create_dist()
+        project_dir, dist = self.create_dist()
+        os.chdir(project_dir)
         cmd = install_lib(dist)
         cmd.compile = True
         cmd.optimize = 1
 
-        f = os.path.join(pkg_dir, 'foo.py')
+        f = os.path.join(project_dir, 'foo.py')
         self.write_file(f, '# python file')
         cmd.byte_compile([f])
-        self.assertTrue(os.path.exists(os.path.join(pkg_dir, 'foo.pyc')))
-        self.assertTrue(os.path.exists(os.path.join(pkg_dir, 'foo.pyo')))
-
-    def test_get_outputs(self):
-        pkg_dir, dist = self.create_dist()
-        cmd = install_lib(dist)
-
-        # setting up a dist environment
-        cmd.compile = True
-        cmd.optimize = 1
-        cmd.install_dir = pkg_dir
-        f = os.path.join(pkg_dir, '__init__.py')
-        self.write_file(f, '# python package')
-        cmd.distribution.ext_modules = [Extension('foo', ['xxx'])]
-        cmd.distribution.packages = [pkg_dir]
-
-        # make sure the build_lib is set the temp dir
-        build_dir = os.path.split(pkg_dir)[0]
-        cmd.get_finalized_command('build_py').build_lib = build_dir
-
-        # get_output should return 4 elements
-        self.assertEqual(len(cmd.get_outputs()), 4)
-
-    def test_get_inputs(self):
-        pkg_dir, dist = self.create_dist()
-        cmd = install_lib(dist)
-
-        # setting up a dist environment
-        cmd.compile = True
-        cmd.optimize = 1
-        cmd.install_dir = pkg_dir
-        f = os.path.join(pkg_dir, '__init__.py')
-        self.write_file(f, '# python package')
-        cmd.distribution.ext_modules = [Extension('foo', ['xxx'])]
-        cmd.distribution.packages = [pkg_dir]
-
-        # get_input should return 2 elements
-        self.assertEqual(len(cmd.get_inputs()), 2)
+        self.assertTrue(os.path.exists(f + 'c'))
+        self.assertTrue(os.path.exists(f + 'o'))
 
     @unittest.skipUnless(hasattr(sys, 'dont_write_bytecode'),
                          'sys.dont_write_bytecode not supported')
-    def test_dont_write_bytecode(self):
-        # makes sure byte_compile is not used
-        pkg_dir, dist = self.create_dist()
-        cmd = install_lib(dist)
-        cmd.compile = True
-        cmd.optimize = 1
-
+    def test_byte_compile_under_B(self):
+        # make sure byte compilation works under -B (dont_write_bytecode)
         self.addCleanup(setattr, sys, 'dont_write_bytecode',
                         sys.dont_write_bytecode)
         sys.dont_write_bytecode = True
-        cmd.byte_compile([])
+        self.test_byte_compile()
 
-        self.assertIn('byte-compiling is disabled', self.get_logs()[0])
+    def test_get_outputs(self):
+        project_dir, dist = self.create_dist()
+        os.chdir(project_dir)
+        os.mkdir('spam')
+        cmd = install_lib(dist)
+
+        # setting up a dist environment
+        cmd.compile = True
+        cmd.optimize = 1
+        cmd.install_dir = self.mkdtemp()
+        f = os.path.join(project_dir, 'spam', '__init__.py')
+        self.write_file(f, '# python package')
+        cmd.distribution.ext_modules = [Extension('foo', ['xxx'])]
+        cmd.distribution.packages = ['spam']
+
+        # make sure the build_lib is set the temp dir  # XXX what?  this is not
+        # needed in the same distutils test and should work without manual
+        # intervention
+        build_dir = os.path.split(project_dir)[0]
+        cmd.get_finalized_command('build_py').build_lib = build_dir
+
+        # get_outputs should return 4 elements: spam/__init__.py, .pyc and
+        # .pyo, foo.so / foo.pyd
+        outputs = cmd.get_outputs()
+        self.assertEqual(len(outputs), 4, outputs)
+
+    def test_get_inputs(self):
+        project_dir, dist = self.create_dist()
+        os.chdir(project_dir)
+        os.mkdir('spam')
+        cmd = install_lib(dist)
+
+        # setting up a dist environment
+        cmd.compile = True
+        cmd.optimize = 1
+        cmd.install_dir = self.mkdtemp()
+        f = os.path.join(project_dir, 'spam', '__init__.py')
+        self.write_file(f, '# python package')
+        cmd.distribution.ext_modules = [Extension('foo', ['xxx'])]
+        cmd.distribution.packages = ['spam']
+
+        # get_inputs should return 2 elements: spam/__init__.py and
+        # foo.so / foo.pyd
+        inputs = cmd.get_inputs()
+        self.assertEqual(len(inputs), 2, inputs)
 
 
 def test_suite():

@@ -149,6 +149,8 @@ CONTRIBUTORS.txt for full names.  Bug numbers refer to http://bugs.python.org/.
   shlex not supporting unicode in 2.x, fix wrong shutil import [david, éric]
 - #13205: Fix and improve generated setup scripts [david, éric]
 - #11751: Improve test coverage for manifest [justin]
+- Byte compilation is now isolated from the calling Python -B or -O options
+  [éric]
 
 
 1.0a3 - 2010-10-08

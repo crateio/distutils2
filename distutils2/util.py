@@ -24,8 +24,8 @@ except ImportError:
 
 from distutils2 import logger
 from distutils2.errors import (PackagingPlatformError, PackagingFileError,
-                               PackagingByteCompileError, PackagingExecError,
-                               InstallationException, PackagingInternalError)
+                               PackagingExecError, InstallationException,
+                               PackagingInternalError)
 from distutils2._backport import sysconfig
 
 __all__ = [
@@ -301,7 +301,7 @@ def strtobool(val):
 
 
 def byte_compile(py_files, optimize=0, force=False, prefix=None,
-                 base_dir=None, verbose=0, dry_run=False, direct=None):
+                 base_dir=None, dry_run=False, direct=None):
     """Byte-compile a collection of Python source files to either .pyc
     or .pyo files in the same directory.
 
@@ -310,6 +310,9 @@ def byte_compile(py_files, optimize=0, force=False, prefix=None,
       0 - don't optimize (generate .pyc)
       1 - normal optimization (like "python -O")
       2 - extra optimization (like "python -OO")
+    This function is independent from the running Python's -O or -B options;
+    it is fully controlled by the parameters passed in.
+
     If 'force' is true, all files are recompiled regardless of
     timestamps.
 
@@ -331,10 +334,7 @@ def byte_compile(py_files, optimize=0, force=False, prefix=None,
     generated in indirect mode; unless you know what you're doing, leave
     it set to None.
     """
-    # nothing is done if sys.dont_write_bytecode is True
-    # FIXME this should not raise an error
-    if getattr(sys, 'dont_write_bytecode', False):
-        raise PackagingByteCompileError('byte-compiling is disabled.')
+    # FIXME use compileall + remove direct/indirect shenanigans
 
     # First, if the caller didn't force us into direct or indirect mode,
     # figure out which mode we should be in.  We take a conservative
@@ -388,17 +388,13 @@ files = [
                 script.write("""
 byte_compile(files, optimize=%r, force=%r,
              prefix=%r, base_dir=%r,
-             verbose=%r, dry_run=False,
+             dry_run=False,
              direct=True)
-""" % (optimize, force, prefix, base_dir, verbose))
+""" % (optimize, force, prefix, base_dir))
             finally:
                 script.close()
 
         cmd = [sys.executable, script_name]
-        if optimize == 1:
-            cmd.insert(1, "-O")
-        elif optimize == 2:
-            cmd.insert(1, "-OO")
 
         env = os.environ.copy()
         env['PYTHONPATH'] = os.path.pathsep.join(sys.path)
@@ -424,8 +420,9 @@ byte_compile(files, optimize=%r, force=%r,
             # Terminology from the py_compile module:
             #   cfile - byte-compiled file
             #   dfile - purported source filename (same as 'file' by default)
-            cfile = file + (__debug__ and "c" or "o")
+            cfile = file + (optimize and 'o' or 'c')
             dfile = file
+
             if prefix:
                 if file[:len(prefix)] != prefix:
                     raise ValueError("invalid prefix: filename %r doesn't "

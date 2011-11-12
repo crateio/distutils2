@@ -1,8 +1,6 @@
 """Install all modules (extensions and pure Python)."""
 
 import os
-import sys
-import logging
 
 from distutils2 import logger
 from distutils2.command.cmd import Command
@@ -10,25 +8,18 @@ from distutils2.errors import PackagingOptionError
 
 
 # Extension for Python source files.
+# XXX dead code?  most of the codebase checks for literal '.py'
 if hasattr(os, 'extsep'):
     PYTHON_SOURCE_EXTENSION = os.extsep + "py"
 else:
     PYTHON_SOURCE_EXTENSION = ".py"
 
+
 class install_lib(Command):
 
     description = "install all modules (extensions and pure Python)"
 
-    # The byte-compilation options are a tad confusing.  Here are the
-    # possible scenarios:
-    #   1) no compilation at all (--no-compile --no-optimize)
-    #   2) compile .pyc only (--compile --no-optimize; default)
-    #   3) compile .pyc and "level 1" .pyo (--compile --optimize)
-    #   4) compile "level 1" .pyo only (--no-compile --optimize)
-    #   5) compile .pyc and "level 2" .pyo (--compile --optimize-more)
-    #   6) compile "level 2" .pyo only (--no-compile --optimize-more)
-    #
-    # The UI for this is two option, 'compile' and 'optimize'.
+    # The options for controlling byte compilation are two independent sets:
     # 'compile' is strictly boolean, and only decides whether to
     # generate .pyc files.  'optimize' is three-way (0, 1, or 2), and
     # decides both whether to generate .pyo files and what level of
@@ -36,7 +27,7 @@ class install_lib(Command):
 
     user_options = [
         ('install-dir=', 'd', "directory to install to"),
-        ('build-dir=','b', "build directory (where to install from)"),
+        ('build-dir=', 'b', "build directory (where to install from)"),
         ('force', 'f', "force installation (overwrite existing files)"),
         ('compile', 'c', "compile .py to .pyc [default]"),
         ('no-compile', None, "don't compile .py files"),
@@ -47,7 +38,8 @@ class install_lib(Command):
         ]
 
     boolean_options = ['force', 'compile', 'skip-build']
-    negative_opt = {'no-compile' : 'compile'}
+
+    negative_opt = {'no-compile': 'compile'}
 
     def initialize_options(self):
         # let the 'install_dist' command dictate our installation directory
@@ -65,7 +57,8 @@ class install_lib(Command):
         self.set_undefined_options('install_dist',
                                    ('build_lib', 'build_dir'),
                                    ('install_lib', 'install_dir'),
-                                   'force', 'compile', 'optimize', 'skip_build')
+                                   'force', 'compile', 'optimize',
+                                   'skip_build')
 
         if self.compile is None:
             self.compile = True
@@ -89,9 +82,14 @@ class install_lib(Command):
         # having a build directory!)
         outfiles = self.install()
 
-        # (Optionally) compile .py to .pyc
+        # (Optionally) compile .py to .pyc and/or .pyo
         if outfiles is not None and self.distribution.has_pure_modules():
-            self.byte_compile(outfiles)
+            # XXX comment from distutils: "This [prefix stripping] is far from
+            # complete, but it should at least generate usable bytecode in RPM
+            # distributions." -> need to find exact requirements for
+            # byte-compiled files and fix it
+            install_root = self.get_finalized_command('install_dist').root
+            self.byte_compile(outfiles, prefix=install_root)
 
     # -- Top-level worker functions ------------------------------------
     # (called from 'run()')
@@ -112,38 +110,6 @@ class install_lib(Command):
                 self.get_command_name(), self.build_dir)
             return
         return outfiles
-
-    def byte_compile(self, files):
-        if getattr(sys, 'dont_write_bytecode', False):
-            # XXX do we want this?  because a Python runs without bytecode
-            # doesn't mean that the *dists should not contain bytecode
-            #--or does it?
-            logger.warning('%s: byte-compiling is disabled, skipping.',
-                           self.get_command_name())
-            return
-
-        from distutils2.util import byte_compile  # FIXME use compileall
-
-        # Get the "--root" directory supplied to the "install_dist" command,
-        # and use it as a prefix to strip off the purported filename
-        # encoded in bytecode files.  This is far from complete, but it
-        # should at least generate usable bytecode in RPM distributions.
-        install_root = self.get_finalized_command('install_dist').root
-
-        # Temporary kludge until we remove the verbose arguments and use
-        # logging everywhere
-        verbose = logger.getEffectiveLevel() >= logging.DEBUG
-
-        if self.compile:
-            byte_compile(files, optimize=0,
-                         force=self.force, prefix=install_root,
-                         dry_run=self.dry_run)
-        if self.optimize > 0:
-            byte_compile(files, optimize=self.optimize,
-                         force=self.force, prefix=install_root,
-                         verbose=verbose,
-                         dry_run=self.dry_run)
-
 
     # -- Utility methods -----------------------------------------------
 
@@ -173,11 +139,10 @@ class install_lib(Command):
                 continue
             if self.compile:
                 bytecode_files.append(py_file + "c")
-            if self.optimize > 0:
+            if self.optimize:
                 bytecode_files.append(py_file + "o")
 
         return bytecode_files
-
 
     # -- External interface --------------------------------------------
     # (called by outsiders)
