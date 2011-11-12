@@ -10,6 +10,7 @@ except ImportError:
     DOCUTILS_SUPPORT = False
 
 from distutils2.tests import unittest, support
+from distutils2.tests.support import Inputs
 from distutils2.command import register as register_module
 from distutils2.command.register import register
 from distutils2.errors import PackagingSetupError
@@ -34,19 +35,6 @@ index-servers =
 username:tarek
 password:password
 """
-
-
-class Inputs(object):
-    """Fakes user inputs."""
-    def __init__(self, *answers):
-        self.answers = answers
-        self.index = 0
-
-    def __call__(self, prompt=''):
-        try:
-            return self.answers[self.index]
-        finally:
-            self.index += 1
 
 
 class FakeOpener(object):
@@ -202,10 +190,8 @@ class RegisterTestCase(support.TempdirManager,
 
     @unittest.skipUnless(DOCUTILS_SUPPORT, 'needs docutils')
     def test_strict(self):
-        # testing the script option
-        # when on, the register command stops if
-        # the metadata is incomplete or if
-        # long_description is not reSt compliant
+        # testing the strict option: when on, the register command stops if the
+        # metadata is incomplete or if description contains bad reST
 
         # empty metadata
         cmd = self._get_cmd({'name': 'xxx', 'version': 'xxx'})
@@ -215,16 +201,15 @@ class RegisterTestCase(support.TempdirManager,
         register_module.raw_input = inputs
         self.assertRaises(PackagingSetupError, cmd.run)
 
-        # metadata is OK but long_description is broken
+        # metadata is OK but description is broken
         metadata = {'home_page': 'xxx', 'author': 'xxx',
                     'author_email': 'éxéxé',
-                    'name': 'xxx', 'version': 'xxx',
+                    'name': 'xxx', 'version': '4.2',
                     'description': 'title\n==\n\ntext'}
 
         cmd = self._get_cmd(metadata)
         cmd.ensure_finalized()
         cmd.strict = True
-
         self.assertRaises(PackagingSetupError, cmd.run)
 
         # now something that works

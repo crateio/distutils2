@@ -1,9 +1,7 @@
 import os
 import sys
 import site
-import shutil
 import textwrap
-from StringIO import StringIO
 from distutils2.dist import Distribution
 from distutils2.errors import (UnknownFileError, CompileError,
                                PackagingPlatformError)
@@ -11,7 +9,7 @@ from distutils2.command.build_ext import build_ext
 from distutils2.compiler.extension import Extension
 from distutils2._backport import sysconfig
 
-from distutils2.tests import support, unittest, verbose
+from distutils2.tests import support, unittest
 from distutils2.tests.support import assert_python_ok
 
 
@@ -43,18 +41,10 @@ class BuildExtTestCase(support.TempdirManager,
         support.fixup_build_ext(cmd)
         cmd.build_lib = self.tmp_dir
         cmd.build_temp = self.tmp_dir
+        cmd.ensure_finalized()
+        cmd.run()
 
-        old_stdout = sys.stdout
-        if not verbose:
-            # silence compiler output
-            sys.stdout = StringIO()
-        try:
-            cmd.ensure_finalized()
-            cmd.run()
-        finally:
-            sys.stdout = old_stdout
-
-        code = """if 1:
+        code = textwrap.dedent("""\
             import sys
             sys.path.insert(0, %r)
 
@@ -69,7 +59,8 @@ class BuildExtTestCase(support.TempdirManager,
             doc = 'This is a template module just for instruction.'
             assert xx.__doc__ == doc
             assert isinstance(xx.Null(), xx.Null)
-            assert isinstance(xx.Str(), xx.Str)"""
+            assert isinstance(xx.Str(), xx.Str)
+            """)
         code = code % self.tmp_dir
         assert_python_ok('-c', code)
 
@@ -398,16 +389,8 @@ class BuildExtTestCase(support.TempdirManager,
         cmd.build_temp = self.tmp_dir
 
         try:
-            old_stdout = sys.stdout
-            if not verbose:
-                # silence compiler output
-                sys.stdout = StringIO()
-            try:
-                cmd.ensure_finalized()
-                cmd.run()
-            finally:
-                sys.stdout = old_stdout
-
+            cmd.ensure_finalized()
+            cmd.run()
         except CompileError:
             self.fail("Wrong deployment target during compilation")
 
