@@ -32,7 +32,6 @@ Thanks to:
 - Hallvard B Furuseth
 - Yannick Gingras
 - Filip Gruszczyński
-- guillermoo
 - Walker Hale IV
 - Alexandre Hamelin
 - Kelsey Hightower
@@ -46,6 +45,7 @@ Thanks to:
 - Alain Leufroy
 - Martin von Löwis
 - Hugo Lopes Tavares
+- Guillermo López-Anglada
 - Justin Love
 - Simon Mathieu
 - Carl Meyer
