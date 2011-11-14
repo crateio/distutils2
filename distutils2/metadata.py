@@ -230,8 +230,10 @@ class Metadata(object):
 
     def __delitem__(self, name):
         field_name = self._convert_name(name)
-        # we let a KeyError propagate
-        del self._fields[field_name]
+        try:
+            del self._fields[field_name]
+        except KeyError:
+            raise KeyError(name)
         self._set_best_version()
 
     def __contains__(self, name):
