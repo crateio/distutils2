@@ -8,7 +8,6 @@ import distutils2.dist
 from distutils2.dist import Distribution
 from distutils2.command.cmd import Command
 from distutils2.errors import PackagingModuleError, PackagingOptionError
-from distutils2.tests import captured_stdout
 from distutils2.tests import support, unittest
 from distutils2.tests.support import create_distribution, use_command
 from distutils2.tests.support import unload

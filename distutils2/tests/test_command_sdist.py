@@ -1,5 +1,6 @@
 """Tests for distutils2.command.sdist."""
 import os
+import sys
 import zipfile
 
 try:
@@ -10,6 +11,7 @@ except ImportError:
     UID_GID_SUPPORT = False
 
 from os.path import join
+from StringIO import StringIO
 from distutils2.dist import Distribution
 from distutils2.util import find_executable
 from distutils2.errors import PackagingOptionError
@@ -18,7 +20,6 @@ from distutils2._backport import tarfile
 from distutils2._backport.shutil import get_archive_formats
 
 from distutils2.tests import support, unittest
-from distutils2.tests import captured_stdout
 from distutils2.tests.support import requires_zlib
 
 
@@ -243,7 +244,13 @@ class SDistTestCase(support.TempdirManager,
         self.assertIn("'setup.cfg' file not found", warnings[1])
 
     def test_show_formats(self):
-        __, stdout = captured_stdout(show_formats)
+        saved = sys.stdout
+        sys.stdout = StringIO()
+        try:
+            show_formats()
+            stdout = sys.stdout.getvalue()
+        finally:
+            sys.stdout = saved
 
         # the output should be a header line + one line per format
         num_formats = len(get_archive_formats())
