@@ -12,6 +12,7 @@ from textwrap import dedent
 from distutils2.tests.test_util import GlobTestCaseBase
 from distutils2.tests.support import requires_zlib
 
+import distutils2.database
 from distutils2.config import get_resources_dests
 from distutils2.errors import PackagingError
 from distutils2.metadata import Metadata
@@ -292,6 +293,12 @@ class TestDatabase(support.LoggingCatcher,
         super(TestDatabase, self).setUp()
         sys.path.insert(0, self.fake_dists_path)
         self.addCleanup(sys.path.remove, self.fake_dists_path)
+
+    def test_caches(self):
+        # sanity check for internal caches
+        for name in ('_cache_name', '_cache_name_egg',
+                     '_cache_path', '_cache_path_egg'):
+            self.assertEqual(getattr(distutils2.database, name), {})
 
     def test_distinfo_dirname(self):
         # Given a name and a version, we expect the distinfo_dirname function
