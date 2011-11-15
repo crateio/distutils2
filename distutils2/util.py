@@ -264,7 +264,7 @@ def split_multiline(value):
             if element]
 
 
-def execute(func, args, msg=None, verbose=0, dry_run=False):
+def execute(func, args, msg=None, dry_run=False):
     """Perform some action that affects the outside world.
 
     Some actions (e.g. writing to the filesystem) are special because
@@ -688,7 +688,7 @@ if sys.platform == 'darwin':
     _cfg_target_split = None
 
 
-def spawn(cmd, search_path=True, verbose=0, dry_run=False, env=None):
+def spawn(cmd, search_path=True, dry_run=False, env=None):
     """Run another program specified as a command list 'cmd' in a new process.
 
     'cmd' is just the argument list for the new process, ie.
@@ -1364,8 +1364,7 @@ def get_install_method(path):
 
 # XXX to be replaced by shutil.copytree
 def copy_tree(src, dst, preserve_mode=True, preserve_times=True,
-              preserve_symlinks=False, update=False, verbose=True,
-              dry_run=False):
+              preserve_symlinks=False, update=False, dry_run=False):
     from distutils.file_util import copy_file
 
     if not dry_run and not os.path.isdir(src):
@@ -1382,7 +1381,7 @@ def copy_tree(src, dst, preserve_mode=True, preserve_times=True,
                   "error listing files in '%s': %s" % (src, errstr))
 
     if not dry_run:
-        _mkpath(dst, verbose=verbose)
+        _mkpath(dst)
 
     outputs = []
 
@@ -1392,8 +1391,7 @@ def copy_tree(src, dst, preserve_mode=True, preserve_times=True,
 
         if preserve_symlinks and os.path.islink(src_name):
             link_dest = os.readlink(src_name)
-            if verbose >= 1:
-                logger.info("linking %s -> %s", dst_name, link_dest)
+            logger.info("linking %s -> %s", dst_name, link_dest)
             if not dry_run:
                 os.symlink(link_dest, dst_name)
             outputs.append(dst_name)
@@ -1402,11 +1400,10 @@ def copy_tree(src, dst, preserve_mode=True, preserve_times=True,
             outputs.extend(
                 copy_tree(src_name, dst_name, preserve_mode,
                           preserve_times, preserve_symlinks, update,
-                          verbose=verbose, dry_run=dry_run))
+                          dry_run=dry_run))
         else:
             copy_file(src_name, dst_name, preserve_mode,
-                      preserve_times, update, verbose=verbose,
-                      dry_run=dry_run)
+                      preserve_times, update, dry_run=dry_run)
             outputs.append(dst_name)
 
     return outputs
@@ -1419,7 +1416,7 @@ _path_created = set()
 # I don't use os.makedirs because a) it's new to Python 1.5.2, and
 # b) it blows up if the directory already exists (I want to silently
 # succeed in that case).
-def _mkpath(name, mode=0777, verbose=True, dry_run=False):
+def _mkpath(name, mode=0777, dry_run=False):
     # Detect a common bug -- name is None
     if not isinstance(name, basestring):
         raise PackagingInternalError(
@@ -1454,9 +1451,7 @@ def _mkpath(name, mode=0777, verbose=True, dry_run=False):
         if abs_head in _path_created:
             continue
 
-        if verbose >= 1:
-            logger.info("creating %s", head)
-
+        logger.info("creating %s", head)
         if not dry_run:
             try:
                 os.mkdir(head, mode)

@@ -157,6 +157,8 @@ CONTRIBUTORS.txt for full names.  Bug numbers refer to http://bugs.python.org/.
 - Rename get_reinitialized_command back to reinitialize_command [éric]
 - Rename install_distinfo's option from distinfo-dir to the more usual
   install_dir [éric]
+- Remove verbose arguments for Command and Compiler classes as well as util
+  functions, obsoleted by logging [éric]
 
 
 1.0a3 - 2010-10-08
