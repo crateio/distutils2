@@ -159,6 +159,7 @@ CONTRIBUTORS.txt for full names.  Bug numbers refer to http://bugs.python.org/.
   install_dir [éric]
 - Remove verbose arguments for Command and Compiler classes as well as util
   functions, obsoleted by logging [éric]
+- #12659: Add tests for tests.support [francisco]
 
 
 1.0a3 - 2010-10-08

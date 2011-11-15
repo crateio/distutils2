@@ -17,6 +17,7 @@ Thanks to:
 - Anthony Baxter
 - Erik Bray
 - C. Titus Brown
+- Francisco Martín Brugué
 - Nicolas Cadou
 - Godefroid Chapelle
 - Christophe Combelles
