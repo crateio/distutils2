@@ -1,7 +1,6 @@
 import os
 import re
 import sys
-import shutil
 import unittest as ut1
 import distutils2.database
 
@@ -14,6 +13,7 @@ from distutils2.tests.support import (TempdirManager, EnvironRestorer,
 from distutils2.command.test import test
 from distutils2.command import set_command
 from distutils2.dist import Distribution
+from distutils2._backport import shutil
 
 
 EXPECTED_OUTPUT_RE = r'''FAIL: test_blah \(myowntestmodule.SomeTest\)

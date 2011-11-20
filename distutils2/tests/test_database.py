@@ -1,7 +1,6 @@
 import os
 import csv
 import sys
-import shutil
 import tempfile
 try:
     from hashlib import md5
@@ -22,6 +21,7 @@ from distutils2.database import (
     provides_distribution, obsoletes_distribution, get_file_users,
     enable_cache, disable_cache, distinfo_dirname, _yield_distributions,
     get_file, get_file_path)
+from distutils2._backport import shutil
 
 # TODO Add a test for getting a distribution provided by another distribution
 # TODO Add a test for absolute pathed RECORD items (e.g. /etc/myapp/config.ini)

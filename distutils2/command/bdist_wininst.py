@@ -4,12 +4,11 @@ import sys
 import os
 import codecs
 
-from shutil import rmtree
-
 from distutils2.command.cmd import Command
 from distutils2.errors import PackagingOptionError, PackagingPlatformError
 from distutils2 import logger
 from distutils2.util import get_platform
+from distutils2._backport.shutil import rmtree
 from distutils2._backport.sysconfig import get_python_version
 
 

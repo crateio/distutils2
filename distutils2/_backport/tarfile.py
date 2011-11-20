@@ -43,7 +43,6 @@ __credits__ = u"Gustavo Niemeyer, Niels Gust\u00e4bel, Richard Townsend."
 #---------
 import sys
 import os
-import shutil
 import stat
 import errno
 import time
@@ -256,7 +255,11 @@ def copyfileobj(src, dst, length=None):
     if length == 0:
         return
     if length is None:
-        shutil.copyfileobj(src, dst)
+        while 1:
+            buf = src.read(16*1024)
+            if not buf:
+                break
+            dst.write(buf)
         return
 
     BUFSIZE = 16 * 1024

@@ -6,7 +6,6 @@ import csv
 import sys
 import errno
 import codecs
-import shutil
 import string
 import posixpath
 import subprocess
@@ -26,7 +25,7 @@ from distutils2 import logger
 from distutils2.errors import (PackagingPlatformError, PackagingFileError,
                                PackagingExecError, InstallationException,
                                PackagingInternalError)
-from distutils2._backport import sysconfig
+from distutils2._backport import shutil, sysconfig
 
 __all__ = [
     # file dependencies

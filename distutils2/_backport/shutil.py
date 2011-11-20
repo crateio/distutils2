@@ -10,6 +10,7 @@ import stat
 from os.path import abspath
 import fnmatch
 import errno
+from distutils2._backport import tarfile
 
 try:
     import bz2
@@ -407,10 +408,6 @@ def _make_tarball(base_name, base_dir, compress="gzip", verbose=0, dry_run=0,
             os.makedirs(archive_dir)
 
     # creating the tarball
-    # XXX late import because of circular dependency between shutil and
-    # tarfile :(
-    from distutils2._backport import tarfile
-
     if logger is not None:
         logger.info('Creating tar archive')
 
@@ -700,8 +697,6 @@ def _unpack_zipfile(filename, extract_dir):
 def _unpack_tarfile(filename, extract_dir):
     """Unpack tar/tar.gz/tar.bz2 `filename` to `extract_dir`
     """
-    # late import because of circular dependency
-    from distutils2._backport import tarfile
     try:
         tarobj = tarfile.open(filename)
     except tarfile.TarError:

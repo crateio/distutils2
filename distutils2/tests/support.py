@@ -37,7 +37,6 @@ import re
 import sys
 import errno
 import codecs
-import shutil
 import logging
 import logging.handlers
 import subprocess
@@ -53,7 +52,7 @@ from distutils2.util import resolve_name
 from distutils2.command import set_command, _COMMANDS
 
 from distutils2.tests import unittest
-from distutils2._backport import sysconfig
+from distutils2._backport import shutil, sysconfig
 
 # define __all__ to make pydoc more useful
 __all__ = [

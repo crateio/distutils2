@@ -3,9 +3,10 @@
 # Contributed by Bastian Kleineidam <calvin@cs.uni-sb.de>
 
 import os
-from shutil import rmtree
-from distutils2.command.cmd import Command
 from distutils2 import logger
+from distutils2.command.cmd import Command
+from distutils2._backport.shutil import rmtree
+
 
 class clean(Command):
 

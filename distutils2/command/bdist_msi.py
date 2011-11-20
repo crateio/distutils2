@@ -7,9 +7,8 @@ import sys
 import os
 import msilib
 
-
+from distutils2._backport.shutil import rmtree
 from distutils2._backport.sysconfig import get_python_version
-from shutil import rmtree
 from distutils2.command.cmd import Command
 from distutils2.version import NormalizedVersion
 from distutils2.errors import PackagingOptionError

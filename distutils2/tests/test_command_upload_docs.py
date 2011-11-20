@@ -1,6 +1,5 @@
 """Tests for distutils2.command.upload_docs."""
 import os
-import shutil
 import logging
 import zipfile
 try:
@@ -12,6 +11,7 @@ from distutils2.command import upload_docs as upload_docs_mod
 from distutils2.command.upload_docs import upload_docs, zip_dir
 from distutils2.dist import Distribution
 from distutils2.errors import PackagingFileError, PackagingOptionError
+from distutils2._backport import shutil
 
 from distutils2.tests import unittest, support
 try:

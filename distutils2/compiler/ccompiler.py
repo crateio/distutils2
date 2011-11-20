@@ -5,11 +5,11 @@ interface for the compiler abstraction model used by distutils2.
 """
 
 import os
-from shutil import move
 from distutils2 import logger
 from distutils2.util import split_quoted, execute, newer_group, spawn
 from distutils2.errors import CompileError, LinkError, UnknownFileError
 from distutils2.compiler import gen_preprocess_options
+from distutils2._backport.shutil import move
 
 
 class CCompiler(object):

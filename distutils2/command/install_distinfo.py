@@ -5,7 +5,6 @@
 import os
 import csv
 import codecs
-from shutil import rmtree
 try:
     import hashlib
 except ImportError:
@@ -13,6 +12,7 @@ except ImportError:
 
 from distutils2 import logger
 from distutils2.command.cmd import Command
+from distutils2._backport.shutil import rmtree
 
 
 class install_distinfo(Command):

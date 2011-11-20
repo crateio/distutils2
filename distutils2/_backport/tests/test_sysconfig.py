@@ -1,10 +1,10 @@
 import os
 import sys
 import subprocess
-import shutil
 from copy import copy
 from StringIO import StringIO
 
+from distutils2._backport import shutil
 from distutils2._backport import sysconfig
 from distutils2._backport.sysconfig import (
     get_paths, get_platform, get_config_vars, get_path, get_path_names,

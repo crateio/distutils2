@@ -1,11 +1,11 @@
 """Tests for the distutils2.pypi.dist module."""
 
 import os
-import shutil
 from distutils2.version import VersionPredicate
 from distutils2.pypi.dist import (ReleaseInfo, ReleasesList, DistInfo,
-                                 split_archive_name, get_infos_from_url)
+                                  split_archive_name, get_infos_from_url)
 from distutils2.pypi.errors import HashDoesNotMatch, UnsupportedHashName
+from distutils2._backport import shutil
 
 from distutils2.tests import unittest
 from distutils2.tests.support import TempdirManager, requires_zlib, fake_dec
@@ -38,6 +38,7 @@ class TestReleaseInfo(unittest.TestCase):
         # should not fail
         release['sdist']
 
+    @unittest.skip('needs to be written')
     def test_get_unknown_distribution(self):
         # should raise a KeyError
         pass

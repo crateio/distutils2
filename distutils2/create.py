@@ -24,7 +24,6 @@ import imp
 import sys
 import glob
 import codecs
-import shutil
 from textwrap import dedent
 from ConfigParser import RawConfigParser
 
@@ -34,7 +33,7 @@ from distutils2 import logger
 from distutils2._trove import all_classifiers as _CLASSIFIERS_LIST
 from distutils2.compat import detect_encoding
 from distutils2.version import is_valid_version
-from distutils2._backport import sysconfig
+from distutils2._backport import shutil, sysconfig
 try:
     any
 except NameError:
