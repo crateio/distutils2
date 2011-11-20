@@ -346,6 +346,10 @@ def _glob_to_re(pattern):
     # Unix-only.
     pattern_re = re.sub(r'((?<!\\)(\\\\)*)\.', r'\1[^/]', pattern_re)
 
+    if pattern_re.endswith('$'):
+        # make it look like fnmatch in Python 2.6 and newer
+        pattern_re = pattern_re[:-1] + r'\Z(?ms)'
+
     return pattern_re
 
 
