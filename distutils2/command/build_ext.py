@@ -3,7 +3,6 @@
 import os
 import re
 import sys
-import logging
 
 from distutils2._backport import sysconfig
 from distutils2.util import get_platform

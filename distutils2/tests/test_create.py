@@ -3,7 +3,6 @@
 import os
 import sys
 import codecs
-from StringIO import StringIO
 from textwrap import dedent
 from distutils2 import create
 from distutils2.create import MainProgram, ask_yn, ask, main

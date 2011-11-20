@@ -21,7 +21,6 @@ def _check_name(name, packages):
     if '.' not in name:
         return
     parts = name.split('.')
-    modname = parts[-1]
     parent = '.'.join(parts[:-1])
     if parent not in packages:
         # we could log a warning instead of raising, but what's the use

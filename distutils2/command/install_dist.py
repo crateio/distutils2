@@ -13,7 +13,6 @@ from distutils2.util import write_file
 from distutils2.util import convert_path, change_root, get_platform
 from distutils2.errors import PackagingOptionError
 
-import site
 if sys.version_info[:2] >= (2, 6):
     HAS_USER_SITE = True
 else:
