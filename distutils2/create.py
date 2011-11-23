@@ -31,13 +31,9 @@ from distutils2 import logger
 # importing this with an underscore as it should be replaced by the
 # dict form or another structures for all purposes
 from distutils2._trove import all_classifiers as _CLASSIFIERS_LIST
-from distutils2.compat import detect_encoding
 from distutils2.version import is_valid_version
 from distutils2._backport import shutil, sysconfig
-try:
-    any
-except NameError:
-    from distutils2.compat import any
+from distutils2._backport.misc import any, detect_encoding
 try:
     from hashlib import md5
 except ImportError:

@@ -2,8 +2,8 @@
 import os
 import sys
 import platform
-from distutils2.compat import python_implementation
 from distutils2.markers import interpret
+from distutils2._backport.misc import python_implementation
 
 from distutils2.tests import unittest
 from distutils2.tests.support import LoggingCatcher

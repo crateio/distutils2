@@ -6,13 +6,13 @@ from os.path import splitdrive
 from StringIO import StringIO
 
 from distutils.spawn import find_executable, spawn
-from distutils2.compat import wraps
 from distutils2._backport import shutil, tarfile
 from distutils2._backport.shutil import (
     _make_tarball, _make_zipfile, make_archive, unpack_archive,
     register_archive_format, unregister_archive_format, get_archive_formats,
     register_unpack_format, unregister_unpack_format, get_unpack_formats,
     Error, RegistryError)
+from distutils2._backport.misc import wraps
 
 from distutils2.tests import unittest, support
 from test.test_support import TESTFN

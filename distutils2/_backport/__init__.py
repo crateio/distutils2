@@ -1,4 +1,6 @@
-"""Modules copied from Python 3 standard libraries.
+"""Modules copied from Python 3 standard libraries, for internal use only.
 
-Individual classes and objects like the any function are in compat.
+Individual classes and functions are found in d2._backport.misc.  Intended
+usage is to always import things missing from 2.4 from that module: the
+built-in/stdlib objects will be used if found.
 """

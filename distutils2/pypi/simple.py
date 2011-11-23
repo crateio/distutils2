@@ -16,10 +16,9 @@ import os
 
 from fnmatch import translate
 from distutils2 import logger
-from distutils2.compat import wraps
-from distutils2.metadata import Metadata
-from distutils2.version import get_version_predicate
 from distutils2 import __version__ as distutils2_version
+from distutils2.version import get_version_predicate
+from distutils2.metadata import Metadata
 from distutils2.pypi.base import BaseClient
 from distutils2.pypi.dist import (ReleasesList, EXTENSIONS,
                                   get_infos_from_url, MD5_HASH)
@@ -27,6 +26,7 @@ from distutils2.pypi.errors import (PackagingPyPIError, DownloadError,
                                     UnableToDownload, CantParseArchiveName,
                                     ReleaseNotFound, ProjectNotFound)
 from distutils2.pypi.mirrors import get_mirrors
+from distutils2._backport.misc import wraps
 
 __all__ = ['Crawler', 'DEFAULT_SIMPLE_INDEX_URL']
 

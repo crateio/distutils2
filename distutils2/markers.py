@@ -6,7 +6,7 @@ import platform
 from tokenize import generate_tokens, NAME, OP, STRING, ENDMARKER
 from StringIO import StringIO as BytesIO
 
-from distutils2.compat import python_implementation
+from distutils2._backport.misc import python_implementation
 
 __all__ = ['interpret']
 

@@ -7,8 +7,8 @@ from distutils2.command.cmd import Command
 from distutils2.util import convert_path, newer
 from distutils2 import logger
 from distutils2.compat import Mixin2to3
-from distutils2.compat import detect_encoding, fsencode
 from distutils2._backport import sysconfig
+from distutils2._backport.misc import detect_encoding, fsencode
 
 
 # check if Python is called on the first line with this expression

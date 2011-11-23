@@ -38,7 +38,7 @@ from SimpleHTTPServer import SimpleHTTPRequestHandler
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 
 from distutils2.tests import unittest
-from distutils2.compat import wraps
+from distutils2._backport.misc import wraps
 
 
 PYPI_DEFAULT_STATIC_PATH = os.path.join(
