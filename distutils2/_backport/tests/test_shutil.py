@@ -917,8 +917,9 @@ class TestCopyFile(unittest.TestCase):
 
         self.assertRaises(IOError, shutil.copyfile, 'srcfile', 'destfile')
 
-    @unittest.skip("can't use the with statement and support 2.4")
-    def test_w_dest_open_fails(self):
+    # can't test usage of the with statement and support 2.4, so this
+    # test is renamed to disable it
+    def _test_w_dest_open_fails(self):
 
         srcfile = self.Faux()
 
@@ -937,8 +938,8 @@ class TestCopyFile(unittest.TestCase):
         self.assertEqual(srcfile._exited_with[1].args,
                          ('Cannot open "destfile"',))
 
-    @unittest.skip("can't use the with statement and support 2.4")
-    def test_w_dest_close_fails(self):
+    # see above
+    def _test_w_dest_close_fails(self):
 
         srcfile = self.Faux()
         destfile = self.Faux(True)
@@ -960,8 +961,8 @@ class TestCopyFile(unittest.TestCase):
         self.assertEqual(srcfile._exited_with[1].args,
                          ('Cannot close',))
 
-    @unittest.skip("can't use the with statement and support 2.4")
-    def test_w_source_close_fails(self):
+    # see above
+    def _test_w_source_close_fails(self):
 
         srcfile = self.Faux(True)
         destfile = self.Faux()
