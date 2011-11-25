@@ -194,8 +194,13 @@ def prepare_hashlib_extensions():
                               sources=['distutils2/_backport/md5module.c',
                                        'distutils2/_backport/md5.c'],
                               depends=['distutils2/_backport/md5.h']) )
-    if openssl_ver < 0x908000:
-        # OpenSSL doesn't do these until 0.9.8 so we'll bring our own
+    # XXX always compile sha256 and sha512 to have a working hashlib (maybe
+    # I (merwok) can't compile _ssl and thus _hashlib for 2.4, maybe because of
+    # Debian multiarch, even though I set all needed build vars (and can
+    # compile _ssl for 2.6 for example)
+    if True:
+    #if openssl_ver < 0x908000:
+    #    # OpenSSL doesn't do these until 0.9.8 so we'll bring our own
         exts.append(Extension('distutils2._backport._sha256',
                               ['distutils2/_backport/sha256module.c']))
         exts.append(Extension('distutils2._backport._sha512',
