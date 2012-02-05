@@ -9,7 +9,7 @@ their clones, and all changes that have a bug report.  Contributors' first names
 CONTRIBUTORS.txt for full names.  Bug numbers refer to http://bugs.python.org/.
 
 
-1.0a4 - 2011-12-??
+1.0a4 - 2012-02-??
 ------------------
 
 - Remove type check for commands in favor of minimal duck type check [tarek]
@@ -161,6 +161,7 @@ CONTRIBUTORS.txt for full names.  Bug numbers refer to http://bugs.python.org/.
   functions, obsoleted by logging [éric]
 - #12659: Add tests for tests.support [francisco]
 - #13901: Prevent test failure on OS X for Python built in shared mode [ned]
+- #11805: Add multiple value syntax for package_data in setup.cfg [éric]
 
 
 1.0a3 - 2010-10-08

@@ -232,13 +232,25 @@ class Config(object):
                 self.dist.scripts = [self.dist.scripts]
 
             self.dist.package_data = {}
+            # bookkeeping for the loop below
+            firstline = True
+            prev = None
+
             for line in files.get('package_data', []):
-                data = line.split('=')
-                if len(data) != 2:
-                    raise ValueError('invalid line for package_data: %s '
-                                     '(misses "=")' % line)
-                key, value = data
-                self.dist.package_data[key.strip()] = value.strip()
+                if '=' in line:
+                    # package name -- file globs or specs
+                    key, value = line.split('=')
+                    prev = self.dist.package_data[key.strip()] = value.split()
+                elif firstline:
+                    # invalid continuation on the first line
+                    raise PackagingOptionError(
+                        'malformed package_data first line: %r (misses "=")' %
+                        line)
+                else:
+                    # continuation, add to last seen package name
+                    prev.extend(line.split())
+
+                firstline = False
 
             self.dist.data_files = []
             for data in files.get('data_files', []):
