@@ -23,9 +23,15 @@ class BuildPyTestCase(support.TempdirManager,
             f.write("# Pretend this is a package.")
         finally:
             f.close()
+        # let's have two files to make sure globbing works
         f = open(os.path.join(pkg_dir, "README.txt"), "w")
         try:
             f.write("Info about this package")
+        finally:
+            f.close()
+        f = open(os.path.join(pkg_dir, "HACKING.txt"), "w")
+        try:
+            f.write("How to contribute")
         finally:
             f.close()
 
@@ -41,7 +47,7 @@ class BuildPyTestCase(support.TempdirManager,
             convert_2to3_doctests=None,
             use_2to3=False)
         dist.packages = ["pkg"]
-        dist.package_data = {"pkg": ["README.txt"]}
+        dist.package_data = {"pkg": ["*.txt"]}
         dist.package_dir = sources
 
         cmd = build_py(dist)
@@ -54,12 +60,15 @@ class BuildPyTestCase(support.TempdirManager,
         # This makes sure the list of outputs includes byte-compiled
         # files for Python modules but not for package data files
         # (there shouldn't *be* byte-code files for those!).
-        self.assertEqual(len(cmd.get_outputs()), 3)
+        # FIXME the test below is not doing what the comment above says, and
+        # if it did it would show a code bug: if we add a demo.py file to
+        # package_data, it gets byte-compiled!
+        outputs = cmd.get_outputs()
+        self.assertEqual(len(outputs), 4, outputs)
         pkgdest = os.path.join(destination, "pkg")
         files = os.listdir(pkgdest)
-        self.assertIn("__init__.py", files)
-        self.assertIn("README.txt", files)
-        self.assertIn("__init__.pyc", files)
+        self.assertEqual(sorted(files), ["HACKING.txt", "README.txt",
+                                         "__init__.py", "__init__.pyc"])
 
     def test_empty_package_dir(self):
         # See SF 1668596/1720897.
