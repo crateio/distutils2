@@ -162,6 +162,8 @@ CONTRIBUTORS.txt for full names.  Bug numbers refer to http://bugs.python.org/.
 - #12659: Add tests for tests.support [francisco]
 - #13901: Prevent test failure on OS X for Python built in shared mode [ned]
 - #11805: Add multiple value syntax for package_data in setup.cfg [éric]
+- #13712: Don't map package_data to extra_files when converting a setup.py
+  script with pysetup create [éric]
 
 
 1.0a3 - 2010-10-08
