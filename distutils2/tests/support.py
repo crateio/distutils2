@@ -357,7 +357,9 @@ def fixup_build_ext(cmd):
 
     When Python was built with --enable-shared on Unix, -L. is not enough to
     find libpython<blah>.so, because regrtest runs in a tempdir, not in the
-    source directory where the .so lives.
+    source directory where the .so lives.  (Mac OS X embeds absolute paths
+    to shared libraries into executables, so the fixup is a no-op on that
+    platform.)
 
     When Python was built with in debug mode on Windows, build_ext commands
     need their debug attribute set, and it is not done automatically for
@@ -379,9 +381,12 @@ def fixup_build_ext(cmd):
         if runshared is None:
             cmd.library_dirs = ['.']
         else:
-            # FIXME no partition in 2.4
-            name, equals, value = runshared.partition('=')
-            cmd.library_dirs = value.split(os.pathsep)
+            if sys.platform == 'darwin':
+                cmd.library_dirs = []
+            else:
+                # FIXME no partition in 2.4
+                name, equals, value = runshared.partition('=')
+                cmd.library_dirs = value.split(os.pathsep)
 
 
 try:

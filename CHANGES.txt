@@ -160,6 +160,7 @@ CONTRIBUTORS.txt for full names.  Bug numbers refer to http://bugs.python.org/.
 - Remove verbose arguments for Command and Compiler classes as well as util
   functions, obsoleted by logging [éric]
 - #12659: Add tests for tests.support [francisco]
+- #13901: Prevent test failure on OS X for Python built in shared mode [ned]
 
 
 1.0a3 - 2010-10-08
