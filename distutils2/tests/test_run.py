@@ -60,21 +60,41 @@ class RunTestCase(support.TempdirManager,
             os.chmod(install_path, old_mod)
             install.get_path = old_get_path
 
-    def test_show_help(self):
-        # smoke test, just makes sure some help is displayed
+    def get_pythonpath(self):
         pythonpath = os.environ.get('PYTHONPATH')
         d2parent = os.path.dirname(os.path.dirname(__file__))
         if pythonpath is not None:
-            pythonpath =  os.pathsep.join((pythonpath, d2parent))
+            pythonpath = os.pathsep.join((pythonpath, d2parent))
         else:
             pythonpath = d2parent
+        return pythonpath
 
+    def test_show_help(self):
+        # smoke test, just makes sure some help is displayed
         status, out, err = assert_python_ok(
             '-c', 'from distutils2.run import main; main()', '--help',
-            PYTHONPATH=pythonpath)
+            PYTHONPATH=self.get_pythonpath())
         self.assertEqual(status, 0)
         self.assertGreater(out, '')
         self.assertEqual(err, '')
+
+    def test_list_commands(self):
+        status, out, err = assert_python_ok(
+            '-c', 'from distutils2.run import main; main()', 'run',
+            '--list-commands', PYTHONPATH=self.get_pythonpath())
+        # check that something is displayed
+        self.assertEqual(status, 0)
+        self.assertGreater(out, '')
+        self.assertEqual(err, '')
+
+        # make sure the manual grouping of commands is respected
+        check_position = out.find('  check: ')
+        build_position = out.find('  build: ')
+        self.assertTrue(check_position, out)  # "out" printed as debugging aid
+        self.assertTrue(build_position, out)
+        self.assertLess(check_position, build_position, out)
+
+        # TODO test that custom commands don't break --list-commands
 
 
 def test_suite():
