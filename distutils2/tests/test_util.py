@@ -417,7 +417,7 @@ class UtilTestCase(support.EnvironRestorer,
         self.assertRaises(ImportError, resolve_name, 'a.b.Spam')
         self.assertRaises(ImportError, resolve_name, 'a.b.c.Spam')
 
-    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
+    @support.requires_py26_min
     @support.skip_2to3_optimize
     def test_run_2to3_on_code(self):
         content = "print 'test'"
@@ -432,7 +432,7 @@ class UtilTestCase(support.EnvironRestorer,
         file_handle.close()
         self.assertEqual(new_content, converted_content)
 
-    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
+    @support.requires_py26_min
     @support.skip_2to3_optimize
     def test_run_2to3_on_doctests(self):
         # to check if text files containing doctests only get converted.

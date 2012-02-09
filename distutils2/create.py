@@ -377,7 +377,7 @@ class MainProgram(object):
                       ('long_description', 'description'),
                       ('url', 'home_page'),
                       ('platforms', 'platform'))
-            if sys.version >= '2.5':
+            if sys.version_info[:2] >= (2, 5):
                 labels += (
                       ('provides', 'provides-dist'),
                       ('obsoletes', 'obsoletes-dist'),

@@ -215,7 +215,7 @@ def test_main():
 
 
 if __name__ == "__main__":
-    if sys.version < '2.5':
+    if sys.version_info[:2] < (2, 5):
         try:
             from distutils2._backport import hashlib
         except ImportError:

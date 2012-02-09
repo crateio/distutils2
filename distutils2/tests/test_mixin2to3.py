@@ -29,9 +29,9 @@ class Mixin2to3TestCase(support.TempdirManager,
             converted = fp.read()
         finally:
             fp.close()
-        self.assertMultiLineEqual(wanted, converted)
+        self.assertMultiLineEqual(converted, wanted)
 
-    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
+    @support.requires_py26_min
     def test_conversion(self):
         # check that code and doctests get converted
         self.check('''\
@@ -57,7 +57,7 @@ class Mixin2to3TestCase(support.TempdirManager,
             ''',  # 2to3 adds a newline here
             files=[self.filename])
 
-    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
+    @support.requires_py26_min
     def test_doctests_conversion(self):
         # check that doctest files are converted
         self.check('''\
@@ -75,7 +75,7 @@ class Mixin2to3TestCase(support.TempdirManager,
             ''',
             doctests=[self.filename])
 
-    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
+    @support.requires_py26_min
     def test_additional_fixers(self):
         # make sure the fixers argument works
         self.check("""\

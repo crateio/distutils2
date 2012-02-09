@@ -208,6 +208,6 @@ def prepare_hashlib_extensions():
     return exts
 
 setup_kwargs = cfg_to_args('setup.cfg')
-if sys.version < '2.5':
+if sys.version_info[:2] < (2, 5):
     setup_kwargs['ext_modules'] = prepare_hashlib_extensions()
 setup(**setup_kwargs)

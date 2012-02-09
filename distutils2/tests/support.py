@@ -63,8 +63,9 @@ __all__ = [
     # misc. functions and decorators
     'fake_dec', 'create_distribution', 'use_command',
     'copy_xxmodule_c', 'fixup_build_ext',
+    'requires_py26_min', 'skip_2to3_optimize',
     # imported from this module for backport purposes
-    'unittest', 'requires_zlib', 'skip_2to3_optimize', 'skip_unless_symlink',
+    'unittest', 'requires_zlib', 'skip_unless_symlink',
 ]
 
 
@@ -402,10 +403,11 @@ except ImportError:
     skip_unless_symlink = unittest.skip(
         'requires test.test_support.skip_unless_symlink')
 
-
 skip_2to3_optimize = unittest.skipUnless(__debug__,
                                          "2to3 doesn't work under -O")
 
+requires_py26_min = unittest.skipIf(sys.version_info[:2] < (2, 6),
+                                    'requires Python 2.6 or higher')
 
 requires_zlib = unittest.skipUnless(zlib, 'requires zlib')
 

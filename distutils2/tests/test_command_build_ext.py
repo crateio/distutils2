@@ -19,12 +19,12 @@ class BuildExtTestCase(support.TempdirManager,
     def setUp(self):
         super(BuildExtTestCase, self).setUp()
         self.tmp_dir = self.mkdtemp()
-        if sys.version > "2.6":
+        if sys.version_info[:2] >= (2, 6):
             self.old_user_base = site.USER_BASE
             site.USER_BASE = self.mkdtemp()
 
     def tearDown(self):
-        if sys.version > "2.6":
+        if sys.version_info[:2] >= (2, 6):
             site.USER_BASE = self.old_user_base
 
         super(BuildExtTestCase, self).tearDown()
@@ -85,7 +85,7 @@ class BuildExtTestCase(support.TempdirManager,
         # make sure we get some library dirs under solaris
         self.assertGreater(len(cmd.library_dirs), 0)
 
-    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
+    @support.requires_py26_min
     def test_user_site(self):
         dist = Distribution({'name': 'xx'})
         cmd = build_ext(dist)

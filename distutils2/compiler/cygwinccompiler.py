@@ -56,6 +56,10 @@ from distutils2.errors import PackagingExecError, CompileError, UnknownFileError
 from distutils2.util import get_compiler_versions
 from distutils2._backport import sysconfig
 
+# TODO use platform instead of sys.version
+# (platform does unholy sys.version parsing too, but at least it gives other
+# VMs a chance to override the returned values)
+
 
 def get_msvcr():
     """Include the appropriate MSVC runtime library if Python was built
