@@ -9,91 +9,85 @@ class Mixin2to3TestCase(support.TempdirManager,
                         support.LoggingCatcher,
                         unittest.TestCase):
 
-    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
-    @support.skip_2to3_optimize
-    def test_convert_code_only(self):
-        # used to check if code gets converted properly.
-        code = "print 'test'"
+    def setUp(self):
+        super(Mixin2to3TestCase, self).setUp()
+        self.filename = self.mktempfile().name
 
-        fp = self.mktempfile()
+    def check(self, source, wanted, **kwargs):
+        source = textwrap.dedent(source)
+        fp = open(self.filename, 'w')
         try:
-            fp.write(code)
+            fp.write(source)
         finally:
             fp.close()
 
-        mixin2to3 = Mixin2to3()
-        mixin2to3._run_2to3([fp.name])
-        expected = "print('test')"
+        Mixin2to3()._run_2to3(**kwargs)
 
-        fp = open(fp.name)
+        fp = open(self.filename)
+        wanted = textwrap.dedent(wanted)
         try:
             converted = fp.read()
         finally:
             fp.close()
-
-        self.assertEqual(expected, converted)
+        self.assertMultiLineEqual(wanted, converted)
 
     @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
-    def test_doctests_only(self):
-        # used to check if doctests gets converted properly.
-        doctest = textwrap.dedent('''\
+    def test_conversion(self):
+        # check that code and doctests get converted
+        self.check('''\
             """Example docstring.
 
             >>> print test
             test
 
             It works.
-            """''')
-
-        fp = self.mktempfile()
-        try:
-            fp.write(doctest)
-        finally:
-            fp.close()
-
-        mixin2to3 = Mixin2to3()
-        mixin2to3._run_2to3([fp.name])
-        expected = textwrap.dedent('''\
+            """
+            print 'test'
+            ''',
+            '''\
             """Example docstring.
 
             >>> print(test)
             test
 
             It works.
-            """\n''')
+            """
+            print('test')
 
-        fp = open(fp.name)
-        try:
-            converted = fp.read()
-        finally:
-            fp.close()
+            ''',  # 2to3 adds a newline here
+            files=[self.filename])
 
-        self.assertEqual(expected, converted)
+    @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
+    def test_doctests_conversion(self):
+        # check that doctest files are converted
+        self.check('''\
+            Welcome to the doc.
+
+            >>> print test
+            test
+            ''',
+            '''\
+            Welcome to the doc.
+
+            >>> print(test)
+            test
+
+            ''',
+            doctests=[self.filename])
 
     @unittest.skipIf(sys.version < '2.6', 'requires Python 2.6 or higher')
     def test_additional_fixers(self):
-        # used to check if use_2to3_fixers works
-        code = 'type(x) is not T'
-
-        fp = self.mktempfile()
-        try:
-            fp.write(code)
-        finally:
-            fp.close()
-
-        mixin2to3 = Mixin2to3()
-        mixin2to3._run_2to3(files=[fp.name], doctests=[fp.name],
-                            fixers=['distutils2.tests.fixer'])
-
-        expected = 'not isinstance(x, T)'
-
-        fp = open(fp.name)
-        try:
-            converted = fp.read()
-        finally:
-            fp.close()
-
-        self.assertEqual(expected, converted)
+        # make sure the fixers argument works
+        self.check("""\
+            echo('42')
+            echo2('oh no')
+            """,
+            """\
+            print('42')
+            print('oh no')
+            """,
+            files=[self.filename],
+            fixers=['distutils2.tests.fixer'])
 
 
 def test_suite():
