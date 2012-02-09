@@ -365,7 +365,9 @@ def fixup_build_ext(cmd):
     need their debug attribute set, and it is not done automatically for
     some reason.
 
-    This function handles both of these things.  Example use:
+    This function handles both of these things, and also fixes
+    cmd.distribution.include_dirs if the running Python is an uninstalled
+    build.  Example use:
 
         cmd = build_ext(dist)
         support.fixup_build_ext(cmd)
@@ -387,6 +389,11 @@ def fixup_build_ext(cmd):
                 # FIXME no partition in 2.4
                 name, equals, value = runshared.partition('=')
                 cmd.library_dirs = value.split(os.pathsep)
+
+    # Allow tests to run with an uninstalled Python
+    if sysconfig.is_python_build():
+        pysrcdir = sysconfig.get_config_var('projectbase')
+        cmd.distribution.include_dirs.append(os.path.join(pysrcdir, 'Include'))
 
 
 try:
