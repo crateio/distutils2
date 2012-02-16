@@ -166,6 +166,7 @@ CONTRIBUTORS.txt for full names.  Bug numbers refer to http://bugs.python.org/.
   script with pysetup create [éric]
 - #1326113: build_ext now correctly parses multiple values given to the
   --libraries option [éric]
+- #13974: add test for util.set_platform [tshepang]
 
 
 1.0a3 - 2010-10-08
