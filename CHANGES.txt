@@ -167,6 +167,7 @@ CONTRIBUTORS.txt for full names.  Bug numbers refer to http://bugs.python.org/.
 - #1326113: build_ext now correctly parses multiple values given to the
   --libraries option [éric]
 - #13974: add test for util.set_platform [tshepang]
+- #6884: Fix MANIFEST.in parsing bugs on Windows [éric, nadeem]
 
 
 1.0a3 - 2010-10-08

@@ -69,3 +69,4 @@ Thanks to:
 - Vinay Sajip
 - Victor Stinner
 - Alexandre Vassalotti
+- Nadeem Vawda
