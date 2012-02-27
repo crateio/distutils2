@@ -168,6 +168,7 @@ CONTRIBUTORS.txt for full names.  Bug numbers refer to http://bugs.python.org/.
   --libraries option [éric]
 - #13974: add test for util.set_platform [tshepang]
 - #6884: Fix MANIFEST.in parsing bugs on Windows [éric, nadeem]
+- #11841: Fix comparison bug with 'rc' versions [filip]
 
 
 1.0a3 - 2010-10-08
