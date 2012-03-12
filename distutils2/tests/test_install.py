@@ -57,7 +57,7 @@ class ToInstallDist(object):
 
     def list_installed_files(self, **args):
         if self._files:
-            return self._real_files
+            return [(path, 'md5', 0) for path in self._real_files]
 
     def get_install(self, **args):
         return self.list_installed_files()
@@ -312,7 +312,7 @@ class TestInstall(LoggingCatcher, TempdirManager, unittest.TestCase):
 
             # assert that the files have been removed
             for dist in dists:
-                for f in dist.list_installed_files():
+                for f, md5, size in dist.list_installed_files():
                     self.assertFalse(os.path.exists(f))
         finally:
             install.install_dists = old_install_dists
@@ -338,7 +338,7 @@ class TestInstall(LoggingCatcher, TempdirManager, unittest.TestCase):
             # assert that the files are in the same place
             # assert that the files have been removed
             for dist in remove:
-                for f in dist.list_installed_files():
+                for f, md5, size in dist.list_installed_files():
                     self.assertTrue(os.path.exists(f))
                 dist._unlink_installed_files()
         finally:

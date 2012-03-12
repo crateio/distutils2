@@ -244,7 +244,8 @@ def install_from_infos(install_path=None, install=[], remove=[], conflicts=[],
         temp_dir = tempfile.mkdtemp()
         for dist in remove:
             files = dist.list_installed_files()
-            temp_files[dist] = _move_files(files, temp_dir)
+            paths = [path for path, md5, size in files]
+            temp_files[dist] = _move_files(paths, temp_dir)
     try:
         if install:
             install_dists(install, install_path, paths)
