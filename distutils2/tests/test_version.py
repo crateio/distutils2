@@ -18,8 +18,8 @@ class VersionTestCase(unittest.TestCase):
                 (V('1.2c4'), '1.2c4'),
                 (V('4.17rc2'), '4.17rc2'),
                 (V('1.2.3.4'), '1.2.3.4'),
-                (V('1.2.3.4.0b3'), '1.2.3.4b3'),
-                (V('1.2.0.0.0'), '1.2'),
+                (V('1.2.3.4.0b3', drop_trailing_zeros=True), '1.2.3.4b3'),
+                (V('1.2.0.0.0', drop_trailing_zeros=True), '1.2'),
                 (V('1.0.dev345'), '1.0.dev345'),
                 (V('1.0.post456.dev623'), '1.0.post456.dev623'))
 
@@ -248,6 +248,12 @@ class VersionTestCase(unittest.TestCase):
             self.assertTrue(V(version).is_final)
         for version in other_versions:
             self.assertFalse(V(version).is_final)
+
+    def test_micro_predicate(self):
+        self.assertNotEqual(V('3.4.0'), V('3.4'))
+        predicate = VersionPredicate('zope.event (3.4.0)')
+        self.assertTrue(predicate.match('3.4.0'))
+        self.assertFalse(predicate.match('3.4.1'))
 
 
 class VersionWhiteBoxTestCase(unittest.TestCase):

@@ -57,7 +57,8 @@ class NormalizedVersion(object):
         1.2a        # release level must have a release serial
         1.2.3b
     """
-    def __init__(self, s, error_on_huge_major_num=True):
+    def __init__(self, s, error_on_huge_major_num=True,
+                 drop_trailing_zeros=False):
         """Create a NormalizedVersion instance from a version string.
 
         @param s {str} The version string.
@@ -74,8 +75,12 @@ class NormalizedVersion(object):
             and, e.g. downstream Linux package managers, will forever remove
             the possibility of using a version number like "1.0" (i.e.
             where the major number is less than that huge major number).
+        @param drop_trailing_zeros {bool} Whether to drop trailing zeros
+
+            from the returned list. Default True.
         """
         self.is_final = True  # by default, consider a version as final.
+        self.drop_trailing_zeros = drop_trailing_zeros
         self._parse(s, error_on_huge_major_num)
 
     @classmethod
@@ -93,7 +98,7 @@ class NormalizedVersion(object):
         parts = []
 
         # main version
-        block = self._parse_numdots(groups['version'], s, False, 2)
+        block = self._parse_numdots(groups['version'], s, 2)
         extraversion = groups.get('extraversion')
         if extraversion not in ('', None):
             block += self._parse_numdots(extraversion[1:], s)
@@ -130,16 +135,13 @@ class NormalizedVersion(object):
             raise HugeMajorVersionNumError("huge major version number, %r, "
                "which might cause future problems: %r" % (self.parts[0][0], s))
 
-    def _parse_numdots(self, s, full_ver_str, drop_trailing_zeros=True,
-                       pad_zeros_length=0):
+    def _parse_numdots(self, s, full_ver_str, pad_zeros_length=0):
         """Parse 'N.N.N' sequences, return a list of ints.
 
         @param s {str} 'N.N.N...' sequence to be parsed
         @param full_ver_str {str} The full version string from which this
             comes. Used for error strings.
-        @param drop_trailing_zeros {bool} Whether to drop trailing zeros
-            from the returned list. Default True.
-        @param pad_zeros_length {int} The length to which to pad the
+                @param pad_zeros_length {int} The length to which to pad the
             returned list with zeros, if necessary. Default 0.
         """
         nums = []
@@ -148,7 +150,7 @@ class NormalizedVersion(object):
                 raise IrrationalVersionError("cannot have leading zero in "
                     "version number segment: '%s' in %r" % (n, full_ver_str))
             nums.append(int(n))
-        if drop_trailing_zeros:
+        if self.drop_trailing_zeros:
             while nums and nums[-1] == 0:
                 nums.pop()
         while len(nums) < pad_zeros_length:

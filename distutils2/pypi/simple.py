@@ -198,8 +198,8 @@ class Crawler(BaseClient):
     def get_release(self, requirements, prefer_final=None):
         """Return only one release that fulfill the given requirements"""
         predicate = get_version_predicate(requirements)
-        release = self.get_releases(predicate, prefer_final)\
-                      .get_last(predicate)
+        releases = self.get_releases(predicate, prefer_final)
+        release = releases.get_last(predicate)
         if not release:
             raise ReleaseNotFound("No release matches the given criterias")
         return release
