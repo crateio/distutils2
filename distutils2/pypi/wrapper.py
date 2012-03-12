@@ -25,8 +25,9 @@ def switch_index_if_fails(func, wrapper):
         exception = None
         methods = [func]
         for f in wrapper._indexes.values():
-            if f != func.im_self and hasattr(f, func.f_name):
-                methods.append(getattr(f, func.f_name))
+            func_name = func.im_func.func_name
+            if f != func.im_self and hasattr(f, func_name):
+                methods.append(getattr(f, func_name))
         for method in methods:
             try:
                 response = method(*args, **kwargs)
