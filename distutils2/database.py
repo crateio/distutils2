@@ -380,7 +380,8 @@ class EggInfoDistribution(object):
             if self.metadata['Metadata-Version'] == '1.1':
                 # we can't have 1.1 metadata *and* Setuptools requires
                 for field in ('Obsoletes', 'Requires', 'Provides'):
-                    del self.metadata[field]
+                    if field in self.metadata:
+                        del self.metadata[field]
 
         reqs = []
 

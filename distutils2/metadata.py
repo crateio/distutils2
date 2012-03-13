@@ -49,7 +49,7 @@ PKG_INFO_ENCODING = 'utf-8'
 
 # preferred version. Hopefully will be changed
 # to 1.2 once PEP 345 is supported everywhere
-PKG_INFO_PREFERRED_VERSION = '1.0'
+PKG_INFO_PREFERRED_VERSION = '1.1'
 
 _LINE_PREFIX = re.compile('\n       \|')
 _241_FIELDS = ('Metadata-Version', 'Name', 'Version', 'Platform',
@@ -102,7 +102,12 @@ def _best_version(fields):
                 return True
         return False
 
-    keys = list(fields)
+    keys = []
+    for key, value in fields.items():
+        if value in ([], 'UNKNOWN', None):
+            continue
+        keys.append(key)
+
     possible_versions = ['1.0', '1.1', '1.2']
 
     # first let's try to see if a field is not part of one of the version
@@ -215,8 +220,9 @@ class Metadata(object):
             self.read_file(fileobj)
         elif mapping is not None:
             self.update(mapping)
+            self.set_metadata_version()
 
-    def _set_best_version(self):
+    def set_metadata_version(self):
         self._fields['Metadata-Version'] = _best_version(self._fields)
 
     def _write_field(self, file, name, value):
@@ -234,7 +240,6 @@ class Metadata(object):
             del self._fields[field_name]
         except KeyError:
             raise KeyError(name)
-        self._set_best_version()
 
     def __contains__(self, name):
         return (name in self._fields or
@@ -336,6 +341,7 @@ class Metadata(object):
                 value = msg[field]
                 if value is not None and value != 'UNKNOWN':
                     self.set(field, value)
+        self.set_metadata_version()
 
     def write(self, filepath):
         """Write the metadata fields to filepath."""
@@ -347,7 +353,8 @@ class Metadata(object):
 
     def write_file(self, fileobject):
         """Write the PKG-INFO format data to a file object."""
-        self._set_best_version()
+        self.set_metadata_version()
+
         for field in _version2fieldlist(self['Metadata-Version']):
             values = self.get(field)
             if field in _ELEMENTSFIELD:
@@ -374,14 +381,6 @@ class Metadata(object):
         Keys that don't match a metadata field or that have an empty value are
         dropped.
         """
-        # XXX the code should just use self.set, which does tbe same checks and
-        # conversions already, but that would break packaging.pypi: it uses the
-        # update method, which does not call _set_best_version (which set
-        # does), and thus allows having a Metadata object (as long as you don't
-        # modify or write it) with extra fields from PyPI that are not fields
-        # defined in Metadata PEPs.  to solve it, the best_version system
-        # should be reworked so that it's called only for writing, or in a new
-        # strict mode, or with a new, more lax Metadata subclass in p7g.pypi
         def _set(key, value):
             if key in _ATTR2FIELD and value:
                 self.set(self._convert_name(key), value)
@@ -442,7 +441,6 @@ class Metadata(object):
                 value = self._remove_line_prefix(value)
 
         self._fields[name] = value
-        self._set_best_version()
 
     def get(self, name, default=_MISSING):
         """Get a metadata field."""
@@ -484,6 +482,8 @@ class Metadata(object):
     def check(self, strict=False, restructuredtext=False):
         """Check if the metadata is compliant. If strict is False then raise if
         no Name or Version are provided"""
+        self.set_metadata_version()
+
         # XXX should check the versions (if the file was loaded)
         missing, warnings = [], []
 
@@ -528,6 +528,7 @@ class Metadata(object):
         Field names will be converted to use the underscore-lowercase style
         instead of hyphen-mixed case (i.e. home_page instead of Home-page).
         """
+        self.set_metadata_version()
         data = {
             'metadata_version': self['Metadata-Version'],
             'name': self['Name'],

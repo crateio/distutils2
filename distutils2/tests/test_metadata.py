@@ -54,7 +54,7 @@ class MetadataTestCase(LoggingCatcher,
         self.assertEqual(len(m.items()), 22)
 
         m = Metadata(mapping=dict(name='Test', version='1.0'))
-        self.assertEqual(len(m.items()), 11)
+        self.assertEqual(len(m.items()), 17)
 
         d = dict(m.items())
         self.assertRaises(TypeError, Metadata,
@@ -266,27 +266,32 @@ class MetadataTestCase(LoggingCatcher,
         self.assertNotIn('Obsoletes', metadata)
 
         metadata['Classifier'] = ['ok']
+        metadata.set_metadata_version()
         self.assertEqual(metadata['Metadata-Version'], '1.1')
 
         metadata = Metadata()
         metadata['Download-URL'] = 'ok'
+        metadata.set_metadata_version()
         self.assertEqual(metadata['Metadata-Version'], '1.1')
 
         metadata = Metadata()
         metadata['Obsoletes'] = 'ok'
+        metadata.set_metadata_version()
         self.assertEqual(metadata['Metadata-Version'], '1.1')
 
         del metadata['Obsoletes']
         metadata['Obsoletes-Dist'] = 'ok'
+        metadata.set_metadata_version()
         self.assertEqual(metadata['Metadata-Version'], '1.2')
-
-        self.assertRaises(MetadataConflictError, metadata.set,
-                          'Obsoletes', 'ok')
+        metadata.set('Obsoletes', 'ok')
+        self.assertRaises(MetadataConflictError,
+                          metadata.set_metadata_version)
 
         del metadata['Obsoletes']
         del metadata['Obsoletes-Dist']
+        metadata.set_metadata_version()
         metadata['Version'] = '1'
-        self.assertEqual(metadata['Metadata-Version'], '1.0')
+        self.assertEqual(metadata['Metadata-Version'], '1.1')
 
         # make sure the _best_version function works okay with
         # non-conflicting fields from 1.1 and 1.2 (i.e. we want only the
@@ -295,16 +300,23 @@ class MetadataTestCase(LoggingCatcher,
         metadata = Metadata()
         metadata['Requires-Python'] = '3'
         metadata['Classifier'] = ['Programming language :: Python :: 3']
+        metadata.set_metadata_version()
         self.assertEqual(metadata['Metadata-Version'], '1.2')
 
         PKG_INFO = os.path.join(os.path.dirname(__file__),
                                 'SETUPTOOLS-PKG-INFO')
         metadata = Metadata(PKG_INFO)
-        self.assertEqual(metadata['Metadata-Version'], '1.0')
+        self.assertEqual(metadata['Metadata-Version'], '1.1')
 
         PKG_INFO = os.path.join(os.path.dirname(__file__),
                                 'SETUPTOOLS-PKG-INFO2')
         metadata = Metadata(PKG_INFO)
+        self.assertEqual(metadata['Metadata-Version'], '1.1')
+
+        # make sure an empty list for Obsoletes and Requires-dist gets ignored
+        metadata['Obsoletes'] = []
+        metadata['Requires-dist'] = []
+        metadata.set_metadata_version()
         self.assertEqual(metadata['Metadata-Version'], '1.1')
 
         # Update the _fields dict directly to prevent 'Metadata-Version'
@@ -371,6 +383,7 @@ class MetadataTestCase(LoggingCatcher,
         metadata = Metadata()
         metadata['Project-URL'] = [('one', 'http://ok')]
         self.assertEqual(metadata['Project-URL'], [('one', 'http://ok')])
+        metadata.set_metadata_version()
         self.assertEqual(metadata['Metadata-Version'], '1.2')
 
         # make sure this particular field is handled properly when written
