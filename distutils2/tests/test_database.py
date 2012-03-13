@@ -330,7 +330,7 @@ class TestDatabase(support.LoggingCatcher,
         found_dists = []
 
         # Verify the fake dists have been found.
-        dists = [dist for dist in get_distributions()]
+        dists = [dist for dist in get_distributions(use_egg_info=False)]
         for dist in dists:
             self.assertIsInstance(dist, Distribution)
             if (dist.name in dict(fake_dists) and
@@ -381,10 +381,10 @@ class TestDatabase(support.LoggingCatcher,
 
         # Verify that it does not find egg-info distributions, when not
         # instructed to
-        self.assertIsNone(get_distribution('bacon'))
-        self.assertIsNone(get_distribution('cheese'))
-        self.assertIsNone(get_distribution('strawberry'))
-        self.assertIsNone(get_distribution('banana'))
+        self.assertIsNone(get_distribution('bacon', use_egg_info=False))
+        self.assertIsNone(get_distribution('cheese', use_egg_info=False))
+        self.assertIsNone(get_distribution('strawberry', use_egg_info=False))
+        self.assertIsNone(get_distribution('banana', use_egg_info=False))
 
         # Now check that it works well in both situations, when egg-info
         # is a file and directory respectively.
@@ -418,24 +418,29 @@ class TestDatabase(support.LoggingCatcher,
         # Test for looking up distributions by what they provide
         checkLists = lambda x, y: self.assertEqual(sorted(x), sorted(y))
 
-        l = [dist.name for dist in provides_distribution('truffles')]
+        l = [dist.name for dist in provides_distribution('truffles',
+                                                         use_egg_info=False)]
         checkLists(l, ['choxie', 'towel-stuff'])
 
-        l = [dist.name for dist in provides_distribution('truffles', '1.0')]
+        l = [dist.name for dist in provides_distribution('truffles', '1.0',
+                                                         use_egg_info=False)]
         checkLists(l, ['choxie'])
 
         l = [dist.name for dist in provides_distribution('truffles', '1.0',
                                                          use_egg_info=True)]
         checkLists(l, ['choxie', 'cheese'])
 
-        l = [dist.name for dist in provides_distribution('truffles', '1.1.2')]
+        l = [dist.name for dist in provides_distribution('truffles', '1.1.2',
+                                                         use_egg_info=False)]
         checkLists(l, ['towel-stuff'])
 
-        l = [dist.name for dist in provides_distribution('truffles', '1.1')]
+        l = [dist.name for dist in provides_distribution('truffles', '1.1',
+                                                         use_egg_info=False)]
         checkLists(l, ['towel-stuff'])
 
         l = [dist.name for dist in provides_distribution('truffles',
-                                                         '!=1.1,<=2.0')]
+                                                         '!=1.1,<=2.0',
+                                                         use_egg_info=False)]
         checkLists(l, ['choxie'])
 
         l = [dist.name for dist in provides_distribution('truffles',
@@ -443,17 +448,20 @@ class TestDatabase(support.LoggingCatcher,
                                                           use_egg_info=True)]
         checkLists(l, ['choxie', 'bacon', 'cheese'])
 
-        l = [dist.name for dist in provides_distribution('truffles', '>1.0')]
+        l = [dist.name for dist in provides_distribution('truffles', '>1.0',
+                                                         use_egg_info=False)]
         checkLists(l, ['towel-stuff'])
 
-        l = [dist.name for dist in provides_distribution('truffles', '>1.5')]
+        l = [dist.name for dist in provides_distribution('truffles', '>1.5',
+                                                         use_egg_info=False)]
         checkLists(l, [])
 
         l = [dist.name for dist in provides_distribution('truffles', '>1.5',
                                                          use_egg_info=True)]
         checkLists(l, ['bacon'])
 
-        l = [dist.name for dist in provides_distribution('truffles', '>=1.0')]
+        l = [dist.name for dist in provides_distribution('truffles', '>=1.0',
+                                                         use_egg_info=False)]
         checkLists(l, ['choxie', 'towel-stuff'])
 
         l = [dist.name for dist in provides_distribution('strawberry', '0.6',
@@ -485,28 +493,33 @@ class TestDatabase(support.LoggingCatcher,
         # Test looking for distributions based on what they obsolete
         checkLists = lambda x, y: self.assertEqual(sorted(x), sorted(y))
 
-        l = [dist.name for dist in obsoletes_distribution('truffles', '1.0')]
+        l = [dist.name for dist in obsoletes_distribution('truffles', '1.0',
+                                                          use_egg_info=False)]
         checkLists(l, [])
 
         l = [dist.name for dist in obsoletes_distribution('truffles', '1.0',
                                                           use_egg_info=True)]
         checkLists(l, ['cheese', 'bacon'])
 
-        l = [dist.name for dist in obsoletes_distribution('truffles', '0.8')]
+        l = [dist.name for dist in obsoletes_distribution('truffles', '0.8',
+                                                          use_egg_info=False)]
         checkLists(l, ['choxie'])
 
         l = [dist.name for dist in obsoletes_distribution('truffles', '0.8',
                                                           use_egg_info=True)]
         checkLists(l, ['choxie', 'cheese'])
 
-        l = [dist.name for dist in obsoletes_distribution('truffles', '0.9.6')]
+        l = [dist.name for dist in obsoletes_distribution('truffles', '0.9.6',
+                                                          use_egg_info=False)]
         checkLists(l, ['choxie', 'towel-stuff'])
 
         l = [dist.name for dist in obsoletes_distribution('truffles',
-                                                          '0.5.2.3')]
+                                                          '0.5.2.3',
+                                                          use_egg_info=False)]
         checkLists(l, ['choxie', 'towel-stuff'])
 
-        l = [dist.name for dist in obsoletes_distribution('truffles', '0.2')]
+        l = [dist.name for dist in obsoletes_distribution('truffles', '0.2',
+                                                          use_egg_info=False)]
         checkLists(l, ['towel-stuff'])
 
     @requires_zlib

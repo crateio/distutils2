@@ -495,7 +495,7 @@ def distinfo_dirname(name, version):
     return '-'.join([name, normalized_version]) + file_extension
 
 
-def get_distributions(use_egg_info=False, paths=None):
+def get_distributions(use_egg_info=True, paths=None):
     """
     Provides an iterator that looks for ``.dist-info`` directories in
     ``sys.path`` and returns :class:`Distribution` instances for each one of
@@ -522,7 +522,7 @@ def get_distributions(use_egg_info=False, paths=None):
                 yield dist
 
 
-def get_distribution(name, use_egg_info=False, paths=None):
+def get_distribution(name, use_egg_info=True, paths=None):
     """
     Scans all elements in ``sys.path`` and looks for all directories
     ending with ``.dist-info``. Returns a :class:`Distribution`
@@ -557,7 +557,7 @@ def get_distribution(name, use_egg_info=False, paths=None):
             return None
 
 
-def obsoletes_distribution(name, version=None, use_egg_info=False):
+def obsoletes_distribution(name, version=None, use_egg_info=True):
     """
     Iterates over all distributions to find which distributions obsolete
     *name*.
@@ -591,7 +591,7 @@ def obsoletes_distribution(name, version=None, use_egg_info=False):
                     break
 
 
-def provides_distribution(name, version=None, use_egg_info=False):
+def provides_distribution(name, version=None, use_egg_info=True):
     """
     Iterates over all distributions to find which distributions provide *name*.
     If a *version* is provided, it will be used to filter the results. Scans
