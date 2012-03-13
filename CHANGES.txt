@@ -111,8 +111,8 @@ CONTRIBUTORS.txt for full names.  Bug numbers refer to http://bugs.python.org/.
   guillermoo, éric]
 - Add 'pysetup generate-setup' to expose util.generate_setup_py [tarek]
 - #11092: Make sdist always include setup.cfg [éric]
-- #12246: Don’t try to install something when running from an uninstalled Python
-  built in its checkout [tschepang, éric]
+- #12246: Don't try to install something when running from an uninstalled Python
+  built in its checkout [tshepang, éric]
 - Add packaging.util.split_multiline [julien m, erik]
 - #11595: Fix assorted bugs in packaging.util.cfg_to_args [erik, éric]
 - #12240: Allow multiple setup hooks [erik, éric]
@@ -173,6 +173,8 @@ CONTRIBUTORS.txt for full names.  Bug numbers refer to http://bugs.python.org/.
 - #14264: Stop removing trailing zeroes in versions [tarek]
 - #14268: Fix small error in a test [tarek]
 - Drop support for Python 2.4 [tarek, éric]
+- Out-of-date documentation removed, people should look at
+  http://docs.python.org/dev/packaging [éric]
 
 
 1.0a3 - 2010-10-08
