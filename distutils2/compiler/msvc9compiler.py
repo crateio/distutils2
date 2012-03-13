@@ -20,7 +20,11 @@ from distutils2.compiler import gen_lib_options
 from distutils2 import logger
 from distutils2.util import get_platform
 
-import winreg
+try:
+    import winreg
+except ImportError:
+    # Python 2 compatibility
+    import _winreg as winreg
 
 RegOpenKeyEx = winreg.OpenKeyEx
 RegEnumKey = winreg.EnumKey
