@@ -10,7 +10,7 @@ main audiences:
 - Developers of packaging-related tools who need a support library to
   build on
 
-Authors will have to write a :file:`setup.cfg` file and run a few
+Authors will have to write a ``setup.cfg`` file and run a few
 commands to package and distribute their code.  End users will be able to
 search for, install and remove Python projects with the included
 ``pysetup`` program.  Last, developers will be able to reuse classes and

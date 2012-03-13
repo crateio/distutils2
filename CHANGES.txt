@@ -169,6 +169,10 @@ CONTRIBUTORS.txt for full names.  Bug numbers refer to http://bugs.python.org/.
 - #13974: add test for util.set_platform [tshepang]
 - #6884: Fix MANIFEST.in parsing bugs on Windows [éric, nadeem]
 - #11841: Fix comparison bug with 'rc' versions [filip]
+- #14263: Fix function name lookup in d2.pypi.wrapper [tarek]
+- #14264: Stop removing trailing zeroes in versions [tarek]
+- #14268: Fix small error in a test [tarek]
+- Drop support for Python 2.4 [tarek, éric]
 
 
 1.0a3 - 2010-10-08
