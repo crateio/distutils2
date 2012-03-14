@@ -18,7 +18,8 @@ from distutils2.util import (
     get_compiler_versions, _MAC_OS_X_LD_VERSION, byte_compile, find_packages,
     spawn, get_pypirc_path, generate_pypirc, read_pypirc, resolve_name, iglob,
     RICH_GLOB, egginfo_to_distinfo, is_setuptools, is_distutils, is_packaging,
-    get_install_method, cfg_to_args, generate_setup_py, encode_multipart)
+    get_install_method, cfg_to_args, generate_setup_py, encode_multipart,
+    parse_requires)
 
 from distutils2.tests import support, unittest
 from distutils2.tests.test_config import SETUP_CFG
@@ -377,6 +378,15 @@ class UtilTestCase(support.EnvironRestorer,
         res = find_packages([root], ['pkg1.pkg2'])
         self.assertEqual(sorted(res),
                          ['pkg1', 'pkg1.pkg3', 'pkg1.pkg3.pkg6', 'pkg5'])
+
+    def test_parse_requires(self):
+        req_file = os.path.join(os.path.dirname(__file__), 'requires.txt')
+        expected_requires = ['setuptools', 'zope.browser', 'zope.component',
+                'zope.configuration', 'zope.contenttype', 'zope.event',
+                'zope.exceptions', 'zope.i18n', 'zope.interface',
+                'zope.location', 'zope.proxy', 'zope.security']
+        requires = parse_requires(req_file)
+        self.assertEqual(requires, expected_requires)
 
     def test_resolve_name(self):
         # test raw module name

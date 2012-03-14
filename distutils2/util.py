@@ -25,6 +25,7 @@ from distutils2 import logger
 from distutils2.errors import (PackagingPlatformError, PackagingFileError,
                                PackagingExecError, InstallationException,
                                PackagingInternalError)
+from distutils2.metadata import Metadata
 from distutils2._backport import shutil, sysconfig
 
 __all__ = [
@@ -1172,6 +1173,71 @@ def _write_record_file(record_path, installed_files):
         f.close()
     return record_path
 
+def parse_requires(req_path):
+    """Takes the raw content of a requires.txt file and returns a list of requirements"""
+
+    # reused from Distribute's pkg_resources
+    def yield_lines(strs):
+        """Yield non-empty/non-comment lines of a ``basestring``
+        or sequence"""
+        if isinstance(strs, basestring):
+            for s in strs.splitlines():
+                s = s.strip()
+                # skip blank lines/comments
+                if s and not s.startswith('#'):
+                    yield s
+        else:
+            for ss in strs:
+                for s in yield_lines(ss):
+                    yield s
+
+    _REQUIREMENT = re.compile(
+        r'(?P<name>[-A-Za-z0-9_.]+)\s*'
+        r'(?P<first>(?:<|<=|!=|==|>=|>)[-A-Za-z0-9_.]+)?\s*'
+        r'(?P<rest>(?:\s*,\s*(?:<|<=|!=|==|>=|>)[-A-Za-z0-9_.]+)*)\s*'
+        r'(?P<extras>\[.*\])?')
+
+    reqs = []
+    try:
+        fp = open(req_path, 'r')
+        try:
+            requires = fp.read()
+        finally:
+            fp.close()
+    except IOError:
+        return None
+
+    for line in yield_lines(requires):
+                if line.startswith('['):
+                    logger.warning('extensions in requires.txt are not supported')
+                    break
+                else:
+                    match = _REQUIREMENT.match(line.strip())
+                    if not match:
+                        # this happens when we encounter extras; since they
+                        # are written at the end of the file we just exit
+                        break
+                    else:
+                        if match.group('extras'):
+                            # msg = ('extra requirements are not supported '
+                                   # '(used by %r %s)', self.name, self.version)
+                            msg = 'extra requirements are not supported'
+                            logger.warning(msg)
+                        name = match.group('name')
+                        version = None
+                        if match.group('first'):
+                            version = match.group('first')
+                            if match.group('rest'):
+                                version += match.group('rest')
+                            version = version.replace(' ', '')  # trim spaces
+                        if version is None:
+                            reqs.append(name)
+                        else:
+                            reqs.append('%s (%s)' % (name, version))
+    return reqs
+
+
+
 
 def egginfo_to_distinfo(record_file, installer=_DEFAULT_INSTALLER,
                         requested=False, remove_egginfo=False):
@@ -1201,6 +1267,17 @@ def egginfo_to_distinfo(record_file, installer=_DEFAULT_INSTALLER,
     metadata_path = distinfo['metadata_path']
     logger.info('creating %s', metadata_path)
     shutil.copy2(distinfo['metadata'], metadata_path)
+    # add requirements and output metadata
+    requires = None
+    req_path = os.path.join(distinfo_dir, 'requires.txt')
+    requires = parse_requires(req_path)
+    if requires is not None:
+        # create a metadata instance to handle the reqs injection
+        metadata = Metadata(path=metadata_path)
+        metadata['Requires-Dist'] = requires
+        metadata.write(metadata_path)
+
+
 
     installer_path = distinfo['installer_path']
     logger.info('creating %s', installer_path)

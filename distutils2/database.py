@@ -15,6 +15,7 @@ from distutils2 import logger
 from distutils2.errors import PackagingError
 from distutils2.version import suggest_normalized_version, VersionPredicate
 from distutils2.metadata import Metadata
+from distutils2.util import parse_requires
 
 
 __all__ = [
@@ -300,11 +301,6 @@ class EggInfoDistribution(object):
     """A :class:`distutils2.metadata.Metadata` instance loaded with
     the distribution's ``METADATA`` file."""
 
-    _REQUIREMENT = re.compile(
-        r'(?P<name>[-A-Za-z0-9_.]+)\s*'
-        r'(?P<first>(?:<|<=|!=|==|>=|>)[-A-Za-z0-9_.]+)?\s*'
-        r'(?P<rest>(?:\s*,\s*(?:<|<=|!=|==|>=|>)[-A-Za-z0-9_.]+)*)\s*'
-        r'(?P<extras>\[.*\])?')
 
     def __init__(self, path):
         self.path = path
@@ -314,20 +310,7 @@ class EggInfoDistribution(object):
             self.version = self.metadata['Version']
             return
 
-        # reused from Distribute's pkg_resources
-        def yield_lines(strs):
-            """Yield non-empty/non-comment lines of a ``basestring``
-            or sequence"""
-            if isinstance(strs, basestring):
-                for s in strs.splitlines():
-                    s = s.strip()
-                    # skip blank lines/comments
-                    if s and not s.startswith('#'):
-                        yield s
-            else:
-                for ss in strs:
-                    for s in yield_lines(ss):
-                        yield s
+
 
         requires = None
 
@@ -335,15 +318,8 @@ class EggInfoDistribution(object):
             if os.path.isdir(path):
                 meta_path = os.path.join(path, 'EGG-INFO', 'PKG-INFO')
                 self.metadata = Metadata(path=meta_path)
-                try:
-                    req_path = os.path.join(path, 'EGG-INFO', 'requires.txt')
-                    fp = open(req_path, 'r')
-                    try:
-                        requires = fp.read()
-                    finally:
-                        fp.close()
-                except IOError:
-                    requires = None
+                req_path = os.path.join(path, 'EGG-INFO', 'requires.txt')
+                requires = parse_requires(req_path)
             else:
                 # FIXME handle the case where zipfile is not available
                 zipf = zipimport.zipimporter(path)
@@ -360,14 +336,8 @@ class EggInfoDistribution(object):
         elif path.endswith('.egg-info'):
             if os.path.isdir(path):
                 path = os.path.join(path, 'PKG-INFO')
-                try:
-                    fp = open(os.path.join(path, 'requires.txt'), 'r')
-                    try:
-                        requires = fp.read()
-                    finally:
-                        fp.close()
-                except IOError:
-                    requires = None
+                req_path = os.path.join(path, 'requires.txt')
+                requires = parse_requires(req_path)
             self.metadata = Metadata(path=path)
             self.name = self.metadata['Name']
             self.version = self.metadata['Version']
@@ -383,40 +353,10 @@ class EggInfoDistribution(object):
                     if field in self.metadata:
                         del self.metadata[field]
 
-        reqs = []
 
-        if requires is not None:
-            for line in yield_lines(requires):
-                if line.startswith('['):
-                    logger.warning(
-                        'extensions in requires.txt are not supported '
-                        '(used by %r %s)', self.name, self.version)
-                    break
-                else:
-                    match = self._REQUIREMENT.match(line.strip())
-                    if not match:
-                        # this happens when we encounter extras; since they
-                        # are written at the end of the file we just exit
-                        break
-                    else:
-                        if match.group('extras'):
-                            msg = ('extra requirements are not supported '
-                                   '(used by %r %s)', self.name, self.version)
-                            logger.warning(msg, self.name)
-                        name = match.group('name')
-                        version = None
-                        if match.group('first'):
-                            version = match.group('first')
-                            if match.group('rest'):
-                                version += match.group('rest')
-                            version = version.replace(' ', '')  # trim spaces
-                        if version is None:
-                            reqs.append(name)
-                        else:
-                            reqs.append('%s (%s)' % (name, version))
 
-            if len(reqs) > 0:
-                self.metadata['Requires-Dist'] += reqs
+        if requires is not None and len(requires)>0:
+            self.metadata['Requires-Dist'] += requires
 
         if _cache_enabled:
             _cache_path_egg[self.path] = self
