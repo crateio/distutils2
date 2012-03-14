@@ -101,7 +101,10 @@ class msvc9compilerTestCase(support.TempdirManager,
         v = Reg.get_value(path, 'dragfullwindows')
         self.assertIn(v, ('0', '1', '2'))
 
-        import winreg
+        try:
+            import winreg
+        except ImportError:
+            import _winreg as winreg
         HKCU = winreg.HKEY_CURRENT_USER
         keys = Reg.read_keys(HKCU, 'xxxx')
         self.assertEqual(keys, None)
