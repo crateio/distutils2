@@ -80,6 +80,7 @@ class register(Command):
     def classifiers(self):
         ''' Fetch the list of classifiers from the server.
         '''
+        # TODO use _trove module
         response = urllib2.urlopen(self.repository+'?:action=list_classifiers')
         logger.info(response.read())
 
