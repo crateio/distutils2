@@ -19,7 +19,7 @@ from distutils2 import logger
 
 _can_read_reg = False
 try:
-    import winreg
+    import _winreg as winreg
 
     _can_read_reg = True
     hkey_mod = winreg
