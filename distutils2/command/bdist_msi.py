@@ -1,3 +1,5 @@
+#-*- coding: utf-8 -*-
+
 """Create a Microsoft Installer (.msi) binary distribution."""
 
 # Copyright (C) 2005, 2006 Martin von Löwis
