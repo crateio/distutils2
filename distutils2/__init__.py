@@ -13,5 +13,5 @@ from logging import getLogger
 
 __all__ = ['__version__', 'logger']
 
-__version__ = "1.0a3"
+__version__ = "1.0a5.dev0"
 logger = getLogger('distutils2')
