@@ -1,18 +1,14 @@
 syntax: glob
 *.py[co]
-__pycache__/
-*.so
-configure.cache
+*.swp
+bin/
+include/
+lib/
+man/
+Distutils2.egg-info
 MANIFEST
 build/
 dist/
-_static/
-_build/
-*.swp
+.tox/
 .coverage
-.tox
-lib
-include
-bin
 nosetests.xml
-Distutils2.egg-info
