@@ -173,7 +173,7 @@ CONTRIBUTORS.txt for full names.  Bug numbers refer to http://bugs.python.org/.
 - #14264: Stop removing trailing zeroes in versions [tarek]
 - #14268: Fix small error in a test [tarek]
 - Drop support for Python 2.4 [tarek, éric]
-- Out-of-date documentation removed, people should look at
+- #13009: Out-of-date documentation removed, people should look at
   http://docs.python.org/dev/packaging [éric]
 
 
