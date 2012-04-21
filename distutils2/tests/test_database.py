@@ -80,12 +80,14 @@ class CommonDistributionTests(FakeDistsMixin):
     attributes are used in test methods.  See source code for details.
     """
 
+    def _get_dist_path(self, distdir):
+        here = os.path.abspath(os.path.dirname(__file__))
+        return os.path.join(here, 'fake_dists', distdir)
+
     def test_instantiation(self):
         # check that useful attributes are here
         name, version, distdir = self.sample_dist
-        here = os.path.abspath(os.path.dirname(__file__))
-        dist_path = os.path.join(here, 'fake_dists', distdir)
-
+        dist_path = self._get_dist_path(distdir)
         dist = self.dist = self.cls(dist_path)
         self.assertEqual(dist.path, dist_path)
         self.assertEqual(dist.name, name)
@@ -99,6 +101,17 @@ class CommonDistributionTests(FakeDistsMixin):
         dist = self.cls(self.dirs[0])
         # just check that the class name is in the repr
         self.assertIn(self.cls.__name__, repr(dist))
+
+    @requires_zlib
+    def test_str(self):
+        name, version, distdir = self.sample_dist
+        dist = self.cls(self._get_dist_path(distdir))
+        self.assertEqual(name, dist.name)
+        # Sanity test: dist.name is unicode,
+        # but str output contains no u prefix.
+        self.assertIsInstance(dist.name, unicode)
+        self.assertEqual(version, dist.version)
+        self.assertEqual(str(dist), self.expected_str_output)
 
     @requires_zlib
     def test_comparison(self):
@@ -128,6 +141,7 @@ class TestDistribution(CommonDistributionTests, unittest.TestCase):
 
     cls = Distribution
     sample_dist = 'choxie', '2.0.0.9', 'choxie-2.0.0.9.dist-info'
+    expected_str_output = 'choxie 2.0.0.9'
 
     def setUp(self):
         super(TestDistribution, self).setUp()
@@ -265,6 +279,7 @@ class TestEggInfoDistribution(CommonDistributionTests,
 
     cls = EggInfoDistribution
     sample_dist = 'bacon', '0.1', 'bacon-0.1.egg-info'
+    expected_str_output = 'bacon 0.1'
 
     def setUp(self):
         super(TestEggInfoDistribution, self).setUp()

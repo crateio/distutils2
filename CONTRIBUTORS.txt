@@ -59,6 +59,7 @@ Thanks to:
 - Gaël Pasgrimaud
 - George Peristerakis
 - Mathieu Perreault
+- Guillaume Pratte
 - Sean Reifschneider
 - Antoine Reversat
 - Arc Riley

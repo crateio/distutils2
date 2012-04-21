@@ -71,18 +71,16 @@ class DependencyGraph:
         """
         self.missing[distribution].append(requirement)
 
-    def _repr_dist(self, dist):
-        return '%r %s' % (dist.name, dist.version)
-
     def repr_node(self, dist, level=1):
         """Prints only a subgraph"""
         output = []
-        output.append(self._repr_dist(dist))
+        output.append(str(dist))
+        # XXX: this code needs cleanup
         for other, label in self.adjacency_list[dist]:
-            dist = self._repr_dist(other)
+            dist = str(other)
             if label is not None:
                 dist = '%s [%s]' % (dist, label)
-            output.append('    ' * level + str(dist))
+            output.append('    ' * level + dist)
             suboutput = self.repr_node(other, level + 1)
             subs = suboutput.split('\n')
             output.extend(subs[1:])

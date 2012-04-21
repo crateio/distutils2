@@ -161,6 +161,9 @@ class Distribution(object):
         return '<Distribution %r %s at %r>' % (
             self.name, self.version, self.path)
 
+    def __str__(self):
+        return "%s %s" % (self.name, self.version)
+
     def _get_records(self, local=False):
         results = []
         record = self.get_distinfo_file('RECORD')
@@ -364,6 +367,9 @@ class EggInfoDistribution(object):
     def __repr__(self):
         return '<EggInfoDistribution %r %s at %r>' % (
             self.name, self.version, self.path)
+
+    def __str__(self):
+        return "%s %s" % (self.name, self.version)
 
     def list_installed_files(self, local=False):
 

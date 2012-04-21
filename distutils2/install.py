@@ -183,7 +183,7 @@ def install_dists(dists, path, paths=None):
 
     installed_dists = []
     for dist in dists:
-        logger.info('Installing %r %s...', dist.name, dist.version)
+        logger.info('Installing %s...', dist)
         try:
             _install_dist(dist, path)
             installed_dists.append(dist)
