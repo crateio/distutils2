@@ -480,7 +480,7 @@ class Metadata(object):
         return value
 
     def check(self, strict=False, restructuredtext=False):
-        """Check if the metadata is compliant. If strict is False then raise if
+        """Check if the metadata is compliant. If strict is True then raise if
         no Name or Version are provided"""
         self.set_metadata_version()
 
