@@ -2,7 +2,9 @@
 import os
 import sys
 from StringIO import StringIO
+from distutils2.errors import PackagingPlatformError
 from distutils2.command.bdist import bdist, show_formats
+
 from distutils2.tests import unittest, support
 
 
@@ -42,6 +44,17 @@ class BuildTestCase(support.TempdirManager,
             subcmd = cmd.get_finalized_command(name)
             self.assertTrue(subcmd.skip_build,
                             '%s should take --skip-build from bdist' % name)
+
+    def test_unsupported_platform(self):
+        _os_name = os.name
+        try:
+            os.name = 'some-obscure-os'
+
+            dist = self.create_dist()[1]
+            cmd = bdist(dist)
+            self.assertRaises(PackagingPlatformError, cmd.ensure_finalized)
+        finally:
+            os.name = _os_name
 
     def test_show_formats(self):
         saved = sys.stdout
