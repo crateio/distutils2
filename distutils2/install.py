@@ -58,7 +58,7 @@ def _move_files(files, destination):
         yield old, new
 
 
-def _run_distutils_install(path):
+def _run_distutils_install(path, dest):
     # backward compat: using setuptools or plain-distutils
     cmd = '%s setup.py install --record=%s'
     record_file = os.path.join(path, 'RECORD')
@@ -69,7 +69,7 @@ def _run_distutils_install(path):
         egginfo_to_distinfo(record_file, remove_egginfo=True)
 
 
-def _run_setuptools_install(path):
+def _run_setuptools_install(path, dest):
     cmd = '%s setup.py install --record=%s --single-version-externally-managed'
     record_file = os.path.join(path, 'RECORD')
 
@@ -80,12 +80,12 @@ def _run_setuptools_install(path):
         egginfo_to_distinfo(record_file, remove_egginfo=True)
 
 
-def _run_packaging_install(path):
+def _run_packaging_install(path, dest):
     # XXX check for a valid setup.cfg?
     dist = Distribution()
     dist.parse_config_files()
     try:
-        dist.run_command('install_dist')
+        dist.run_command('install_dist', dict(prefix=(None,dest)))
         name = dist.metadata['Name']
         return database.get_distribution(name) is not None
     except (IOError, os.error, PackagingError, CCompilerError), msg:
@@ -106,7 +106,7 @@ def _install_dist(dist, path):
     if where is None:
         raise ValueError('Cannot locate the unpacked archive')
 
-    return _run_install_from_archive(where)
+    return _run_install_from_archive(where, path)
 
 
 def install_local_project(path):
@@ -134,14 +134,14 @@ def install_local_project(path):
         return False
 
 
-def _run_install_from_archive(source_dir):
+def _run_install_from_archive(source_dir, dest_dir):
     # XXX need a better way
     for item in os.listdir(source_dir):
         fullpath = os.path.join(source_dir, item)
         if os.path.isdir(fullpath):
             source_dir = fullpath
             break
-    return _run_install_from_dir(source_dir)
+    return _run_install_from_dir(source_dir, dest_dir)
 
 
 install_methods = {
@@ -150,7 +150,7 @@ install_methods = {
     'distutils': _run_distutils_install}
 
 
-def _run_install_from_dir(source_dir):
+def _run_install_from_dir(source_dir, destination_dir=None):
     old_dir = os.getcwd()
     os.chdir(source_dir)
     install_method = get_install_method(source_dir)
@@ -158,7 +158,7 @@ def _run_install_from_dir(source_dir):
     try:
         func = install_methods[install_method]
         try:
-            func(source_dir)
+            func(source_dir, destination_dir)
             return True
         except ValueError, err:
             # failed to install
