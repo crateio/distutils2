@@ -10,7 +10,7 @@ except ImportError:
     DOCUTILS_SUPPORT = False
 
 from distutils2.tests import unittest, support
-from distutils2.tests.support import Inputs
+from distutils2.tests.support import (Inputs, requires_docutils)
 from distutils2.command import register as register_module
 from distutils2.command.register import register
 from distutils2.errors import PackagingSetupError
@@ -253,12 +253,10 @@ class RegisterTestCase(support.TempdirManager,
         self.assertEqual(data['metadata_version'], '1.2')
         self.assertEqual(data['requires_dist'], ['lxml'])
 
+    @requires_docutils
     def test_register_invalid_long_description(self):
-        readme_file = os.path.join(os.path.dirname(__file__),
-                'fake_dists', 'python-pager-readme.rst')
-
-        # Contains :func: which break the rst format 
-        data = "".join(open(readme_file).readlines())
+        # Contains :func: which break the rst format
+        data = "Default :func:`prompt` callback shows"
 
         metadata = {'Home-page': 'xxx', 'Author': 'xxx',
                     'Author-email': 'xxx',
@@ -270,7 +268,10 @@ class RegisterTestCase(support.TempdirManager,
         cmd.strict = True
         inputs = Inputs('2', 'tarek', 'tarek@ziade.org')
         register_module.raw_input = inputs
-        self.assertRaises(PackagingSetupError, cmd.run)
+        with self.assertRaises(PackagingSetupError) as e:
+            cmd.run()
+        self.assertIsNotNone(e)
+        self.assertIn('func', repr(e.exception))
 
 def test_suite():
     return unittest.makeSuite(RegisterTestCase)

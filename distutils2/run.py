@@ -397,8 +397,9 @@ class Dispatcher(object):
 
         allowed = [action[0] for action in actions] + [None]
         if self.action not in allowed:
-            msg = 'Unrecognized action "%s"' % self.action
-            raise PackagingArgError(msg)
+            msg = 'Unrecognized action %s' % self.action
+            self.show_help()
+            self.exit_with_error_msg(msg)
 
         self._set_logger()
         self.args = args
@@ -444,7 +445,8 @@ class Dispatcher(object):
         try:
             cmd_class = get_command_class(command)
         except PackagingModuleError, msg:
-            raise PackagingArgError(msg)
+            self.show_help()
+            self.exit_with_error_msg(msg)
 
         # XXX We want to push this in distutils2.command
         #
@@ -485,7 +487,11 @@ class Dispatcher(object):
                                 cmd_class.user_options +
                                 help_options)
         parser.set_negative_aliases(_negative_opt)
-        args, opts = parser.getopt(args[1:])
+        try:
+            args, opts = parser.getopt(args[1:])
+        except PackagingArgError, msg:
+            self.show_help()
+            self.exit_with_error_msg(msg)
 
         if hasattr(opts, 'help') and opts.help:
             self._show_command_help(cmd_class)
@@ -529,6 +535,9 @@ class Dispatcher(object):
 
     def show_help(self):
         self._show_help(self.parser)
+
+    def exit_with_error_msg(self, msg):
+        sys.exit('error: ' + msg.__str__())
 
     def print_usage(self, parser):
         parser.set_option_table(global_options)

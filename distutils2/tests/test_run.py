@@ -8,7 +8,7 @@ from distutils2 import install
 from distutils2.tests import unittest, support
 from distutils2.run import main
 
-from distutils2.tests.support import assert_python_ok
+from distutils2.tests.support import assert_python_ok, assert_python_failure
 
 # setup script that uses __file__
 setup_using___file__ = """\
@@ -93,6 +93,36 @@ class RunTestCase(support.TempdirManager,
         self.assertTrue(check_position, out)  # "out" printed as debugging aid
         self.assertTrue(build_position, out)
         self.assertLess(check_position, build_position, out)
+
+    def test_unknown_run_option(self):
+        status, out, err = assert_python_failure(
+            '-c', 'from distutils2.run import main; main()', 'run', 'build',
+            '--unknown', PYTHONPATH=self.get_pythonpath()
+        )
+        self.assertEqual(status, 1)
+        self.assertGreater(out, '')
+        self.assertEqual(err.splitlines()[-1],
+                        'error: option --unknown not recognized')
+
+    def test_unknown_command(self):
+        status, out, err = assert_python_failure(
+            '-c', 'from distutils2.run import main; main()', 'run',
+            'invalid_command', PYTHONPATH=self.get_pythonpath()
+        )
+        self.assertEqual(status, 1)
+        self.assertGreater(out, 1)
+        self.assertEqual(err.splitlines()[-1],
+            'error: Invalid command invalid_command')
+
+    def test_unknown_action(self):
+        status, out, err = assert_python_failure(
+            '-c', 'from distutils2.run import main; main()', 'invalid_action',
+            PYTHONPATH=self.get_pythonpath()
+        )
+        self.assertEqual(status, 1)
+        self.assertGreater(out, 1)
+        self.assertEqual(err.splitlines()[-1],
+            'error: Unrecognized action invalid_action')
 
         # TODO test that custom commands don't break --list-commands
 
