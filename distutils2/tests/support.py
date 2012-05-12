@@ -46,6 +46,10 @@ try:
     import zlib
 except ImportError:
     zlib = None
+try:
+    import docutils
+except ImportError:
+    docutils = None
 
 from distutils2.dist import Distribution
 from distutils2.util import resolve_name
@@ -63,7 +67,7 @@ __all__ = [
     # misc. functions and decorators
     'fake_dec', 'create_distribution', 'use_command',
     'copy_xxmodule_c', 'fixup_build_ext',
-    'requires_py26_min', 'skip_2to3_optimize',
+    'requires_py26_min', 'skip_2to3_optimize', 'requires_docutils',
     # imported from this module for backport purposes
     'unittest', 'requires_zlib', 'skip_unless_symlink',
 ]
@@ -410,6 +414,8 @@ requires_py26_min = unittest.skipIf(sys.version_info[:2] < (2, 6),
                                     'requires Python 2.6 or higher')
 
 requires_zlib = unittest.skipUnless(zlib, 'requires zlib')
+
+requires_docutils = unittest.skipUnless(docutils, 'requires docutils')
 
 
 def unlink(filename):

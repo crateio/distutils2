@@ -12,7 +12,7 @@ from distutils2.metadata import Metadata, PKG_INFO_PREFERRED_VERSION
 
 from distutils2.tests import unittest
 from distutils2.tests.support import (LoggingCatcher, TempdirManager,
-                                      EnvironRestorer)
+                                      EnvironRestorer, requires_docutils)
 
 
 class MetadataTestCase(LoggingCatcher,
@@ -379,6 +379,7 @@ class MetadataTestCase(LoggingCatcher,
         folded_desc = desc.replace('\n', '\n' + (7 * ' ') + '|')
         self.assertIn(folded_desc, out.getvalue())
 
+    @requires_docutils
     def test_description_invalid_rst(self):
         # make sure bad rst is well handled in the description attribute
         metadata = Metadata()
