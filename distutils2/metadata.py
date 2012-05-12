@@ -36,7 +36,7 @@ try:
         def system_message(self, level, message, *children, **kwargs):
             self.messages.append((level, message, children, kwargs))
             return nodes.system_message(message, level=level, type=self.
-                    levels[level], *children, **kwargs)
+                                        levels[level], *children, **kwargs)
 
 
     _HAS_DOCUTILS = True
@@ -279,7 +279,7 @@ class Metadata(object):
         document.note_source(source_path, -1)
         try:
             parser.parse(data, document)
-        except (AttributeError, TypeError):
+        except AttributeError:
             reporter.messages.append((-1, 'Could not finish the parsing.',
                                       '', {}))
 
