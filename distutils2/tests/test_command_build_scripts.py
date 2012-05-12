@@ -20,7 +20,7 @@ class BuildScriptsTestCase(support.TempdirManager,
 
         cmd.finalize_options()
 
-        self.assertTrue(cmd.force)
+        self.assertFalse(cmd.force)
         self.assertEqual(cmd.build_dir, "/foo/bar")
 
     def test_build(self):
@@ -38,13 +38,13 @@ class BuildScriptsTestCase(support.TempdirManager,
         for name in expected:
             self.assertIn(name, built)
 
-    def get_build_scripts_cmd(self, target, scripts):
+    def get_build_scripts_cmd(self, target, scripts, executable=sys.executable):
         dist = Distribution()
         dist.scripts = scripts
         dist.command_obj["build"] = support.DummyCommand(
             build_scripts=target,
-            force=True,
-            executable=sys.executable,
+            force=False,
+            executable=executable,
             use_2to3=False,
             use_2to3_fixers=None,
             convert_2to3_doctests=None
@@ -105,6 +105,25 @@ class BuildScriptsTestCase(support.TempdirManager,
         for name in expected:
             self.assertIn(name, built)
 
+    def test_build_dir_recreated(self):
+        source = self.mkdtemp()
+        target = self.mkdtemp()
+        self.write_script(source, 'taunt', '#! /usr/bin/python')
+
+        built = os.path.join(target, 'taunt')
+
+        cmd = self.get_build_scripts_cmd(target, [os.path.join(source, 'taunt')], 'pythona')
+        cmd.finalize_options()
+        cmd.run()
+
+        self.assertEqual(open(built).readline(), '#!pythona\n')
+
+        cmd = self.get_build_scripts_cmd(target, [os.path.join(source, 'taunt')], 'pythonx')
+        cmd.finalize_options()
+        cmd.run()
+
+        self.assertEqual(open(built).readline(), '#!pythonx\n')
+        
 def test_suite():
     return unittest.makeSuite(BuildScriptsTestCase)
 

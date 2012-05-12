@@ -8,6 +8,11 @@ their clones, and all changes that have a bug report.  Contributors' first names
 (and last name initial when needed) are given for each item; see
 CONTRIBUTORS.txt for full names.  Bug numbers refer to http://bugs.python.org/.
 
+1.0a5 - 2012-xx-xx
+------------------
+
+- #10374 Now creating scripts everytime when build_scripts is called,
+  as a side effect, --force option has been removed [PierrePaul]
 
 1.0a4 - 2012-03-13
 ------------------
