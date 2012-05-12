@@ -110,7 +110,9 @@ def _install_dist(dist, path):
 
 
 def install_local_project(path):
-    """Install a distribution from a source directory.
+    """Install a distribution from a source directory or archive.
+
+    If *path* is an archive, it will be unarchived first.
 
     If the source directory contains a setup.py install using distutils1.
     If a setup.cfg is found, install using the install_dist command.
