@@ -276,7 +276,7 @@ class Metadata(object):
         document.note_source(source_path, -1)
         try:
             parser.parse(data, document)
-        except AttributeError:
+        except (AttributeError, TypeError):
             reporter.messages.append((-1, 'Could not finish the parsing.',
                                       '', {}))
 

@@ -253,6 +253,24 @@ class RegisterTestCase(support.TempdirManager,
         self.assertEqual(data['metadata_version'], '1.2')
         self.assertEqual(data['requires_dist'], ['lxml'])
 
+    def test_register_invalid_long_description(self):
+        readme_file = os.path.join(os.path.dirname(__file__),
+                'fake_dists', 'python-pager-readme.rst')
+
+        # Contains :func: which break the rst format 
+        data = "".join(open(readme_file).readlines())
+
+        metadata = {'Home-page': 'xxx', 'Author': 'xxx',
+                    'Author-email': 'xxx',
+                    'Name': 'xxx', 'Version': 'xxx'}
+
+        metadata['Description'] = data
+        cmd = self._get_cmd(metadata)
+        cmd.ensure_finalized()
+        cmd.strict = True
+        inputs = Inputs('2', 'tarek', 'tarek@ziade.org')
+        register_module.raw_input = inputs
+        self.assertRaises(PackagingSetupError, cmd.run)
 
 def test_suite():
     return unittest.makeSuite(RegisterTestCase)
