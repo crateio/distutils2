@@ -1,6 +1,8 @@
 """Tests for the distutils2.install module."""
 import os
 import logging
+import sys
+
 from tempfile import mkstemp
 
 from distutils2 import install
@@ -257,6 +259,26 @@ class TestInstall(LoggingCatcher, TempdirManager, unittest.TestCase):
             install._update_infos(dict1, dict2)
             for key in expect:
                 self.assertEqual(expect[key], dict1[key])
+
+    def test_install_custom_dir(self):
+        dest = self.mkdtemp()
+        src = self.mkdtemp()
+
+        project_dir, dist = self.create_dist(
+            name='Spamlib', version='0.1',
+            data_files={'spamd': '{scripts}/spamd'})
+
+        dist.name = MagicMock(return_value='Spamlib')
+        dist.version = MagicMock(return_value='0.1')
+        dist.unpack = MagicMock(return_value=project_dir)
+
+        self.write_file([project_dir, 'setup.cfg'],
+                        ("[metadata]\n"
+                         "name = mypackage\n"
+                         "version = 0.1.0\n"))
+
+        install.install_from_infos(dest, install=[dist])
+        self.assertEqual(len(os.listdir(dest)), 1)
 
     def test_install_dists_rollback(self):
         # if one of the distribution installation fails, call uninstall on all

@@ -308,7 +308,7 @@ def _list(dispatcher, args, **kw):
 
     number = 0
     for dist in results:
-        print '%r %s (from %r)' % (dist.name, dist.version, dist.path)
+        print "%s (from %r)" % (dist, dist.path)
         number += 1
 
     if number == 0:

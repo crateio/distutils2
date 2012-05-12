@@ -35,6 +35,9 @@ try:
 
         def system_message(self, level, message, *children, **kwargs):
             self.messages.append((level, message, children, kwargs))
+            return nodes.system_message(message, level=level, type=self.
+                    levels[level], *children, **kwargs)
+
 
     _HAS_DOCUTILS = True
 except ImportError:
@@ -480,7 +483,7 @@ class Metadata(object):
         return value
 
     def check(self, strict=False, restructuredtext=False):
-        """Check if the metadata is compliant. If strict is False then raise if
+        """Check if the metadata is compliant. If strict is True then raise if
         no Name or Version are provided"""
         self.set_metadata_version()
 
