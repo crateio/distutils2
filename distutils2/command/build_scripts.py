@@ -20,17 +20,12 @@ class build_scripts(Command, Mixin2to3):
 
     user_options = [
         ('build-dir=', 'd', "directory to build (copy) to"),
-        ('force', 'f', "forcibly build everything (ignore file timestamps"),
         ('executable=', 'e', "specify final destination interpreter path"),
         ]
-
-    boolean_options = ['force']
-
 
     def initialize_options(self):
         self.build_dir = None
         self.scripts = None
-        self.force = None
         self.executable = None
         self.outfiles = None
         self.use_2to3 = False
@@ -41,7 +36,7 @@ class build_scripts(Command, Mixin2to3):
         self.set_undefined_options('build',
                                    ('build_scripts', 'build_dir'),
                                    'use_2to3', 'use_2to3_fixers',
-                                   'convert_2to3_doctests', 'force',
+                                   'convert_2to3_doctests',
                                    'executable')
         self.scripts = self.distribution.scripts
 
@@ -61,6 +56,7 @@ class build_scripts(Command, Mixin2to3):
         ie. starts with "\#!" and contains "python"), then adjust the first
         line to refer to the current Python interpreter as we copy.
         """
+        self.rmpath(self.build_dir)
         self.mkpath(self.build_dir)
         outfiles = []
         for script in self.scripts:
@@ -68,10 +64,6 @@ class build_scripts(Command, Mixin2to3):
             script = convert_path(script)
             outfile = os.path.join(self.build_dir, os.path.basename(script))
             outfiles.append(outfile)
-
-            if not self.force and not newer(script, outfile):
-                logger.debug("not copying %s (up-to-date)", script)
-                continue
 
             # Always open the file, but ignore failures in dry-run mode --
             # that way, we'll get accurate feedback if we can read the

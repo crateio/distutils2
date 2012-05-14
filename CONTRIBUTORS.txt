@@ -42,6 +42,7 @@ Thanks to:
 - Jeremy Kloth
 - Amos Latteier
 - Mathieu Leduc-Hamel
+- Pierre Paul Lefebvre
 - Tshepang Lekhonkhobe
 - Alain Leufroy
 - Martin von Löwis
