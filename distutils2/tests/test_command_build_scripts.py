@@ -123,6 +123,41 @@ class BuildScriptsTestCase(support.TempdirManager,
         cmd.run()
 
         self.assertEqual(open(built).readline(), '#!pythonx\n')
+
+    def test_build_old_scripts_deleted(self):
+        source = self.mkdtemp()
+
+        expected = []
+        expected.append("script1.py")
+        self.write_script(source, "script1.py",
+                          ("#! /usr/bin/env python2.3\n"
+                           "# bogus script w/ Python sh-bang\n"
+                           "pass\n"))
+        expected.append("script2.py")
+        self.write_script(source, "script2.py",
+                          ("#!/usr/bin/python\n"
+                           "# bogus script w/ Python sh-bang\n"
+                           "pass\n"))
+
+        target = self.mkdtemp()
+        cmd = self.get_build_scripts_cmd(target,
+                                         [os.path.join(source, fn)
+                                          for fn in expected])
+        cmd.finalize_options()
+        cmd.run()
+
+        built = os.listdir(target)
+        for name in expected:
+            self.assertIn(name, built)
+
+        cmd = self.get_build_scripts_cmd(target, 
+                                        [os.path.join(source, 'script1.py')])
+        cmd.finalize_options()
+        cmd.run()
+
+        built = os.listdir(target)
+        self.assertIn('script1.py', built)
+        self.assertNotIn('script2.py', built)
         
 def test_suite():
     return unittest.makeSuite(BuildScriptsTestCase)

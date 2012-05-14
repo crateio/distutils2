@@ -56,6 +56,7 @@ class build_scripts(Command, Mixin2to3):
         ie. starts with "\#!" and contains "python"), then adjust the first
         line to refer to the current Python interpreter as we copy.
         """
+        self.rmpath(self.build_dir)
         self.mkpath(self.build_dir)
         outfiles = []
         for script in self.scripts:
