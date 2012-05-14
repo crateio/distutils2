@@ -436,6 +436,7 @@ class Dispatcher(object):
         # Pull the current command from the head of the command line
         command = args[0]
         if not command_re.match(command):
+            self.show_help()
             raise SystemExit("invalid command name %r" % (command,))
         self.commands.append(command)
 
@@ -537,7 +538,7 @@ class Dispatcher(object):
         self._show_help(self.parser)
 
     def exit_with_error_msg(self, msg):
-        sys.exit('error: ' + msg.__str__())
+        sys.exit('error: %s ' % msg)
 
     def print_usage(self, parser):
         parser.set_option_table(global_options)
