@@ -1,7 +1,6 @@
 """PEP 376 implementation."""
 
 import os
-import re
 import csv
 import sys
 import zipimport
@@ -11,7 +10,6 @@ try:
 except ImportError:
     from distutils2._backport.hashlib import md5
 
-from distutils2 import logger
 from distutils2.errors import PackagingError
 from distutils2.version import suggest_normalized_version, VersionPredicate
 from distutils2.metadata import Metadata
