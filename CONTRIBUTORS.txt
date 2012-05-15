@@ -20,6 +20,7 @@ Thanks to:
 - Francisco Martín Brugué
 - Nicolas Cadou
 - Godefroid Chapelle
+- Julien Courteau
 - Christophe Combelles
 - Jason R. Coombs
 - Pierre-Yves David
@@ -31,12 +32,14 @@ Thanks to:
 - Boris Feld
 - Andrew Francis
 - Hallvard B Furuseth
+- Patrice Gauthier
 - Yannick Gingras
 - Filip Gruszczyński
 - Walker Hale IV
 - Alexandre Hamelin
 - Kelsey Hightower
 - Thomas Holmes
+- Preston Holmes
 - Christian Hudon
 - Julien Jehannet
 - Jeremy Kloth

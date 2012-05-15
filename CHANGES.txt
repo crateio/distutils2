@@ -11,8 +11,14 @@ CONTRIBUTORS.txt for full names.  Bug numbers refer to http://bugs.python.org/.
 1.0a5 - 2012-xx-xx
 ------------------
 
-- #10374 Now creating scripts everytime when build_scripts is called,
-  as a side effect, --force option has been removed [PierrePaul]
+- #14294: Let Metadata convert setuptools-style requires.txt [preston]
+- #14270: Add dest_dir parameter to install functions [mathieu]
+- #13166: Add __str__ to database.*Distribution for nicer output [guillaume]
+- #13614: Fix register failure with invalid rst in description [julien c,
+  mathieu, pierre paul, éric]
+- #13399: Display error message instead of unhandled traceback for missing
+  actions, commands and options [patrice]
+- #10374: Recreate scripts everytime build_scripts is called [pierre paul]
 
 1.0a4 - 2012-03-13
 ------------------
