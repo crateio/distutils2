@@ -383,8 +383,8 @@ class MetadataTestCase(LoggingCatcher,
     def test_description_invalid_rst(self):
         # make sure bad rst is well handled in the description attribute
         metadata = Metadata()
-        description_with_bad_rst = ':funkie:`str`'  # Sphinx-specific markup
-        metadata['description'] = description_with_bad_rst
+        description = ':funkie:`str`'  # mimic Sphinx-specific markup
+        metadata['description'] = description
         missing, warnings = metadata.check(restructuredtext=True)
         warning = warnings[0][1]
         self.assertIn('funkie', warning)

@@ -21,7 +21,7 @@ class TestingSupportTestCase(unittest.TestCase):
             def runTest(self):
                 # empty method required for the backport
                 pass
-		
+
             def test_mktempfile(self2):
                 tmpfile = self2.mktempfile()
                 files['test_mktempfile'] = tmpfile.name

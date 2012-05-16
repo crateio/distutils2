@@ -302,7 +302,6 @@ class EggInfoDistribution(object):
     """A :class:`distutils2.metadata.Metadata` instance loaded with
     the distribution's ``METADATA`` file."""
 
-
     def __init__(self, path):
         self.path = path
         if _cache_enabled and path in _cache_path_egg:
@@ -310,8 +309,6 @@ class EggInfoDistribution(object):
             self.name = self.metadata['Name']
             self.version = self.metadata['Version']
             return
-
-
 
         requires = None
 
@@ -347,16 +344,12 @@ class EggInfoDistribution(object):
             raise ValueError('path must end with .egg-info or .egg, got %r' %
                              path)
 
-        if requires is not None:
+        if requires:
             if self.metadata['Metadata-Version'] == '1.1':
                 # we can't have 1.1 metadata *and* Setuptools requires
                 for field in ('Obsoletes', 'Requires', 'Provides'):
                     if field in self.metadata:
                         del self.metadata[field]
-
-
-
-        if requires is not None and len(requires)>0:
             self.metadata['Requires-Dist'] += requires
 
         if _cache_enabled:

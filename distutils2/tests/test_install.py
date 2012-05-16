@@ -1,7 +1,6 @@
 """Tests for the distutils2.install module."""
 import os
 import logging
-import sys
 
 from tempfile import mkstemp
 
@@ -262,7 +261,6 @@ class TestInstall(LoggingCatcher, TempdirManager, unittest.TestCase):
 
     def test_install_custom_dir(self):
         dest = self.mkdtemp()
-        src = self.mkdtemp()
 
         project_dir, dist = self.create_dist(
             name='Spamlib', version='0.1',

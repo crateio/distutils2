@@ -1173,13 +1173,16 @@ def _write_record_file(record_path, installed_files):
         f.close()
     return record_path
 
+
 def parse_requires(req_path):
-    """Takes the raw content of a requires.txt file and returns a list of requirements"""
+    """Create a list of dependencies from a requires.txt file.
+
+    *req_path* must be the path to a setuptools-produced requires.txt file.
+    """
 
     # reused from Distribute's pkg_resources
     def yield_lines(strs):
-        """Yield non-empty/non-comment lines of a ``basestring``
-        or sequence"""
+        """Yield non-empty/non-comment lines of a string or sequence"""
         if isinstance(strs, basestring):
             for s in strs.splitlines():
                 s = s.strip()
@@ -1208,35 +1211,33 @@ def parse_requires(req_path):
         return None
 
     for line in yield_lines(requires):
-                if line.startswith('['):
-                    logger.warning('extensions in requires.txt are not supported')
-                    break
+        if line.startswith('['):
+            logger.warning('extensions in requires.txt are not supported')
+            break
+        else:
+            match = _REQUIREMENT.match(line.strip())
+            if not match:
+                # this happens when we encounter extras; since they
+                # are written at the end of the file we just exit
+                break
+            else:
+                if match.group('extras'):
+                    # msg = ('extra requirements are not supported '
+                    # '(used by %r %s)', self.name, self.version)
+                    msg = 'extra requirements are not supported'
+                    logger.warning(msg)
+                name = match.group('name')
+                version = None
+                if match.group('first'):
+                    version = match.group('first')
+                    if match.group('rest'):
+                        version += match.group('rest')
+                    version = version.replace(' ', '')  # trim spaces
+                if version is None:
+                    reqs.append(name)
                 else:
-                    match = _REQUIREMENT.match(line.strip())
-                    if not match:
-                        # this happens when we encounter extras; since they
-                        # are written at the end of the file we just exit
-                        break
-                    else:
-                        if match.group('extras'):
-                            # msg = ('extra requirements are not supported '
-                                   # '(used by %r %s)', self.name, self.version)
-                            msg = 'extra requirements are not supported'
-                            logger.warning(msg)
-                        name = match.group('name')
-                        version = None
-                        if match.group('first'):
-                            version = match.group('first')
-                            if match.group('rest'):
-                                version += match.group('rest')
-                            version = version.replace(' ', '')  # trim spaces
-                        if version is None:
-                            reqs.append(name)
-                        else:
-                            reqs.append('%s (%s)' % (name, version))
+                    reqs.append('%s (%s)' % (name, version))
     return reqs
-
-
 
 
 def egginfo_to_distinfo(record_file, installer=_DEFAULT_INSTALLER,
@@ -1276,8 +1277,6 @@ def egginfo_to_distinfo(record_file, installer=_DEFAULT_INSTALLER,
         metadata = Metadata(path=metadata_path)
         metadata['Requires-Dist'] = requires
         metadata.write(metadata_path)
-
-
 
     installer_path = distinfo['installer_path']
     logger.info('creating %s', installer_path)

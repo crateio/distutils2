@@ -3,14 +3,9 @@
 import os
 import getpass
 import urllib2
-try:
-    import docutils
-    DOCUTILS_SUPPORT = True
-except ImportError:
-    DOCUTILS_SUPPORT = False
 
 from distutils2.tests import unittest, support
-from distutils2.tests.support import (Inputs, requires_docutils)
+from distutils2.tests.support import Inputs, requires_docutils
 from distutils2.command import register as register_module
 from distutils2.command.register import register
 from distutils2.errors import PackagingSetupError
@@ -188,7 +183,7 @@ class RegisterTestCase(support.TempdirManager,
         self.assertEqual(headers['Content-length'], '298')
         self.assertIn('tarek', req.data)
 
-    @unittest.skipUnless(DOCUTILS_SUPPORT, 'needs docutils')
+    @requires_docutils
     def test_strict(self):
         # testing the strict option: when on, the register command stops if the
         # metadata is incomplete or if description contains bad reST
@@ -255,14 +250,11 @@ class RegisterTestCase(support.TempdirManager,
 
     @requires_docutils
     def test_register_invalid_long_description(self):
-        # Contains :func: which break the rst format
-        data = "Default :func:`prompt` callback shows"
-
+        description = ':funkie:`str`'  # mimic Sphinx-specific markup
         metadata = {'Home-page': 'xxx', 'Author': 'xxx',
                     'Author-email': 'xxx',
-                    'Name': 'xxx', 'Version': 'xxx'}
-
-        metadata['Description'] = data
+                    'Name': 'xxx', 'Version': 'xxx',
+                    'Description': description}
         cmd = self._get_cmd(metadata)
         cmd.ensure_finalized()
         cmd.strict = True
@@ -270,8 +262,8 @@ class RegisterTestCase(support.TempdirManager,
         register_module.raw_input = inputs
         with self.assertRaises(PackagingSetupError) as e:
             cmd.run()
-        self.assertIsNotNone(e)
-        self.assertIn('func', repr(e.exception))
+        self.assertIn('funkie', str(e.exception))
+
 
 def test_suite():
     return unittest.makeSuite(RegisterTestCase)

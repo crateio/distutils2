@@ -38,7 +38,6 @@ try:
             return nodes.system_message(message, level=level, type=self.
                                         levels[level], *children, **kwargs)
 
-
     _HAS_DOCUTILS = True
 except ImportError:
     # docutils is not installed

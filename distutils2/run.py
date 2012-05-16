@@ -653,17 +653,16 @@ def main(args=None):
     old_level = logger.level
     old_handlers = list(logger.handlers)
     try:
-        try:
-            dispatcher = Dispatcher(args)
-            if dispatcher.action is None:
-                return
-            return dispatcher()
-        except KeyboardInterrupt:
-            logger.info('interrupted')
-            return 1
-        except (IOError, os.error, PackagingError, CCompilerError), exc:
-            logger.exception(exc)
-            return 1
+        dispatcher = Dispatcher(args)
+        if dispatcher.action is None:
+            return
+        return dispatcher()
+    except KeyboardInterrupt:
+        logger.info('interrupted')
+        return 1
+    except (IOError, os.error, PackagingError, CCompilerError), exc:
+        logger.exception(exc)
+        return 1
     finally:
         logger.setLevel(old_level)
         logger.handlers[:] = old_handlers

@@ -38,7 +38,8 @@ class BuildScriptsTestCase(support.TempdirManager,
         for name in expected:
             self.assertIn(name, built)
 
-    def get_build_scripts_cmd(self, target, scripts, executable=sys.executable):
+    def get_build_scripts_cmd(self, target, scripts,
+                              executable=sys.executable):
         dist = Distribution()
         dist.scripts = scripts
         dist.command_obj["build"] = support.DummyCommand(
@@ -82,10 +83,8 @@ class BuildScriptsTestCase(support.TempdirManager,
         target = self.mkdtemp()
         expected = self.write_sample_scripts(source)
 
-
-        cmd = self.get_build_scripts_cmd(target,
-                                         [os.path.join(source, fn)
-                                          for fn in expected])
+        cmd = self.get_build_scripts_cmd(
+            target, [os.path.join(source, fn) for fn in expected])
         cmd.finalize_options()
 
         # http://bugs.python.org/issue4524
@@ -112,18 +111,25 @@ class BuildScriptsTestCase(support.TempdirManager,
 
         built = os.path.join(target, 'taunt')
 
-        cmd = self.get_build_scripts_cmd(target, [os.path.join(source, 'taunt')], 'pythona')
+        cmd = self.get_build_scripts_cmd(
+            target, [os.path.join(source, 'taunt')], 'pythona')
         cmd.finalize_options()
         cmd.run()
 
-        self.assertEqual(open(built).readline(), '#!pythona\n')
+        with open(built) as fp:
+            firstline = fp.readline().strip()
+        self.assertEqual(firstline, '#!pythona')
 
-        cmd = self.get_build_scripts_cmd(target, [os.path.join(source, 'taunt')], 'pythonx')
+        cmd = self.get_build_scripts_cmd(
+            target, [os.path.join(source, 'taunt')], 'pythonx')
         cmd.finalize_options()
         cmd.run()
 
-        self.assertEqual(open(built).readline(), '#!pythonx\n')
-        
+        with open(built) as fp:
+            firstline = fp.readline().strip()
+        self.assertEqual(firstline, '#!pythonx')
+
+
 def test_suite():
     return unittest.makeSuite(BuildScriptsTestCase)
 

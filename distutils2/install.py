@@ -60,8 +60,10 @@ def _move_files(files, destination):
 
 def _run_distutils_install(path, dest):
     # backward compat: using setuptools or plain-distutils
+    # FIXME pass dest argument to the command
     cmd = '%s setup.py install --record=%s'
     record_file = os.path.join(path, 'RECORD')
+    # FIXME use subprocess
     os.system(cmd % (sys.executable, record_file))
     if not os.path.exists(record_file):
         raise ValueError('failed to install')
@@ -85,7 +87,7 @@ def _run_packaging_install(path, dest):
     dist = Distribution()
     dist.parse_config_files()
     try:
-        dist.run_command('install_dist', dict(prefix=(None,dest)))
+        dist.run_command('install_dist', {'prefix': (None, dest)})
         name = dist.metadata['Name']
         return database.get_distribution(name) is not None
     except (IOError, os.error, PackagingError, CCompilerError), msg:
@@ -152,15 +154,14 @@ install_methods = {
     'distutils': _run_distutils_install}
 
 
-def _run_install_from_dir(source_dir, destination_dir=None):
+def _run_install_from_dir(source_dir, dest_dir=None):
     old_dir = os.getcwd()
     os.chdir(source_dir)
-    install_method = get_install_method(source_dir)
-    func = install_methods[install_method]
     try:
+        install_method = get_install_method(source_dir)
         func = install_methods[install_method]
         try:
-            func(source_dir, destination_dir)
+            func(source_dir, dest_dir)
             return True
         except ValueError, err:
             # failed to install
