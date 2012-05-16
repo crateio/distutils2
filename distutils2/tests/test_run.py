@@ -94,37 +94,46 @@ class RunTestCase(support.TempdirManager,
         self.assertTrue(build_position, out)
         self.assertLess(check_position, build_position, out)
 
-    def test_unknown_run_option(self):
+    # TODO test that custom commands don't break --list-commands
+
+    def test_unknown_command_option(self):
         status, out, err = assert_python_failure(
             '-c', 'from distutils2.run import main; main()', 'run', 'build',
-            '--unknown', PYTHONPATH=self.get_pythonpath()
-        )
+            '--unknown', PYTHONPATH=self.get_pythonpath())
         self.assertEqual(status, 1)
         self.assertGreater(out, '')
+        # sadly this message comes straight from the getopt module and can't be
+        # modified to use repr instead of str for the unknown option; to be
+        # changed when the command line parsers are replaced by something clean
         self.assertEqual(err.splitlines()[-1],
-                        'error: option --unknown not recognized')
+                         'error: option --unknown not recognized')
+
+    def test_invalid_command(self):
+        status, out, err = assert_python_failure(
+            '-c', 'from distutils2.run import main; main()', 'run',
+            'com#mand', PYTHONPATH=self.get_pythonpath())
+        self.assertEqual(status, 1)
+        self.assertGreater(out, 1)
+        self.assertEqual(err.splitlines()[-1],
+                         "error: invalid command name 'com#mand'")
 
     def test_unknown_command(self):
         status, out, err = assert_python_failure(
             '-c', 'from distutils2.run import main; main()', 'run',
-            'invalid_command', PYTHONPATH=self.get_pythonpath()
-        )
+            'invalid_command', PYTHONPATH=self.get_pythonpath())
         self.assertEqual(status, 1)
         self.assertGreater(out, 1)
         self.assertEqual(err.splitlines()[-1],
-            'error: Invalid command invalid_command')
+                         "error: command 'invalid_command' not recognized")
 
     def test_unknown_action(self):
         status, out, err = assert_python_failure(
             '-c', 'from distutils2.run import main; main()', 'invalid_action',
-            PYTHONPATH=self.get_pythonpath()
-        )
+            PYTHONPATH=self.get_pythonpath())
         self.assertEqual(status, 1)
         self.assertGreater(out, 1)
         self.assertEqual(err.splitlines()[-1],
-            'error: Unrecognized action invalid_action')
-
-        # TODO test that custom commands don't break --list-commands
+                         "error: action 'invalid_action' not recognized")
 
 
 def test_suite():

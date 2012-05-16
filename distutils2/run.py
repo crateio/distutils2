@@ -387,6 +387,7 @@ class Dispatcher(object):
         self.parser.set_negative_aliases(negative_opt)
         # FIXME this parses everything, including command options (e.g. "run
         # build -i" errors with "option -i not recognized")
+        # FIXME unknown options are not detected
         args = self.parser.getopt(args=args, object=self)
 
         # if first arg is "run", we have some commands
@@ -397,9 +398,8 @@ class Dispatcher(object):
 
         allowed = [action[0] for action in actions] + [None]
         if self.action not in allowed:
-            msg = 'Unrecognized action %s' % self.action
             self.show_help()
-            self.exit_with_error_msg(msg)
+            sys.exit('error: action %r not recognized' % self.action)
 
         self._set_logger()
         self.args = args
@@ -436,7 +436,7 @@ class Dispatcher(object):
         # Pull the current command from the head of the command line
         command = args[0]
         if not command_re.match(command):
-            raise SystemExit("invalid command name %r" % (command,))
+            sys.exit('error: invalid command name %r' % command)
         self.commands.append(command)
 
         # Dig up the command class that implements this command, so we
@@ -446,7 +446,7 @@ class Dispatcher(object):
             cmd_class = get_command_class(command)
         except PackagingModuleError, msg:
             self.show_help()
-            self.exit_with_error_msg(msg)
+            sys.exit('error: command %r not recognized' % command)
 
         # XXX We want to push this in distutils2.command
         #
@@ -491,7 +491,7 @@ class Dispatcher(object):
             args, opts = parser.getopt(args[1:])
         except PackagingArgError, msg:
             self.show_help()
-            self.exit_with_error_msg(msg)
+            sys.exit('error: %s' % msg)
 
         if hasattr(opts, 'help') and opts.help:
             self._show_command_help(cmd_class)
@@ -535,9 +535,6 @@ class Dispatcher(object):
 
     def show_help(self):
         self._show_help(self.parser)
-
-    def exit_with_error_msg(self, msg):
-        sys.exit('error: ' + msg.__str__())
 
     def print_usage(self, parser):
         parser.set_option_table(global_options)
