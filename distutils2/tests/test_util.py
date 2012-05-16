@@ -756,6 +756,31 @@ class GlobTestCase(GlobTestCaseBase):
             self.assertRaises(ValueError, iglob, pattern)
 
 
+PKG_INFO = '''\
+Metadata-Version: 1.1
+Name: hello
+Version: 0.1.1
+Summary: Hello World
+Home-page: https://example.com
+Author: John Doe
+Author-email: j.doe@example.com
+License: UNKNOWN
+Download-URL: https://example.com/tarball/master
+Description: UNKNOWN
+Platform: Any
+Classifier: Development Status :: 3 - Alpha
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.2
+Classifier: Intended Audience :: Developers
+Classifier: Environment :: Console
+Provides: hello
+'''
+
+
 class EggInfoToDistInfoTestCase(support.TempdirManager,
                                 support.LoggingCatcher,
                                 unittest.TestCase):
@@ -774,10 +799,14 @@ class EggInfoToDistInfoTestCase(support.TempdirManager,
         dirs = [egginfo]
         files = ['hello.py', 'hello.pyc']
         extra_metadata = ['dependency_links.txt', 'entry_points.txt',
-                          'not-zip-safe', 'PKG-INFO', 'top_level.txt',
-                          'SOURCES.txt']
+                          'not-zip-safe', ('PKG-INFO', PKG_INFO),
+                          'top_level.txt', 'SOURCES.txt']
         for f in extra_metadata:
-            files.append(os.path.join(egginfo, f))
+            if isinstance(f, tuple):
+                f, content = f
+            else:
+                content = 'XXX'
+            files.append((os.path.join(egginfo, f), content))
 
         tempdir, record_file = self.build_dist_tree(files, dirs)
         distinfo_path = os.path.join(tempdir, distinfo)
@@ -796,13 +825,12 @@ class EggInfoToDistInfoTestCase(support.TempdirManager,
         distinfo = 'hello-0.1.1-py3.3.dist-info'
         egginfo = 'hello-0.1.1-py3.3.egg-info'
         # egginfo is a file in distutils which contains the metadata
-        files = ['hello.py', 'hello.pyc', egginfo]
+        files = ['hello.py', 'hello.pyc', (egginfo, PKG_INFO)]
 
         tempdir, record_file = self.build_dist_tree(files, dirs=[])
         distinfo_path = os.path.join(tempdir, distinfo)
         egginfo_path = os.path.join(tempdir, egginfo)
         metadata_file_paths = self.get_metadata_file_paths(distinfo_path)
-
         egginfo_to_distinfo(record_file)
         # test that directories and files get created
         self.assertTrue(os.path.isdir(distinfo_path))
@@ -820,10 +848,15 @@ class EggInfoToDistInfoTestCase(support.TempdirManager,
             os.makedirs(path)
             dir_paths.append(path)
         for f in files:
+            if isinstance(f, (list, tuple)):
+                f, content = f
+            else:
+                content = ''
+
             path = os.path.join(tempdir, f)
             _f = open(path, 'w')
             try:
-                _f.write(f)
+                _f.write(content)
             finally:
                 _f.close()
             file_paths.append(path)

@@ -1272,11 +1272,18 @@ def egginfo_to_distinfo(record_file, installer=_DEFAULT_INSTALLER,
     requires = None
     req_path = os.path.join(distinfo_dir, 'requires.txt')
     requires = parse_requires(req_path)
+
+    # adapting the metadata
+    metadata = Metadata(path=metadata_path)
+    if metadata['Provides'] != []:
+        metadata['Provides-Dist'] = metadata['Provides']
+        metadata['Provides'] = []
+
     if requires is not None:
         # create a metadata instance to handle the reqs injection
-        metadata = Metadata(path=metadata_path)
         metadata['Requires-Dist'] = requires
-        metadata.write(metadata_path)
+
+    metadata.write(metadata_path)
 
     installer_path = distinfo['installer_path']
     logger.info('creating %s', installer_path)
