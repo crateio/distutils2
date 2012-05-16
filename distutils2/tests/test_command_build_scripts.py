@@ -129,6 +129,36 @@ class BuildScriptsTestCase(support.TempdirManager,
             firstline = fp.readline().strip()
         self.assertEqual(firstline, '#!pythonx')
 
+    def test_build_old_scripts_deleted(self):
+        source = self.mkdtemp()
+        target = self.mkdtemp()
+
+        expected = ['script1.py', 'script2.py']
+        self.write_script(source, "script1.py",
+                          ("#! /usr/bin/env python2.3\n"
+                           "pass\n"))
+        self.write_script(source, "script2.py",
+                          ("#!/usr/bin/python\n"
+                           "pass\n"))
+
+        cmd = self.get_build_scripts_cmd(
+            target, [os.path.join(source, fn) for fn in expected])
+        cmd.finalize_options()
+        cmd.run()
+
+        built = sorted(os.listdir(target))
+        self.assertEqual(built, expected)
+
+        # if we run build_scripts with a different list of scripts, the old
+        # ones used to be left over in the build directory and installed anyway
+        cmd = self.get_build_scripts_cmd(
+            target, [os.path.join(source, 'script1.py')])
+        cmd.finalize_options()
+        cmd.run()
+
+        built = os.listdir(target)
+        self.assertEqual(built, ['script1.py'])
+
 
 def test_suite():
     return unittest.makeSuite(BuildScriptsTestCase)

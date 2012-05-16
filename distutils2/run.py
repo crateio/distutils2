@@ -436,6 +436,7 @@ class Dispatcher(object):
         # Pull the current command from the head of the command line
         command = args[0]
         if not command_re.match(command):
+            self.show_help()  # TODO list only commands, not actions
             sys.exit('error: invalid command name %r' % command)
         self.commands.append(command)
 
@@ -445,7 +446,7 @@ class Dispatcher(object):
         try:
             cmd_class = get_command_class(command)
         except PackagingModuleError, msg:
-            self.show_help()
+            self.show_help()  # TODO list only commands, not actions
             sys.exit('error: command %r not recognized' % command)
 
         # XXX We want to push this in distutils2.command

@@ -5,7 +5,7 @@ import re
 from distutils2 import util
 from distutils2 import logger
 from distutils2.errors import PackagingOptionError
-from distutils2._backport.shutil import copyfile, move, make_archive
+from distutils2._backport.shutil import copyfile, move, make_archive, rmtree
 
 
 class Command(object):
@@ -364,6 +364,20 @@ class Command(object):
                 head += part + os.sep
             return
         os.makedirs(name, mode)
+
+    def rmpath(self, name, dry_run=None):
+        if dry_run is None:
+            dry_run = self.dry_run
+        name = os.path.normpath(name)
+        if not os.path.isdir(name) or name == '':
+            return
+        if dry_run:
+            head = ''
+            for part in name.split(os.sep):
+                logger.info("removing directory %s%s", head, part)
+                head += part + os.sep
+            return
+        rmtree(name)
 
     def copy_file(self, infile, outfile,
                   preserve_mode=True, preserve_times=True, link=None, level=1):
