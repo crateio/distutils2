@@ -62,28 +62,32 @@ class RunTestCase(support.TempdirManager,
 
     def get_pythonpath(self):
         pythonpath = os.environ.get('PYTHONPATH')
-        d2parent = os.path.dirname(os.path.dirname(__file__))
+        d2parent = os.path.dirname(os.path.dirname(__file__))  # XXX buggy
         if pythonpath is not None:
             pythonpath = os.pathsep.join((pythonpath, d2parent))
         else:
             pythonpath = d2parent
         return pythonpath
 
+    def call_pysetup(self, *args):
+        _, out, err = assert_python_ok('-m', 'distutils2.run', *args,
+                                       PYTHONPATH=self.get_pythonpath())
+        return out, err
+
+    def call_pysetup_fail(self, *args):
+        _, out, err = assert_python_failure('-m', 'distutils2.run', *args,
+                                            PYTHONPATH=self.get_pythonpath())
+        return out, err
+
     def test_show_help(self):
         # smoke test, just makes sure some help is displayed
-        status, out, err = assert_python_ok(
-            '-c', 'from distutils2.run import main; main()', '--help',
-            PYTHONPATH=self.get_pythonpath())
-        self.assertEqual(status, 0)
+        out, err = self.call_pysetup('--help')
         self.assertGreater(out, '')
         self.assertEqual(err, '')
 
     def test_list_commands(self):
-        status, out, err = assert_python_ok(
-            '-c', 'from distutils2.run import main; main()', 'run',
-            '--list-commands', PYTHONPATH=self.get_pythonpath())
+        out, err = self.call_pysetup('run', '--list-commands')
         # check that something is displayed
-        self.assertEqual(status, 0)
         self.assertGreater(out, '')
         self.assertEqual(err, '')
 
@@ -97,10 +101,7 @@ class RunTestCase(support.TempdirManager,
     # TODO test that custom commands don't break --list-commands
 
     def test_unknown_command_option(self):
-        status, out, err = assert_python_failure(
-            '-c', 'from distutils2.run import main; main()', 'run', 'build',
-            '--unknown', PYTHONPATH=self.get_pythonpath())
-        self.assertEqual(status, 1)
+        out, err = self.call_pysetup_fail('run', 'build', '--unknown')
         self.assertGreater(out, '')
         # sadly this message comes straight from the getopt module and can't be
         # modified to use repr instead of str for the unknown option; to be
@@ -109,28 +110,19 @@ class RunTestCase(support.TempdirManager,
                          'error: option --unknown not recognized')
 
     def test_invalid_command(self):
-        status, out, err = assert_python_failure(
-            '-c', 'from distutils2.run import main; main()', 'run',
-            'com#mand', PYTHONPATH=self.get_pythonpath())
-        self.assertEqual(status, 1)
+        out, err = self.call_pysetup_fail('run', 'com#mand')
         self.assertGreater(out, 1)
         self.assertEqual(err.splitlines()[-1],
                          "error: invalid command name 'com#mand'")
 
     def test_unknown_command(self):
-        status, out, err = assert_python_failure(
-            '-c', 'from distutils2.run import main; main()', 'run',
-            'invalid_command', PYTHONPATH=self.get_pythonpath())
-        self.assertEqual(status, 1)
+        out, err = self.call_pysetup_fail('run', 'invalid_command')
         self.assertGreater(out, 1)
         self.assertEqual(err.splitlines()[-1],
                          "error: command 'invalid_command' not recognized")
 
     def test_unknown_action(self):
-        status, out, err = assert_python_failure(
-            '-c', 'from distutils2.run import main; main()', 'invalid_action',
-            PYTHONPATH=self.get_pythonpath())
-        self.assertEqual(status, 1)
+        out, err = self.call_pysetup_fail('invalid_action')
         self.assertGreater(out, 1)
         self.assertEqual(err.splitlines()[-1],
                          "error: action 'invalid_action' not recognized")
