@@ -100,7 +100,7 @@ class CheckTestCase(support.LoggingCatcher,
         self._run(metadata, strict=True)
         self.assertEqual(self.get_logs(), [])
 
-    @support.require_docutils
+    @support.requires_docutils
     def test_check_restructuredtext(self):
         # let's see if it detects broken rest in description
         broken_rest = 'title\n===\n\ntest'
