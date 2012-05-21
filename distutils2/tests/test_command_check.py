@@ -1,7 +1,6 @@
 """Tests for distutils.command.check."""
 
 from distutils2.command.check import check
-from distutils2.metadata import _HAS_DOCUTILS
 from distutils2.errors import PackagingSetupError, MetadataMissingError
 from distutils2.tests import unittest, support
 
@@ -101,7 +100,7 @@ class CheckTestCase(support.LoggingCatcher,
         self._run(metadata, strict=True)
         self.assertEqual(self.get_logs(), [])
 
-    @unittest.skipUnless(_HAS_DOCUTILS, "requires docutils")
+    @support.require_docutils
     def test_check_restructuredtext(self):
         # let's see if it detects broken rest in description
         broken_rest = 'title\n===\n\ntest'
