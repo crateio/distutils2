@@ -48,6 +48,7 @@ Thanks to:
 - Pierre Paul Lefebvre
 - Tshepang Lekhonkhobe
 - Alain Leufroy
+- Janusz Lewandowski
 - Martin von Löwis
 - Hugo Lopes Tavares
 - Guillermo López-Anglada

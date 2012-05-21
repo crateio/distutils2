@@ -2,6 +2,7 @@
 
 import os
 import sys
+import textwrap
 from StringIO import StringIO
 
 from distutils2 import install
@@ -31,14 +32,7 @@ class RunTestCase(support.TempdirManager,
                   support.LoggingCatcher,
                   unittest.TestCase):
 
-    def setUp(self):
-        super(RunTestCase, self).setUp()
-        self.old_argv = sys.argv, sys.argv[:]
-
-    def tearDown(self):
-        sys.argv = self.old_argv[0]
-        sys.argv[:] = self.old_argv[1]
-        super(RunTestCase, self).tearDown()
+    maxDiff = None
 
     # TODO restore the tests removed six months ago and port them to pysetup
 
@@ -126,6 +120,38 @@ class RunTestCase(support.TempdirManager,
         self.assertGreater(out, 1)
         self.assertEqual(err.splitlines(),
                          ["error: action 'invalid_action' not recognized"])
+
+    def test_setupcfg_parsing(self):
+        # #14733: pysetup used to parse setup.cfg too late
+        project_dir = self.mkdtemp()
+        os.chdir(project_dir)
+        custompy = textwrap.dedent(
+            """\
+            from distutils2.command.cmd import Command
+
+            class custom(Command):
+
+                user_options = []
+
+                def initialize_options(self):
+                    pass
+
+                def finalize_options(self):
+                    pass
+
+                def run(self):
+                    print 'custom: ok'
+            """)
+        setupcfg = textwrap.dedent(
+            """\
+            [global]
+            commands = custom.custom
+            """)
+        self.write_file('custom.py', custompy)
+        self.write_file('setup.cfg', setupcfg)
+
+        out, err = self.call_pysetup('run', 'custom')
+        self.assertEqual(out.splitlines(), ['custom: ok'])
 
 
 def test_suite():

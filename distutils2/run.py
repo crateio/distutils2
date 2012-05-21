@@ -10,6 +10,7 @@ from distutils2 import logger
 from distutils2.dist import Distribution
 from distutils2.util import _is_archive_file, generate_setup_py
 from distutils2.command import get_command_class, STANDARD_COMMANDS
+from distutils2.command.cmd import Command
 from distutils2.install import install, install_local_project, remove
 from distutils2.database import get_distribution, get_distributions
 from distutils2.depgraph import generate_graph
@@ -254,6 +255,13 @@ def _run(dispatcher, args, **kw):
     parser = dispatcher.parser
     args = args[1:]
 
+    # Find and parse the config file(s): they will override options from
+    # the setup script, but be overridden by the command line.
+    # XXX call the functions from config and kill the Distribution class
+    # (merging it into Dispatcher)
+    dist = Distribution()
+    dist.parse_config_files()
+
     commands = STANDARD_COMMANDS  # FIXME display extra commands
 
     if args == ['--list-commands']:
@@ -268,16 +276,6 @@ def _run(dispatcher, args, **kw):
         args = dispatcher._parse_command_opts(parser, args)
         if args is None:
             return
-
-    # create the Distribution class
-    # need to feed setup.cfg here !
-    dist = Distribution()
-
-    # Find and parse the config file(s): they will override options from
-    # the setup script, but be overridden by the command line.
-
-    # XXX still need to be extracted from Distribution
-    dist.parse_config_files()
 
     for cmd in dispatcher.commands:
         # FIXME need to catch MetadataMissingError here (from the check command
@@ -547,9 +545,8 @@ class Dispatcher(object):
 
     def _show_help(self, parser, global_options_=True, display_options_=True,
                    commands=[]):
-        # late import because of mutual dependence between these modules
-        from distutils2.command.cmd import Command
-
+        # XXX want to print to stdout when help is requested (--help) but to
+        # stderr in case of error!
         print 'Usage: pysetup [options] action [action_options]'
         print
         if global_options_:
