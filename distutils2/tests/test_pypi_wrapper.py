@@ -23,7 +23,7 @@ class TestPyPIWrapper(unittest.TestCase):
 
     def test_wrapper(self):
         index = Indexes._indexes['one']
-        func = switch_index_if_fails(getattr(index, 'test'), Indexes)
+        func = switch_index_if_fails(index.test, Indexes)
         self.assertEqual(func(), 'OK')
 
 
