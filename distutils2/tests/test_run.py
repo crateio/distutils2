@@ -151,6 +151,7 @@ class RunTestCase(support.TempdirManager,
         self.write_file('setup.cfg', setupcfg)
 
         out, err = self.call_pysetup('run', 'custom')
+        self.assertEqual(err.splitlines(), ['running custom'])
         self.assertEqual(out.splitlines(), ['custom: ok'])
 
 
