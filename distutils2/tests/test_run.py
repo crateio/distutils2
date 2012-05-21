@@ -105,19 +105,19 @@ class RunTestCase(support.TempdirManager,
 
     def test_invalid_command(self):
         out, err = self.call_pysetup_fail('run', 'com#mand')
-        self.assertGreater(out, 1)
+        self.assertGreater(out, '')
         self.assertEqual(err.splitlines(),
                          ["error: invalid command name 'com#mand'"])
 
     def test_unknown_command(self):
         out, err = self.call_pysetup_fail('run', 'invalid_command')
-        self.assertGreater(out, 1)
+        self.assertGreater(out, '')
         self.assertEqual(err.splitlines(),
                          ["error: command 'invalid_command' not recognized"])
 
     def test_unknown_action(self):
         out, err = self.call_pysetup_fail('invalid_action')
-        self.assertGreater(out, 1)
+        self.assertGreater(out, '')
         self.assertEqual(err.splitlines(),
                          ["error: action 'invalid_action' not recognized"])
 
